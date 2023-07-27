@@ -74,6 +74,13 @@
         "xlocnum": "cpp",
         "xloctime": "cpp",
         "xstring": "cpp",
-        "xtree": "cpp"
+        "xtree": "cpp",
+        "forward_list": "cpp",
+        "chrono": "cpp",
+        "cstdarg": "cpp",
+        "map": "cpp",
+        "unordered_set": "cpp",
+        "functional": "cpp",
+        "random": "cpp"
     }
 }

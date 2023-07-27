@@ -8,6 +8,9 @@
 namespace Disarray {
 
 	class Window;
+	class Device;
+	class Swapchain;
+	class PhysicalDevice;
 
 	class App {
 	public:
@@ -24,6 +27,9 @@ namespace Disarray {
 
 	private:
 		Scope<Window> window { nullptr };
+		Ref<PhysicalDevice> physical_device { nullptr };
+		Ref<Device> device { nullptr };
+		Ref<Swapchain> swapchain {nullptr};
 		std::vector<Ref<Layer>> layers {};
 	};
 
