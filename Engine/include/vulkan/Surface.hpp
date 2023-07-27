@@ -1,18 +1,25 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include "graphics/Surface.hpp"
+#include "vulkan/PropertySupplier.hpp"
 
 extern "C" {
 struct GLFWwindow;
 }
 
 namespace Disarray::Vulkan {
-	class Surface {
+
+	class Instance;
+
+	class Surface : public Disarray::Surface, public PropertySupplier<VkSurfaceKHR> {
 	public:
-		Surface(GLFWwindow*);
-		~Surface();
+		Surface(Ref<Instance>, GLFWwindow*);
+		~Surface() override;
+
+		VkSurfaceKHR get() const override { return surface; }
 
 	private:
+		Ref<Instance> instance;
 		VkSurfaceKHR surface;
 	};
 } // namespace Disarray::Vulkan

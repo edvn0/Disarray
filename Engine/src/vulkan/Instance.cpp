@@ -1,7 +1,9 @@
 #include "vulkan/Instance.hpp"
 
 #include "core/Log.hpp"
+#include "graphics/PhysicalDevice.hpp"
 #include "vulkan/Config.hpp"
+#include "vulkan/QueueFamilyIndex.hpp"
 #include "vulkan/Verify.hpp"
 
 #include <glfw/glfw3.h>
@@ -17,7 +19,7 @@ std::vector<const char*> get_required_extensions()
 
 	std::vector<const char*> extensions(glfw_exts, glfw_exts + ext_count);
 
-	if (Disarray::Vulkan::Config::use_validation_layers) {
+	if constexpr (Disarray::Vulkan::Config::use_validation_layers) {
 		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
 
@@ -88,7 +90,7 @@ namespace Disarray::Vulkan {
 		create_info.ppEnabledExtensionNames = exts.data();
 
 		VkDebugUtilsMessengerCreateInfoEXT debug_create_info {};
-		if (Config::use_validation_layers) {
+		if constexpr (Config::use_validation_layers) {
 			create_info.enabledLayerCount = static_cast<uint32_t>(requested_layers.size());
 			create_info.ppEnabledLayerNames = requested_layers.data();
 
@@ -110,39 +112,6 @@ namespace Disarray::Vulkan {
 			destroy_debug_messenger_ext(instance, debug_messenger, nullptr);
 		}
 		vkDestroyInstance(instance, nullptr);
-	}
-
-	void Instance::load_physical_device()
-	{
-		static constexpr auto is_device_suitable = [](VkPhysicalDevice device) {
-			VkPhysicalDeviceProperties device_props;
-			VkPhysicalDeviceFeatures device_feats;
-			vkGetPhysicalDeviceProperties(device, &device_props);
-			vkGetPhysicalDeviceFeatures(device, &device_feats);
-
-			return device_props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && device_feats.geometryShader;
-		};
-
-		uint32_t device_count = 0;
-		vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
-
-		if (device_count == 0) {
-			throw std::runtime_error("failed to find GPUs with Vulkan support!");
-		}
-
-		std::vector<VkPhysicalDevice> devices(device_count);
-		vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
-
-		for (const auto& device : devices) {
-			if (is_device_suitable(device)) {
-				physical_device = device;
-				break;
-			}
-		}
-
-		if (physical_device == VK_NULL_HANDLE) {
-			throw std::runtime_error("failed to find a suitable GPU!");
-		}
 	}
 
 	void Instance::setup_debug_messenger()

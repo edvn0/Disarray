@@ -11,8 +11,8 @@ namespace Disarray {
 			~Logger() = default;
 
 		public:
-			void debug(std::string);
-			void error(std::string);
+			void debug(const std::string&);
+			void error(const std::string&);
 
 			static Logger& logger()
 			{
@@ -23,8 +23,8 @@ namespace Disarray {
 	} // namespace Logging
 
 	namespace Log {
-		static void debug(std::string message) { Logging::Logger::logger().debug(message); }
-		static void error(std::string message) { Logging::Logger::logger().error(message); }
+		static void debug(const std::string& message) { Logging::Logger::logger().debug(message); }
+		static void error(const std::string& message) { Logging::Logger::logger().error(message); }
 	} // namespace Log
 
 } // namespace Disarray

@@ -1,6 +1,7 @@
 #include "vulkan/Window.hpp"
 
 #include "core/Log.hpp"
+#include "vulkan/Swapchain.hpp"
 
 #include <glfw/glfw3.h>
 #include <iostream>
@@ -24,11 +25,11 @@ namespace Disarray::Vulkan {
 			throw;
 
 		instance = make_ref<Vulkan::Instance>();
-		surface = make_ref<Vulkan::Surface>(window);
+		surface = make_ref<Vulkan::Surface>(instance, window);
 
-		glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+		glfwSetKeyCallback(window, [](GLFWwindow* handle, int key, int scancode, int action, int mods) {
 			if (key == GLFW_KEY_ESCAPE)
-				glfwSetWindowShouldClose(window, true);
+				glfwSetWindowShouldClose(handle, true);
 		});
 	}
 
@@ -42,5 +43,13 @@ namespace Disarray::Vulkan {
 	void Window::update() { glfwPollEvents(); }
 
 	bool Window::should_close() const { return glfwWindowShouldClose(window); }
+
+	std::pair<int, int> Window::get_framebuffer_size()
+	{
+		int width;
+		int height;
+		glfwGetFramebufferSize(window, &width, &height);
+		return { width, height };
+	}
 
 } // namespace Disarray::Vulkan

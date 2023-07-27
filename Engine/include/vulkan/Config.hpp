@@ -1,5 +1,8 @@
 #pragma once
 
+#include <array>
+#include <vulkan/vulkan.h>
+
 namespace Disarray::Vulkan::Config {
 
 #ifdef IS_DEBUG
@@ -9,5 +12,7 @@ namespace Disarray::Vulkan::Config {
 #endif
 
 	static constexpr auto use_validation_layers = is_debug;
+
+	static std::array<const char*, 1> device_extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
 } // namespace Disarray::Vulkan::Config

@@ -1,6 +1,9 @@
 #pragma once
 
 #include "core/Types.hpp"
+#include "graphics/Instance.hpp"
+#include "graphics/Surface.hpp"
+#include <utility>
 
 namespace Disarray {
 
@@ -13,6 +16,10 @@ namespace Disarray {
 
 		virtual bool should_close() const = 0;
 		virtual void update() = 0;
+		virtual Ref<Surface> get_surface() = 0;
+		virtual Ref<Instance> get_instance() = 0;
+
+		virtual std::pair<int, int> get_framebuffer_size() = 0;
 
 	protected:
 		Window(std::uint32_t w, std::uint32_t h);

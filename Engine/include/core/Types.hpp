@@ -14,6 +14,7 @@ namespace Disarray {
 	template <class T>
 	concept ScopeOrRef = std::is_same_v<T, Scope<T>> || std::is_same_v<T, Ref<T>>;
 
-	template <class From, class To> Scope<To> cast(Scope<From> ptr) { return std::static_pointer_cast(ptr); }
+	template <class To, class From> Ref<To> cast_to(Ref<From> ptr) { return std::dynamic_pointer_cast<To>(ptr); }
+	template <class To, class From> decltype(auto) supply_cast(Ref<From> ptr) { return std::dynamic_pointer_cast<To>(ptr)->get(); }
 
 } // namespace Disarray
