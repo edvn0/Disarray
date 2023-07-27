@@ -1,0 +1,30 @@
+#pragma once
+
+#include <string>
+
+namespace Disarray {
+
+	namespace Logging {
+		class Logger {
+		private:
+			Logger() = default;
+			~Logger() = default;
+
+		public:
+			void debug(std::string);
+			void error(std::string);
+
+			static Logger& logger()
+			{
+				static Logger logger;
+				return logger;
+			}
+		};
+	} // namespace Logging
+
+	namespace Log {
+		static void debug(std::string message) { Logging::Logger::logger().debug(message); }
+		static void error(std::string message) { Logging::Logger::logger().error(message); }
+	} // namespace Log
+
+} // namespace Disarray

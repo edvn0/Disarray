@@ -1,0 +1,79 @@
+# Prerequisites
+*.d
+
+vscode-build
+build
+out
+
+.vs
+
+.DS_Store
+
+Thumbs.db
+*.tga
+
+.idea
+cmake-*
+
+__pycache__
+app/resources/scripts/*.pyc
+app/resources/scripts/*.exp
+app/resources/scripts/*.pyd
+app/resources/scripts/*.pdb
+app/resources/scripts/*.so
+
+*.prof
+
+VS
+*.cache
+.cache
+
+*.png
+*.jpg
+*.jpeg
+
+*.spv
+
+XCode
+Xcode
+xcode
+compile_commands.json
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Folders
+build*
+
+app/resources/scene/*.json
+
+!app/resources/editor/*.png
+
+!third_party_builds/**
