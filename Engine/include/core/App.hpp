@@ -11,6 +11,7 @@ namespace Disarray {
 	class Device;
 	class Swapchain;
 	class PhysicalDevice;
+	class Renderer;
 
 	class App {
 	public:
@@ -22,7 +23,7 @@ namespace Disarray {
 		void add_layer(Args&&... args)
 			requires std::is_base_of_v<Layer, T>
 		{
-			layers.emplace_back(make_ref<T>(std::forward(args)...));
+			layers.emplace_back(Ref<T> { new T(device, physical_device, window, swapchain, std::forward(args)...) });
 		}
 
 	private:
@@ -30,6 +31,7 @@ namespace Disarray {
 		Ref<PhysicalDevice> physical_device { nullptr };
 		Ref<Device> device { nullptr };
 		Ref<Swapchain> swapchain {nullptr};
+		Ref<Renderer> renderer {nullptr};
 		std::vector<Ref<Layer>> layers {};
 	};
 

@@ -26,14 +26,14 @@ namespace Disarray::Vulkan {
 
 		auto instance = cast_to<Vulkan::Instance>(inst);
 		uint32_t device_count = 0;
-		vkEnumeratePhysicalDevices(instance->get(), &device_count, nullptr);
+		vkEnumeratePhysicalDevices(instance->supply(), &device_count, nullptr);
 
 		if (device_count == 0) {
 			throw std::runtime_error("failed to find GPUs with Vulkan support!");
 		}
 
 		std::vector<VkPhysicalDevice> devices(device_count);
-		vkEnumeratePhysicalDevices(instance->get(), &device_count, devices.data());
+		vkEnumeratePhysicalDevices(instance->supply(), &device_count, devices.data());
 
 		for (const auto& device : devices) {
 			if (is_device_suitable(device, surf)) {

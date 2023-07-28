@@ -16,7 +16,7 @@ namespace Disarray::Vulkan {
 		Instance(std::vector<const char*>&& vec = std::vector<const char*> { "VK_LAYER_KHRONOS_validation" });
 		~Instance() override;
 
-		VkInstance get() const override { return instance; }
+		VkInstance supply() const override { return instance; }
 
 	private:
 		bool check_validation_layer_support() const;

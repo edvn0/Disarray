@@ -14,13 +14,13 @@ namespace Disarray::Vulkan {
 	Surface::Surface(Ref<Instance> inst, GLFWwindow* window)
 		: instance(inst)
 	{
-		verify(glfwCreateWindowSurface(instance->get(), window, nullptr, &surface));
+		verify(glfwCreateWindowSurface(instance->supply(), window, nullptr, &surface));
 		Log::debug("Surface created!");
 	}
 
 	Surface::~Surface()
 	{
-		vkDestroySurfaceKHR(instance->get(), surface, nullptr);
+		vkDestroySurfaceKHR(instance->supply(), surface, nullptr);
 		Log::debug("Surface destroyed.");
 	}
 

@@ -19,6 +19,11 @@ namespace Disarray {
 		virtual Ref<Surface> get_surface() = 0;
 		virtual Ref<Instance> get_instance() = 0;
 
+		virtual bool was_resized() const = 0;
+		virtual void reset_resize_status() = 0;
+
+		virtual void wait_for_minimisation() = 0;
+
 		virtual std::pair<int, int> get_framebuffer_size() = 0;
 
 	protected:

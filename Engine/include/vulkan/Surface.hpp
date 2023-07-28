@@ -16,7 +16,7 @@ namespace Disarray::Vulkan {
 		Surface(Ref<Instance>, GLFWwindow*);
 		~Surface() override;
 
-		VkSurfaceKHR get() const override { return surface; }
+		VkSurfaceKHR supply() const override { return surface; }
 
 	private:
 		Ref<Instance> instance;

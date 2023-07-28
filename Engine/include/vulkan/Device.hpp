@@ -17,7 +17,10 @@ namespace Disarray::Vulkan {
 		Device(Ref<Disarray::PhysicalDevice>, Ref<Disarray::Surface>);
 		~Device() override;
 
-		VkDevice get() const override { return device; }
+		VkQueue get_graphics_queue() { return graphics; }
+		VkQueue get_present_queue() { return present; }
+
+		VkDevice supply() const override { return device; }
 
 	private:
 		VkDevice device;

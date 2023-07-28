@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <stdexcept>
 
 namespace Disarray {
 
@@ -15,6 +16,10 @@ namespace Disarray {
 	concept ScopeOrRef = std::is_same_v<T, Scope<T>> || std::is_same_v<T, Ref<T>>;
 
 	template <class To, class From> Ref<To> cast_to(Ref<From> ptr) { return std::dynamic_pointer_cast<To>(ptr); }
-	template <class To, class From> decltype(auto) supply_cast(Ref<From> ptr) { return std::dynamic_pointer_cast<To>(ptr)->get(); }
+	template <class To, class From> decltype(auto) supply_cast(Ref<From> ptr) { return std::dynamic_pointer_cast<To>(ptr)->supply(); }
+
+	[[noreturn]] static auto unreachable() {
+		throw std::runtime_error("Reached unreachable code.");
+	}
 
 } // namespace Disarray

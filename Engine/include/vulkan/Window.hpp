@@ -21,9 +21,19 @@ namespace Disarray::Vulkan {
 		Ref<Disarray::Surface> get_surface() override { return surface; };
 		Ref<Disarray::Instance> get_instance() override { return instance; };
 
+		void reset_resize_status() override;
+		bool was_resized() const override;
+
+		void wait_for_minimisation() override;
+
 		std::pair<int, int> get_framebuffer_size() override;
 
 	private:
+		struct UserData {
+			bool was_resized {false};
+		};
+		UserData* user_data;
+
 		GLFWwindow* window { nullptr };
 		Ref<Surface> surface { nullptr };
 		Ref<Instance> instance { nullptr };

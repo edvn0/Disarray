@@ -8,7 +8,7 @@
 namespace Disarray::Vulkan {
 
 	QueueFamilyIndex::QueueFamilyIndex(Ref<Disarray::PhysicalDevice> dev, Ref<Disarray::Surface> sur)
-		: QueueFamilyIndex(cast_to<Vulkan::PhysicalDevice>(dev)->get(), sur)
+		: QueueFamilyIndex(cast_to<Vulkan::PhysicalDevice>(dev)->supply(), sur)
 	{
 	}
 
@@ -37,7 +37,7 @@ namespace Disarray::Vulkan {
 			}
 
 			VkBool32 present_support = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(device, family_index, surface->get(), &present_support);
+			vkGetPhysicalDeviceSurfaceSupportKHR(device, family_index, surface->supply(), &present_support);
 			if (present_support) {
 				present.emplace(family_index);
 			}
