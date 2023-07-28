@@ -40,7 +40,7 @@ namespace Disarray::Vulkan {
 		device_create_info.ppEnabledExtensionNames = Config::device_extensions.data();
 
 		const auto physical_device = cast_to<Vulkan::PhysicalDevice>(physical);
-		verify(vkCreateDevice(physical_device->get(), &device_create_info, nullptr, &device));
+		verify(vkCreateDevice(physical_device->supply(), &device_create_info, nullptr, &device));
 
 		vkGetDeviceQueue(device, indices.get_graphics_family(), 0, &graphics);
 		vkGetDeviceQueue(device, indices.get_present_family(), 0, &present);

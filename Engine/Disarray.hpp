@@ -1,5 +1,15 @@
 #ifndef DISARRAY_CLIENT_INCLUDE
+#include "core/Types.hpp"
+#include "graphics/Pipeline.hpp"
+#include "graphics/Shader.hpp"
+#include "graphics/CommandExecutor.hpp"
+#include "graphics/PhysicalDevice.hpp"
+#include "graphics/Renderer.hpp"
+#include "graphics/RenderPass.hpp"
+#include "graphics/Framebuffer.hpp"
+#include "graphics/Swapchain.hpp"
 #include "core/App.hpp"
+#include "core/Window.hpp"
 #include "core/Layer.hpp"
 #include "core/Log.hpp"
 #endif

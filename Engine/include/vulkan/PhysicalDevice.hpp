@@ -10,7 +10,7 @@ namespace Disarray::Vulkan {
 	public:
 		explicit PhysicalDevice(Ref<Disarray::Instance>, Ref<Disarray::Surface>);
 
-		VkPhysicalDevice get() const override { return physical_device; }
+		VkPhysicalDevice supply() const override { return physical_device; }
 
 	private:
 		VkPhysicalDevice physical_device;
