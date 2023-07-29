@@ -136,8 +136,8 @@ namespace Disarray::Vulkan {
 		for (const char* layer_name : requested_layers) {
 			bool layer_found = false;
 
-			for (const auto& layerProperties : available_layers) {
-				if (strcmp(layer_name, layerProperties.layerName) == 0) {
+			for (const auto& layer_properties : available_layers) {
+				if (strcmp(layer_name, layer_properties.layerName) == 0) {
 					layer_found = true;
 					break;
 				}

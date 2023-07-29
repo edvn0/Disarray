@@ -4,12 +4,12 @@
 
 namespace Disarray {
 
-	class Surface;
+	class QueueFamilyIndex;
 	class PhysicalDevice;
 
 	class Device {
 	public:
-		static Scope<Device> construct(Ref<PhysicalDevice> device, Ref<Surface> surface);
+		static Scope<Device> construct(Ref<Disarray::PhysicalDevice>);
 		virtual ~Device() = default;
 	};
 

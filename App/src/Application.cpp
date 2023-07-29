@@ -1,3 +1,4 @@
+
 #include <Disarray.hpp>
 #include <vector>
 
@@ -13,36 +14,48 @@ public:
 
 		};
 
-	void construct() override
+	void construct(Ref<Renderer> renderer) override
 	{
-		VertexLayout layout {
-			{ ElementType::Float3 },
-			{ ElementType::Float2 },
-			{ ElementType::Float4 },
-		};
+		VertexLayout layout { {
+			{ ElementType::Float3, "position" },
+			{ ElementType::Float2, "uv" },
+			{ ElementType::Float4, "colour" },
+		}};
 
 		render_pass = RenderPass::construct(device, { .image_format = Disarray::ImageFormat::SBGR });
 
 		auto extent = swapchain->get_extent();
 
+		const auto& [vert, frag] = renderer->get_pipeline_cache().get_shader("main");
 		const PipelineProperties props = {
-			.vertex_shader = Shader::construct(device,
-				{
-					.path = "assets/Shaders/main.vert.spv",
-					.type = ShaderType::Vertex,
-				}),
-			.fragment_shader = Shader::construct(device,
-				{
-					.path = "assets/Shaders/main.frag.spv",
-					.type = ShaderType::Fragment,
-				}),
+			.vertex_shader = vert,
+			.fragment_shader = frag,
 			.render_pass = render_pass,
 			.layout = layout,
 			.extent = { extent.width, extent.height },
 		};
 		pipeline = Pipeline::construct(device, swapchain, props);
 		framebuffer = Framebuffer::construct(device, swapchain, render_pass, {});
-		command_executor = CommandExecutor::construct_from_swapchain(device, physical_device, swapchain, window->get_surface(), { .count = 2 });
+		command_executor = CommandExecutor::construct_from_swapchain(device, swapchain, physical_device->get_queue_family_indexes(), { .count = 2 });
+
+		test_mesh = Mesh::construct(device, swapchain, physical_device, {
+												.path = "Assets/Models/test.mesh",
+												.pipeline = pipeline
+											});
+
+		struct Vertex {
+			glm::vec3 pos;
+			glm::vec2 uv;
+		};
+
+		Vertex data[] = {
+			{ {0.0, -0.5, 0.0}, {0, 1} },
+			{ {0.5, 0.5, 0.0}, {1, 1} },
+			{ {-0.5, 0.5, 0.0}, {-1, 1} }
+		};
+		DataBuffer buffer { data, sizeof(Vertex) * 3 };
+
+		auto& second_vertex = buffer.read<Vertex>(1);
 
 		Log::debug("Constructed AppLayer.");
 	};
@@ -64,7 +77,7 @@ public:
 		command_executor->begin();
 		renderer->begin_pass(command_executor, render_pass, pipeline, framebuffer);
 		// const auto&& [mid_x, mid_y] = renderer->center_position();
-		// renderer->draw_mesh(my_mesh);
+		renderer->draw_mesh(command_executor, test_mesh);
 		renderer->draw_planar_geometry(command_executor, Geometry::Triangle, { .position = { 0, 0, 0 }, .dimensions = { { 12.f, 12.f, 1.f } } });
 		// renderer->draw_text("Hello world!", 0, 0, 12.f);
 		// renderer->draw_geometry(Geometry::Circle, { .pos = glm::vec3(mid_x, mid_y), .size = 12 });
@@ -79,6 +92,8 @@ private:
 	Ref<Framebuffer> framebuffer;
 	Ref<RenderPass> render_pass;
 	Ref<CommandExecutor> command_executor;
+
+	Ref<Mesh> test_mesh;
 
 	Ref<Swapchain> swapchain;
 	Scope<Window>& window;

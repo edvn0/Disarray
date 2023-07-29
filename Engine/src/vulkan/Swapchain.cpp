@@ -5,6 +5,7 @@
 #include "core/Types.hpp"
 #include "core/Window.hpp"
 #include "graphics/Swapchain.hpp"
+#include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Config.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/QueueFamilyIndex.hpp"
@@ -24,6 +25,7 @@ namespace Disarray::Vulkan {
 
 		present_queue = cast_to<Vulkan::Device>(device)->get_present_queue();
 		graphics_queue = cast_to<Vulkan::Device>(device)->get_graphics_queue();
+
 
 		Log::debug("Swapchain image views retrieved!");
 	}

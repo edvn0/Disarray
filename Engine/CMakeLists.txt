@@ -15,18 +15,26 @@ add_library(${PROJECT_NAME} STATIC
         src/core/App.cpp
         src/core/Window.cpp
         src/core/Log.cpp
+        src/core/DataBuffer.cpp
         src/graphics/Device.cpp
         src/graphics/Swapchain.cpp
         src/graphics/Instance.cpp
         src/graphics/Shader.cpp
         src/graphics/PhysicalDevice.cpp
+        src/graphics/QueueFamilyIndex.cpp
         src/graphics/CommandExecutor.cpp
         src/graphics/RenderPass.cpp
         src/graphics/Renderer.cpp
+        src/graphics/VertexBuffer.cpp
+        src/graphics/IndexBuffer.cpp
+        src/graphics/Mesh.cpp
         src/graphics/Framebuffer.cpp
         src/graphics/Pipeline.cpp
+        src/graphics/PipelineCache.cpp
         src/glfw/GLFWClock.cpp
         src/vulkan/Device.cpp
+        src/vulkan/Allocator.cpp
+        src/vulkan/MemoryAllocator.cpp
         src/vulkan/CleanupAwaiter.cpp
         src/vulkan/Window.cpp
         src/vulkan/Surface.cpp
@@ -37,13 +45,16 @@ add_library(${PROJECT_NAME} STATIC
         src/vulkan/Pipeline.cpp
         src/vulkan/CommandExecutor.cpp
         src/vulkan/RenderPass.cpp
+        src/vulkan/VertexBuffer.cpp
+        src/vulkan/IndexBuffer.cpp
         src/vulkan/Renderer.cpp
+        src/vulkan/Mesh.cpp
         src/vulkan/Framebuffer.cpp
         src/vulkan/PhysicalDevice.cpp
         src/vulkan/QueueFamilyIndex.cpp
         )
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} PUBLIC include . ${THIRD_PARTY}/glm)
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator)
 
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")
     target_compile_definitions(${PROJECT_NAME} PRIVATE IS_DEBUG)

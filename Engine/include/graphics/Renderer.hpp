@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/Types.hpp"
+#include "graphics/PipelineCache.hpp"
 #include "graphics/Swapchain.hpp"
 
 #include <glm/glm.hpp>
@@ -15,6 +16,7 @@ namespace Disarray {
 	class RenderPass;
 	class Pipeline;
 	class Framebuffer;
+	class Mesh;
 
 	struct Extent;
 
@@ -46,6 +48,7 @@ namespace Disarray {
 		virtual ~IGraphics() = default;
 
 		virtual void draw_planar_geometry(Ref<Disarray::CommandExecutor>, Geometry, const GeometryProperties&) = 0;
+		virtual void draw_mesh(Ref<Disarray::CommandExecutor>, Ref<Disarray::Mesh> mesh) = 0;
 	};
 
 	class Renderer: public IGraphics {
@@ -56,6 +59,7 @@ namespace Disarray {
 		virtual void end_pass(Ref<Disarray::CommandExecutor>) = 0;
 
 		virtual void set_extent(const Extent&) = 0;
+		virtual PipelineCache& get_pipeline_cache() = 0;
 
 		static Ref<Renderer> construct(Ref<Device>, Ref<Swapchain>, const RendererProperties&);
 	};

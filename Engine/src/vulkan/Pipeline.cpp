@@ -3,6 +3,7 @@
 #include "vulkan/Pipeline.hpp"
 
 #include "core/Types.hpp"
+#include "graphics/Pipeline.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Shader.hpp"
@@ -10,6 +11,36 @@
 #include "vulkan/vulkan_core.h"
 
 namespace Disarray::Vulkan {
+
+	static constexpr VkFormat to_vulkan_format(ElementType type)
+	{
+		switch (type) {
+		case ElementType::Float:
+			return VK_FORMAT_R32_SFLOAT;
+		case ElementType::Float2:
+			return VK_FORMAT_R32G32_SFLOAT;
+		case ElementType::Float3:
+			return VK_FORMAT_R32G32B32_SFLOAT;
+		case ElementType::Float4:
+			return VK_FORMAT_R32G32B32A32_SFLOAT;
+		case ElementType::Double:
+			return VK_FORMAT_R64_SFLOAT;
+		case ElementType::Int2:
+			return VK_FORMAT_R16G16_SINT;
+		case ElementType::Int3:
+			return VK_FORMAT_R16G16B16_SINT;
+		case ElementType::Int4:
+			return VK_FORMAT_R16G16B16A16_SINT;
+		case ElementType::Uint2:
+			return VK_FORMAT_R16G16_UINT;
+		case ElementType::Uint3:
+			return VK_FORMAT_R16G16B16_UINT;
+		case ElementType::Uint4:
+			return VK_FORMAT_R16G16B16A16_UINT;
+		default:
+			unreachable();
+		}
+	}
 
 	VkPolygonMode vk_polygon_mode(PolygonMode mode)
 	{
@@ -25,9 +56,9 @@ namespace Disarray::Vulkan {
 		}
 	}
 
-	Pipeline::Pipeline(Ref<Disarray::Device> dev,Ref<Disarray::Swapchain> sc, const Disarray::PipelineProperties& properties)
-		: device(dev),
-		swapchain(sc)
+	Pipeline::Pipeline(Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> sc, const Disarray::PipelineProperties& properties)
+		: device(dev)
+		, swapchain(sc)
 		, props(properties)
 	{
 		recreate(false);
@@ -44,10 +75,27 @@ namespace Disarray::Vulkan {
 
 		VkPipelineVertexInputStateCreateInfo vertex_input_info {};
 		vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertex_input_info.vertexBindingDescriptionCount = 0;
-		vertex_input_info.pVertexBindingDescriptions = nullptr; // Optional
-		vertex_input_info.vertexAttributeDescriptionCount = 0;
-		vertex_input_info.pVertexAttributeDescriptions = nullptr; // Optional
+
+		const auto bindings = props.layout.construct_binding();
+		VkVertexInputBindingDescription binding_description {};
+		binding_description.binding = bindings.binding;
+		binding_description.stride = bindings.stride;
+		binding_description.inputRate = bindings.input_rate == InputRate::Vertex ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
+
+		std::vector<VkVertexInputAttributeDescription> attribute_descriptions {};
+		std::size_t location = 0;
+		for (const auto& attribute : props.layout.elements) {
+			auto& new_attribute = attribute_descriptions.emplace_back();
+			new_attribute.binding = 0;
+			new_attribute.format = to_vulkan_format(attribute.type);
+			new_attribute.offset = attribute.offset;
+			new_attribute.location = location++;
+		}
+
+		vertex_input_info.vertexBindingDescriptionCount = 1;
+		vertex_input_info.pVertexBindingDescriptions = &binding_description;
+		vertex_input_info.vertexAttributeDescriptionCount = attribute_descriptions.size();
+		vertex_input_info.pVertexAttributeDescriptions = attribute_descriptions.data();
 
 		VkPipelineInputAssemblyStateCreateInfo input_assembly {};
 		input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -161,12 +209,14 @@ namespace Disarray::Vulkan {
 		props.fragment_shader->destroy_module();
 	}
 
-	std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo> Pipeline::retrieve_shader_stages(Ref<Disarray::Shader> vertex, Ref<Disarray::Shader> fragment) const
+	std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo> Pipeline::retrieve_shader_stages(
+		Ref<Disarray::Shader> vertex, Ref<Disarray::Shader> fragment) const
 	{
 		return { supply_cast<Vulkan::Shader>(vertex), supply_cast<Vulkan::Shader>(fragment) };
 	}
 
-	void Pipeline::recreate(bool should_clean) {
+	void Pipeline::recreate(bool should_clean)
+	{
 		if (should_clean) {
 			vkDestroyPipelineLayout(supply_cast<Vulkan::Device>(device), layout, nullptr);
 			vkDestroyPipeline(supply_cast<Vulkan::Device>(device), pipeline, nullptr);
@@ -175,5 +225,7 @@ namespace Disarray::Vulkan {
 		props.extent = swapchain->get_extent();
 		construct_layout();
 	}
+
+
 
 } // namespace Disarray::Vulkan
