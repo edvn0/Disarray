@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/DataBuffer.hpp"
 #include "core/Types.hpp"
 #include "vulkan/vulkan_core.h"
 
@@ -70,8 +71,10 @@ namespace Disarray::Vulkan {
 		}
 
 		VmaAllocation allocate_buffer(VkBuffer&, VkBufferCreateInfo, const AllocationProperties&);
+		VmaAllocation allocate_image(VkImage&, VkImageCreateInfo, const AllocationProperties&);
 
-		void deallocate(VmaAllocation allocation, VkBuffer& buffer);
+		void deallocate_buffer(VmaAllocation, VkBuffer&);
+		void deallocate_image(VmaAllocation, VkImage&);
 
 	private:
 		std::string resource_name {};
@@ -82,11 +85,18 @@ namespace Disarray::Vulkan {
 	template<typename T>
 	class AllocationMapper {
 	public:
-		AllocationMapper(Allocator& allocate, const void* data, std::size_t size, VmaAllocation alloc)
+		AllocationMapper(Allocator& allocate, VmaAllocation alloc, const void* data, std::size_t size)
 		:allocator(allocate), allocation(alloc)
 		{
 			auto* out = allocator.map_memory<T>(allocation);
 			std::memcpy(out, data, size);
+		}
+
+		AllocationMapper(Allocator& allocate, VmaAllocation alloc, const DataBuffer& data_buffer)
+			:allocator(allocate), allocation(alloc)
+		{
+			auto* out = allocator.map_memory<T>(allocation);
+			std::memcpy(out, data_buffer.get_data(), data_buffer.get_size());
 		}
 
 		 ~AllocationMapper() {

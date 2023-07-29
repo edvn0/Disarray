@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ImageProperties.hpp"
 #include "core/Types.hpp"
 
 namespace Disarray {
@@ -7,11 +8,6 @@ namespace Disarray {
 	class Device;
 	class PhysicalDevice;
 	class Window;
-
-	struct Extent {
-		std::uint32_t width {};
-		std::uint32_t height {};
-	};
 
 	class Swapchain {
 	public:

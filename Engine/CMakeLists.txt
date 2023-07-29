@@ -20,6 +20,8 @@ add_library(${PROJECT_NAME} STATIC
         src/graphics/Swapchain.cpp
         src/graphics/Instance.cpp
         src/graphics/Shader.cpp
+        src/graphics/Image.cpp
+        src/graphics/Texture.cpp
         src/graphics/PhysicalDevice.cpp
         src/graphics/QueueFamilyIndex.cpp
         src/graphics/CommandExecutor.cpp
@@ -35,6 +37,7 @@ add_library(${PROJECT_NAME} STATIC
         src/vulkan/Device.cpp
         src/vulkan/Allocator.cpp
         src/vulkan/MemoryAllocator.cpp
+        src/vulkan/ImageUtilities.cpp
         src/vulkan/CleanupAwaiter.cpp
         src/vulkan/Window.cpp
         src/vulkan/Surface.cpp
@@ -43,6 +46,8 @@ add_library(${PROJECT_NAME} STATIC
         src/vulkan/Instance.cpp
         src/vulkan/Shader.cpp
         src/vulkan/Pipeline.cpp
+        src/vulkan/Image.cpp
+        src/vulkan/Texture.cpp
         src/vulkan/CommandExecutor.cpp
         src/vulkan/RenderPass.cpp
         src/vulkan/VertexBuffer.cpp

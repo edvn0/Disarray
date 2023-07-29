@@ -8,6 +8,7 @@
 #include "core/Types.hpp"
 #include "core/Window.hpp"
 #include "graphics/Mesh.hpp"
+#include "graphics/Texture.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/PhysicalDevice.hpp"

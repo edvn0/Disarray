@@ -21,7 +21,7 @@ namespace Disarray::Vulkan {
 			= allocator.allocate_buffer(staging_buffer, buffer_create_info, { Usage::CPU_TO_GPU });
 
 		{
-			AllocationMapper<std::byte> mapper { allocator, props.data, props.size, staging_buffer_allocation };
+			AllocationMapper<std::byte> mapper { allocator, staging_buffer_allocation, props.data, props.size };
 		}
 
 		VkBufferCreateInfo vertex_buffer_create_info = {};
@@ -37,12 +37,12 @@ namespace Disarray::Vulkan {
 		vkCmdCopyBuffer(immediate->supply(), staging_buffer, buffer, 1, &copy_region);
 
 		destruction(immediate);
-		allocator.deallocate(staging_buffer_allocation, staging_buffer);
+		allocator.deallocate_buffer(staging_buffer_allocation, staging_buffer);
 	}
 
 	IndexBuffer::~IndexBuffer() {
 		Allocator allocator {"IndexBuffer"};
-		allocator.deallocate(allocation, buffer);
+		allocator.deallocate_buffer(allocation, buffer);
 	}
 
 }
