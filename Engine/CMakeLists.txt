@@ -30,6 +30,7 @@ add_library(${PROJECT_NAME} STATIC
         src/graphics/VertexBuffer.cpp
         src/graphics/IndexBuffer.cpp
         src/graphics/Mesh.cpp
+        src/graphics/ModelLoader.cpp
         src/graphics/Framebuffer.cpp
         src/graphics/Pipeline.cpp
         src/graphics/PipelineCache.cpp
@@ -58,7 +59,7 @@ add_library(${PROJECT_NAME} STATIC
         src/vulkan/PhysicalDevice.cpp
         src/vulkan/QueueFamilyIndex.cpp
         )
-target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} PUBLIC include . ${THIRD_PARTY}/glm)
+target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/tinyobjloader/include)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator)
 
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")

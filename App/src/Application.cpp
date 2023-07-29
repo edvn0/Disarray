@@ -40,7 +40,7 @@ public:
 		command_executor = CommandExecutor::construct_from_swapchain(device, swapchain, physical_device->get_queue_family_indexes(), { .count = 2 });
 
 		test_mesh = Mesh::construct(device, swapchain, physical_device, {
-												.path = "Assets/Models/test.mesh",
+												.path = "Assets/Models/viking.mesh",
 												.pipeline = pipeline
 											});
 
@@ -94,7 +94,7 @@ public:
 		renderer->begin_pass(command_executor, render_pass, pipeline, framebuffer);
 		// const auto&& [mid_x, mid_y] = renderer->center_position();
 		renderer->draw_mesh(command_executor, test_mesh);
-		renderer->draw_planar_geometry(command_executor, Geometry::Triangle, { .position = { 0, 0, 0 }, .dimensions = { { 12.f, 12.f, 1.f } } });
+		// renderer->draw_planar_geometry(command_executor, Geometry::Triangle, { .position = { 0, 0, 0 }, .dimensions = { { 12.f, 12.f, 1.f } } });
 		// renderer->draw_text("Hello world!", 0, 0, 12.f);
 		// renderer->draw_geometry(Geometry::Circle, { .pos = glm::vec3(mid_x, mid_y), .size = 12 });
 		renderer->end_pass(command_executor);
