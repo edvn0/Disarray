@@ -3,7 +3,7 @@
 #include "graphics/IndexBuffer.hpp"
 #include "vulkan/PropertySupplier.hpp"
 
-#include <vk_mem_alloc.h>
+#include "vulkan/MemoryAllocator.hpp"
 
 namespace Disarray::Vulkan {
 

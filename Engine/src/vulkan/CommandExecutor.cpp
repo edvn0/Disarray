@@ -94,22 +94,8 @@ namespace Disarray::Vulkan {
 
 		VkSubmitInfo submit_info {};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-#if 0
-		const auto& [image_available, render_finished] = cast_to<Vulkan::Swapchain>(swapchain)->get_presenting_semaphores();
-
-		VkSemaphore wait_semaphores[] = { image_available };
-		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		submit_info.waitSemaphoreCount = 1;
-		submit_info.pWaitSemaphores = wait_semaphores;
-		submit_info.pWaitDstStageMask = wait_stages;
-
-		VkSemaphore signal_semaphores[] = { render_finished };
-		submit_info.signalSemaphoreCount = 1;
-		submit_info.pSignalSemaphores = signal_semaphores;
-#endif
 		submit_info.commandBufferCount = 1;
 		submit_info.pCommandBuffers = &active;
-
 		verify(vkWaitForFences(supply_cast<Vulkan::Device>(device), 1, &fences[current], VK_TRUE, UINT64_MAX));
 		verify(vkResetFences(supply_cast<Vulkan::Device>(device), 1, &fences[current]));
 

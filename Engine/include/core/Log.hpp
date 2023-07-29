@@ -25,6 +25,9 @@ namespace Disarray {
 	namespace Log {
 		static void debug(const std::string& message) { Logging::Logger::logger().debug(message); }
 		static void error(const std::string& message) { Logging::Logger::logger().error(message); }
+
+		std::string format(const char* const format, ...);
+
 	} // namespace Log
 
 } // namespace Disarray
