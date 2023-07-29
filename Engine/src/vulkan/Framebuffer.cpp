@@ -44,6 +44,7 @@ namespace Disarray::Vulkan {
 				vkDestroyFramebuffer(supply_cast<Vulkan::Device>(device), framebuffer, nullptr);
 			}
 		}
+		depth_texture->force_recreation();
 		framebuffers.resize(swapchain->image_count());
 
 		const auto& views = cast_to<Vulkan::Swapchain>(swapchain)->get_views();

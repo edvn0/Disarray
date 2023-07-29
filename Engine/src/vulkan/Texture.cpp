@@ -31,6 +31,7 @@ namespace Disarray::Vulkan {
 	void Texture::recreate(bool should_clean)
 	{
 		Allocator allocator { "Texture" };
+		image->recreate(should_clean);
 	}
 
 } // namespace Disarray::Vulkan

@@ -2,12 +2,12 @@
 
 #include "core/DataBuffer.hpp"
 #include "core/Types.hpp"
+#include "vulkan/MemoryAllocator.hpp"
 #include "vulkan/vulkan_core.h"
 
+#include <bit>
 #include <cstring>
 #include <string>
-#include <bit>
-#include <vk_mem_alloc.h>
 
 namespace Disarray::Vulkan {
 
@@ -60,15 +60,14 @@ namespace Disarray::Vulkan {
 		static void initialise(Ref<Vulkan::Device>, Ref<Vulkan::PhysicalDevice>, Ref<Vulkan::Instance>);
 		static void shutdown();
 
-		template<typename T> T* map_memory(VmaAllocation allocation) {
+		template <typename T> T* map_memory(VmaAllocation allocation)
+		{
 			T* data;
 			vmaMapMemory(allocator, allocation, std::bit_cast<void**>(&data));
 			return data;
 		}
 
-		void unmap_memory(VmaAllocation allocation) {
-			vmaUnmapMemory(allocator, allocation);
-		}
+		void unmap_memory(VmaAllocation allocation) { vmaUnmapMemory(allocator, allocation); }
 
 		VmaAllocation allocate_buffer(VkBuffer&, VkBufferCreateInfo, const AllocationProperties&);
 		VmaAllocation allocate_image(VkImage&, VkImageCreateInfo, const AllocationProperties&);
@@ -82,30 +81,29 @@ namespace Disarray::Vulkan {
 		inline static VmaAllocator allocator;
 	};
 
-	template<typename T>
-	class AllocationMapper {
+	template <typename T> class AllocationMapper {
 	public:
 		AllocationMapper(Allocator& allocate, VmaAllocation alloc, const void* data, std::size_t size)
-		:allocator(allocate), allocation(alloc)
+			: allocator(allocate)
+			, allocation(alloc)
 		{
 			auto* out = allocator.map_memory<T>(allocation);
 			std::memcpy(out, data, size);
 		}
 
 		AllocationMapper(Allocator& allocate, VmaAllocation alloc, const DataBuffer& data_buffer)
-			:allocator(allocate), allocation(alloc)
+			: allocator(allocate)
+			, allocation(alloc)
 		{
 			auto* out = allocator.map_memory<T>(allocation);
 			std::memcpy(out, data_buffer.get_data(), data_buffer.get_size());
 		}
 
-		 ~AllocationMapper() {
-			allocator.unmap_memory(allocation);
-		 }
+		~AllocationMapper() { allocator.unmap_memory(allocation); }
 
 	private:
 		Allocator& allocator;
 		VmaAllocation allocation;
 	};
 
-}
+} // namespace Disarray::Vulkan

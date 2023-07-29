@@ -1,8 +1,8 @@
 #pragma once
 
 #include "graphics/Image.hpp"
+#include "vulkan/MemoryAllocator.hpp"
 
-#include <vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {

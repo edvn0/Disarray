@@ -88,7 +88,6 @@ namespace Disarray::Vulkan {
 		submit_info.waitSemaphoreCount = 1;
 		submit_info.pWaitSemaphores = wait_semaphores;
 		submit_info.pWaitDstStageMask = wait_stages;
-
 		submit_info.commandBufferCount = 1;
 		submit_info.pCommandBuffers = &command_buffers[get_current_frame()];
 
