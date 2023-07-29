@@ -7,6 +7,7 @@ namespace Disarray {
 
 	struct RenderPassProperties {
 		ImageFormat image_format { ImageFormat::SRGB };
+		ImageFormat depth_format {ImageFormat::Depth};
 		bool has_depth {false};
 	};
 

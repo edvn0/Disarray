@@ -20,13 +20,13 @@ namespace Disarray {
 
 	DataBuffer::~DataBuffer()
 	{
-		delete data;
+		delete[] data;
 		Log::debug("DataBuffer was destructed.");
 	}
 
 	void DataBuffer::reset()
 	{
-		delete data;
+		delete[] data;
 		size = 0;
 	}
 

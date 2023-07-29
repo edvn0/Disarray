@@ -5,6 +5,7 @@
 #include "vulkan/Device.hpp"
 #include "vulkan/Instance.hpp"
 #include "vulkan/PhysicalDevice.hpp"
+#include "vulkan/Verify.hpp"
 #include "vulkan/vulkan_core.h"
 
 namespace Disarray {
@@ -51,8 +52,25 @@ namespace Disarray::Vulkan {
 		return allocation;
 	}
 
-	void Allocator::deallocate(VmaAllocation allocation, VkBuffer& buffer)
+	VmaAllocation Allocator::allocate_image(VkImage& image, VkImageCreateInfo image_create_info, const AllocationProperties& props) {
+		VmaAllocationCreateInfo allocation_create_info = {};
+		allocation_create_info.usage = static_cast<VmaMemoryUsage>(props.usage);
+
+		VmaAllocation allocation;
+		verify(vmaCreateImage(allocator, &image_create_info, &allocation_create_info, &image, &allocation, nullptr));
+		vmaSetAllocationName(allocator, allocation, resource_name.data());
+
+		return allocation;
+	}
+
+	void Allocator::deallocate_buffer(VmaAllocation allocation, VkBuffer& buffer)
 	{
 		vmaDestroyBuffer(allocator, buffer, allocation);
 	}
+
+	void Allocator::deallocate_image(VmaAllocation allocation, VkImage& image)
+	{
+		vmaDestroyImage(allocator, image, allocation);
+	}
+
 } // namespace Disarray::Vulkan

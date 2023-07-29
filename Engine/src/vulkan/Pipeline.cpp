@@ -137,6 +137,17 @@ namespace Disarray::Vulkan {
 		rasterizer.depthBiasClamp = 0.0f; // Optional
 		rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
 
+		VkPipelineDepthStencilStateCreateInfo depth_stencil_state_create_info {VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+		depth_stencil_state_create_info.depthTestEnable = true;
+		depth_stencil_state_create_info.depthWriteEnable = false;
+		depth_stencil_state_create_info.depthCompareOp = VK_COMPARE_OP_LESS;
+		depth_stencil_state_create_info.depthBoundsTestEnable = VK_FALSE;
+		depth_stencil_state_create_info.back.compareOp = VK_COMPARE_OP_ALWAYS;
+		depth_stencil_state_create_info.back.failOp = VK_STENCIL_OP_KEEP;
+		depth_stencil_state_create_info.back.passOp = VK_STENCIL_OP_KEEP;
+		depth_stencil_state_create_info.front = depth_stencil_state_create_info.back;
+		depth_stencil_state_create_info.stencilTestEnable = VK_FALSE;
+
 		VkPipelineMultisampleStateCreateInfo multisampling {};
 		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 		multisampling.sampleShadingEnable = VK_FALSE;
@@ -188,7 +199,7 @@ namespace Disarray::Vulkan {
 		pipeline_create_info.pViewportState = &viewport_state;
 		pipeline_create_info.pRasterizationState = &rasterizer;
 		pipeline_create_info.pMultisampleState = &multisampling;
-		pipeline_create_info.pDepthStencilState = nullptr; // Optional
+		pipeline_create_info.pDepthStencilState = &depth_stencil_state_create_info; // Optional
 		pipeline_create_info.pColorBlendState = &color_blending;
 		pipeline_create_info.pDynamicState = &dynamic_state;
 		pipeline_create_info.layout = layout;

@@ -1,14 +1,12 @@
 #pragma once
 
-#include "core/Types.hpp"
+#include "Forward.hpp"
 
 namespace Disarray {
 
-	class Device;
-	class Swapchain;
-	class RenderPass;
-
-	struct FramebufferProperties {};
+	struct FramebufferProperties {
+		bool has_depth {true};
+	};
 
 	class Framebuffer {
 	public:
@@ -16,7 +14,7 @@ namespace Disarray {
 
 		virtual void force_recreation() = 0;
 
-		static Ref<Framebuffer> construct(Ref<Device>, Ref<Swapchain>, Ref<RenderPass>, const FramebufferProperties&);
+		static Ref<Framebuffer> construct(Ref<Device>, Ref<Swapchain>, Ref<Disarray::PhysicalDevice> physical_device, Ref<RenderPass>, const FramebufferProperties&);
 	};
 
 }

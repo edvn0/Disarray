@@ -1,4 +1,5 @@
 
+#include "graphics/ImageProperties.hpp"
 #include <Disarray.hpp>
 #include <vector>
 
@@ -35,13 +36,26 @@ public:
 			.extent = { extent.width, extent.height },
 		};
 		pipeline = Pipeline::construct(device, swapchain, props);
-		framebuffer = Framebuffer::construct(device, swapchain, render_pass, {});
+		framebuffer = Framebuffer::construct(device, swapchain, physical_device, render_pass, {});
 		command_executor = CommandExecutor::construct_from_swapchain(device, swapchain, physical_device->get_queue_family_indexes(), { .count = 2 });
 
 		test_mesh = Mesh::construct(device, swapchain, physical_device, {
 												.path = "Assets/Models/test.mesh",
 												.pipeline = pipeline
 											});
+
+#define IS_TESTING
+#ifdef IS_TESTING
+		{
+			std::uint32_t white_tex[] = { 0 };
+			auto pixels = DataBuffer(white_tex, sizeof(std::uint32_t));
+			TextureProperties texture_properties {
+				.extent = swapchain->get_extent(),
+				.format = ImageFormat::SBGR,
+			};
+			Ref<Texture> tex = Texture::construct(device, swapchain, physical_device, texture_properties);
+		};
+
 
 		struct Vertex {
 			glm::vec3 pos;
@@ -58,6 +72,8 @@ public:
 		auto& second_vertex = buffer.read<Vertex>(1);
 
 		Log::debug("Constructed AppLayer.");
+#endif
+#undef IS_TESTING
 	};
 
 	void handle_swapchain_recreation(Ref<Renderer> renderer) override {

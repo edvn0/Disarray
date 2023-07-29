@@ -7,6 +7,7 @@ namespace Disarray {
 
 	class DataBuffer {
 	public:
+		DataBuffer() = default;
 		explicit DataBuffer(std::size_t);
 		DataBuffer(const void* data, std::size_t);
 
@@ -27,8 +28,14 @@ namespace Disarray {
 
 		friend void swap(DataBuffer& first, DataBuffer& second);
 
+		auto get_size() const { return size; }
+		auto* get_data() const { return data; }
+
+		operator bool() const { return is_valid(); }
+		bool is_valid() const {return size == 0 && data == nullptr;}
+
 	private:
-		std::byte* data {};
+		std::byte* data {nullptr};
 		std::size_t size {0};
 	};
 
