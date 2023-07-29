@@ -2,6 +2,7 @@
 
 #include "core/Layer.hpp"
 #include "core/Types.hpp"
+#include "graphics/PipelineCache.hpp"
 
 #include <vector>
 

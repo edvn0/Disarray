@@ -25,21 +25,21 @@ namespace Disarray::Vulkan {
 		std::uint32_t family_index = 0;
 		for (const auto& family : families) {
 			if (family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-				graphics.emplace(family_index);
+				get_graphics().emplace(family_index);
 			}
 
 			if (family.queueFlags & VK_QUEUE_COMPUTE_BIT) {
-				compute.emplace(family_index);
+				get_compute().emplace(family_index);
 			}
 
 			if (family.queueFlags & VK_QUEUE_TRANSFER_BIT) {
-				transfer.emplace(family_index);
+				get_transfer().emplace(family_index);
 			}
 
 			VkBool32 present_support = false;
 			vkGetPhysicalDeviceSurfaceSupportKHR(device, family_index, surface->supply(), &present_support);
 			if (present_support) {
-				present.emplace(family_index);
+				get_present().emplace(family_index);
 			}
 
 			if (is_complete())

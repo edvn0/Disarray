@@ -1,22 +1,19 @@
 #include "vulkan/Device.hpp"
 
 #include "graphics/PhysicalDevice.hpp"
-#include "graphics/Surface.hpp"
+#include "graphics/QueueFamilyIndex.hpp"
 #include "vulkan/Config.hpp"
 #include "vulkan/PhysicalDevice.hpp"
-#include "vulkan/QueueFamilyIndex.hpp"
-#include "vulkan/Surface.hpp"
 #include "vulkan/Verify.hpp"
 #include <set>
 
 namespace Disarray::Vulkan {
 
-	Device::Device(Ref<Disarray::PhysicalDevice> physical, Ref<Disarray::Surface> surface)
+	Device::Device(Ref<Disarray::PhysicalDevice> physical)
 	{
-		QueueFamilyIndex indices(physical, surface);
-
+		auto queue_family_index = physical->get_queue_family_indexes();
 		std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
-		std::set<uint32_t> unique_queue_families  {indices.get_graphics_family(), indices.get_present_family()};
+		std::set<uint32_t> unique_queue_families  {queue_family_index->get_graphics_family(), queue_family_index->get_present_family()};
 
 		float prio = 1.0f;
 		for (uint32_t family : unique_queue_families) {
@@ -42,11 +39,10 @@ namespace Disarray::Vulkan {
 		const auto physical_device = cast_to<Vulkan::PhysicalDevice>(physical);
 		verify(vkCreateDevice(physical_device->supply(), &device_create_info, nullptr, &device));
 
-		vkGetDeviceQueue(device, indices.get_graphics_family(), 0, &graphics);
-		vkGetDeviceQueue(device, indices.get_present_family(), 0, &present);
-
+		vkGetDeviceQueue(device, queue_family_index->get_graphics_family(), 0, &graphics);
+		vkGetDeviceQueue(device, queue_family_index->get_present_family(), 0, &present);
 	}
 
-	Device::~Device() { vkDestroyDevice(device, nullptr); }
+	Device::~Device() { vkDestroyDevice(device, nullptr); Log::debug("Device destroyed."); }
 
 } // namespace Disarray::Vulkan

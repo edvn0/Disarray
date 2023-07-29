@@ -2,6 +2,7 @@
 
 #include "graphics/Instance.hpp"
 #include "graphics/PhysicalDevice.hpp"
+#include "graphics/QueueFamilyIndex.hpp"
 #include "graphics/Surface.hpp"
 #include "vulkan/ExtensionSupport.hpp"
 #include "vulkan/Instance.hpp"
@@ -13,7 +14,7 @@ namespace Disarray::Vulkan {
 	PhysicalDevice::PhysicalDevice(Ref<Disarray::Instance> inst, Ref<Disarray::Surface> surf)
 	{
 		static auto is_device_suitable = [](VkPhysicalDevice device, Ref<Disarray::Surface> surf) {
-			QueueFamilyIndex indices(device, surf);
+			Vulkan::QueueFamilyIndex indices(device, surf);
 			ExtensionSupport extension_support(device);
 
 			bool swapchain_is_allowed = false;
@@ -45,6 +46,8 @@ namespace Disarray::Vulkan {
 		if (physical_device == VK_NULL_HANDLE) {
 			throw std::runtime_error("failed to find a suitable GPU!");
 		}
+
+		queue_family_index = make_ref<Vulkan::QueueFamilyIndex>(physical_device, surf);
 	}
 
 } // namespace Disarray::Vulkan

@@ -1,5 +1,6 @@
 #include "vulkan/CommandExecutor.hpp"
 
+#include "core/Log.hpp"
 #include "core/Types.hpp"
 #include "vulkan/Config.hpp"
 #include "vulkan/Device.hpp"
@@ -10,15 +11,15 @@
 
 namespace Disarray::Vulkan {
 
-	CommandExecutor::CommandExecutor(Ref<Disarray::Device> dev, Ref<Disarray::PhysicalDevice> pd, Ref<Disarray::Swapchain> sc,
-		Ref<Disarray::Surface> surf, const Disarray::CommandExecutorProperties& properties)
+	CommandExecutor::CommandExecutor(Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> sc, Ref<Disarray::QueueFamilyIndex> index,
+		const Disarray::CommandExecutorProperties& properties)
 		: device(dev)
-		, physical_device(pd)
-		, surface(surf)
+		, indexes(index)
 		, swapchain(sc)
 		, props(properties)
 	{
 		recreate(false);
+		Log::debug("Constructed command executor!");
 	}
 
 	void CommandExecutor::recreate(bool should_clean)
@@ -31,12 +32,11 @@ namespace Disarray::Vulkan {
 		}
 
 		const auto vk_device = supply_cast<Vulkan::Device>(device);
-		QueueFamilyIndex index(physical_device, surface);
 
 		VkCommandPoolCreateInfo pool_info {};
 		pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		pool_info.queueFamilyIndex = index.get_graphics_family();
+		pool_info.queueFamilyIndex = indexes->get_graphics_family();
 
 		verify(vkCreateCommandPool(supply_cast<Vulkan::Device>(device), &pool_info, nullptr, &command_pool));
 
@@ -94,7 +94,7 @@ namespace Disarray::Vulkan {
 
 		VkSubmitInfo submit_info {};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
+#if 0
 		const auto& [image_available, render_finished] = cast_to<Vulkan::Swapchain>(swapchain)->get_presenting_semaphores();
 
 		VkSemaphore wait_semaphores[] = { image_available };
@@ -106,6 +106,7 @@ namespace Disarray::Vulkan {
 		VkSemaphore signal_semaphores[] = { render_finished };
 		submit_info.signalSemaphoreCount = 1;
 		submit_info.pSignalSemaphores = signal_semaphores;
+#endif
 		submit_info.commandBufferCount = 1;
 		submit_info.pCommandBuffers = &active;
 
@@ -117,9 +118,12 @@ namespace Disarray::Vulkan {
 
 	CommandExecutor::~CommandExecutor()
 	{
+		Log::debug("Destructed command executor!");
 		if (props.owned_by_swapchain)
 			return;
 		vkDestroyCommandPool(supply_cast<Vulkan::Device>(device), command_pool, nullptr);
+		for (auto& fence :fences)
+			vkDestroyFence(supply_cast<Vulkan::Device>(device), fence, nullptr);
 	}
 
 } // namespace Disarray::Vulkan

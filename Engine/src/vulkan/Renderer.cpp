@@ -1,4 +1,5 @@
 #include "vulkan/Renderer.hpp"
+
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
@@ -7,17 +8,23 @@
 #include "graphics/Swapchain.hpp"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Framebuffer.hpp"
+#include "vulkan/IndexBuffer.hpp"
+#include "vulkan/Mesh.hpp"
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/RenderPass.hpp"
-#include "vulkan/vulkan_core.h"
+#include "vulkan/VertexBuffer.hpp"
+
+#include <array>
 
 namespace Disarray::Vulkan {
 
 	Renderer::Renderer(Ref<Disarray::Device> dev,Ref<Disarray::Swapchain> sc, const Disarray::RendererProperties& properties)
 		: device(dev)
 		,swapchain(sc)
-		, props(properties)
+		, props(properties),
+		pipeline_cache(device, "Assets/Shaders")
 	{
+
 	}
 
 	Renderer::~Renderer()
@@ -71,6 +78,20 @@ namespace Disarray::Vulkan {
 		if (geometry == Geometry::Triangle) {
 			vkCmdDraw(command_buffer, 3, 1, 0, 0);
 		}
+	}
+
+	void Renderer::draw_mesh(Ref<Disarray::CommandExecutor> executor, Ref<Disarray::Mesh> mesh) {
+		auto command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
+		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS ,supply_cast<Vulkan::Pipeline>(mesh->get_pipeline()));
+
+		std::array<VkBuffer, 1> arr;
+		arr[0] = supply_cast<Vulkan::VertexBuffer>(mesh->get_vertices());
+		VkDeviceSize offsets[] = {0};
+		vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets);
+
+		vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(mesh->get_indices()), 0, VK_INDEX_TYPE_UINT32);
+
+		vkCmdDrawIndexed(command_buffer, mesh->get_indices()->size(), 1, 0, 0, 0);
 	}
 
 } // namespace Disarray::Vulkan
