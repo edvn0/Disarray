@@ -1,6 +1,7 @@
 #include "vulkan/Mesh.hpp"
 
 #include "graphics/IndexBuffer.hpp"
+#include "graphics/ModelLoader.hpp"
 #include "graphics/VertexBuffer.hpp"
 
 #include <glm/glm.hpp>
@@ -11,25 +12,9 @@ namespace Disarray::Vulkan {
 		: device(dev)
 		, props(properties)
 	{
-		struct Vertex {
-			glm::vec3 pos;
-			glm::vec2 uv;
-			glm::vec4 colour;
-		};
-
-		Vertex data[] = {
-			{ {0.0, -0.5, 2.0}, {0, 1}, glm::vec4(1,0,0,1) },
-			{ {0.5, 0.5, 1.0}, {1, 1}, glm::vec4(0,1,0,1) },
-			{ {-0.5, 0.5, 0.0}, {-1, 1}, glm::vec4(0,0,0,1) }
-		};
-
-		vertices = Disarray::VertexBuffer::construct(device, swapchain, physical_device, {.data = data, .size = sizeof(Vertex) * 3,});
-
-		std::uint32_t index_data[] = {
-			0, 1, 2, 0
-		};
-
-		indices = Disarray::IndexBuffer::construct(device, swapchain, physical_device, {.data = index_data, .size = sizeof(std::uint32_t) * 4});
+		ModelLoader loader {props.path};
+		vertices = Disarray::VertexBuffer::construct(device, swapchain, physical_device, {.data = loader.get_vertices().data(), .size = loader.get_vertices_size()});
+		indices = Disarray::IndexBuffer::construct(device, swapchain, physical_device, {.data = loader.get_indices().data(), .size = loader.get_indices_size()});
 	}
 
 	Mesh::~Mesh() { }
