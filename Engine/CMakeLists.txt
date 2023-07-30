@@ -26,6 +26,7 @@ add_library(${PROJECT_NAME} STATIC
         src/graphics/PhysicalDevice.cpp
         src/graphics/QueueFamilyIndex.cpp
         src/graphics/CommandExecutor.cpp
+        src/graphics/ImageLoader.cpp
         src/graphics/RenderPass.cpp
         src/graphics/Renderer.cpp
         src/graphics/VertexBuffer.cpp
@@ -60,7 +61,7 @@ add_library(${PROJECT_NAME} STATIC
         src/vulkan/PhysicalDevice.cpp
         src/vulkan/QueueFamilyIndex.cpp
         )
-target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/tinyobjloader/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/tinyobjloader ${THIRD_PARTY}/stb)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator)
 
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")

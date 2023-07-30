@@ -8,6 +8,7 @@ namespace Disarray {
 	struct TextureProperties {
 		Extent extent;
 		ImageFormat format;
+		std::string path {};
 	};
 
 	class Texture {

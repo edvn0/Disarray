@@ -14,17 +14,20 @@ namespace Disarray::Vulkan {
 
 	class Renderer: public Disarray::Renderer {
 	public:
-		Renderer(Ref<Device>, Ref<Swapchain>, const RendererProperties&);
+		Renderer(Ref<Device>, Ref<Swapchain>, Ref<PhysicalDevice>, const RendererProperties&);
 		~Renderer() override;
 
 		void begin_pass(Ref<Disarray::CommandExecutor> command_executor, Ref<Disarray::RenderPass> render_pass, Ref<Disarray::Framebuffer> fb) override;
 		void end_pass(Ref<Disarray::CommandExecutor>) override;
 
 		void draw_mesh(Ref<Disarray::CommandExecutor>, Ref<Disarray::Mesh> mesh) override;
-		void draw_planar_geometry(Ref<Disarray::CommandExecutor>, Disarray::Geometry, const Disarray::GeometryProperties &) override;
+		void draw_planar_geometry(Disarray::Geometry, const Disarray::GeometryProperties &) override;
 
 		void set_extent(const Disarray::Extent &) override;
 		PipelineCache & get_pipeline_cache() override { return pipeline_cache; }
+
+		void begin_frame(UsageBadge<Disarray::App>) override {}
+		void end_frame(UsageBadge<Disarray::App>) override {}
 
 	private:
 		Ref<Device> device;
