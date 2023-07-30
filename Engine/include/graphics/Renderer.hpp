@@ -19,12 +19,15 @@ namespace Disarray {
 		Circle,
 		Triangle,
 		Rectangle,
+		Line,
 	};
 
 	struct GeometryProperties {
 		glm::vec3 position {};
+		glm::vec3 to_position {};
 		std::optional<glm::vec3> dimensions{std::nullopt};
 		std::optional<float> radius {std::nullopt};
+
 
 		template<Geometry T>
 		bool valid(){
@@ -51,6 +54,7 @@ namespace Disarray {
 		virtual ~Renderer() = default;
 
 		virtual void begin_pass(Ref<Disarray::CommandExecutor>, Ref<Disarray::RenderPass>, Ref<Disarray::Framebuffer>) = 0;
+		virtual void begin_pass(Ref<Disarray::CommandExecutor>) = 0;
 		virtual void end_pass(Ref<Disarray::CommandExecutor>) = 0;
 
 		virtual void set_extent(const Extent&) = 0;
@@ -58,6 +62,8 @@ namespace Disarray {
 
 		virtual void begin_frame(UsageBadge<App>) = 0;
 		virtual void end_frame(UsageBadge<App>) = 0;
+
+		virtual Ref<Disarray::CommandExecutor> get_current_executor() = 0;
 
 		static Ref<Renderer> construct(Ref<Device>, Ref<Swapchain>, Ref<Disarray::PhysicalDevice>, const RendererProperties&);
 	};

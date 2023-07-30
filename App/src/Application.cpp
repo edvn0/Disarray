@@ -1,7 +1,9 @@
 
 #include "core/AllocatorConfigurator.hpp"
+#include "core/Layer.hpp"
 #include "graphics/ImageProperties.hpp"
 #include "graphics/PushContantLayout.hpp"
+#include "graphics/Renderer.hpp"
 #include "graphics/Texture.hpp"
 
 #include <Disarray.hpp>
@@ -19,7 +21,7 @@ public:
 
 		};
 
-	void construct(Ref<Renderer> renderer) override
+	void construct(App& app, Renderer& renderer) override
 	{
 		VertexLayout layout { {
 			{ ElementType::Float3, "position" },
@@ -28,11 +30,11 @@ public:
 			{ ElementType::Float3, "normals" },
 		} };
 
-		render_pass = RenderPass::construct(device, { .image_format = Disarray::ImageFormat::SBGR });
+		auto render_pass = RenderPass::construct(device, { .image_format = Disarray::ImageFormat::SBGR });
 
 		auto extent = swapchain->get_extent();
 
-		const auto& [vert, frag] = renderer->get_pipeline_cache().get_shader("main");
+		const auto& [vert, frag] = renderer.get_pipeline_cache().get_shader("main");
 		const PipelineProperties props = {
 			.vertex_shader = vert,
 			.fragment_shader = frag,
@@ -42,8 +44,6 @@ public:
 			.extent = { extent.width, extent.height },
 		};
 		pipeline = Pipeline::construct(device, swapchain, props);
-		framebuffer = Framebuffer::construct(device, swapchain, physical_device, render_pass, {});
-		command_executor = CommandExecutor::construct_from_swapchain(device, swapchain, physical_device->get_queue_family_indexes(), { .count = 2 });
 		viking_mesh = Mesh::construct(device, swapchain, physical_device, { .path = "Assets/Models/viking.mesh", .pipeline = pipeline });
 
 #define IS_TESTING
@@ -65,13 +65,10 @@ public:
 #undef IS_TESTING
 	};
 
-	void handle_swapchain_recreation(Ref<Renderer> renderer) override
+	void handle_swapchain_recreation(Renderer& renderer) override
 	{
-		renderer->set_extent(swapchain->get_extent());
-		framebuffer->force_recreation();
-		render_pass->force_recreation();
+		renderer.set_extent(swapchain->get_extent());
 		pipeline->force_recreation();
-		command_executor->force_recreation();
 		viking_room->force_recreation();
 	}
 
@@ -79,17 +76,18 @@ public:
 
 	};
 
-	void update(float ts, Ref<Renderer> renderer) override
+	void update(float ts, Renderer& renderer) override
 	{
-		command_executor->begin();
-		renderer->begin_pass(command_executor, render_pass, framebuffer);
-		// const auto&& [mid_x, mid_y] = renderer->center_position();
-		renderer->draw_mesh(command_executor, viking_mesh);
-		renderer->draw_planar_geometry(Geometry::Rectangle, { .position = { 0, 0, 0 }, .dimensions = { { 12.f, 12.f, 1.f } } });
-		// renderer->draw_text("Hello world!", 0, 0, 12.f);
-		// renderer->draw_geometry(Geometry::Circle, { .pos = glm::vec3(mid_x, mid_y), .size = 12 });
-		renderer->end_pass(command_executor);
-		command_executor->submit_and_end();
+		// const auto&& [mid_x, mid_y] = renderer.center_position();
+		renderer.draw_mesh(renderer.get_current_executor(), viking_mesh);
+
+		static glm::vec3 pos {0,0,0};
+		renderer.draw_planar_geometry(Geometry::Rectangle, { .position = pos, .dimensions = { { 1.f, 1.f, 1.f } } });
+		pos += 0.001;
+		// renderer.draw_text("Hello world!", 0, 0, 12.f);
+		// static glm::vec3 pos_circle {-0.5,0,0};
+		renderer.draw_planar_geometry(Geometry::Line, { .position = {-0.5, -0.5, 0}, .to_position = {0.5, 0.5, 0} });
+		// renderer.draw_planar_geometry(Geometry::Circle, { .position = pos_circle, .dimensions = { { 1.f, 1.f, 1.f } } });
 	}
 
 	void destruct() override { Log::debug("Destructed AppLayer."); };
@@ -101,9 +99,6 @@ private:
 	Ref<Swapchain> swapchain;
 
 	Ref<Pipeline> pipeline;
-	Ref<Framebuffer> framebuffer;
-	Ref<RenderPass> render_pass;
-	Ref<CommandExecutor> command_executor;
 
 	Ref<Mesh> viking_mesh;
 	Ref<Texture> viking_room;
@@ -112,7 +107,13 @@ private:
 
 int main(int argc, char** argv)
 {
-	struct A { };
+	struct A : public Panel {
+		void construct(App&, Renderer& renderer) override { }
+		void handle_swapchain_recreation(Renderer& renderer) override { }
+		void update(float ts) override { }
+		void update(float ts, Renderer& renderer) override { }
+		void destruct() override { }
+	};
 
 	std::vector<std::string_view> args(argv, argv + argc);
 

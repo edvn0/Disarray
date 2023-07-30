@@ -13,8 +13,26 @@ namespace Disarray::Vulkan {
 		, vertex_count(props.count)
 		, props(properties)
 	{
-		Allocator allocator { "VertexBuffer" };
+		if (props.data) {
+			create_with_valid_data(swapchain, physical_device);
+		} else {
+			create_with_empty_data();
+		}
+	}
 
+	VertexBuffer::~VertexBuffer()
+	{
+		Allocator allocator { "VertexBuffer[" + std::to_string(vertex_count) + "]" };
+		allocator.deallocate_buffer(allocation, buffer);
+	}
+
+	void VertexBuffer::set_data(const void* data, std::uint32_t size) {
+		std::memcpy(vma_allocation_info.pMappedData, std::bit_cast<std::byte*>(data), size);
+	}
+
+	void VertexBuffer::create_with_valid_data(Ref<Disarray::Swapchain> swapchain, Ref<Disarray::PhysicalDevice> physical_device)
+	{
+		Allocator allocator { "VertexBuffer" };
 		// create staging buffer
 		VkBufferCreateInfo buffer_create_info {};
 		buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -45,10 +63,16 @@ namespace Disarray::Vulkan {
 		allocator.deallocate_buffer(staging_buffer_allocation, staging_buffer);
 	}
 
-	VertexBuffer::~VertexBuffer()
+	void VertexBuffer::create_with_empty_data()
 	{
-		Allocator allocator { "VertexBuffer[" + std::to_string(vertex_count) + "]" };
-		allocator.deallocate_buffer(allocation, buffer);
+		Allocator allocator("VertexBuffer");
+
+		VkBufferCreateInfo buffer_create_info = {};
+		buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		buffer_create_info.size = props.size;
+		buffer_create_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+
+		allocation = allocator.allocate_buffer(buffer, vma_allocation_info, buffer_create_info, {  Usage::CPU_TO_GPU, Creation::MAPPED_BIT });
 	}
 
 } // namespace Disarray::Vulkan
