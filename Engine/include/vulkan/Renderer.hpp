@@ -7,12 +7,17 @@
 
 namespace Disarray::Vulkan {
 
+	struct PushConstant {
+		glm::mat4 object_transform {1.0f};
+		glm::vec4 colour {1.0f};
+	};
+
 	class Renderer: public Disarray::Renderer {
 	public:
 		Renderer(Ref<Device>, Ref<Swapchain>, const RendererProperties&);
 		~Renderer() override;
 
-		void begin_pass(Ref<Disarray::CommandExecutor> command_executor, Ref<Disarray::RenderPass> render_pass, Ref<Disarray::Pipeline> pipeline, Ref<Disarray::Framebuffer> fb) override;
+		void begin_pass(Ref<Disarray::CommandExecutor> command_executor, Ref<Disarray::RenderPass> render_pass, Ref<Disarray::Framebuffer> fb) override;
 		void end_pass(Ref<Disarray::CommandExecutor>) override;
 
 		void draw_mesh(Ref<Disarray::CommandExecutor>, Ref<Disarray::Mesh> mesh) override;
@@ -27,6 +32,7 @@ namespace Disarray::Vulkan {
 		PipelineCache pipeline_cache;
 		RendererProperties props;
 		Extent extent;
+		PushConstant pc {};
 	};
 
 }

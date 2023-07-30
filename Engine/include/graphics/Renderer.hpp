@@ -55,7 +55,7 @@ namespace Disarray {
 	public:
 		virtual ~Renderer() = default;
 
-		virtual void begin_pass(Ref<Disarray::CommandExecutor>, Ref<Disarray::RenderPass>, Ref<Disarray::Pipeline>, Ref<Disarray::Framebuffer>) = 0;
+		virtual void begin_pass(Ref<Disarray::CommandExecutor>, Ref<Disarray::RenderPass>, Ref<Disarray::Framebuffer>) = 0;
 		virtual void end_pass(Ref<Disarray::CommandExecutor>) = 0;
 
 		virtual void set_extent(const Extent&) = 0;
