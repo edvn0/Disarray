@@ -3,6 +3,7 @@
 #include "core/DataBuffer.hpp"
 #include "core/Log.hpp"
 #include "graphics/Image.hpp"
+#include "graphics/ImageLoader.hpp"
 #include "vulkan/Allocator.hpp"
 #include "vulkan/Image.hpp"
 
@@ -15,6 +16,7 @@ namespace Disarray::Vulkan {
 		, physical_device(pd)
 		, props(properties)
 	{
+		load_pixels();
 		image = make_ref<Vulkan::Image>(device, swapchain, physical_device,
 			ImageProperties {
 				.extent = props.extent,
@@ -32,6 +34,12 @@ namespace Disarray::Vulkan {
 	{
 		Allocator allocator { "Texture" };
 		image->recreate(should_clean);
+	}
+
+	void Texture::load_pixels() {
+		if (!props.path.empty()){
+			ImageLoader loader { props.path, pixels };
+		}
 	}
 
 } // namespace Disarray::Vulkan

@@ -13,11 +13,11 @@ namespace Disarray::Vulkan {
 		~Texture() override;
 
 		void force_recreation() override { recreate(); };
-
 		VkImageView get_view() { return image->get_view(); }
 
 	private:
 		void recreate(bool should_clean = true);
+		void load_pixels();
 
 		DataBuffer pixels;
 
