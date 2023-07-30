@@ -1,5 +1,8 @@
 
 #include "graphics/ImageProperties.hpp"
+#include "graphics/PushContantLayout.hpp"
+#include "graphics/Texture.hpp"
+
 #include <Disarray.hpp>
 #include <vector>
 
@@ -33,6 +36,7 @@ public:
 			.fragment_shader = frag,
 			.render_pass = render_pass,
 			.layout = layout,
+			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, std::size_t { 80 } } },
 			.extent = { extent.width, extent.height },
 		};
 		pipeline = Pipeline::construct(device, swapchain, props);
@@ -91,7 +95,7 @@ public:
 	void update(float ts, Ref<Renderer> renderer) override
 	{
 		command_executor->begin();
-		renderer->begin_pass(command_executor, render_pass, pipeline, framebuffer);
+		renderer->begin_pass(command_executor, render_pass, framebuffer);
 		// const auto&& [mid_x, mid_y] = renderer->center_position();
 		renderer->draw_mesh(command_executor, test_mesh);
 		// renderer->draw_planar_geometry(command_executor, Geometry::Triangle, { .position = { 0, 0, 0 }, .dimensions = { { 12.f, 12.f, 1.f } } });

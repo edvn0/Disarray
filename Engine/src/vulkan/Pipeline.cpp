@@ -4,6 +4,7 @@
 
 #include "core/Types.hpp"
 #include "graphics/Pipeline.hpp"
+#include "graphics/PushContantLayout.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Shader.hpp"
@@ -137,7 +138,7 @@ namespace Disarray::Vulkan {
 		rasterizer.depthBiasClamp = 0.0f; // Optional
 		rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
 
-		VkPipelineDepthStencilStateCreateInfo depth_stencil_state_create_info {VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+		VkPipelineDepthStencilStateCreateInfo depth_stencil_state_create_info { VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
 		depth_stencil_state_create_info.depthTestEnable = true;
 		depth_stencil_state_create_info.depthWriteEnable = false;
 		depth_stencil_state_create_info.depthCompareOp = VK_COMPARE_OP_LESS;
@@ -183,8 +184,28 @@ namespace Disarray::Vulkan {
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipeline_layout_info.setLayoutCount = 0; // Optional
 		pipeline_layout_info.pSetLayouts = nullptr; // Optional
-		pipeline_layout_info.pushConstantRangeCount = 0; // Optional
-		pipeline_layout_info.pPushConstantRanges = nullptr; // Optional
+
+		pipeline_layout_info.pushConstantRangeCount = props.push_constant_layout.size(); // Optional
+		std::vector<VkPushConstantRange> result;
+		std::transform(props.push_constant_layout.get_input_ranges().begin(), props.push_constant_layout.get_input_ranges().end(),
+			std::back_inserter(result), [](PushConstantRange a) -> VkPushConstantRange {
+				VkShaderStageFlags flags{};
+				if (a.flags == PushConstantKind::Fragment) {
+					flags = VK_SHADER_STAGE_FRAGMENT_BIT;
+				}
+				if (a.flags == PushConstantKind::Vertex) {
+					flags = VK_SHADER_STAGE_VERTEX_BIT;
+				}
+				if (a.flags == PushConstantKind::Both) {
+					flags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+				}
+				return {
+					.stageFlags = flags,
+					.offset = a.offset,
+					.size = a.size,
+				};
+			});
+		pipeline_layout_info.pPushConstantRanges = result.data(); // Optional
 
 		verify(vkCreatePipelineLayout(supply_cast<Vulkan::Device>(device), &pipeline_layout_info, nullptr, &layout));
 
@@ -236,7 +257,5 @@ namespace Disarray::Vulkan {
 		props.extent = swapchain->get_extent();
 		construct_layout();
 	}
-
-
 
 } // namespace Disarray::Vulkan

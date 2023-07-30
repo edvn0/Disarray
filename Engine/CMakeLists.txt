@@ -21,6 +21,7 @@ add_library(${PROJECT_NAME} STATIC
         src/graphics/Instance.cpp
         src/graphics/Shader.cpp
         src/graphics/Image.cpp
+        src/graphics/PushConstantLayout.cpp
         src/graphics/Texture.cpp
         src/graphics/PhysicalDevice.cpp
         src/graphics/QueueFamilyIndex.cpp

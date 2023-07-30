@@ -1,5 +1,6 @@
 #pragma once
 
+#include "PushContantLayout.hpp"
 #include "core/Types.hpp"
 #include "graphics/Swapchain.hpp"
 
@@ -9,11 +10,7 @@
 
 namespace Disarray {
 
-	enum class PolygonMode {
-		Fill,
-		Line,
-		Point
-	};
+	enum class PolygonMode { Fill, Line, Point };
 
 	enum class ElementType {
 		Float,
@@ -47,7 +44,8 @@ namespace Disarray {
 
 	struct LayoutElement {
 		constexpr LayoutElement(ElementType t, const std::string& debug = "Empty")
-			: type(t), debug_name(debug)
+			: type(t)
+			, debug_name(debug)
 		{
 			size = to_size(type);
 		};
@@ -58,20 +56,18 @@ namespace Disarray {
 		std::size_t offset { 0 };
 	};
 
-	enum class InputRate {
-		Vertex,
-		Instance
-	};
+	enum class InputRate { Vertex, Instance };
 
 	struct VertexBinding {
-		std::uint32_t binding{0};
+		std::uint32_t binding { 0 };
 		std::uint32_t stride {};
-		InputRate input_rate  { InputRate::Vertex };
+		InputRate input_rate { InputRate::Vertex };
 	};
 
 	struct VertexLayout {
 		constexpr VertexLayout(std::initializer_list<LayoutElement> elems, const VertexBinding& bind = {})
-			: elements(elems), binding(bind)
+			: elements(elems)
+			, binding(bind)
 		{
 			for (auto& element : elements) {
 				element.offset = total_size;
@@ -80,15 +76,14 @@ namespace Disarray {
 			binding.stride = total_size;
 		}
 
-		VertexLayout(const VertexLayout& layout) {
+		VertexLayout(const VertexLayout& layout)
+		{
 			total_size = layout.total_size;
 			elements = layout.elements;
 			binding = layout.binding;
 		};
 
-		const VertexBinding& construct_binding() {
-			return binding;
-		}
+		const VertexBinding& construct_binding() { return binding; }
 
 		std::size_t total_size { 0 };
 		std::vector<LayoutElement> elements;
@@ -103,9 +98,10 @@ namespace Disarray {
 	struct PipelineProperties {
 		Ref<Shader> vertex_shader { nullptr };
 		Ref<Shader> fragment_shader { nullptr };
-		Ref<RenderPass> render_pass {nullptr};
-		VertexLayout layout;
-		Extent extent {0,0};
+		Ref<RenderPass> render_pass { nullptr };
+		VertexLayout layout {};
+		PushConstantLayout push_constant_layout {};
+		Extent extent { 0, 0 };
 		PolygonMode polygon_mode { PolygonMode::Fill };
 	};
 
