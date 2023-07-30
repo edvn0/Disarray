@@ -18,7 +18,8 @@
 
 namespace Disarray::Vulkan {
 
-	Renderer::Renderer(Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> sc, Ref<PhysicalDevice>pd, const Disarray::RendererProperties& properties)
+	Renderer::Renderer(
+		Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> sc, Ref<Disarray::PhysicalDevice> pd, const Disarray::RendererProperties& properties)
 		: device(dev)
 		, swapchain(sc)
 		, props(properties)
