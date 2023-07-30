@@ -1,22 +1,17 @@
 #pragma once
 
 #include "core/Types.hpp"
+#include "core/UsageBadge.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Swapchain.hpp"
 
 #include <glm/glm.hpp>
 #include <optional>
+#include "Forward.hpp"
 
 namespace Disarray {
 
 	struct RendererProperties {};
-
-	class Device;
-	class CommandExecutor;
-	class RenderPass;
-	class Pipeline;
-	class Framebuffer;
-	class Mesh;
 
 	struct Extent;
 
@@ -47,7 +42,7 @@ namespace Disarray {
 	public:
 		virtual ~IGraphics() = default;
 
-		virtual void draw_planar_geometry(Ref<Disarray::CommandExecutor>, Geometry, const GeometryProperties&) = 0;
+		virtual void draw_planar_geometry(Geometry, const GeometryProperties&) = 0;
 		virtual void draw_mesh(Ref<Disarray::CommandExecutor>, Ref<Disarray::Mesh> mesh) = 0;
 	};
 
@@ -61,7 +56,10 @@ namespace Disarray {
 		virtual void set_extent(const Extent&) = 0;
 		virtual PipelineCache& get_pipeline_cache() = 0;
 
-		static Ref<Renderer> construct(Ref<Device>, Ref<Swapchain>, const RendererProperties&);
+		virtual void begin_frame(UsageBadge<App>) = 0;
+		virtual void end_frame(UsageBadge<App>) = 0;
+
+		static Ref<Renderer> construct(Ref<Device>, Ref<Swapchain>, Ref<Disarray::PhysicalDevice>, const RendererProperties&);
 	};
 
 }

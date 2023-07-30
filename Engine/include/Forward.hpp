@@ -14,10 +14,11 @@ namespace Disarray {
 	class QueueFamilyIndex;
 	class RenderPass;
 	class Renderer;
+	class Framebuffer;
 	class Shader;
 	class Surface;
 	class Swapchain;
 	class Texture;
-	class Texture;
+	class App;
 	class VertexBuffer;
 } // namespace Disarray

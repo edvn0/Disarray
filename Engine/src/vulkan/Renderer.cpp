@@ -18,7 +18,7 @@
 
 namespace Disarray::Vulkan {
 
-	Renderer::Renderer(Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> sc, const Disarray::RendererProperties& properties)
+	Renderer::Renderer(Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> sc, Ref<PhysicalDevice>pd, const Disarray::RendererProperties& properties)
 		: device(dev)
 		, swapchain(sc)
 		, props(properties)
@@ -87,6 +87,6 @@ namespace Disarray::Vulkan {
 		vkCmdDrawIndexed(command_buffer, mesh->get_indices()->size(), 1, 0, 0, 0);
 	}
 
-	void Renderer::draw_planar_geometry(Ref<Disarray::CommandExecutor> executor, Geometry geometry, const GeometryProperties& properties) { }
+	void Renderer::draw_planar_geometry(Geometry geometry, const GeometryProperties& properties) { }
 
 } // namespace Disarray::Vulkan

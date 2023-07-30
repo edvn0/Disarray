@@ -32,7 +32,6 @@ namespace Disarray {
 		Ref<PhysicalDevice> physical_device { nullptr };
 		Ref<Device> device { nullptr };
 		Ref<Swapchain> swapchain {nullptr};
-		Ref<Renderer> renderer {nullptr};
 		std::vector<Ref<Layer>> layers {};
 	};
 

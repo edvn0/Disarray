@@ -15,6 +15,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Engine)
 include("${CMAKE_SOURCE_DIR}/cmake/compile_shader.cmake")
 compile_shaders()
 
+include("${CMAKE_SOURCE_DIR}/cmake/copy_directory.cmake")
+copy_directory_to_binary(Assets "Models;Shaders;Textures")
+
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")
     target_compile_definitions(${PROJECT_NAME} PRIVATE IS_DEBUG)
 endif()

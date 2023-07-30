@@ -21,9 +21,6 @@ namespace Disarray {
 		device = Device::construct(physical_device);
 		swapchain = Swapchain::construct(window, device, physical_device);
 
-		renderer = Renderer::construct(device, swapchain, {});
-		renderer->set_extent({.width = swapchain->get_extent().width, .height = swapchain->get_extent().height});
-
 		initialise_allocator(device, physical_device, window->get_instance());
 	}
 
@@ -31,6 +28,9 @@ namespace Disarray {
 
 	void App::run()
 	{
+		auto renderer = Renderer::construct(device, swapchain, physical_device, {});
+		renderer->set_extent({.width = swapchain->get_extent().width, .height = swapchain->get_extent().height});
+
 		for (auto& layer : layers) {
 			layer->construct(renderer);
 		}
@@ -45,12 +45,13 @@ namespace Disarray {
 				}
 				continue;
 			}
-
+			renderer->begin_frame({});
 			float time_step = Clock::ms() - current_time;
 			for (auto& layer : layers) {
 				if (swapchain->needs_recreation()) layer->handle_swapchain_recreation(renderer);
 				layer->update(time_step, renderer);
 			}
+			renderer->end_frame({});
 			swapchain->reset_recreation_status();
 			current_time = Clock::ms();
 			swapchain->present();
