@@ -27,6 +27,7 @@ namespace Disarray::Vulkan {
 
 		VkPhysicalDeviceFeatures features {};
 		features.wideLines = true;
+		features.logicOp = true;
 
 		VkDeviceCreateInfo device_create_info {};
 		device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

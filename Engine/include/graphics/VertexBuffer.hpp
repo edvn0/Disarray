@@ -19,6 +19,7 @@ namespace Disarray {
 		virtual ~VertexBuffer() = default;
 
 		virtual std::size_t size() = 0;
+		virtual void set_data(const void*, std::uint32_t) = 0;
 
 		static Ref<VertexBuffer> construct(Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> swapchain, Ref<Disarray::PhysicalDevice> physical_device, const VertexBufferProperties&);
 	};

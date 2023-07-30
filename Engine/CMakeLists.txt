@@ -12,6 +12,8 @@ find_package(Vulkan REQUIRED)
 
 
 add_library(${PROJECT_NAME} STATIC
+        ${THIRD_PARTY}/imgui/backends/imgui_impl_glfw.cpp
+        ${THIRD_PARTY}/imgui/backends/imgui_impl_vulkan.cpp
         src/core/App.cpp
         src/core/Window.cpp
         src/core/Log.cpp
@@ -37,6 +39,8 @@ add_library(${PROJECT_NAME} STATIC
         src/graphics/Pipeline.cpp
         src/graphics/PipelineCache.cpp
         src/glfw/GLFWClock.cpp
+        src/imgui/InterfaceLayer.cpp
+        src/imgui/ImGuiBackends.cpp
         src/vulkan/Device.cpp
         src/vulkan/Allocator.cpp
         src/vulkan/MemoryAllocator.cpp
@@ -59,10 +63,12 @@ add_library(${PROJECT_NAME} STATIC
         src/vulkan/Mesh.cpp
         src/vulkan/Framebuffer.cpp
         src/vulkan/PhysicalDevice.cpp
+        src/vulkan/RenderBatchFor.cpp
         src/vulkan/QueueFamilyIndex.cpp
         )
-target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/tinyobjloader ${THIRD_PARTY}/stb)
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator OpenMP::OpenMP_CXX)
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/tinyobjloader ${THIRD_PARTY}/stb ${THIRD_PARTY}/imgui)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator OpenMP::OpenMP_CXX imgui)
 
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")
     target_compile_definitions(${PROJECT_NAME} PRIVATE IS_DEBUG)

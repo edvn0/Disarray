@@ -52,6 +52,18 @@ namespace Disarray::Vulkan {
 		return allocation;
 	}
 
+	VmaAllocation Allocator::allocate_buffer(VkBuffer& buffer,VmaAllocationInfo& allocation_info, VkBufferCreateInfo buffer_info, const AllocationProperties& props) {
+		VmaAllocationCreateInfo alloc_info = {};
+		alloc_info.usage = static_cast<VmaMemoryUsage>(props.usage);
+		alloc_info.flags = static_cast<VmaAllocationCreateFlags>(props.creation);
+
+		VmaAllocation allocation;
+		verify(vmaCreateBuffer(allocator, &buffer_info, &alloc_info, &buffer, &allocation, &allocation_info));
+		vmaSetAllocationName(allocator, allocation, resource_name.data());
+
+		return allocation;
+	}
+
 	VmaAllocation Allocator::allocate_image(VkImage& image, VkImageCreateInfo image_create_info, const AllocationProperties& props) {
 		VmaAllocationCreateInfo allocation_create_info = {};
 		allocation_create_info.usage = static_cast<VmaMemoryUsage>(props.usage);

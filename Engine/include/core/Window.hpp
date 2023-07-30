@@ -24,6 +24,8 @@ namespace Disarray {
 
 		virtual void wait_for_minimisation() = 0;
 
+		virtual void* native() = 0;
+
 		virtual std::pair<int, int> get_framebuffer_size() = 0;
 
 	protected:

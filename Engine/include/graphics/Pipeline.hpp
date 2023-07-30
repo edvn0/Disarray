@@ -103,13 +103,14 @@ namespace Disarray {
 		PushConstantLayout push_constant_layout {};
 		Extent extent { 0, 0 };
 		PolygonMode polygon_mode { PolygonMode::Fill };
+		float line_width {1.0f};
 	};
 
 	class Pipeline {
 	public:
 		virtual ~Pipeline() = default;
 		virtual void force_recreation() = 0;
-		static Ref<Pipeline> construct(Ref<Device>, Ref<Disarray::Swapchain>, const PipelineProperties& = {});
+		static Ref<Pipeline> construct(Ref<Device>, Ref<Disarray::Swapchain>, const PipelineProperties&);
 	};
 
 } // namespace Disarray

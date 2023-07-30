@@ -11,6 +11,7 @@ namespace Disarray::Vulkan {
 
 	template <class T> class PropertySupplier {
 	public:
+		virtual ~PropertySupplier() = default;
 		virtual T supply() const { throw std::runtime_error("Not implemented!"); };
 		virtual T operator*() const { return supply(); }
 	};

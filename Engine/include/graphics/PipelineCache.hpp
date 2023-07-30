@@ -2,6 +2,7 @@
 
 #include "core/Types.hpp"
 #include "graphics/Pipeline.hpp"
+#include "graphics/PushContantLayout.hpp"
 #include "graphics/Swapchain.hpp"
 
 #include <algorithm>
@@ -17,14 +18,16 @@ namespace Disarray {
 		std::string shader_key;
 		Ref<RenderPass> render_pass {nullptr};
 		VertexLayout layout;
+		PushConstantLayout push_constant_layout;
 		Extent extent {0,0};
 		PolygonMode polygon_mode { PolygonMode::Fill };
+		float line_width {1.0f};
 	};
 
 	class PipelineCache {
-	using ShaderPair = std::pair<Ref<Disarray::Shader>, Ref<Disarray::Shader>>;
-	using PipelineMap = std::unordered_map<std::string, Ref<Disarray::Pipeline>>;
-	using PipelineCacheValueType = PipelineMap::value_type;
+		using ShaderPair = std::pair<Ref<Disarray::Shader>, Ref<Disarray::Shader>>;
+		using PipelineMap = std::unordered_map<std::string, Ref<Disarray::Pipeline>>;
+		using PipelineCacheValueType = PipelineMap::value_type;
 
 	public:
 		PipelineCache() = default;

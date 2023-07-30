@@ -6,6 +6,7 @@ namespace Disarray {
 	class CommandExecutor;
 	class Device;
 	class Image;
+	class Window;
 	class IndexBuffer;
 	class Instance;
 	class Mesh;

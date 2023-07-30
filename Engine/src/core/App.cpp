@@ -10,6 +10,7 @@
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/Swapchain.hpp"
+#include "ui/InterfaceLayer.hpp"
 #include "vulkan/CommandExecutor.hpp"
 
 namespace Disarray {
@@ -28,11 +29,15 @@ namespace Disarray {
 
 	void App::run()
 	{
-		auto renderer = Renderer::construct(device, swapchain, physical_device, {});
-		renderer->set_extent({.width = swapchain->get_extent().width, .height = swapchain->get_extent().height});
+		auto constructed_renderer = Renderer::construct(device, swapchain, physical_device, {});
+		constructed_renderer->set_extent({.width = swapchain->get_extent().width, .height = swapchain->get_extent().height});
+		auto l = add_layer<UI::InterfaceLayer>();
+		auto ui_layer = cast_to<UI::InterfaceLayer>(l);
+
+		auto& renderer = *constructed_renderer;
 
 		for (auto& layer : layers) {
-			layer->construct(renderer);
+			layer->construct(*this, renderer);
 		}
 
 		static float current_time = Clock::ms();
@@ -45,13 +50,15 @@ namespace Disarray {
 				}
 				continue;
 			}
-			renderer->begin_frame({});
+			renderer.begin_frame({});
+			ui_layer->begin();
 			float time_step = Clock::ms() - current_time;
 			for (auto& layer : layers) {
 				if (swapchain->needs_recreation()) layer->handle_swapchain_recreation(renderer);
 				layer->update(time_step, renderer);
 			}
-			renderer->end_frame({});
+			ui_layer->end(renderer);
+			renderer.end_frame({});
 			swapchain->reset_recreation_status();
 			current_time = Clock::ms();
 			swapchain->present();

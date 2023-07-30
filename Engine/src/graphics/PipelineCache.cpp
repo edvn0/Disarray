@@ -101,11 +101,13 @@ namespace Disarray {
 			.fragment_shader = frag,
 			.render_pass = props.render_pass,
 			.layout = props.layout,
+			.push_constant_layout = props.push_constant_layout,
 			.extent = props.extent,
-			.polygon_mode = props.polygon_mode
+			.polygon_mode = props.polygon_mode,
+			.line_width = props.line_width,
 		};
 
-		auto pipeline = Pipeline::construct(device, swapchain);
+		auto pipeline = Pipeline::construct(device, swapchain, properties);
 		const auto& out = pipeline_cache.try_emplace(props.pipeline_key, pipeline);
 		return out.first->second;
 	}

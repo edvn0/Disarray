@@ -1,9 +1,11 @@
 #include "vulkan/Renderer.hpp"
 
 #include "core/Types.hpp"
+#include "glm/ext/matrix_transform.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Pipeline.hpp"
+#include "graphics/PipelineCache.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/Swapchain.hpp"
 #include "vulkan/CommandExecutor.hpp"
@@ -18,6 +20,12 @@
 
 namespace Disarray::Vulkan {
 
+	template <std::size_t Vertices> void RenderBatch<Vertices>::submit(Renderer& renderer, Ref<Disarray::CommandExecutor> command_executor)
+	{
+		quads.submit(renderer, command_executor);
+		lines.submit(renderer, command_executor);
+	}
+
 	Renderer::Renderer(
 		Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> sc, Ref<Disarray::PhysicalDevice> pd, const Disarray::RendererProperties& properties)
 		: device(dev)
@@ -25,20 +33,50 @@ namespace Disarray::Vulkan {
 		, props(properties)
 		, pipeline_cache(device, "Assets/Shaders")
 	{
+		planar_geometry_pass = RenderPass::construct(device, { .image_format = Disarray::ImageFormat::SBGR });
+		default_pass = RenderPass::construct(device, { .image_format = Disarray::ImageFormat::SBGR });
+		default_framebuffer = Framebuffer::construct(device, swapchain, pd, default_pass, {});
+		executor = CommandExecutor::construct_from_swapchain(device, swapchain, pd->get_queue_family_indexes(), { .count = 2 });
+
+		PipelineCacheCreationProperties pipeline_properties = {
+			.pipeline_key = "quad",
+			.shader_key = "quad",
+			.render_pass = planar_geometry_pass,
+			.layout = { LayoutElement { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float2, "normals" },
+				{ ElementType::Float4, "colour" } },
+			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, std::size_t { 80 } } },
+			.extent = swapchain->get_extent(),
+		};
+		{
+			// Quad
+			pipeline_cache.put(swapchain, pipeline_properties);
+		}
+		{
+			// Line
+			pipeline_properties.pipeline_key = "line";
+			pipeline_properties.shader_key = "line";
+			pipeline_properties.line_width = 5.0f;
+			pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" } };
+			pipeline_cache.put(swapchain, pipeline_properties);
+		}
+
+		render_batch.quads.construct(device, swapchain, pd);
+		render_batch.lines.construct(device, swapchain, pd);
 	}
 
 	Renderer::~Renderer() { Log::debug("Renderer destroyed!"); }
 
 	void Renderer::set_extent(const Extent& e) { extent = e; }
 
-	void Renderer::begin_pass(Ref<Disarray::CommandExecutor> command_executor, Ref<Disarray::RenderPass> render_pass, Ref<Disarray::Framebuffer> fb)
+	void Renderer::begin_pass(Ref<Disarray::CommandExecutor>, Ref<Disarray::RenderPass> render_pass, Ref<Disarray::Framebuffer> fb)
 	{
-		auto command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
+		auto command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 
 		VkRenderPassBeginInfo render_pass_begin_info {};
 		render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		render_pass_begin_info.renderPass = supply_cast<Vulkan::RenderPass>(render_pass);
-		render_pass_begin_info.framebuffer = supply_cast<Vulkan::Framebuffer>(fb);
+		render_pass_begin_info.renderPass
+			= render_pass ? supply_cast<Vulkan::RenderPass>(render_pass) : supply_cast<Vulkan::RenderPass>(default_pass);
+		render_pass_begin_info.framebuffer = fb ? supply_cast<Vulkan::Framebuffer>(fb) : supply_cast<Vulkan::Framebuffer>(default_framebuffer);
 		render_pass_begin_info.renderArea.offset = { 0, 0 };
 
 		VkExtent2D extent_2_d { .width = extent.width, .height = extent.height };
@@ -67,9 +105,13 @@ namespace Disarray::Vulkan {
 		vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 	}
 
-	void Renderer::end_pass(Ref<Disarray::CommandExecutor> executor) { vkCmdEndRenderPass(supply_cast<Vulkan::CommandExecutor>(executor)); }
+	void Renderer::end_pass(Ref<Disarray::CommandExecutor>)
+	{
+		render_batch.submit(*this, executor);
+		vkCmdEndRenderPass(supply_cast<Vulkan::CommandExecutor>(executor));
+	}
 
-	void Renderer::draw_mesh(Ref<Disarray::CommandExecutor> executor, Ref<Disarray::Mesh> mesh)
+	void Renderer::draw_mesh(Ref<Disarray::CommandExecutor>, Ref<Disarray::Mesh> mesh)
 	{
 		auto command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 		const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh->get_pipeline());
@@ -88,6 +130,43 @@ namespace Disarray::Vulkan {
 		vkCmdDrawIndexed(command_buffer, mesh->get_indices()->size(), 1, 0, 0, 0);
 	}
 
-	void Renderer::draw_planar_geometry(Geometry geometry, const GeometryProperties& properties) { }
+	void Renderer::draw_planar_geometry(Geometry geometry, const GeometryProperties& properties)
+	{
+		switch (geometry) {
+		case Geometry::Circle:
+			break;
+		case Geometry::Triangle:
+			break;
+		case Geometry::Line:
+			render_batch.lines.create_new(properties);
+			break;
+		case Geometry::Rectangle:
+			render_batch.quads.create_new(properties);
+			break;
+		}
+	}
+
+	void Renderer::begin_frame(UsageBadge<App>)
+	{
+		static glm::vec3 rotation { 90.f, 0.f, 0.f };
+		const auto rotate = glm::rotate(glm::mat4 { 1.0f }, glm::radians(rotation.z), glm::vec3 { 0.f, 0.f, 1.f })
+			* glm::rotate(glm::mat4 { 1.0f }, glm::radians(rotation.y), glm::vec3 { 0.f, 1.f, 0.f })
+			* glm::rotate(glm::mat4 { 1.0f }, glm::radians(rotation.x), glm::vec3 { 1.f, 0.f, 0.f });
+		pc = { .object_transform = rotate, .colour = glm::vec4 { 1, 1, 0, 1 } };
+		rotation += 0.1;
+		// TODO: Move to some kind of scene scope?
+		render_batch.reset();
+
+		executor->begin();
+		begin_pass(executor);
+	}
+
+	void Renderer::end_frame(UsageBadge<Disarray::App>)
+	{
+		end_pass(executor);
+		executor->submit_and_end();
+	}
+
+	Ref<Disarray::CommandExecutor> Renderer::get_current_executor() { return executor; }
 
 } // namespace Disarray::Vulkan

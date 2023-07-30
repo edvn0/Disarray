@@ -7,3 +7,6 @@
 [submodule "ThirdParty/VulkanMemoryAllocator"]
 	path = ThirdParty/VulkanMemoryAllocator
 	url = https://github.com/edvn0/VulkanMemoryAllocator.git
+[submodule "ThirdParty/imgui"]
+	path = ThirdParty/imgui
+	url = git@github.com:edvn0/imgui.git

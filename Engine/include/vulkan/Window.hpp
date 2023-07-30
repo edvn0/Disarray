@@ -26,6 +26,8 @@ namespace Disarray::Vulkan {
 
 		void wait_for_minimisation() override;
 
+		void* native() override { return window; }
+
 		std::pair<int, int> get_framebuffer_size() override;
 
 	private:
