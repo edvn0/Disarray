@@ -11,6 +11,10 @@
 
 namespace Disarray::Vulkan {
 
+	static constexpr auto is_depth_format = [](auto format) {
+		return format == ImageFormat::Depth || format == ImageFormat::DepthStencil;
+	};
+
 	Image::Image(Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> sc, Ref<Disarray::PhysicalDevice> pd, const Disarray::ImageProperties& properties)
 		: device(dev)
 		, swapchain(sc)
@@ -43,6 +47,9 @@ namespace Disarray::Vulkan {
 			allocator.deallocate_image(info.allocation, info.image);
 		}
 
+		if (is_depth_format(props.format)) {
+			props.extent = swapchain->get_extent();
+		}
 		VkDeviceSize size = props.data.is_valid() ? props.data.get_size() : props.extent.get_size();
 
 		VkBuffer staging;
@@ -59,9 +66,7 @@ namespace Disarray::Vulkan {
 			}
 			staging_allocator.deallocate_buffer(staging_allocation, staging);
 		}
-		static constexpr auto is_depth_format = [](auto format) {
-			return format == ImageFormat::Depth || format == ImageFormat::DepthStencil;
-		};
+
 
 		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT;
 		if (is_depth_format(props.format)) {

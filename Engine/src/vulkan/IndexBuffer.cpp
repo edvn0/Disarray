@@ -41,7 +41,7 @@ namespace Disarray::Vulkan {
 	}
 
 	IndexBuffer::~IndexBuffer() {
-		Allocator allocator {"IndexBuffer"};
+		Allocator allocator {"IndexBuffer["+std::to_string(index_count)+"]"};
 		allocator.deallocate_buffer(allocation, buffer);
 	}
 
