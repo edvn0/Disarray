@@ -8,7 +8,7 @@ namespace Disarray::Vulkan {
 	class Shader: public Disarray::Shader, public PropertySupplier<VkPipelineShaderStageCreateInfo>
 	{
 	public:
-		Shader(Ref<Disarray::Device> device, const ShaderProperties&);
+		Shader(Disarray::Device& device, const ShaderProperties&);
 		~Shader() override;
 
 		VkPipelineShaderStageCreateInfo supply() const override {
@@ -24,7 +24,7 @@ namespace Disarray::Vulkan {
 
 		bool was_destroyed_explicitly {false};
 
-		Ref<Disarray::Device> device;
+		Disarray::Device& device;
 		ShaderProperties props;
 		std::string_view shader_path;
 

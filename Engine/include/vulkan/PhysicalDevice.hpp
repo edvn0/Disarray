@@ -9,9 +9,10 @@ namespace Disarray::Vulkan {
 
 	class PhysicalDevice : public Disarray::PhysicalDevice, public PropertySupplier<VkPhysicalDevice> {
 	public:
-		explicit PhysicalDevice(Ref<Disarray::Instance>, Ref<Disarray::Surface>);
+		explicit PhysicalDevice(Disarray::Instance&, Disarray::Surface&);
+		~PhysicalDevice() override;
 
-		Ref<Disarray::QueueFamilyIndex> get_queue_family_indexes() override { return queue_family_index; }
+		Disarray::QueueFamilyIndex& get_queue_family_indexes() override { return *queue_family_index; }
 
 		VkPhysicalDevice supply() const override { return physical_device; }
 

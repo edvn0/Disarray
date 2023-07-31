@@ -4,10 +4,13 @@
 #include "core/Log.hpp"
 #include "core/Types.hpp"
 #include "core/Window.hpp"
+#include "graphics/Framebuffer.hpp"
+#include "graphics/RenderPass.hpp"
 #include "graphics/Swapchain.hpp"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Config.hpp"
 #include "vulkan/Device.hpp"
+#include "vulkan/PhysicalDevice.hpp"
 #include "vulkan/QueueFamilyIndex.hpp"
 #include "vulkan/Surface.hpp"
 #include "vulkan/SwapchainUtilities.hpp"
@@ -16,23 +19,20 @@
 
 namespace Disarray::Vulkan {
 
-	Swapchain::Swapchain(
-		Scope<Disarray::Window>& win, Ref<Disarray::Device> dev, Ref<Disarray::PhysicalDevice> pd, Ref<Disarray::Swapchain> old)
-		: device(dev), window(win), physical_device(pd)
+	Swapchain::Swapchain(Disarray::Window& win, Disarray::Device& dev, Disarray::Swapchain* old)
+		: window(win)
+		, device(dev)
 	{
 		recreate_swapchain(old, false);
 		swapchain_needs_recreation = false;
 
-		present_queue = cast_to<Vulkan::Device>(device)->get_present_queue();
-		graphics_queue = cast_to<Vulkan::Device>(device)->get_graphics_queue();
-
-		Log::debug("Swapchain image views retrieved!");
+		present_queue = cast_to<Vulkan::Device>(device).get_present_queue();
+		graphics_queue = cast_to<Vulkan::Device>(device).get_graphics_queue();
 	}
 
 	Swapchain::~Swapchain()
 	{
 		cleanup_swapchain();
-		Log::debug("Swapchain destroyed!");
 	}
 
 	void Swapchain::create_synchronisation_objects()
@@ -63,7 +63,8 @@ namespace Disarray::Vulkan {
 
 		vkWaitForFences(vk_device, 1, &in_flight_fences[get_current_frame()], VK_TRUE, UINT64_MAX);
 
-		auto result = vkAcquireNextImageKHR(vk_device, swapchain, UINT64_MAX, image_available_semaphores[get_current_frame()], VK_NULL_HANDLE, &image_index);
+		auto result
+			= vkAcquireNextImageKHR(vk_device, swapchain, UINT64_MAX, image_available_semaphores[get_current_frame()], VK_NULL_HANDLE, &image_index);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 			recreate_swapchain();
 			return false;
@@ -109,10 +110,10 @@ namespace Disarray::Vulkan {
 
 		auto result = vkQueuePresentKHR(present_queue, &present_info_khr);
 
-		auto was_resized = window->was_resized();
+		auto was_resized = window.was_resized();
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || was_resized) {
 			recreate_swapchain();
-			window->reset_resize_status();
+			window.reset_resize_status();
 		} else if (result != VK_SUCCESS) {
 			throw std::runtime_error("failed to present swap chain image!");
 		}
@@ -120,17 +121,19 @@ namespace Disarray::Vulkan {
 		current_frame = (current_frame + 1) % Config::max_frames_in_flight;
 	}
 
-	void Swapchain::recreate_swapchain(Ref<Disarray::Swapchain> old, bool should_clean)
+	void Swapchain::recreate_swapchain(Disarray::Swapchain* old, bool should_clean)
 	{
-		window->wait_for_minimisation();
+		window.wait_for_minimisation();
 		swapchain_needs_recreation = true;
 
 		wait_for_cleanup(device);
 
-		if (should_clean)
+		if (should_clean) {
 			cleanup_swapchain();
+		}
 
-		const auto& [capabilities, formats, present_modes] = resolve_swapchain_support(physical_device, window->get_surface());
+		const auto& [capabilities, formats, present_modes]
+			= resolve_swapchain_support(supply_cast<Vulkan::PhysicalDevice>(device.get_physical_device()), window.get_surface());
 		format = decide_surface_format(formats);
 		present_mode = decide_present_mode(present_modes);
 		extent = determine_extent(window, capabilities);
@@ -142,7 +145,7 @@ namespace Disarray::Vulkan {
 
 		VkSwapchainCreateInfoKHR create_info {};
 		create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		create_info.surface = supply_cast<Vulkan::Surface>(window->get_surface());
+		create_info.surface = supply_cast<Vulkan::Surface>(window.get_surface());
 		create_info.minImageCount = image_count;
 		create_info.imageFormat = format.format;
 		create_info.imageColorSpace = format.colorSpace;
@@ -150,7 +153,7 @@ namespace Disarray::Vulkan {
 		create_info.imageArrayLayers = 1;
 		create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-		QueueFamilyIndex indices(physical_device, window->get_surface());
+		QueueFamilyIndex indices(device.get_physical_device(), window.get_surface());
 		uint32_t queue_family_indices[] = { indices.get_graphics_family(), indices.get_present_family() };
 
 		if (indices.get_graphics_family() != indices.get_present_family()) {
@@ -167,16 +170,14 @@ namespace Disarray::Vulkan {
 		create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 		create_info.presentMode = present_mode;
 		create_info.clipped = VK_TRUE;
-		create_info.oldSwapchain = old ? supply_cast<Vulkan::Swapchain>(old) : nullptr;
+		auto* old_vulkan = static_cast<Vulkan::Swapchain*>(old);
+		create_info.oldSwapchain = old ? old_vulkan->supply() : nullptr;
 
 		verify(vkCreateSwapchainKHR(supply_cast<Vulkan::Device>(device), &create_info, nullptr, &swapchain));
-		Log::debug("Swapchain created!");
 
 		vkGetSwapchainImagesKHR(supply_cast<Vulkan::Device>(device), swapchain, &image_count, nullptr);
 		swapchain_images.resize(image_count);
 		vkGetSwapchainImagesKHR(supply_cast<Vulkan::Device>(device), swapchain, &image_count, swapchain_images.data());
-
-		Log::debug("Swapchain images retrieved!");
 
 		swapchain_image_views.resize(image_count);
 		for (auto i = 0; i < swapchain_images.size(); i++) {
@@ -217,10 +218,30 @@ namespace Disarray::Vulkan {
 		alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		alloc_info.commandBufferCount = count;
 		verify(vkAllocateCommandBuffers(supply_cast<Vulkan::Device>(device), &alloc_info, command_buffers.data()));
+
+
+		if (!framebuffer) {
+			framebuffer = Framebuffer::construct(device, *this,
+				{
+					.format = ImageFormat::SBGR,
+					.load_colour = true,
+					.keep_colour = true,
+					.load_depth = false,
+					.keep_depth = false,
+					.has_depth = false,
+					.should_present = true,
+					.debug_name = "SwapchainFramebuffer"
+				});
+		}else {
+			framebuffer->recreate(should_clean);
+		}
 	}
 
-	void Swapchain::cleanup_swapchain() {
+	void Swapchain::cleanup_swapchain()
+	{
 		const auto vk_device = supply_cast<Vulkan::Device>(device);
+
+		framebuffer.reset();
 
 		vkDestroyCommandPool(vk_device, command_pool, nullptr);
 
@@ -236,5 +257,7 @@ namespace Disarray::Vulkan {
 
 		vkDestroySwapchainKHR(vk_device, swapchain, nullptr);
 	}
+
+	Disarray::RenderPass& Swapchain::get_render_pass() { return framebuffer->get_render_pass(); }
 
 } // namespace Disarray::Vulkan

@@ -3,6 +3,7 @@
 #include "core/Layer.hpp"
 
 #include "Forward.hpp"
+#include "graphics/CommandExecutor.hpp"
 
 #include <vector>
 
@@ -10,11 +11,13 @@ namespace Disarray::UI {
 
 	class InterfaceLayer : public Disarray::Layer {
 	public:
-		InterfaceLayer(Ref<Device> dev, Ref<PhysicalDevice> phy, Scope<Window>& win, Ref<Swapchain> swap);
+		InterfaceLayer(Device& dev, Window& win, Swapchain& swap);
 		~InterfaceLayer() override;
 
 		void construct(App&, Renderer&) override;
 		void handle_swapchain_recreation(Renderer&) override;
+
+		void interface() override;
 
 		void update(float ts) override;
 		void update(float ts, Renderer&) override;
@@ -29,15 +32,15 @@ namespace Disarray::UI {
 		}
 
 		void begin();
-		void end(Renderer&);
+		void end();
 
 	private:
 		std::vector<Ref<Panel>> panels {};
-		Ref<Device> device;
-		Ref<PhysicalDevice> physical_device;
-		Scope<Window>& window;
-		Ref<Swapchain> swapchain;
-		Ref<Disarray::RenderPass> render_pass;
+		Device& device;
+		Window& window;
+		Swapchain& swapchain;
+
+		Ref<CommandExecutor> command_executor;
 	};
 
 }

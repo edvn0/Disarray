@@ -9,7 +9,7 @@ namespace Disarray::Vulkan {
 	class VerificationException : public std::exception {
 	public:
 		VerificationException(std::string_view msg)
-			: message(msg) {};
+			: message(msg) {}
 
 		const char* what() const override { return message.data(); }
 
@@ -17,10 +17,11 @@ namespace Disarray::Vulkan {
 		std::string_view message {};
 	};
 
-	static void verify(VkResult result)
+	std::string_view from_vulkan_result(VkResult result);
+	static constexpr void verify(VkResult result)
 	{
 		if (result != VK_SUCCESS) {
-			throw VerificationException("failed to create instance!");
+			throw VerificationException(from_vulkan_result(result));
 		}
 	}
 

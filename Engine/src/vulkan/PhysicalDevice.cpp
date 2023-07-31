@@ -11,9 +11,9 @@
 
 namespace Disarray::Vulkan {
 
-	PhysicalDevice::PhysicalDevice(Ref<Disarray::Instance> inst, Ref<Disarray::Surface> surf)
+	PhysicalDevice::PhysicalDevice(Disarray::Instance& inst, Disarray::Surface& surf)
 	{
-		static auto is_device_suitable = [](VkPhysicalDevice device, Ref<Disarray::Surface> surf) {
+		static auto is_device_suitable = [](VkPhysicalDevice device, Disarray::Surface& surf) {
 			Vulkan::QueueFamilyIndex indices(device, surf);
 			ExtensionSupport extension_support(device);
 
@@ -25,16 +25,16 @@ namespace Disarray::Vulkan {
 			return indices && extension_support && swapchain_is_allowed;
 		};
 
-		auto instance = cast_to<Vulkan::Instance>(inst);
+		auto& instance = cast_to<Vulkan::Instance>(inst);
 		uint32_t device_count = 0;
-		vkEnumeratePhysicalDevices(instance->supply(), &device_count, nullptr);
+		vkEnumeratePhysicalDevices(*instance, &device_count, nullptr);
 
 		if (device_count == 0) {
 			throw std::runtime_error("failed to find GPUs with Vulkan support!");
 		}
 
 		std::vector<VkPhysicalDevice> devices(device_count);
-		vkEnumeratePhysicalDevices(instance->supply(), &device_count, devices.data());
+		vkEnumeratePhysicalDevices(*instance, &device_count, devices.data());
 
 		for (const auto& device : devices) {
 			if (is_device_suitable(device, surf)) {
@@ -49,5 +49,7 @@ namespace Disarray::Vulkan {
 
 		queue_family_index = make_ref<Vulkan::QueueFamilyIndex>(physical_device, surf);
 	}
+
+	PhysicalDevice::~PhysicalDevice() { }
 
 } // namespace Disarray::Vulkan

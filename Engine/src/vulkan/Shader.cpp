@@ -23,18 +23,18 @@ namespace Disarray::Vulkan {
 			}
 		}
 
-		void create_module(Ref<Vulkan::Device> device, const std::string& code, VkShaderModule& shader)
+		void create_module(Vulkan::Device& device, const std::string& code, VkShaderModule& shader)
 		{
 			VkShaderModuleCreateInfo create_info {};
 			create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 			create_info.codeSize = code.size();
 			create_info.pCode = std::bit_cast<const uint32_t*>(code.data());
 
-			verify(vkCreateShaderModule(device->supply(), &create_info, nullptr, &shader));
+			verify(vkCreateShaderModule(*device, &create_info, nullptr, &shader));
 		}
 	}
 
-	Shader::Shader(Ref<Disarray::Device> dev, const ShaderProperties& properties): device(dev), props(properties) {
+	Shader::Shader(Disarray::Device& dev, const ShaderProperties& properties): device(dev), props(properties) {
 		auto source = read_file(props.path);
 		shader_path = props.path.string();
 

@@ -4,7 +4,7 @@
 
 namespace Disarray {
 
-	Ref<Shader> Shader::construct(Ref<Device> device, const ShaderProperties& props)
+	Ref<Shader> Shader::construct(Disarray::Device& device, const ShaderProperties& props)
 	{
 		return make_ref<Vulkan::Shader>(device, props);
 	}

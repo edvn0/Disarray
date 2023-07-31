@@ -23,14 +23,14 @@ namespace Disarray::Vulkan {
 		std::vector<VkPresentModeKHR> present_modes;
 	};
 
-	static ResolvedSwapchainSupport resolve_swapchain_support(VkPhysicalDevice device, Ref<Disarray::Surface> surf);
+	static ResolvedSwapchainSupport resolve_swapchain_support(VkPhysicalDevice device, Disarray::Surface& surf);
 
-	static ResolvedSwapchainSupport resolve_swapchain_support(Ref<Disarray::PhysicalDevice> device, Ref<Disarray::Surface> surf)
+	static ResolvedSwapchainSupport resolve_swapchain_support(Disarray::PhysicalDevice& device, Disarray::Surface& surf)
 	{
 		return resolve_swapchain_support(supply_cast<Vulkan::PhysicalDevice>(device), surf);
 	}
 
-	static ResolvedSwapchainSupport resolve_swapchain_support(VkPhysicalDevice physical_device, Ref<Disarray::Surface> surf)
+	static ResolvedSwapchainSupport resolve_swapchain_support(VkPhysicalDevice physical_device, Disarray::Surface& surf)
 	{
 		auto surface = supply_cast<Vulkan::Surface>(surf);
 		ResolvedSwapchainSupport support;
@@ -78,11 +78,11 @@ namespace Disarray::Vulkan {
 		return VK_PRESENT_MODE_FIFO_KHR;
 	}
 
-	static VkExtent2D determine_extent(Scope<Disarray::Window>& window, const VkSurfaceCapabilitiesKHR& capabilities) {
+	static VkExtent2D determine_extent(Disarray::Window& window, const VkSurfaceCapabilitiesKHR& capabilities) {
 		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 			return capabilities.currentExtent;
 		} else {
-			const auto&& [width, height] = window->get_framebuffer_size();
+			const auto&& [width, height] = window.get_framebuffer_size();
 
 			VkExtent2D actual_extent = {
 				static_cast<uint32_t>(width),

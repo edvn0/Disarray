@@ -17,7 +17,7 @@ namespace Disarray {
 		int tex_width, tex_height, tex_channels;
 
 		if (!std::filesystem::exists(path)) {
-			Log::error("File does not exist.");
+			Log::error("ImageLoader", "File does not exist.");
 			data = nullptr;
 			return;
 		}

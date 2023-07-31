@@ -4,9 +4,9 @@
 
 namespace Disarray {
 
-	Ref<Image> Image::construct(Ref<Disarray::Device> device, Ref<Disarray::Swapchain> swapchain, Ref<Disarray::PhysicalDevice> physical_device, const Disarray::ImageProperties& image_properties)
+	Ref<Image> Image::construct(Disarray::Device& device, Disarray::Swapchain& swapchain, const Disarray::ImageProperties& image_properties)
 	{
-		return make_ref<Vulkan::Image>(device, swapchain, physical_device, image_properties);
+		return make_ref<Vulkan::Image>(device, swapchain, image_properties);
 	}
 
 }

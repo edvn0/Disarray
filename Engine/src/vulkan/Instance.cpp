@@ -29,7 +29,7 @@ std::vector<const char*> get_required_extensions()
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
-	Disarray::Log::error("Validation layer: " + std::string(pCallbackData->pMessage));
+	Disarray::Log::error("Validation", "Validation layer: " + std::string(pCallbackData->pMessage));
 
 	return VK_FALSE;
 }
@@ -103,7 +103,7 @@ namespace Disarray::Vulkan {
 
 		setup_debug_messenger();
 
-		Log::debug("Instance created!");
+		Log::debug("Instance", "Instance created!");
 	}
 
 	Instance::~Instance()
@@ -144,7 +144,7 @@ namespace Disarray::Vulkan {
 			}
 
 			if (!layer_found) {
-				Log::debug("Layer was not found");
+				Log::debug("Instance", "Layer was not found");
 				return false;
 			}
 		}

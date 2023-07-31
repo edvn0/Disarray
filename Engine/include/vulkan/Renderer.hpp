@@ -1,8 +1,10 @@
 #pragma once
 
+#include "Pipeline.hpp"
 #include "glm/fwd.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/IndexBuffer.hpp"
+#include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/Swapchain.hpp"
@@ -32,11 +34,12 @@ namespace Disarray::Vulkan {
 		std::array<T, Vertices * VertexCount> vertices {};
 		Ref<Disarray::IndexBuffer> index_buffer { nullptr };
 		Ref<Disarray::VertexBuffer> vertex_buffer { nullptr };
+		Ref<Vulkan::Pipeline> pipeline { nullptr};
 		std::uint32_t submitted_ts { 0 };
 		std::uint32_t submitted_indices { 0 };
 
-		void construct(Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> swapchain, Ref<Disarray::PhysicalDevice> physical_device);
-		void submit(Renderer&, Ref<Disarray::CommandExecutor>);
+		void construct(Renderer&, Disarray::Device&, Disarray::Swapchain&);
+		void submit(Renderer&, Disarray::CommandExecutor&);
 		void create_new(const GeometryProperties&);
 
 		void reset()
@@ -77,40 +80,38 @@ namespace Disarray::Vulkan {
 			lines.reset();
 		}
 
-		void submit(Renderer&, Ref<Disarray::CommandExecutor>);
+		void submit(Renderer&, Disarray::CommandExecutor&);
 	};
 
 	class Renderer : public Disarray::Renderer {
 	public:
-		Renderer(Ref<Device>, Ref<Swapchain>, Ref<Disarray::PhysicalDevice>, const RendererProperties&);
+		Renderer(Device&, Swapchain&, const RendererProperties&);
 		~Renderer() override;
 
 		void begin_pass(
-			Ref<Disarray::CommandExecutor> command_executor, Ref<Disarray::RenderPass> render_pass, Ref<Disarray::Framebuffer> fb) override;
-		void begin_pass(Ref<Disarray::CommandExecutor> command_executor) override { begin_pass(command_executor, nullptr, nullptr); }
-		void end_pass(Ref<Disarray::CommandExecutor>) override;
+			Disarray::CommandExecutor&,  Disarray::Framebuffer&) override;
+		void begin_pass(Disarray::CommandExecutor& command_executor) override { begin_pass(command_executor, *default_framebuffer); }
+		void end_pass(Disarray::CommandExecutor&) override;
 
-		void draw_mesh(Ref<Disarray::CommandExecutor>, Ref<Disarray::Mesh> mesh) override;
+		void draw_mesh(Disarray::CommandExecutor&, Disarray::Mesh& mesh) override;
 		void draw_planar_geometry(Disarray::Geometry, const Disarray::GeometryProperties&) override;
+		void submit_batched_geometry(Disarray::CommandExecutor&) override;
 
 		void set_extent(const Disarray::Extent&) override;
-		PipelineCache& get_pipeline_cache() override { return pipeline_cache; }
+		PipelineCache& get_pipeline_cache() override { return *pipeline_cache; }
 
 		void begin_frame(UsageBadge<App>) override;
 		void end_frame(UsageBadge<App>) override;
 
-		Ref<Disarray::CommandExecutor> get_current_executor() override;
+		void force_recreation() override;
 
 		auto* get_push_constant() const { return &pc; }
 
 	private:
-		Ref<Device> device;
-		Ref<Swapchain> swapchain;
-		PipelineCache pipeline_cache;
-		Ref<RenderPass> planar_geometry_pass;
-		Ref<Disarray::RenderPass> default_pass;
+		Disarray::Device& device;
+		Disarray::Swapchain& swapchain;
+		Ref<Disarray::PipelineCache> pipeline_cache;
 		Ref<Disarray::Framebuffer> default_framebuffer;
-		Ref<Disarray::CommandExecutor> executor;
 		RenderBatch<max_vertices> render_batch;
 		RendererProperties props;
 		Extent extent;

@@ -4,12 +4,13 @@
 
 namespace Disarray {
 
-	class QueueFamilyIndex;
 	class PhysicalDevice;
+	class Window;
 
 	class Device {
 	public:
-		static Scope<Device> construct(Ref<Disarray::PhysicalDevice>);
+		static Scope<Device> construct(Disarray::Window&);
+		virtual PhysicalDevice& get_physical_device() = 0;
 		virtual ~Device() = default;
 	};
 

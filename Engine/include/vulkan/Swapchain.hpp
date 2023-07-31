@@ -1,7 +1,9 @@
 #pragma once
 
+#include "Forward.hpp"
 #include "core/Window.hpp"
 #include "graphics/PhysicalDevice.hpp"
+#include "graphics/Pipeline.hpp"
 #include "graphics/Swapchain.hpp"
 #include "vulkan/PropertySupplier.hpp"
 #include "vulkan/vulkan_core.h"
@@ -17,7 +19,7 @@ namespace Disarray::Vulkan {
 
 	class Swapchain : public Disarray::Swapchain, public PropertySupplier<VkSwapchainKHR> {
 	public:
-		Swapchain(Scope<Disarray::Window>&, Ref<Disarray::Device>, Ref<Disarray::PhysicalDevice>, Ref<Disarray::Swapchain> = nullptr);
+		Swapchain(Disarray::Window&, Disarray::Device&, Disarray::Swapchain* = nullptr);
 		~Swapchain() override;
 
 		std::uint32_t image_count() const override { return swapchain_images.size(); }
@@ -28,6 +30,9 @@ namespace Disarray::Vulkan {
 		std::uint32_t get_image_index() override { return image_index; }
 
 		VkCommandBuffer get_drawbuffer() { return command_buffers[get_image_index()]; }
+
+		Disarray::RenderPass& get_render_pass() override;
+		Disarray::Framebuffer& get_current_framebuffer() override { return *framebuffer; };
 
 		PresentingSemaphores get_presenting_semaphores() {
 			return { image_available_semaphores[current_frame], render_finished_semaphores[current_frame] };
@@ -45,18 +50,19 @@ namespace Disarray::Vulkan {
 
 	private:
 		void create_synchronisation_objects();
-		void recreate_swapchain(Ref<Disarray::Swapchain> old = nullptr, bool should_clean = true);
+		void recreate_swapchain(Disarray::Swapchain* old = nullptr, bool should_clean = true);
 		void cleanup_swapchain();
 
 		bool swapchain_needs_recreation {false};
 
-		Ref<Disarray::Device> device;
-		Scope<Disarray::Window>& window;
-		Ref<Disarray::PhysicalDevice> physical_device;
+		Disarray::Window& window;
+		Disarray::Device& device;
 		VkSwapchainKHR swapchain;
 
 		std::uint32_t current_frame {0};
 		std::uint32_t image_index {0};
+
+		Ref<Disarray::Framebuffer> framebuffer;
 
 		std::vector<VkImage> swapchain_images;
 		std::vector<VkImageView> swapchain_image_views;

@@ -10,9 +10,9 @@ namespace Disarray {
 
 	class PhysicalDevice {
 	public:
-		static Scope<PhysicalDevice> construct(Ref<Instance> instance, Ref<Surface>);
+		static Ref<PhysicalDevice> construct(Disarray::Instance&, Disarray::Surface&);
 
-		virtual Ref<Disarray::QueueFamilyIndex> get_queue_family_indexes() = 0;
+		virtual Disarray::QueueFamilyIndex& get_queue_family_indexes() = 0;
 
 		virtual ~PhysicalDevice() = default;
 	};

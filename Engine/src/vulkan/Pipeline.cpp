@@ -5,11 +5,13 @@
 #include "core/Types.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PushContantLayout.hpp"
+#include "graphics/RenderPass.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Shader.hpp"
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/vulkan_core.h"
+#include "graphics/Framebuffer.hpp"
 
 namespace Disarray::Vulkan {
 
@@ -57,7 +59,7 @@ namespace Disarray::Vulkan {
 		}
 	}
 
-	Pipeline::Pipeline(Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> sc, const Disarray::PipelineProperties& properties)
+	Pipeline::Pipeline(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::PipelineProperties& properties)
 		: device(dev)
 		, swapchain(sc)
 		, props(properties)
@@ -224,7 +226,7 @@ namespace Disarray::Vulkan {
 		pipeline_create_info.pColorBlendState = &color_blending;
 		pipeline_create_info.pDynamicState = &dynamic_state;
 		pipeline_create_info.layout = layout;
-		pipeline_create_info.renderPass = supply_cast<Vulkan::RenderPass>(props.render_pass);
+		pipeline_create_info.renderPass = supply_cast<Vulkan::RenderPass>(props.framebuffer->get_render_pass());
 		pipeline_create_info.subpass = 0;
 		pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE; // Optional
 		pipeline_create_info.basePipelineIndex = -1; // Optional
@@ -254,8 +256,17 @@ namespace Disarray::Vulkan {
 			vkDestroyPipeline(supply_cast<Vulkan::Device>(device), pipeline, nullptr);
 		}
 
-		props.extent = swapchain->get_extent();
+		props.extent = swapchain.get_extent();
 		construct_layout();
+	}
+
+	Disarray::Framebuffer& Pipeline::get_framebuffer() {
+		return *props.framebuffer;
+	}
+
+	Disarray::RenderPass& Pipeline::get_render_pass()
+	{
+		return props.framebuffer->get_render_pass();
 	}
 
 } // namespace Disarray::Vulkan

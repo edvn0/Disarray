@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Forward.hpp"
 #include "core/Types.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PushContantLayout.hpp"
@@ -16,6 +17,7 @@ namespace Disarray {
 	struct PipelineCacheCreationProperties {
 		std::string pipeline_key;
 		std::string shader_key;
+		Ref<Framebuffer> framebuffer {nullptr};
 		Ref<RenderPass> render_pass {nullptr};
 		VertexLayout layout;
 		PushConstantLayout push_constant_layout;
@@ -30,12 +32,11 @@ namespace Disarray {
 		using PipelineCacheValueType = PipelineMap::value_type;
 
 	public:
-		PipelineCache() = default;
-		PipelineCache(Ref<Disarray::Device> device, const std::filesystem::path&);
-		~PipelineCache() = default;
+		PipelineCache(Disarray::Device& device, Disarray::Swapchain&, const std::filesystem::path&);
+		~PipelineCache();
 
 		const Ref<Disarray::Pipeline>& get(const std::string&);
-		const Ref<Disarray::Pipeline>& put(Ref<Disarray::Swapchain>, const PipelineCacheCreationProperties&);
+		const Ref<Disarray::Pipeline>& put(const PipelineCacheCreationProperties&);
 
 		const ShaderPair& get_shader(const std::string&);
 
@@ -48,7 +49,8 @@ namespace Disarray {
 		static inline void for_each(Collection& coll, Func&& func) {
 			std::ranges::for_each(coll.begin(), coll.end(), func);
 		}
-		Ref<Disarray::Device> device {nullptr};
+		Disarray::Device& device;
+		Disarray::Swapchain& swapchain;
 		std::filesystem::path path {"Assets/Shaders"};
 
 		PipelineMap pipeline_cache {};

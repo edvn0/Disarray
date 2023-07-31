@@ -9,7 +9,7 @@ namespace Disarray::Vulkan {
 
 	class IndexBuffer : public Disarray::IndexBuffer, public PropertySupplier<VkBuffer> {
 	public:
-		IndexBuffer(Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> swapchain, Ref<Disarray::PhysicalDevice> physical_device,  const IndexBufferProperties&);
+		IndexBuffer(Disarray::Device& dev, Disarray::Swapchain& swapchain,  const IndexBufferProperties&);
 		~IndexBuffer() override;
 
 		std::size_t size() override { return index_count; }
@@ -18,10 +18,10 @@ namespace Disarray::Vulkan {
 		VkBuffer supply() const override { return buffer; }
 
 	private:
-		void create_with_valid_data(Ref<Disarray::Swapchain>, Ref<Disarray::PhysicalDevice>);
+		void create_with_valid_data(Disarray::Swapchain&);
 		void create_with_empty_data();
 
-		Ref<Disarray::Device> device;
+		Disarray::Device& device;
 		IndexBufferProperties props;
 
 		VmaAllocationInfo vma_allocation_info {};

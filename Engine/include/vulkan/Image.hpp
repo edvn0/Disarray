@@ -1,7 +1,9 @@
 #pragma once
 
+#include "core/UniquelyIdentifiable.hpp"
 #include "graphics/Image.hpp"
 #include "vulkan/MemoryAllocator.hpp"
+#include "vulkan/vulkan_core.h"
 
 #include <vulkan/vulkan.h>
 
@@ -34,17 +36,23 @@ namespace Disarray::Vulkan {
 		}
 	}
 
-	class Image : public Disarray::Image {
+	class Image : public Disarray::Image, public Disarray::UniquelyIdentifiable<Vulkan::Image> {
 	public:
-		Image(Ref<Device>, Ref<Swapchain>, Ref<PhysicalDevice>, const ImageProperties&);
+		Image(Device&, Swapchain&, const ImageProperties&);
 		~Image() override;
 
 		void force_recreation() override { recreate(true); };
 		void recreate(bool should_clean) override;
 
-		VkImageView get_view() { return info.view; }
 		VkImage get_image() { return info.image; }
-		VkSampler get_sampler() { return info.sampler; }
+		VkImageView get_view() { return descriptor_info.imageView; }
+		VkSampler get_sampler() { return descriptor_info.sampler; }
+		VkImageLayout get_layout() { return descriptor_info.imageLayout; }
+
+		Identifier hash_impl()
+		{
+			return reinterpret_cast<std::size_t>(descriptor_info.imageView) ^ reinterpret_cast<std::size_t>(descriptor_info.sampler);
+		};
 
 	private:
 		void recreate_image(bool should_clean);
@@ -53,9 +61,8 @@ namespace Disarray::Vulkan {
 		ImageInfo info {};
 		VkDescriptorImageInfo descriptor_info;
 
-		Ref<Device> device;
-		Ref<Swapchain> swapchain;
-		Ref<PhysicalDevice> physical_device;
+		Device& device;
+		Swapchain& swapchain;
 		ImageProperties props;
 	};
 

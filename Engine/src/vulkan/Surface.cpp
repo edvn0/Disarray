@@ -11,17 +11,17 @@
 
 namespace Disarray::Vulkan {
 
-	Surface::Surface(Ref<Instance> inst, GLFWwindow* window)
+	Surface::Surface(Instance& inst, GLFWwindow* window)
 		: instance(inst)
 	{
-		verify(glfwCreateWindowSurface(instance->supply(), window, nullptr, &surface));
-		Log::debug("Surface created!");
+		verify(glfwCreateWindowSurface(*instance, window, nullptr, &surface));
+		Log::debug("Surface", "Surface created!");
 	}
 
 	Surface::~Surface()
 	{
-		vkDestroySurfaceKHR(instance->supply(), surface, nullptr);
-		Log::debug("Surface destroyed.");
+		vkDestroySurfaceKHR(*instance, surface, nullptr);
+		Log::debug("Surface", "Surface destroyed.");
 	}
 
 } // namespace Disarray::Vulkan

@@ -2,28 +2,30 @@
 
 #include "GLFW/glfw3.h"
 #include "core/Log.hpp"
+#include "core/App.hpp"
 #include "vulkan/Swapchain.hpp"
 
 #include <string>
 
 namespace Disarray::Vulkan {
 
-	Window::Window(std::uint32_t w, std::uint32_t h)
-		: Disarray::Window(w, h)
+	Window::Window(const Disarray::ApplicationProperties& properties)
+		: Disarray::Window(properties)
 	{
 		if (const auto initialised = glfwInit(); !initialised) {
 			throw;
 		}
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+		const auto& [width, height, name] = get_properties();
 		// glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-		window = glfwCreateWindow(get_width(), get_height(), "Vulkan engine", nullptr, nullptr);
+		window = glfwCreateWindow(width, height, name.c_str(), nullptr, nullptr);
 
 		if (window == nullptr)
 			throw;
 
-		instance = make_ref<Vulkan::Instance>();
-		surface = make_ref<Vulkan::Surface>(instance, window);
+		instance = make_scope<Vulkan::Instance>();
+		surface = make_scope<Vulkan::Surface>(*instance, window);
 
 		user_data = new UserData();
 
@@ -45,7 +47,6 @@ namespace Disarray::Vulkan {
 		// delete user_data;
 		glfwDestroyWindow(window);
 		glfwTerminate();
-		Log::debug("Window destroyed. GLFW terminated.");
 	}
 
 	void Window::update() { glfwPollEvents(); }
@@ -73,6 +74,13 @@ namespace Disarray::Vulkan {
 			glfwGetFramebufferSize(window, &width, &height);
 			glfwWaitEvents();
 		}
+	}
+
+	std::pair<float, float> Window::get_framebuffer_scale() {
+		float width;
+		float height;
+		glfwGetWindowContentScale(window, &width, &height);
+		return { width, height };
 	}
 
 } // namespace Disarray::Vulkan

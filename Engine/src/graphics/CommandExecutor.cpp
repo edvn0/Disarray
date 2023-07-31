@@ -4,17 +4,17 @@
 
 namespace Disarray {
 
-	Ref<CommandExecutor> CommandExecutor::construct(Ref<Disarray::Device> device,
-		Ref<Disarray::Swapchain> swapchain, Ref<Disarray::QueueFamilyIndex> queue_family,const Disarray::CommandExecutorProperties& props)
+	Ref<CommandExecutor> CommandExecutor::construct(Disarray::Device& device,
+		Disarray::Swapchain& swapchain, const Disarray::CommandExecutorProperties& props)
 	{
-		return make_ref<Vulkan::CommandExecutor>(device, swapchain, queue_family,props);
+		return make_ref<Vulkan::CommandExecutor>(device, swapchain,props);
 	}
 
-	Ref<CommandExecutor> CommandExecutor::construct_from_swapchain(Ref<Disarray::Device> device,
-		Ref<Disarray::Swapchain> swapchain, Ref<Disarray::QueueFamilyIndex> queue_family, Disarray::CommandExecutorProperties props)
+	Ref<CommandExecutor> CommandExecutor::construct_from_swapchain(Disarray::Device& device,
+		Disarray::Swapchain& swapchain, Disarray::CommandExecutorProperties props)
 	{
 		props.owned_by_swapchain = true;
-		return make_ref<Vulkan::CommandExecutor>(device, swapchain,queue_family, props);
+		return make_ref<Vulkan::CommandExecutor>(device, swapchain, props);
 	}
 
 } // namespace Disarray

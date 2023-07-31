@@ -5,6 +5,7 @@
 #include "graphics/Swapchain.hpp"
 
 #include <filesystem>
+#include "graphics/Framebuffer.hpp"
 
 static constexpr auto extract_shader_type = [](const auto& p) {
 	if (p.extension() == ".spv") return p.filename().replace_extension().string();
@@ -37,8 +38,14 @@ static constexpr auto compare_on_filename = [](const std::filesystem::path& left
 
 namespace Disarray {
 
-	PipelineCache::PipelineCache(Ref<Disarray::Device> dev, const std::filesystem::path& base)
+	PipelineCache::~PipelineCache() {
+		shader_cache.clear();
+		pipeline_cache.clear();
+	}
+
+	PipelineCache::PipelineCache(Disarray::Device& dev, Disarray::Swapchain& sc, const std::filesystem::path& base)
 		: device(dev)
+		,swapchain(sc)
 		, path(base)
 	{
 		const auto all_files = get_unique_files_recursively();
@@ -94,12 +101,12 @@ namespace Disarray {
 
 	const Ref<Disarray::Pipeline>& PipelineCache::get(const std::string& key) { return pipeline_cache[key]; }
 
-	const Ref<Disarray::Pipeline>& PipelineCache::put(Ref<Disarray::Swapchain> swapchain, const PipelineCacheCreationProperties& props) {
+	const Ref<Disarray::Pipeline>& PipelineCache::put(const PipelineCacheCreationProperties& props) {
 		const auto& [vert, frag] = shader_cache[props.shader_key];
 		PipelineProperties properties {
 			.vertex_shader = vert,
 			.fragment_shader = frag,
-			.render_pass = props.render_pass,
+			.framebuffer = props.framebuffer,
 			.layout = props.layout,
 			.push_constant_layout = props.push_constant_layout,
 			.extent = props.extent,

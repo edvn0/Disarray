@@ -8,9 +8,10 @@
 namespace Disarray::Vulkan {
 
 	template <>
-	void RenderBatchFor<QuadVertex, max_vertices, vertex_count<QuadVertex>>::construct(
-		Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> swapchain, Ref<Disarray::PhysicalDevice> physical_device)
+	void RenderBatchFor<QuadVertex, max_vertices, vertex_count<QuadVertex>>::construct(Renderer& renderer,
+		Disarray::Device& dev, Disarray::Swapchain& swapchain)
 	{
+		pipeline = cast_to<Vulkan::Pipeline>(renderer.get_pipeline_cache().get("quad"));
 		std::vector<std::uint32_t> quad_indices;
 		quad_indices.resize(vertices.size() * 6);
 		std::uint32_t offset = 0;
@@ -23,7 +24,7 @@ namespace Disarray::Vulkan {
 			quad_indices[i + 5] = 0 + offset;
 			offset += 4;
 		}
-		index_buffer = IndexBuffer::construct(dev, swapchain, physical_device,
+		index_buffer = IndexBuffer::construct(dev, swapchain,
 			{
 				.data = quad_indices.data(),
 				.size = quad_indices.size() * vertex_count,
@@ -31,12 +32,12 @@ namespace Disarray::Vulkan {
 			});
 
 		vertex_buffer
-			= VertexBuffer::construct(dev, swapchain, physical_device, { .size = vertices.size() * vertex_count, .count = vertices.size() });
+			= VertexBuffer::construct(dev, swapchain, { .size = vertices.size() * vertex_count, .count = vertices.size() });
 	}
 
 	template <>
 	void RenderBatchFor<QuadVertex, max_vertices, vertex_count<QuadVertex>>::submit(
-		Renderer& renderer, Ref<Disarray::CommandExecutor> command_executor)
+		Renderer& renderer, Disarray::CommandExecutor& command_executor)
 	{
 		if (submitted_indices == 0)
 			return;
@@ -48,7 +49,6 @@ namespace Disarray::Vulkan {
 		const auto& vb = vertex_buffer;
 		const auto& ib = index_buffer;
 		// const auto& descriptor = descriptor_sets[renderer.get_current_frame()];
-		const auto& pipeline = cast_to<Vulkan::Pipeline>(renderer.get_pipeline_cache().get("quad"));
 		const auto index_count = submitted_indices;
 
 		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->supply());
@@ -96,9 +96,11 @@ namespace Disarray::Vulkan {
 	// LINES
 
 	template <>
-	void RenderBatchFor<LineVertex, max_vertices, vertex_count<LineVertex>>::construct(
-		Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> swapchain, Ref<Disarray::PhysicalDevice> physical_device)
+	void RenderBatchFor<LineVertex, max_vertices, vertex_count<LineVertex>>::construct(Renderer& renderer,
+		Disarray::Device& dev, Disarray::Swapchain& swapchain)
 	{
+		pipeline = cast_to<Vulkan::Pipeline>(renderer.get_pipeline_cache().get("line"));
+
 		std::vector<std::uint32_t> line_indices;
 		line_indices.resize(vertices.size() * vertex_count);
 		std::uint32_t offset = 0;
@@ -107,7 +109,7 @@ namespace Disarray::Vulkan {
 			line_indices[i + 1] = offset + 1;
 			offset += vertex_count;
 		}
-		index_buffer = IndexBuffer::construct(dev, swapchain, physical_device,
+		index_buffer = IndexBuffer::construct(dev, swapchain,
 			{
 				.data = line_indices.data(),
 				.size = line_indices.size() * vertex_count,
@@ -115,12 +117,12 @@ namespace Disarray::Vulkan {
 			});
 
 		vertex_buffer
-			= VertexBuffer::construct(dev, swapchain, physical_device, { .size = vertices.size() * vertex_count, .count = vertices.size() });
+			= VertexBuffer::construct(dev, swapchain, { .size = vertices.size() * vertex_count, .count = vertices.size() });
 	}
 
 	template <>
 	void RenderBatchFor<LineVertex, max_vertices, vertex_count<LineVertex>>::submit(
-		Renderer& renderer, Ref<Disarray::CommandExecutor> command_executor)
+		Renderer& renderer, Disarray::CommandExecutor& command_executor)
 	{
 		if (submitted_indices == 0)
 			return;

@@ -4,10 +4,10 @@
 
 namespace Disarray {
 
-	Ref<Texture> Texture::construct(Ref<Disarray::Device> device, Ref<Disarray::Swapchain> swapchain, Ref<Disarray::PhysicalDevice> physical_device,
+	Ref<Texture> Texture::construct(Disarray::Device& device, Disarray::Swapchain& swapchain,
 		const Disarray::TextureProperties& props)
 	{
-		return make_ref<Vulkan::Texture>(device, swapchain, physical_device, props);
+		return make_ref<Vulkan::Texture>(device, swapchain, props);
 	}
 
 } // namespace Disarray

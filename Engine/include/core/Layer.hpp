@@ -14,6 +14,8 @@ namespace Disarray {
 		virtual void construct(App&, Renderer&) = 0;
 		virtual void handle_swapchain_recreation(Renderer&) = 0;
 
+		virtual void interface() = 0;
+
 		virtual void update(float ts) = 0;
 		virtual void update(float ts, Renderer&) = 0;
 

@@ -25,7 +25,7 @@ namespace Disarray {
 		virtual std::string_view path() const = 0;
 		virtual void destroy_module() = 0;
 
-		static Ref<Shader> construct(Ref<Device> device, const ShaderProperties&);
+		static Ref<Shader> construct(Disarray::Device& device, const ShaderProperties&);
 	};
 
 }
