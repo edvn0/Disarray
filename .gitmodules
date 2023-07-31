@@ -10,3 +10,6 @@
 [submodule "ThirdParty/imgui"]
 	path = ThirdParty/imgui
 	url = git@github.com:edvn0/imgui.git
+[submodule "App/ThirdParty/argparse"]
+	path = App/ThirdParty/argparse
+	url = https://github.com/edvn0/argparse

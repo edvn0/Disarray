@@ -4,7 +4,7 @@
 
 namespace Disarray {
 
-	Ref<QueueFamilyIndex> QueueFamilyIndex::construct(Ref<Disarray::PhysicalDevice> device, Ref<Disarray::Surface> surface)
+	Ref<QueueFamilyIndex> QueueFamilyIndex::construct(Disarray::PhysicalDevice& device, Disarray::Surface& surface)
 	{
 		return make_ref<Vulkan::QueueFamilyIndex>(device, surface);
 	}

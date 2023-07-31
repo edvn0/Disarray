@@ -1,13 +1,14 @@
 #include "core/Window.hpp"
 
+#include "core/App.hpp"
 #include "vulkan/Window.hpp"
 
 namespace Disarray {
 
-	Window::Window(std::uint32_t w, std::uint32_t h)
-		: width(w)
-		, height(h) {};
+	Window::Window(const Disarray::ApplicationProperties& properties):props(properties) {}
 
-	Scope<Window> Window::construct(std::uint32_t w, std::uint32_t h) { return make_scope<Vulkan::Window>(w, h); }
+	Scope<Window> Window::construct(const Disarray::ApplicationProperties& properties) { return make_scope<Vulkan::Window>(properties); }
+
+	const Disarray::ApplicationProperties& Window::get_properties() { return props; }
 
 } // namespace Disarray

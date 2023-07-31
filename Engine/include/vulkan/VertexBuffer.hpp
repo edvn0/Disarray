@@ -9,8 +9,7 @@ namespace Disarray::Vulkan {
 
 	class VertexBuffer : public Disarray::VertexBuffer, public PropertySupplier<VkBuffer> {
 	public:
-		VertexBuffer(Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> swapchain, Ref<Disarray::PhysicalDevice> physical_device,
-			const VertexBufferProperties&);
+		VertexBuffer(Disarray::Device&, Disarray::Swapchain&, const VertexBufferProperties&);
 		~VertexBuffer() override;
 
 		std::size_t size() override { return vertex_count; }
@@ -19,10 +18,10 @@ namespace Disarray::Vulkan {
 		VkBuffer supply() const override { return buffer; }
 
 	private:
-		void create_with_valid_data(Ref<Disarray::Swapchain>, Ref<Disarray::PhysicalDevice>);
+		void create_with_valid_data(Disarray::Swapchain&);
 		void create_with_empty_data();
 
-		Ref<Disarray::Device> device;
+		Disarray::Device& device;
 		VertexBufferProperties props;
 
 		VmaAllocationInfo vma_allocation_info {};

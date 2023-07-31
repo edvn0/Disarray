@@ -1,6 +1,7 @@
 #include "vulkan/Allocator.hpp"
 
 #include "core/AllocatorConfigurator.hpp"
+#include "core/Ensure.hpp"
 #include "core/Log.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Instance.hpp"
@@ -9,10 +10,10 @@
 #include "vulkan/vulkan_core.h"
 
 namespace Disarray {
-	void initialise_allocator(Ref<Disarray::Device> device, Ref<Disarray::PhysicalDevice> physical_device, Ref<Disarray::Instance> instance)
+	void initialise_allocator(Disarray::Device& device, Disarray::Instance& instance)
 	{
 		Vulkan::Allocator::initialise(
-			cast_to<Vulkan::Device>(device), cast_to<Vulkan::PhysicalDevice>(physical_device), cast_to<Vulkan::Instance>(instance));
+			cast_to<Vulkan::Device>(device), cast_to<Vulkan::PhysicalDevice>(device.get_physical_device()), cast_to<Vulkan::Instance>(instance));
 	}
 
 	void destroy_allocator() { Vulkan::Allocator::shutdown(); }
@@ -20,12 +21,12 @@ namespace Disarray {
 
 namespace Disarray::Vulkan {
 
-	void Allocator::initialise(Ref<Vulkan::Device> device, Ref<Vulkan::PhysicalDevice> physical_device, Ref<Vulkan::Instance> instance)
+	void Allocator::initialise(Vulkan::Device& device, Vulkan::PhysicalDevice& physical_device, Vulkan::Instance& instance)
 	{
 		VmaAllocatorCreateInfo create_info {};
-		create_info.device = device->supply();
-		create_info.physicalDevice = physical_device->supply();
-		create_info.instance = instance->supply();
+		create_info.device = *device;
+		create_info.physicalDevice = *physical_device;
+		create_info.instance = *instance;
 
 		vmaCreateAllocator(&create_info, &allocator);
 	}
@@ -35,12 +36,12 @@ namespace Disarray::Vulkan {
 	Allocator::Allocator(const std::string& resource)
 		: resource_name(resource)
 	{
-		Log::debug("Created allocator with name {" + resource_name + "}");
 	}
 
-	Allocator::~Allocator() { Log::debug("Destroyed allocator with name {" + resource_name + "}"); }
+	Allocator::~Allocator() {  }
 
 	VmaAllocation Allocator::allocate_buffer(VkBuffer& buffer, VkBufferCreateInfo buffer_info, const AllocationProperties& props) {
+		ensure(allocator != nullptr, "Allocator was null.");
 		VmaAllocationCreateInfo alloc_info = {};
 		alloc_info.usage = static_cast<VmaMemoryUsage>(props.usage);
 		alloc_info.flags = static_cast<VmaAllocationCreateFlags>(props.creation);
@@ -53,6 +54,7 @@ namespace Disarray::Vulkan {
 	}
 
 	VmaAllocation Allocator::allocate_buffer(VkBuffer& buffer,VmaAllocationInfo& allocation_info, VkBufferCreateInfo buffer_info, const AllocationProperties& props) {
+		ensure(allocator != nullptr, "Allocator was null.");
 		VmaAllocationCreateInfo alloc_info = {};
 		alloc_info.usage = static_cast<VmaMemoryUsage>(props.usage);
 		alloc_info.flags = static_cast<VmaAllocationCreateFlags>(props.creation);
@@ -65,6 +67,7 @@ namespace Disarray::Vulkan {
 	}
 
 	VmaAllocation Allocator::allocate_image(VkImage& image, VkImageCreateInfo image_create_info, const AllocationProperties& props) {
+		ensure(allocator != nullptr, "Allocator was null.");
 		VmaAllocationCreateInfo allocation_create_info = {};
 		allocation_create_info.usage = static_cast<VmaMemoryUsage>(props.usage);
 
@@ -77,11 +80,13 @@ namespace Disarray::Vulkan {
 
 	void Allocator::deallocate_buffer(VmaAllocation allocation, VkBuffer& buffer)
 	{
+		ensure(allocator != nullptr, "Allocator was null.");
 		vmaDestroyBuffer(allocator, buffer, allocation);
 	}
 
 	void Allocator::deallocate_image(VmaAllocation allocation, VkImage& image)
 	{
+		ensure(allocator != nullptr, "Allocator was null.");
 		vmaDestroyImage(allocator, image, allocation);
 	}
 

@@ -13,13 +13,13 @@ namespace Disarray::Vulkan {
 
 	class Window : public Disarray::Window {
 	public:
-		Window(std::uint32_t, std::uint32_t);
+		Window(const Disarray::ApplicationProperties&);
 		~Window() override;
 
 		bool should_close() const override;
 		void update() override;
-		Ref<Disarray::Surface> get_surface() override { return surface; };
-		Ref<Disarray::Instance> get_instance() override { return instance; };
+		Disarray::Surface& get_surface() override { return *surface; };
+		Disarray::Instance& get_instance() override { return *instance; };
 
 		void reset_resize_status() override;
 		bool was_resized() const override;
@@ -29,6 +29,7 @@ namespace Disarray::Vulkan {
 		void* native() override { return window; }
 
 		std::pair<int, int> get_framebuffer_size() override;
+		std::pair<float, float> get_framebuffer_scale() override;
 
 	private:
 		struct UserData {
@@ -37,8 +38,8 @@ namespace Disarray::Vulkan {
 		UserData* user_data;
 
 		GLFWwindow* window { nullptr };
-		Ref<Surface> surface { nullptr };
-		Ref<Instance> instance { nullptr };
+		Scope<Instance> instance { nullptr };
+		Scope<Surface> surface { nullptr };
 	};
 
 } // namespace Disarray::Vulkan

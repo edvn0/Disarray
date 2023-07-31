@@ -2,6 +2,7 @@
 
 #include "core/Types.hpp"
 #include "core/UsageBadge.hpp"
+#include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Swapchain.hpp"
 
@@ -46,16 +47,17 @@ namespace Disarray {
 		virtual ~IGraphics() = default;
 
 		virtual void draw_planar_geometry(Geometry, const GeometryProperties&) = 0;
-		virtual void draw_mesh(Ref<Disarray::CommandExecutor>, Ref<Disarray::Mesh> mesh) = 0;
+		virtual void draw_mesh(Disarray::CommandExecutor&, Disarray::Mesh& mesh) = 0;
+		virtual void submit_batched_geometry(Disarray::CommandExecutor&) = 0;
 	};
 
 	class Renderer: public IGraphics {
 	public:
 		virtual ~Renderer() = default;
 
-		virtual void begin_pass(Ref<Disarray::CommandExecutor>, Ref<Disarray::RenderPass>, Ref<Disarray::Framebuffer>) = 0;
-		virtual void begin_pass(Ref<Disarray::CommandExecutor>) = 0;
-		virtual void end_pass(Ref<Disarray::CommandExecutor>) = 0;
+		virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&) = 0;
+		virtual void begin_pass(Disarray::CommandExecutor&) = 0;
+		virtual void end_pass(Disarray::CommandExecutor&) = 0;
 
 		virtual void set_extent(const Extent&) = 0;
 		virtual PipelineCache& get_pipeline_cache() = 0;
@@ -63,9 +65,9 @@ namespace Disarray {
 		virtual void begin_frame(UsageBadge<App>) = 0;
 		virtual void end_frame(UsageBadge<App>) = 0;
 
-		virtual Ref<Disarray::CommandExecutor> get_current_executor() = 0;
+		virtual void force_recreation() = 0;
 
-		static Ref<Renderer> construct(Ref<Device>, Ref<Swapchain>, Ref<Disarray::PhysicalDevice>, const RendererProperties&);
+		static Ref<Renderer> construct(Disarray::Device&, Disarray::Swapchain&, const RendererProperties&);
 	};
 
 }

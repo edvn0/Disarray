@@ -5,9 +5,9 @@
 
 namespace Disarray {
 
-	Scope<Device> Device::construct(Ref<PhysicalDevice> physical_device)
+	Scope<Device> Device::construct(Window& window)
 	{
-		return make_scope<Vulkan::Device>(physical_device);
+		return make_scope<Vulkan::Device>(window);
 	}
 
 } // namespace Disarray

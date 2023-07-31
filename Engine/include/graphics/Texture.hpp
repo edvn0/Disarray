@@ -9,6 +9,8 @@ namespace Disarray {
 		Extent extent;
 		ImageFormat format;
 		std::string path {};
+		bool should_present {false};
+		std::string debug_name;
 	};
 
 	class Texture {
@@ -16,8 +18,11 @@ namespace Disarray {
 		virtual ~Texture() = default;
 
 		virtual void force_recreation() = 0;
+		virtual void recreate(bool should_clean) = 0;
 
-		static Ref<Texture> construct(Ref<Device>, Ref<Swapchain>, Ref<PhysicalDevice>, const TextureProperties&);
+		virtual Image& get_image() = 0;
+
+		static Ref<Texture> construct(Device&, Swapchain&, const TextureProperties&);
 	};
 
 }

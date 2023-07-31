@@ -14,8 +14,8 @@ namespace Disarray::Vulkan {
 	class QueueFamilyIndex: public Disarray::QueueFamilyIndex {
 	public:
 		~QueueFamilyIndex() override = default;
-		explicit QueueFamilyIndex(Ref<Disarray::PhysicalDevice>, Ref<Disarray::Surface>);
-		explicit QueueFamilyIndex(VkPhysicalDevice, Ref<Disarray::Surface>);
+		explicit QueueFamilyIndex(Disarray::PhysicalDevice&, Disarray::Surface&);
+		explicit QueueFamilyIndex(VkPhysicalDevice, Disarray::Surface&);
 	};
 
 } // namespace Disarray::Vulkan

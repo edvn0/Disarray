@@ -9,22 +9,24 @@ namespace Disarray::Vulkan {
 
 	class Texture: public Disarray::Texture {
 	public:
-		Texture(Ref<Device>, Ref<Swapchain>, Ref<PhysicalDevice>, const TextureProperties&);
+		Texture(Device&, Swapchain&, const TextureProperties&);
 		~Texture() override;
 
-		void force_recreation() override { recreate(); };
+		void force_recreation() override { recreate_texture(); };
+		void recreate(bool should_clean) override { recreate_texture(should_clean); }
 		VkImageView get_view() { return image->get_view(); }
 
+		Image& get_image() override { return *image; }
+
 	private:
-		void recreate(bool should_clean = true);
+		void recreate_texture(bool should_clean = true);
 		void load_pixels();
 
 		DataBuffer pixels;
 
-		Ref<Device> device;
-		Ref<Swapchain> swapchain;
-		Ref<PhysicalDevice> physical_device;
-		Ref<Vulkan::Image> image;
+		Device& device;
+
+		Scope<Vulkan::Image> image;
 		TextureProperties props;
 	};
 

@@ -23,8 +23,14 @@ namespace Disarray {
 	} // namespace Logging
 
 	namespace Log {
-		static void debug(const std::string& message) { Logging::Logger::logger().debug(message); }
-		static void error(const std::string& message) { Logging::Logger::logger().error(message); }
+		static void debug(const std::string& scope, const std::string& message) {
+			std::string formatted = "[Disarray::Engine - " + scope + "]: " + message;
+			Logging::Logger::logger().debug(formatted);
+		}
+		static void error(const std::string& scope, const std::string& message) {
+			std::string formatted = "[Disarray::Engine - " + scope + "]: " + message;
+			Logging::Logger::logger().error(formatted);
+		}
 
 		std::string format(const char* const format, ...);
 

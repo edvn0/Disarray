@@ -7,14 +7,13 @@
 
 namespace Disarray::Vulkan {
 
-	VertexBuffer::VertexBuffer(Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> swapchain, Ref<Disarray::PhysicalDevice> physical_device,
-		const Disarray::VertexBufferProperties& properties)
+	VertexBuffer::VertexBuffer(Disarray::Device& dev, Disarray::Swapchain& swapchain, const Disarray::VertexBufferProperties& properties)
 		: device(dev)
 		, vertex_count(props.count)
 		, props(properties)
 	{
 		if (props.data) {
-			create_with_valid_data(swapchain, physical_device);
+			create_with_valid_data(swapchain);
 		} else {
 			create_with_empty_data();
 		}
@@ -30,7 +29,7 @@ namespace Disarray::Vulkan {
 		std::memcpy(vma_allocation_info.pMappedData, std::bit_cast<std::byte*>(data), size);
 	}
 
-	void VertexBuffer::create_with_valid_data(Ref<Disarray::Swapchain> swapchain, Ref<Disarray::PhysicalDevice> physical_device)
+	void VertexBuffer::create_with_valid_data(Disarray::Swapchain& swapchain)
 	{
 		Allocator allocator { "VertexBuffer" };
 		// create staging buffer
@@ -53,7 +52,7 @@ namespace Disarray::Vulkan {
 		allocation = allocator.allocate_buffer(buffer, vertex_buffer_create_info, { Usage::AUTO_PREFER_DEVICE });
 
 		auto&& [immediate, destruction]
-			= construct_immediate<Vulkan::CommandExecutor>(device, swapchain, physical_device->get_queue_family_indexes());
+			= construct_immediate<Vulkan::CommandExecutor>(device, swapchain);
 
 		VkBufferCopy copy_region = {};
 		copy_region.size = props.size;

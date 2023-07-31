@@ -4,9 +4,9 @@
 
 namespace Disarray {
 
-	Ref<VertexBuffer> VertexBuffer::construct(Ref<Disarray::Device> device, Ref<Disarray::Swapchain> swapchain, Ref<Disarray::PhysicalDevice> physical_device, const Disarray::VertexBufferProperties& props)
+	Ref<VertexBuffer> VertexBuffer::construct(Disarray::Device& device, Disarray::Swapchain& swapchain, const Disarray::VertexBufferProperties& props)
 	{
-		return make_ref<Vulkan::VertexBuffer>(device, swapchain, physical_device, props);
+		return make_ref<Vulkan::VertexBuffer>(device, swapchain, props);
 	}
 
 }

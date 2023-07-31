@@ -22,7 +22,7 @@ namespace Disarray {
 
 		operator bool() const { return is_complete(); }
 
-		static Ref<QueueFamilyIndex> construct(Ref<Disarray::PhysicalDevice>, Ref<Disarray::Surface>);
+		static Ref<QueueFamilyIndex> construct(Disarray::PhysicalDevice&, Disarray::Surface&);
 
 	protected:
 		bool is_complete() const { return graphics.has_value() && compute.has_value() && present.has_value(); }

@@ -21,11 +21,11 @@ namespace Disarray {
 	public:
 		virtual ~Mesh() = default;
 
-		virtual Ref<Pipeline> get_pipeline() = 0;
-		virtual Ref<VertexBuffer> get_vertices() = 0;
-		virtual Ref<IndexBuffer> get_indices() = 0;
+		virtual Pipeline& get_pipeline() = 0;
+		virtual VertexBuffer& get_vertices() = 0;
+		virtual IndexBuffer& get_indices() = 0;
 
-		static Ref<Mesh> construct(Ref<Disarray::Device>, Ref<Disarray::Swapchain>, Ref<Disarray::PhysicalDevice>, const MeshProperties& = {});
+		static Ref<Mesh> construct(Disarray::Device&, Disarray::Swapchain&, const MeshProperties& = {});
 	};
 
 }

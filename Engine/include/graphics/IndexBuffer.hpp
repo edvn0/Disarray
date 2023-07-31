@@ -21,7 +21,7 @@ namespace Disarray {
 		virtual std::size_t size() = 0;
 		virtual void set_data(const void*, std::size_t) = 0;
 
-		static Ref<IndexBuffer> construct(Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> swapchain, Ref<Disarray::PhysicalDevice> physical_device,  const IndexBufferProperties&);
+		static Ref<IndexBuffer> construct(Disarray::Device&, Disarray::Swapchain&, const IndexBufferProperties&);
 	};
 
 }

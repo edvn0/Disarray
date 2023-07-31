@@ -15,22 +15,27 @@
 
 namespace Disarray {
 
-	App::App()
+	App::App(const Disarray::ApplicationProperties& props)
 	{
-		window = Window::construct(1280, 720);
-		physical_device = PhysicalDevice::construct(window->get_instance(), window->get_surface());
-		device = Device::construct(physical_device);
-		swapchain = Swapchain::construct(window, device, physical_device);
+		window = Window::construct(props);
+		device = Device::construct(*window);
 
-		initialise_allocator(device, physical_device, window->get_instance());
+		initialise_allocator(*device, window->get_instance());
+		swapchain = Swapchain::construct(*window, *device);
 	}
 
-	App::~App() { destroy_allocator(); Log::debug("App destructor called."); };
+	App::~App()
+	{
+		swapchain.reset();
+		destroy_allocator();
+	};
 
 	void App::run()
 	{
-		auto constructed_renderer = Renderer::construct(device, swapchain, physical_device, {});
-		constructed_renderer->set_extent({.width = swapchain->get_extent().width, .height = swapchain->get_extent().height});
+		on_attach();
+
+		auto constructed_renderer = Renderer::construct(*device, *swapchain, {});
+		constructed_renderer->set_extent({ .width = swapchain->get_extent().width, .height = swapchain->get_extent().height });
 		auto l = add_layer<UI::InterfaceLayer>();
 		auto ui_layer = cast_to<UI::InterfaceLayer>(l);
 
@@ -45,26 +50,34 @@ namespace Disarray {
 			window->update();
 
 			if (!swapchain->prepare_frame()) {
+				renderer.force_recreation();
 				for (auto& layer : layers) {
 					layer->handle_swapchain_recreation(renderer);
 				}
 				continue;
 			}
+
 			renderer.begin_frame({});
-			ui_layer->begin();
+			const auto needs_recreation = swapchain->needs_recreation();
 			float time_step = Clock::ms() - current_time;
 			for (auto& layer : layers) {
-				if (swapchain->needs_recreation()) layer->handle_swapchain_recreation(renderer);
+				if (needs_recreation)
+					layer->handle_swapchain_recreation(renderer);
 				layer->update(time_step, renderer);
 			}
-			ui_layer->end(renderer);
+			ui_layer->begin();
+			for (auto& layer : layers) {
+				layer->interface();
+			}
+			ui_layer->end();
 			renderer.end_frame({});
+
 			swapchain->reset_recreation_status();
-			current_time = Clock::ms();
 			swapchain->present();
+			current_time = Clock::ms();
 		}
 
-		wait_for_cleanup(device);
+		wait_for_cleanup(*device);
 
 		for (auto& layer : layers) {
 			layer->destruct();

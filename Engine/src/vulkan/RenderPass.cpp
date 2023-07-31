@@ -5,46 +5,49 @@
 #include "vulkan/Device.hpp"
 #include "vulkan/Image.hpp"
 #include "vulkan/Verify.hpp"
+#include "vulkan/vulkan_core.h"
 
 #include <array>
 
 namespace Disarray::Vulkan {
 
-	RenderPass::RenderPass(Ref<Disarray::Device> dev, const Disarray::RenderPassProperties& properties)
+	RenderPass::RenderPass(Disarray::Device& dev, const Disarray::RenderPassProperties& properties)
 		: device(dev)
 		, props(properties)
 	{
-		  recreate(false);
+		recreate_renderpass(false);
 	}
 
-	RenderPass::~RenderPass()
+	RenderPass::~RenderPass() { vkDestroyRenderPass(supply_cast<Vulkan::Device>(device), render_pass, nullptr); }
+
+	void RenderPass::recreate_renderpass(bool should_clean)
 	{
-		vkDestroyRenderPass(supply_cast<Vulkan::Device>(device), render_pass, nullptr);
-	}
-
-	void RenderPass::recreate(bool should_clean) {
-		if (should_clean) vkDestroyRenderPass(supply_cast<Vulkan::Device>(device), render_pass, nullptr);
+		if (should_clean)
+			vkDestroyRenderPass(supply_cast<Vulkan::Device>(device), render_pass, nullptr);
 
 		VkAttachmentDescription color_attachment {};
 		color_attachment.format = to_vulkan_format(props.image_format);
 		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		color_attachment.loadOp = props.load_colour ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_CLEAR;
+		color_attachment.storeOp = props.keep_colour ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_NONE;
 		color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		color_attachment.initialLayout = props.load_colour ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
+		color_attachment.finalLayout = props.keep_colour ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
+
+		if (props.should_present) {
+			color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		}
 
 		VkAttachmentDescription depth_attachment {};
 		depth_attachment.format = to_vulkan_format(props.depth_format);
 		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depth_attachment.loadOp = props.load_depth ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depth_attachment.storeOp = props.keep_depth ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		depth_attachment.initialLayout = props.load_depth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
+		depth_attachment.finalLayout = props.keep_depth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
 
 		VkAttachmentReference color_attachment_ref {};
 		color_attachment_ref.attachment = 0;
@@ -58,17 +61,19 @@ namespace Disarray::Vulkan {
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &color_attachment_ref;
-		subpass.pDepthStencilAttachment = &depth_attachment_ref;
+		subpass.pDepthStencilAttachment = props.has_depth ? &depth_attachment_ref : nullptr;
 
-		VkSubpassDependency dependency{};
+		VkSubpassDependency dependency {};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-		std::array<VkAttachmentDescription, 2> attachments = {color_attachment, depth_attachment};
+		std::vector<VkAttachmentDescription> attachments = { color_attachment };
+		if (props.has_depth)
+			attachments.push_back(depth_attachment);
 
 		VkRenderPassCreateInfo render_pass_info {};
 		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;

@@ -57,7 +57,7 @@ namespace Disarray::Vulkan {
 		Allocator(const std::string& resource_name = "Unknown Resource");
 		~Allocator();
 
-		static void initialise(Ref<Vulkan::Device>, Ref<Vulkan::PhysicalDevice>, Ref<Vulkan::Instance>);
+		static void initialise(Vulkan::Device&, Vulkan::PhysicalDevice&, Vulkan::Instance&);
 		static void shutdown();
 
 		template <typename T> T* map_memory(VmaAllocation allocation)

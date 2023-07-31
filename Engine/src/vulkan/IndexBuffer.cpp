@@ -7,14 +7,13 @@
 
 namespace Disarray::Vulkan {
 
-	IndexBuffer::IndexBuffer(Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> swapchain, Ref<Disarray::PhysicalDevice> physical_device,
-		const Disarray::IndexBufferProperties& properties)
+	IndexBuffer::IndexBuffer(Disarray::Device& dev, Disarray::Swapchain& swapchain, const IndexBufferProperties& properties)
 		: device(dev)
 		, props(properties)
 		, index_count(properties.size / sizeof(std::uint32_t))
 	{
 		if (props.data) {
-			create_with_valid_data(swapchain, physical_device);
+			create_with_valid_data(swapchain);
 		} else {
 			create_with_empty_data();
 		}
@@ -28,7 +27,7 @@ namespace Disarray::Vulkan {
 
 	void IndexBuffer::set_data(const void* data, std::size_t size) { std::memcpy(vma_allocation_info.pMappedData, data, size); }
 
-	void IndexBuffer::create_with_valid_data(Ref<Disarray::Swapchain> swapchain, Ref<Disarray::PhysicalDevice> physical_device)
+	void IndexBuffer::create_with_valid_data(Disarray::Swapchain& swapchain)
 	{
 		Allocator allocator { "VertexBuffer" };
 
@@ -52,7 +51,7 @@ namespace Disarray::Vulkan {
 		allocation = allocator.allocate_buffer(buffer, vertex_buffer_create_info, { Usage::AUTO_PREFER_DEVICE });
 
 		auto&& [immediate, destruction]
-			= construct_immediate<Vulkan::CommandExecutor>(device, swapchain, physical_device->get_queue_family_indexes());
+			= construct_immediate<Vulkan::CommandExecutor>(device, swapchain);
 
 		VkBufferCopy copy_region = {};
 		copy_region.size = props.size;

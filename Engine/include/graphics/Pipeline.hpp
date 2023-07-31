@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Forward.hpp"
 #include "PushContantLayout.hpp"
 #include "core/Types.hpp"
 #include "graphics/Swapchain.hpp"
@@ -98,7 +99,7 @@ namespace Disarray {
 	struct PipelineProperties {
 		Ref<Shader> vertex_shader { nullptr };
 		Ref<Shader> fragment_shader { nullptr };
-		Ref<RenderPass> render_pass { nullptr };
+		Ref<Framebuffer> framebuffer { nullptr };
 		VertexLayout layout {};
 		PushConstantLayout push_constant_layout {};
 		Extent extent { 0, 0 };
@@ -110,7 +111,11 @@ namespace Disarray {
 	public:
 		virtual ~Pipeline() = default;
 		virtual void force_recreation() = 0;
-		static Ref<Pipeline> construct(Ref<Device>, Ref<Disarray::Swapchain>, const PipelineProperties&);
+
+		virtual Disarray::RenderPass& get_render_pass() = 0;
+		virtual Disarray::Framebuffer& get_framebuffer() = 0;
+
+		static Ref<Pipeline> construct(Disarray::Device&, Disarray::Swapchain&, const PipelineProperties&);
 	};
 
 } // namespace Disarray

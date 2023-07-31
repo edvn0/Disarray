@@ -10,6 +10,8 @@ namespace Disarray {
 		Extent extent;
 		ImageFormat format;
 		DataBuffer data;
+		bool should_present {false};
+		std::string debug_name;
 	};
 
 	class Image {
@@ -17,7 +19,7 @@ namespace Disarray {
 		virtual ~Image() = default;
 		virtual void force_recreation() = 0;
 		virtual void recreate(bool should_clean) = 0;
-		static Ref<Image> construct(Ref<Device>, Ref<Swapchain>, Ref<PhysicalDevice>, const ImageProperties&);
+		static Ref<Image> construct(Disarray::Device&, Disarray::Swapchain&, const ImageProperties&);
 	};
 
 }

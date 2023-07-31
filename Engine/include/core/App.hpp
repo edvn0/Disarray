@@ -15,20 +15,28 @@ namespace Disarray {
 	class PhysicalDevice;
 	class Renderer;
 
+	struct ApplicationProperties {
+		std::uint32_t width {0};
+		std::uint32_t height {0};
+		std::string name {};
+	};
+
 	class App {
 	public:
-		~App();
-		App();
+		virtual ~App();
+		App(const ApplicationProperties&);
 		void run();
+
+		virtual void on_attach() = 0;
 
 		template <typename T, typename... Args>
 		decltype(auto) add_layer(Args&&... args)
-			requires (std::is_base_of_v<Layer, T> && requires (Ref<Device> dev, Ref<PhysicalDevice> phy, Scope<Window>& win, Ref<Swapchain> swap)
+			requires (std::is_base_of_v<Layer, T> && requires (Device& dev, PhysicalDevice& phy, Window& win, Swapchain& swap)
 				{
-					T(dev, phy, win, swap);
+					T(dev, win, swap);
 				})
 		{
-			return layers.emplace_back(Ref<T> { new T(device, physical_device, window, swapchain, std::forward(args)...) });
+			return layers.emplace_back(Ref<T> { new T(*device, *window, *swapchain, std::forward(args)...) });
 		}
 
 		template <typename T, typename... Args>
@@ -52,5 +60,7 @@ namespace Disarray {
 		Ref<Swapchain> swapchain {nullptr};
 		std::vector<Ref<Layer>> layers {};
 	};
+
+	extern std::unique_ptr<Disarray::App> create_application(const Disarray::ApplicationProperties&);
 
 } // namespace Disarray

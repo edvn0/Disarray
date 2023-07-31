@@ -11,15 +11,14 @@
 
 namespace Disarray::Vulkan {
 
-	CommandExecutor::CommandExecutor(Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> sc, Ref<Disarray::QueueFamilyIndex> index,
-		const Disarray::CommandExecutorProperties& properties)
+	CommandExecutor::CommandExecutor(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::CommandExecutorProperties& properties)
 		: device(dev)
-		, indexes(index)
+		, indexes(device.get_physical_device().get_queue_family_indexes())
 		, swapchain(sc)
 		, props(properties)
+		, is_frame_dependent_executor(properties.count.has_value() && *properties.count > 1 && !properties.owned_by_swapchain)
 	{
 		recreate(false);
-		Log::debug("Constructed command executor!");
 	}
 
 	void CommandExecutor::recreate(bool should_clean)
@@ -36,11 +35,11 @@ namespace Disarray::Vulkan {
 		VkCommandPoolCreateInfo pool_info {};
 		pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		pool_info.queueFamilyIndex = indexes->get_graphics_family();
+		pool_info.queueFamilyIndex = indexes.get_graphics_family();
 
 		verify(vkCreateCommandPool(supply_cast<Vulkan::Device>(device), &pool_info, nullptr, &command_pool));
 
-		auto count = props.count ? *props.count : swapchain->image_count();
+		auto count = props.count ? *props.count : swapchain.image_count();
 		if (count > Config::max_frames_in_flight)
 			count = Config::max_frames_in_flight;
 
@@ -52,7 +51,7 @@ namespace Disarray::Vulkan {
 		alloc_info.commandBufferCount = count;
 		verify(vkAllocateCommandBuffers(vk_device, &alloc_info, command_buffers.data()));
 
-		graphics_queue = cast_to<Vulkan::Device>(device)->get_graphics_queue();
+		graphics_queue = cast_to<Vulkan::Device>(device).get_graphics_queue();
 
 		fences.resize(count);
 
@@ -63,6 +62,8 @@ namespace Disarray::Vulkan {
 		for (size_t i = 0; i < count; i++) {
 			verify(vkCreateFence(vk_device, &fence_create_info, nullptr, &fences[i]));
 		}
+
+		image_count = count;
 	}
 
 	void CommandExecutor::begin()
@@ -73,10 +74,9 @@ namespace Disarray::Vulkan {
 		begin_info.pInheritanceInfo = nullptr; // Optional
 
 		if (props.owned_by_swapchain) {
-			active = cast_to<Vulkan::Swapchain>(swapchain)->get_drawbuffer();
+			active = cast_to<Vulkan::Swapchain>(swapchain).get_drawbuffer();
 		} else {
-			current = swapchain->get_image_index();
-			active = command_buffers[current];
+			active = command_buffers[buffer_index()];
 		}
 		verify(vkBeginCommandBuffer(active, &begin_info));
 	}
@@ -96,20 +96,33 @@ namespace Disarray::Vulkan {
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submit_info.commandBufferCount = 1;
 		submit_info.pCommandBuffers = &active;
-		verify(vkWaitForFences(supply_cast<Vulkan::Device>(device), 1, &fences[current], VK_TRUE, UINT64_MAX));
-		verify(vkResetFences(supply_cast<Vulkan::Device>(device), 1, &fences[current]));
+		verify(vkWaitForFences(supply_cast<Vulkan::Device>(device), 1, &fences[buffer_index()], VK_TRUE, UINT64_MAX));
+		verify(vkResetFences(supply_cast<Vulkan::Device>(device), 1, &fences[buffer_index()]));
 
-		verify(vkQueueSubmit(graphics_queue, 1, &submit_info, fences[current]));
+		verify(vkQueueSubmit(graphics_queue, 1, &submit_info, fences[buffer_index()]));
+
+		verify(vkWaitForFences(supply_cast<Vulkan::Device>(device), 1, &fences[buffer_index()], VK_TRUE, UINT64_MAX));
+
+		current = (current + 1) % image_count;
 	}
 
 	CommandExecutor::~CommandExecutor()
 	{
-		Log::debug("Destructed command executor!");
 		if (props.owned_by_swapchain)
 			return;
 		vkDestroyCommandPool(supply_cast<Vulkan::Device>(device), command_pool, nullptr);
-		for (auto& fence :fences)
+		for (auto& fence : fences)
 			vkDestroyFence(supply_cast<Vulkan::Device>(device), fence, nullptr);
+	}
+
+	void CommandExecutor::begin(VkCommandBufferBeginInfo begin_info)
+	{
+		if (props.owned_by_swapchain) {
+			active = static_cast<Vulkan::Swapchain&>(swapchain).get_drawbuffer();
+		} else {
+			active = command_buffers[buffer_index()];
+		}
+		verify(vkBeginCommandBuffer(active, &begin_info));
 	}
 
 } // namespace Disarray::Vulkan

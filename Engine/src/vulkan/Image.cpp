@@ -11,14 +11,34 @@
 
 namespace Disarray::Vulkan {
 
-	static constexpr auto is_depth_format = [](auto format) {
-		return format == ImageFormat::Depth || format == ImageFormat::DepthStencil;
-	};
+	static void set_image_layout(VkCommandBuffer command_buffer, VkImage image, VkImageLayout old_image_layout, VkImageLayout new_image_layout,
+		VkImageSubresourceRange subresource_range, VkPipelineStageFlags src_stage_mask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+		VkPipelineStageFlags dst_stage_mask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
-	Image::Image(Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> sc, Ref<Disarray::PhysicalDevice> pd, const Disarray::ImageProperties& properties)
-		: device(dev)
-		, swapchain(sc)
-		, physical_device(pd)
+	static constexpr auto is_depth_format = [](auto format) { return format == ImageFormat::Depth || format == ImageFormat::DepthStencil; };
+
+	constexpr VkImageLayout to_vulkan_layout(ImageFormat format) {
+		switch (format) {
+		case ImageFormat::SRGB:
+			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		case ImageFormat::RGB:
+			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		case ImageFormat::SBGR:
+			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		case ImageFormat::BGR:
+			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		case ImageFormat::Depth:
+			return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		case ImageFormat::DepthStencil:
+			return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		default:
+			unreachable();
+		}
+	}
+
+	Image::Image(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::ImageProperties& properties)
+		: swapchain(sc)
+		, device(dev)
 		, props(properties)
 	{
 		recreate_image(false);
@@ -28,52 +48,32 @@ namespace Disarray::Vulkan {
 	{
 		vkDestroyImageView(supply_cast<Vulkan::Device>(device), info.view, nullptr);
 		vkDestroySampler(supply_cast<Vulkan::Device>(device), info.sampler, nullptr);
-		Allocator allocator { "Image Destructor" };
+		Allocator allocator { "Image Destructor[" + props.debug_name + "]" };
 		allocator.deallocate_image(info.allocation, info.image);
-		Log::debug("Destroyed image.");
+		Log::debug("Image-Destructor", "Destroyed image " + props.debug_name);
 	}
 
-	void Image::recreate(bool should_clean)
-	{
-		recreate_image(should_clean);
-	}
+	void Image::recreate(bool should_clean) { recreate_image(should_clean); }
 
 	void Image::recreate_image(bool should_clean)
 	{
 		if (should_clean) {
-			Allocator allocator { "Image Recreator" };
+			Allocator allocator { "Image Recreator[" + props.debug_name + "]" };
 			vkDestroyImageView(supply_cast<Vulkan::Device>(device), info.view, nullptr);
 			vkDestroySampler(supply_cast<Vulkan::Device>(device), info.sampler, nullptr);
 			allocator.deallocate_image(info.allocation, info.image);
 		}
 
 		if (is_depth_format(props.format)) {
-			props.extent = swapchain->get_extent();
+			props.extent = swapchain.get_extent();
 		}
-		VkDeviceSize size = props.data.is_valid() ? props.data.get_size() : props.extent.get_size();
-
-		VkBuffer staging;
-		{
-			VkBufferCreateInfo staging_create_info { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-			staging_create_info.size = size;
-			staging_create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-			staging_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			Allocator staging_allocator { "Image Recreator" };
-			VmaAllocation staging_allocation = staging_allocator.allocate_buffer(
-				staging, staging_create_info, { .usage = Usage::CPU_TO_GPU, .creation = Creation::HOST_ACCESS_RANDOM_BIT });
-			{
-				AllocationMapper<std::byte> mapper { staging_allocator, staging_allocation, props.data };
-			}
-			staging_allocator.deallocate_buffer(staging_allocation, staging);
-		}
-
 
 		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT;
 		if (is_depth_format(props.format)) {
-				usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-			} else {
-				usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-			}
+			usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		} else {
+			usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		}
 		usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 		VkImageAspectFlags aspect_mask = props.format == ImageFormat::Depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
@@ -95,8 +95,8 @@ namespace Disarray::Vulkan {
 		image_create_info.tiling = VK_IMAGE_TILING_OPTIMAL;
 		image_create_info.usage = usage;
 		{
-			Allocator allocator{"Image allocator"};
-			info.allocation = allocator.allocate_image(info.image, image_create_info, {.usage = Usage::GPU_ONLY});
+			Allocator allocator { "Image allocator[" + props.debug_name + "]" };
+			info.allocation = allocator.allocate_image(info.image, image_create_info, { .usage = Usage::GPU_ONLY });
 		}
 
 		VkImageViewCreateInfo image_view_create_info {};
@@ -132,12 +132,23 @@ namespace Disarray::Vulkan {
 
 		update_descriptor();
 
-		if (!props.data) return;
+		VkDeviceSize size = props.data.is_valid() ? props.data.get_size() : props.extent.get_size() * sizeof(float);
+		VkBuffer staging;
+		VkBufferCreateInfo staging_create_info { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		staging_create_info.size = size;
+		staging_create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		staging_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		Allocator staging_allocator { "Image Recreator" };
+		VmaAllocation staging_allocation = staging_allocator.allocate_buffer(
+			staging, staging_create_info, { .usage = Usage::CPU_TO_GPU, .creation = Creation::HOST_ACCESS_RANDOM_BIT });
+		{
+			AllocationMapper<std::byte> mapper { staging_allocator, staging_allocation, props.data };
+		}
 
-		auto&& [immediate, destructor] = construct_immediate<Vulkan::CommandExecutor>(device, swapchain, physical_device->get_queue_family_indexes());
-
+		auto&& [immediate, destructor] = construct_immediate<Vulkan::CommandExecutor>(device, swapchain);
+		auto buffer = immediate->supply();
 		VkImageSubresourceRange subresource_range = {};
-		subresource_range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresource_range.aspectMask = aspect_mask;
 		subresource_range.baseMipLevel = 0;
 		subresource_range.levelCount = 1;
 		subresource_range.layerCount = 1;
@@ -153,11 +164,11 @@ namespace Disarray::Vulkan {
 		image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
-		vkCmdPipelineBarrier(immediate->supply(), VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1,
-			&image_memory_barrier);
+		vkCmdPipelineBarrier(
+			buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
 
 		VkBufferImageCopy buffer_copy_region = {};
-		buffer_copy_region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		buffer_copy_region.imageSubresource.aspectMask = aspect_mask;
 		buffer_copy_region.imageSubresource.mipLevel = 0;
 		buffer_copy_region.imageSubresource.baseArrayLayer = 0;
 		buffer_copy_region.imageSubresource.layerCount = 1;
@@ -166,17 +177,19 @@ namespace Disarray::Vulkan {
 		buffer_copy_region.imageExtent.depth = 1;
 		buffer_copy_region.bufferOffset = 0;
 
-		vkCmdCopyBufferToImage(
-			immediate->supply(), staging, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &buffer_copy_region);
+		vkCmdCopyBufferToImage(buffer, staging, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &buffer_copy_region);
 
-		Utilities::insert_image_memory_barrier(immediate->supply(), info.image, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, descriptor_info.imageLayout, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, subresource_range);
+		VkImageLayout layout = to_vulkan_layout(props.format);
+		if (props.should_present) layout =VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		set_image_layout(buffer, info.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
+		set_image_layout(buffer, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout, subresource_range);
 
 		destructor(immediate);
+		staging_allocator.deallocate_buffer(staging_allocation, staging);
 	}
 
-	void Image::update_descriptor() {
+	void Image::update_descriptor()
+	{
 		if (props.format == ImageFormat::DepthStencil || props.format == ImageFormat::Depth)
 			descriptor_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 		else
@@ -186,4 +199,78 @@ namespace Disarray::Vulkan {
 		descriptor_info.sampler = info.sampler;
 	}
 
-}
+	void set_image_layout(VkCommandBuffer command_buffer, VkImage image, VkImageLayout old_image_layout, VkImageLayout new_image_layout,
+		VkImageSubresourceRange subresource_range, VkPipelineStageFlags src_stage_mask, VkPipelineStageFlags dst_stage_mask)
+	{
+		VkImageMemoryBarrier image_memory_barrier = {};
+		image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		image_memory_barrier.oldLayout = old_image_layout;
+		image_memory_barrier.newLayout = new_image_layout;
+		image_memory_barrier.image = image;
+		image_memory_barrier.subresourceRange = subresource_range;
+
+		switch (old_image_layout) {
+		case VK_IMAGE_LAYOUT_UNDEFINED:
+			image_memory_barrier.srcAccessMask = 0;
+			break;
+
+		case VK_IMAGE_LAYOUT_PREINITIALIZED:
+			image_memory_barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+			image_memory_barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+			image_memory_barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+			image_memory_barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+			image_memory_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+			image_memory_barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			break;
+		default:
+			break;
+		}
+
+		switch (new_image_layout) {
+		case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+			image_memory_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+			image_memory_barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+			image_memory_barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+			image_memory_barrier.dstAccessMask = image_memory_barrier.dstAccessMask | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+			if (image_memory_barrier.srcAccessMask == 0) {
+				image_memory_barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+			}
+			image_memory_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			break;
+		default:
+			break;
+		}
+
+		vkCmdPipelineBarrier(command_buffer, src_stage_mask, dst_stage_mask, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+	}
+
+} // namespace Disarray::Vulkan

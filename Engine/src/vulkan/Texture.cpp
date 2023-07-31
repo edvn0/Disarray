@@ -10,34 +10,31 @@
 namespace Disarray::Vulkan {
 
 	Texture::Texture(
-		Ref<Disarray::Device> dev, Ref<Disarray::Swapchain> sc, Ref<Disarray::PhysicalDevice> pd, const Disarray::TextureProperties& properties)
+		Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::TextureProperties& properties)
 		: device(dev)
-		, swapchain(sc)
-		, physical_device(pd)
 		, props(properties)
 	{
 		load_pixels();
-		image = make_ref<Vulkan::Image>(device, swapchain, physical_device,
+		image = make_scope<Vulkan::Image>(device, sc,
 			ImageProperties {
 				.extent = props.extent,
 				.format = props.format,
 				.data = pixels,
+				.should_present = props.should_present,
+				.debug_name = props.debug_name,
 			});
 	}
 
-	Texture::~Texture()
-	{
-		Log::debug("Destroyed texture.");
-	}
+	Texture::~Texture() { Log::debug("Texture-Destructor", "Destroyed texture."); }
 
-	void Texture::recreate(bool should_clean)
+	void Texture::recreate_texture(bool should_clean)
 	{
-		Allocator allocator { "Texture" };
 		image->recreate(should_clean);
 	}
 
-	void Texture::load_pixels() {
-		if (!props.path.empty()){
+	void Texture::load_pixels()
+	{
+		if (!props.path.empty()) {
 			ImageLoader loader { props.path, pixels };
 		}
 	}

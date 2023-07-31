@@ -2,16 +2,13 @@
 
 #include "ImageProperties.hpp"
 #include "core/Types.hpp"
+#include "Forward.hpp"
 
 namespace Disarray {
 
-	class Device;
-	class PhysicalDevice;
-	class Window;
-
 	class Swapchain {
 	public:
-		static Ref<Swapchain> construct(Scope<Window>&, Ref<Device>, Ref<PhysicalDevice>, Ref<Swapchain> = nullptr);
+		static Ref<Swapchain> construct(Disarray::Window&, Disarray::Device&, Disarray::Swapchain* = nullptr);
 
 		virtual std::uint32_t image_count() const = 0;
 		virtual Extent get_extent() const = 0;
@@ -25,6 +22,9 @@ namespace Disarray {
 
 		virtual bool needs_recreation() = 0;
 		virtual void reset_recreation_status() = 0;
+
+		virtual Disarray::RenderPass& get_render_pass() = 0;
+		virtual Disarray::Framebuffer& get_current_framebuffer() = 0;
 
 		virtual ~Swapchain() = default;
 	};

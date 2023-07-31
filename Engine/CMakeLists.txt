@@ -6,10 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(THIRD_PARTY "${CMAKE_SOURCE_DIR}/ThirdParty")
-
 find_package(Vulkan REQUIRED)
-
 
 add_library(${PROJECT_NAME} STATIC
         ${THIRD_PARTY}/imgui/backends/imgui_impl_glfw.cpp
@@ -46,10 +43,12 @@ add_library(${PROJECT_NAME} STATIC
         src/vulkan/MemoryAllocator.cpp
         src/vulkan/ImageUtilities.cpp
         src/vulkan/CleanupAwaiter.cpp
+        src/vulkan/UI.cpp
         src/vulkan/Window.cpp
         src/vulkan/Surface.cpp
         src/vulkan/Swapchain.cpp
         src/vulkan/ExtensionSupport.cpp
+        src/vulkan/Verify.cpp
         src/vulkan/Instance.cpp
         src/vulkan/Shader.cpp
         src/vulkan/Pipeline.cpp

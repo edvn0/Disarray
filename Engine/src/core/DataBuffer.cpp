@@ -21,7 +21,6 @@ namespace Disarray {
 	DataBuffer::~DataBuffer()
 	{
 		delete[] data;
-		Log::debug("DataBuffer was destructed.");
 	}
 
 	void DataBuffer::reset()
