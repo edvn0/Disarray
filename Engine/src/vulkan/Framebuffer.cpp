@@ -80,14 +80,14 @@ namespace Disarray::Vulkan {
 
 		framebuffers.resize(swapchain.image_count());
 		for (size_t i = 0; i < framebuffers.size(); i++) {
-			auto texture = cast_to<Vulkan::Texture>(textures[i]);
+			auto texture = textures[i].as<Vulkan::Texture>();
 			std::vector<VkImageView> attachments = { texture->get_view() };
 			if (props.has_depth)
-				attachments.push_back(cast_to<Vulkan::Texture>(depth_texture)->get_view());
+				attachments.push_back(depth_texture.as<Vulkan::Texture>()->get_view());
 
 			VkFramebufferCreateInfo framebuffer_info {};
 			framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebuffer_info.renderPass = supply_cast<Vulkan::RenderPass>(render_pass);
+			framebuffer_info.renderPass = *render_pass.as<Vulkan::RenderPass>();
 			framebuffer_info.attachmentCount = attachments.size();
 			framebuffer_info.pAttachments = attachments.data();
 			framebuffer_info.width = swapchain.get_extent().width;

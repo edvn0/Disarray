@@ -126,7 +126,7 @@ namespace Disarray {
 		};
 
 		auto pipeline = Pipeline::construct(device, swapchain, properties);
-		const auto& out = pipeline_cache.try_emplace(props.pipeline_key, pipeline);
+		auto out = pipeline_cache.insert(std::make_pair(props.pipeline_key, std::move(pipeline)));
 		return out.first->second;
 	}
 

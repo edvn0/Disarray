@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/ReferenceCounted.hpp"
+
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
@@ -7,8 +9,8 @@
 
 namespace Disarray {
 
-	template <class T> using Ref = std::shared_ptr<T>;
-	template <class T, class... Args> Ref<T> make_ref(Args&&... args) { return Ref<T> { new T { std::forward<Args>(args)... } }; }
+	template <class T> using Ref = ReferenceCounted<T>;
+	template <class T, class... Args> Ref<T> make_ref(Args&&... args) { return ReferenceCounted<T> { new T { std::forward<Args>(args)... } }; }
 
 	template <class T> using Scope = std::unique_ptr<T>;
 	template <class T, class... Args> Scope<T> make_scope(Args&&... args) { return Scope<T> { new T { std::forward<Args>(args)... } }; }
@@ -49,8 +51,6 @@ namespace Disarray {
 #endif
 	}
 
-	template <class To, class From> decltype(auto) cast_to(Ref<From> ptr) { return std::dynamic_pointer_cast<To>(ptr); }
-
 	template <class To, class From>
 		requires(std::is_base_of_v<From, To>)
 	decltype(auto) cast_to(From&& obj)
@@ -70,13 +70,6 @@ namespace Disarray {
 	decltype(auto) cast_to(From& obj)
 	{
 		return polymorphic_cast<To>(obj);
-	}
-
-	template <class To, class From>
-		requires(std::is_base_of_v<From, To> && requires(Ref<To> t) { t->supply(); })
-	decltype(auto) supply_cast(Ref<From> ptr)
-	{
-		return std::dynamic_pointer_cast<To>(ptr)->supply();
 	}
 
 	template <class To, class From>

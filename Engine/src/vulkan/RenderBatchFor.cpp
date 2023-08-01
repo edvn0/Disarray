@@ -3,6 +3,7 @@
 #include "vulkan/IndexBuffer.hpp"
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/Renderer.hpp"
+#include "vulkan/Texture.hpp"
 #include "vulkan/VertexBuffer.hpp"
 
 namespace Disarray::Vulkan {
@@ -130,7 +131,7 @@ namespace Disarray::Vulkan {
 		const auto& vb = vertex_buffer;
 		const auto& ib = index_buffer;
 		// const auto& descriptor = descriptor_sets[renderer.get_current_frame()];
-		const auto& pipeline = cast_to<Vulkan::Pipeline>(renderer.get_pipeline_cache().get("line"));
+		const auto& pipeline = renderer.get_pipeline_cache().get_as<Vulkan::Pipeline>("line");
 		const auto index_count = submitted_indices;
 
 		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->supply());
@@ -138,11 +139,11 @@ namespace Disarray::Vulkan {
 		vkCmdPushConstants(command_buffer, pipeline->get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),
 			renderer.get_push_constant());
 
-		const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(vb) };
+		const std::array<VkBuffer, 1> vbs { vb.as<Vulkan::VertexBuffer>()->supply() };
 		constexpr VkDeviceSize offsets { 0 };
 		vkCmdBindVertexBuffers(command_buffer, 0, 1, vbs.data(), &offsets);
 
-		vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(ib), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(command_buffer, ib.as<Vulkan::IndexBuffer>()->supply(), 0, VK_INDEX_TYPE_UINT32);
 
 		/*
 		 * if (pipeline->get_vulkan_pipeline_layout()) {

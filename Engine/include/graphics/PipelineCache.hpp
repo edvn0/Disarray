@@ -38,6 +38,8 @@ namespace Disarray {
 		const Ref<Disarray::Pipeline>& get(const std::string&);
 		const Ref<Disarray::Pipeline>& put(const PipelineCacheCreationProperties&);
 
+		template <class T> const Ref<T>& get_as(const std::string& key) { return get(key).as<T>(); }
+
 		const ShaderPair& get_shader(const std::string&);
 
 		void force_recreation();

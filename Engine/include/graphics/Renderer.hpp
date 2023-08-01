@@ -50,10 +50,8 @@ namespace Disarray {
 		virtual void submit_batched_geometry(Disarray::CommandExecutor&) = 0;
 	};
 
-	class Renderer : public IGraphics {
+	class Renderer : public IGraphics, public ReferenceCountable {
 	public:
-		virtual ~Renderer() = default;
-
 		virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&) = 0;
 		virtual void begin_pass(Disarray::CommandExecutor&) = 0;
 		virtual void end_pass(Disarray::CommandExecutor&) = 0;

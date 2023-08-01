@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Forward.hpp"
+#include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
 #include "graphics/ImageProperties.hpp"
 
@@ -20,9 +21,9 @@ namespace Disarray {
 
 	class Device;
 
-	class RenderPass {
+	class RenderPass : public ReferenceCountable {
+		DISARRAY_MAKE_REFERENCE_COUNTABLE(RenderPass)
 	public:
-		virtual ~RenderPass() = default;
 		virtual void force_recreation() = 0;
 		virtual void recreate(bool should_clean) = 0;
 		static Ref<RenderPass> construct(Device&, const RenderPassProperties&);

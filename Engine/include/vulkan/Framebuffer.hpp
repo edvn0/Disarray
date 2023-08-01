@@ -32,7 +32,7 @@ namespace Disarray::Vulkan {
 
 		Disarray::Device& device;
 		Disarray::Swapchain& swapchain;
-		Ref<Disarray::RenderPass> render_pass;
+		Ref<Disarray::RenderPass> render_pass { nullptr };
 		std::vector<VkFramebuffer> framebuffers {};
 
 		std::vector<Ref<Disarray::Texture>> textures;

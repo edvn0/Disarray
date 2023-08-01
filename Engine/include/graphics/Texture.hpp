@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Forward.hpp"
+#include "core/ReferenceCounted.hpp"
 #include "graphics/ImageProperties.hpp"
 
 namespace Disarray {
@@ -13,10 +14,9 @@ namespace Disarray {
 		std::string debug_name;
 	};
 
-	class Texture {
+	class Texture : public ReferenceCountable {
+		DISARRAY_MAKE_REFERENCE_COUNTABLE(Texture)
 	public:
-		virtual ~Texture() = default;
-
 		virtual void force_recreation() = 0;
 		virtual void recreate(bool should_clean) = 0;
 

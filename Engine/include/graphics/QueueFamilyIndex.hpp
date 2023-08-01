@@ -11,10 +11,9 @@ namespace Disarray {
 	class Surface;
 	class PhysicalDevice;
 
-	class QueueFamilyIndex {
+	class QueueFamilyIndex : public ReferenceCountable {
+		DISARRAY_MAKE_REFERENCE_COUNTABLE(QueueFamilyIndex)
 	public:
-		virtual ~QueueFamilyIndex() = default;
-
 		std::uint32_t get_graphics_family() const { return get_or_throw(graphics); };
 		std::uint32_t get_compute_family() const { return get_or_throw(compute); };
 		std::uint32_t get_transfer_family() const { return get_or_throw(transfer); };

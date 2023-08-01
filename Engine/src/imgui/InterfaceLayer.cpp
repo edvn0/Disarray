@@ -149,7 +149,7 @@ namespace Disarray::UI {
 
 		vkCmdBeginRenderPass(draw_command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
-		auto imgui_buffer = cast_to<Vulkan::CommandExecutor>(command_executor);
+		auto imgui_buffer = command_executor.as<Vulkan::CommandExecutor>();
 		{
 			VkCommandBufferInheritanceInfo inheritance_info = {};
 			inheritance_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;

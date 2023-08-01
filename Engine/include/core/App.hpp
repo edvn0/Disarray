@@ -5,6 +5,7 @@
 #include "graphics/PipelineCache.hpp"
 #include "ui/InterfaceLayer.hpp"
 
+#include <memory>
 #include <vector>
 
 namespace Disarray {
@@ -33,13 +34,13 @@ namespace Disarray {
 		decltype(auto) add_layer(Args&&... args)
 			requires(std::is_base_of_v<Layer, T> && requires(Device& dev, PhysicalDevice& phy, Window& win, Swapchain& swap) { T(dev, win, swap); })
 		{
-			return layers.emplace_back(Ref<T> { new T(*device, *window, *swapchain, std::forward(args)...) });
+			return layers.emplace_back(std::shared_ptr<T> { new T(*device, *window, *swapchain, std::forward(args)...) });
 		}
 
 		template <typename T, typename... Args> void add_panel(Args&&... args)
 		{
 			// clang-format off
-			Ref<Layer> interface { nullptr };
+			std::shared_ptr<Layer> interface { nullptr };
 			// clang-format on
 			for (const auto& layer : layers)
 				if (layer->is_interface_layer()) {
@@ -47,16 +48,16 @@ namespace Disarray {
 					break;
 				}
 
-			auto interface_layer = cast_to<UI::InterfaceLayer>(interface);
-			interface_layer->add_panel<T>(std::forward<Args>(args)...);
+			auto interface_layer = std::dynamic_pointer_cast<UI::InterfaceLayer>(interface);
+			interface_layer->template add_panel<T>(std::forward<Args>(args)...);
 		}
 
 	private:
 		Scope<Window> window { nullptr };
-		Ref<PhysicalDevice> physical_device { nullptr };
-		Ref<Device> device { nullptr };
-		Ref<Swapchain> swapchain { nullptr };
-		std::vector<Ref<Layer>> layers {};
+		Scope<PhysicalDevice> physical_device { nullptr };
+		Scope<Device> device { nullptr };
+		Scope<Swapchain> swapchain { nullptr };
+		std::vector<std::shared_ptr<Layer>> layers {};
 	};
 
 	extern std::unique_ptr<Disarray::App> create_application(const Disarray::ApplicationProperties&);

@@ -8,7 +8,7 @@ namespace Disarray {
 
 	class Swapchain {
 	public:
-		static Ref<Swapchain> construct(Disarray::Window&, Disarray::Device&, Disarray::Swapchain* = nullptr);
+		static Scope<Swapchain> construct(Disarray::Window&, Disarray::Device&, Disarray::Swapchain* = nullptr);
 
 		virtual std::uint32_t image_count() const = 0;
 		virtual Extent get_extent() const = 0;

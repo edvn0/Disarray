@@ -6,9 +6,9 @@
 
 namespace Disarray {
 
-	Ref<Swapchain> Swapchain::construct(Disarray::Window& window, Disarray::Device& device, Disarray::Swapchain* old)
+	Scope<Swapchain> Swapchain::construct(Disarray::Window& window, Disarray::Device& device, Disarray::Swapchain* old)
 	{
-		return make_ref<Vulkan::Swapchain>(window, device, old);
+		return make_scope<Vulkan::Swapchain>(window, device, old);
 	}
 
 } // namespace Disarray

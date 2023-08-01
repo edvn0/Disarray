@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
 
 namespace Disarray {
@@ -14,10 +15,9 @@ namespace Disarray {
 		std::size_t count;
 	};
 
-	class VertexBuffer {
+	class VertexBuffer : public ReferenceCountable {
+		DISARRAY_MAKE_REFERENCE_COUNTABLE(VertexBuffer)
 	public:
-		virtual ~VertexBuffer() = default;
-
 		virtual std::size_t size() = 0;
 		virtual void set_data(const void*, std::uint32_t) = 0;
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Forward.hpp"
+#include "core/ReferenceCounted.hpp"
 #include "graphics/ImageProperties.hpp"
 
 namespace Disarray {
@@ -17,10 +18,9 @@ namespace Disarray {
 		std::string debug_name { "UnknownFramebuffer" };
 	};
 
-	class Framebuffer {
+	class Framebuffer : public ReferenceCountable {
+		DISARRAY_MAKE_REFERENCE_COUNTABLE(Framebuffer)
 	public:
-		virtual ~Framebuffer() = default;
-
 		virtual void force_recreation() = 0;
 		virtual void recreate(bool should_clean) = 0;
 
