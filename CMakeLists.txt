@@ -15,3 +15,19 @@ add_subdirectory(Engine)
 add_subdirectory(ThirdParty)
 add_subdirectory(App)
 
+
+set(ALL_SOURCES "")
+list(APPEND ALL_SOURCES ${ENGINE_SOURCES} ${APP_SOURCES})
+
+find_program(CLANG_FORMAT "clang-format")
+message(STATUS "Trying to find Clang format...")
+if(CLANG_FORMAT)
+    message(STATUS "Clang format found: ${CLANG_FORMAT}")
+    set(FORMATTABLE_FILES ${ALL_SOURCES})
+
+    add_custom_target(
+            "clang-format-${PROJECT_NAME}" COMMAND ${CLANG_FORMAT} -i -style=file
+            ${FORMATTABLE_FILES})
+else()
+    message(AUTHOR_WARNING "Clang format is missing. Cannot generate formatting target.")
+endif()

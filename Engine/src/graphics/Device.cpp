@@ -5,9 +5,6 @@
 
 namespace Disarray {
 
-	Scope<Device> Device::construct(Window& window)
-	{
-		return make_scope<Vulkan::Device>(window);
-	}
+	Scope<Device> Device::construct(Window& window) { return make_scope<Vulkan::Device>(window); }
 
 } // namespace Disarray

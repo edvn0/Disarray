@@ -30,10 +30,7 @@ namespace Disarray::Vulkan {
 		graphics_queue = cast_to<Vulkan::Device>(device).get_graphics_queue();
 	}
 
-	Swapchain::~Swapchain()
-	{
-		cleanup_swapchain();
-	}
+	Swapchain::~Swapchain() { cleanup_swapchain(); }
 
 	void Swapchain::create_synchronisation_objects()
 	{
@@ -219,20 +216,17 @@ namespace Disarray::Vulkan {
 		alloc_info.commandBufferCount = count;
 		verify(vkAllocateCommandBuffers(supply_cast<Vulkan::Device>(device), &alloc_info, command_buffers.data()));
 
-
 		if (!framebuffer) {
 			framebuffer = Framebuffer::construct(device, *this,
-				{
-					.format = ImageFormat::SBGR,
+				{ .format = ImageFormat::SBGR,
 					.load_colour = true,
 					.keep_colour = true,
 					.load_depth = false,
 					.keep_depth = false,
 					.has_depth = false,
 					.should_present = true,
-					.debug_name = "SwapchainFramebuffer"
-				});
-		}else {
+					.debug_name = "SwapchainFramebuffer" });
+		} else {
 			framebuffer->recreate(should_clean);
 		}
 	}

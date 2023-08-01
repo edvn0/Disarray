@@ -1,6 +1,6 @@
 #include "graphics/Swapchain.hpp"
-#include "core/Types.hpp"
 
+#include "core/Types.hpp"
 #include "core/Window.hpp"
 #include "vulkan/Swapchain.hpp"
 
@@ -11,4 +11,4 @@ namespace Disarray {
 		return make_ref<Vulkan::Swapchain>(window, device, old);
 	}
 
-}
+} // namespace Disarray

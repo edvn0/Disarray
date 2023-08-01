@@ -1,4 +1,5 @@
 #include "core/DataBuffer.hpp"
+
 #include "core/Log.hpp"
 
 #include <cstring>
@@ -18,10 +19,7 @@ namespace Disarray {
 		std::memcpy(data, new_data, s);
 	}
 
-	DataBuffer::~DataBuffer()
-	{
-		delete[] data;
-	}
+	DataBuffer::~DataBuffer() { delete[] data; }
 
 	void DataBuffer::reset()
 	{
@@ -59,7 +57,8 @@ namespace Disarray {
 		return *this;
 	}
 
-	void swap(DataBuffer& first, DataBuffer& second) {
+	void swap(DataBuffer& first, DataBuffer& second)
+	{
 		using std::swap;
 
 		swap(first.size, second.size);

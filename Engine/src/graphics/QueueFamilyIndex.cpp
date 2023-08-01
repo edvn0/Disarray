@@ -9,4 +9,4 @@ namespace Disarray {
 		return make_ref<Vulkan::QueueFamilyIndex>(device, surface);
 	}
 
-}
+} // namespace Disarray

@@ -8,9 +8,7 @@ namespace Disarray::Client {
 
 		};
 
-	AppLayer::~AppLayer() {
-
-	}
+	AppLayer::~AppLayer() { }
 
 	void AppLayer::interface()
 	{
@@ -32,15 +30,13 @@ namespace Disarray::Client {
 		auto extent = swapchain.get_extent();
 
 		framebuffer = Framebuffer::construct(device, swapchain,
-			{
-				.format = Disarray::ImageFormat::SBGR,
+			{ .format = Disarray::ImageFormat::SBGR,
 				.load_colour = false,
 				.keep_colour = true,
 				.load_depth = false,
 				.keep_depth = true,
 				.has_depth = true,
-				.debug_name = "FirstFramebuffer"
-			});
+				.debug_name = "FirstFramebuffer" });
 		const auto& [vert, frag] = renderer.get_pipeline_cache().get_shader("main");
 		PipelineProperties props = {
 			.vertex_shader = vert,
@@ -53,15 +49,13 @@ namespace Disarray::Client {
 		pipeline = Pipeline::construct(device, swapchain, props);
 
 		second_framebuffer = Framebuffer::construct(device, swapchain,
-			{
-				.format = Disarray::ImageFormat::SBGR,
+			{ .format = Disarray::ImageFormat::SBGR,
 				.load_colour = true,
 				.keep_colour = true,
 				.load_depth = true,
 				.keep_depth = true,
 				.has_depth = true,
-				.debug_name = "SecondFramebuffer"
-			});
+				.debug_name = "SecondFramebuffer" });
 
 		command_executor = CommandExecutor::construct(device, swapchain, { .count = 3, .is_primary = true });
 
@@ -125,4 +119,4 @@ namespace Disarray::Client {
 
 	void AppLayer::destruct() { }
 
-}
+} // namespace Disarray::Client

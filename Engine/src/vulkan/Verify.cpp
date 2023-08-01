@@ -151,4 +151,4 @@ namespace Disarray::Vulkan {
 		}
 		}
 	}
-}
+} // namespace Disarray::Vulkan

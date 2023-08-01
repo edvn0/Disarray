@@ -7,4 +7,4 @@ namespace Disarray {
 	{
 	}
 
-} // namespace Alabaster
+} // namespace Disarray

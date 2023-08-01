@@ -1,8 +1,8 @@
 #include "vulkan/Window.hpp"
 
 #include "GLFW/glfw3.h"
-#include "core/Log.hpp"
 #include "core/App.hpp"
+#include "core/Log.hpp"
 #include "vulkan/Swapchain.hpp"
 
 #include <string>
@@ -61,13 +61,12 @@ namespace Disarray::Vulkan {
 		return { width, height };
 	}
 
-	void Window::reset_resize_status() {
-		user_data->was_resized = false;
-	}
+	void Window::reset_resize_status() { user_data->was_resized = false; }
 
 	bool Window::was_resized() const { return user_data->was_resized; }
 
-	void Window::wait_for_minimisation() {
+	void Window::wait_for_minimisation()
+	{
 		int width = 0, height = 0;
 		glfwGetFramebufferSize(window, &width, &height);
 		while (width == 0 || height == 0) {
@@ -76,7 +75,8 @@ namespace Disarray::Vulkan {
 		}
 	}
 
-	std::pair<float, float> Window::get_framebuffer_scale() {
+	std::pair<float, float> Window::get_framebuffer_scale()
+	{
 		float width;
 		float height;
 		glfwGetWindowContentScale(window, &width, &height);

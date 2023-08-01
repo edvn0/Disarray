@@ -9,4 +9,4 @@ namespace Disarray {
 		return make_ref<Vulkan::VertexBuffer>(device, swapchain, props);
 	}
 
-}
+} // namespace Disarray

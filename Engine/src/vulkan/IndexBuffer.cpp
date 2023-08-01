@@ -50,8 +50,7 @@ namespace Disarray::Vulkan {
 		vertex_buffer_create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 		allocation = allocator.allocate_buffer(buffer, vertex_buffer_create_info, { Usage::AUTO_PREFER_DEVICE });
 
-		auto&& [immediate, destruction]
-			= construct_immediate<Vulkan::CommandExecutor>(device, swapchain);
+		auto&& [immediate, destruction] = construct_immediate<Vulkan::CommandExecutor>(device, swapchain);
 
 		VkBufferCopy copy_region = {};
 		copy_region.size = props.size;

@@ -38,9 +38,10 @@ namespace Disarray::Vulkan {
 	{
 	}
 
-	Allocator::~Allocator() {  }
+	Allocator::~Allocator() { }
 
-	VmaAllocation Allocator::allocate_buffer(VkBuffer& buffer, VkBufferCreateInfo buffer_info, const AllocationProperties& props) {
+	VmaAllocation Allocator::allocate_buffer(VkBuffer& buffer, VkBufferCreateInfo buffer_info, const AllocationProperties& props)
+	{
 		ensure(allocator != nullptr, "Allocator was null.");
 		VmaAllocationCreateInfo alloc_info = {};
 		alloc_info.usage = static_cast<VmaMemoryUsage>(props.usage);
@@ -53,7 +54,9 @@ namespace Disarray::Vulkan {
 		return allocation;
 	}
 
-	VmaAllocation Allocator::allocate_buffer(VkBuffer& buffer,VmaAllocationInfo& allocation_info, VkBufferCreateInfo buffer_info, const AllocationProperties& props) {
+	VmaAllocation Allocator::allocate_buffer(
+		VkBuffer& buffer, VmaAllocationInfo& allocation_info, VkBufferCreateInfo buffer_info, const AllocationProperties& props)
+	{
 		ensure(allocator != nullptr, "Allocator was null.");
 		VmaAllocationCreateInfo alloc_info = {};
 		alloc_info.usage = static_cast<VmaMemoryUsage>(props.usage);
@@ -66,7 +69,8 @@ namespace Disarray::Vulkan {
 		return allocation;
 	}
 
-	VmaAllocation Allocator::allocate_image(VkImage& image, VkImageCreateInfo image_create_info, const AllocationProperties& props) {
+	VmaAllocation Allocator::allocate_image(VkImage& image, VkImageCreateInfo image_create_info, const AllocationProperties& props)
+	{
 		ensure(allocator != nullptr, "Allocator was null.");
 		VmaAllocationCreateInfo allocation_create_info = {};
 		allocation_create_info.usage = static_cast<VmaMemoryUsage>(props.usage);
