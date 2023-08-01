@@ -1,5 +1,3 @@
-#pragma once
-
 #include "vulkan/Pipeline.hpp"
 
 #include "core/Types.hpp"

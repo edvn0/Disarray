@@ -6,7 +6,8 @@
 #include "vulkan/QueueFamilyIndex.hpp"
 #include "vulkan/Verify.hpp"
 
-#include <glfw/glfw3.h>
+#include <cstring>
+#include <GLFW/glfw3.h>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -137,7 +138,7 @@ namespace Disarray::Vulkan {
 			bool layer_found = false;
 
 			for (const auto& layer_properties : available_layers) {
-				if (strcmp(layer_name, layer_properties.layerName) == 0) {
+				if (std::strcmp(layer_name, layer_properties.layerName) == 0) {
 					layer_found = true;
 					break;
 				}

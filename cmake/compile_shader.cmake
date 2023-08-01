@@ -26,9 +26,8 @@ function(compile_shaders)
         get_filename_component(FILENAME ${source} NAME)
         add_custom_command(
                 COMMAND
-                ${Vulkan_GLSLC_EXECUTABLE}
-                -o ${SHADER_BINARY_DIR}/${FILENAME}.spv
-                ${source}
+                ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE}
+                -V ${source} -o ${SHADER_BINARY_DIR}/${FILENAME}.spv
                 OUTPUT ${SHADER_BINARY_DIR}/${FILENAME}.spv
                 DEPENDS ${source} ${SHADER_BINARY_DIR}
                 COMMENT "Compiling ${FILENAME}"

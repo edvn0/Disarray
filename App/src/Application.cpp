@@ -1,5 +1,5 @@
 // clang-format off
-#include "core/app.hpp"
+#include "core/App.hpp"
 #define DISARRAY_IMPLEMENTATION
 #include "core/Entry.hpp"
 
