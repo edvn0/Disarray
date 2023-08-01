@@ -1,10 +1,14 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.22)
 
 project(Disarray CXX C)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+if(CMAKE_GENERATOR STREQUAL "Ninja")
+  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+endif()
 
 set(THIRD_PARTY "${CMAKE_SOURCE_DIR}/ThirdParty")
 

@@ -99,7 +99,8 @@ namespace Disarray::Vulkan {
 		case VK_ERROR_INVALID_SHADER_NV: {
 			return "VK_ERROR_INVALID_SHADER_NV";
 		}
-		case VK_ERROR_IMAGE_USAGE_NOT_SUPPORTED_KHR: {
+    #if 0
+    case VK_ERROR_IMAGE_USAGE_NOT_SUPPORTED_KHR: {
 			return "VK_ERROR_IMAGE_USAGE_NOT_SUPPORTED_KHR";
 		}
 		case VK_ERROR_VIDEO_PICTURE_LAYOUT_NOT_SUPPORTED_KHR: {
@@ -146,6 +147,8 @@ namespace Disarray::Vulkan {
 		case VK_ERROR_COMPRESSION_EXHAUSTED_EXT: {
 			return "VK_ERROR_COMPRESSION_EXHAUSTED_EXT";
 		}
+
+    #endif
 		case VK_RESULT_MAX_ENUM: {
 			return "VK_RESULT_MAX_ENUM";
 		}

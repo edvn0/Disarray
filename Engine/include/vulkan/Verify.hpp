@@ -13,7 +13,7 @@ namespace Disarray::Vulkan {
 		{
 		}
 
-		const char* what() const override { return message.data(); }
+		const char* what() const noexcept override { return message.data(); }
 
 	private:
 		std::string_view message {};

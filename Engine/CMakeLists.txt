@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.22)
 
 project(Engine CXX)
 
@@ -185,7 +185,7 @@ add_library(${PROJECT_NAME} STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/QueueFamilyIndex.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/tinyobjloader ${THIRD_PARTY}/stb ${THIRD_PARTY}/imgui)
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator OpenMP::OpenMP_CXX imgui)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator imgui)
 
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")
     target_compile_definitions(${PROJECT_NAME} PRIVATE IS_DEBUG)

@@ -12,7 +12,7 @@ namespace Disarray::Client {
 
 		void interface() override;
 		void construct(App& app, Renderer& renderer) override;
-		void handle_swapchain_recreation(Renderer& renderer);
+		void handle_swapchain_recreation(Renderer& renderer) override;
 		void update(float ts) override;
 		void update(float ts, Renderer& renderer) override;
 		void destruct() override;
@@ -34,4 +34,4 @@ namespace Disarray::Client {
 		Ref<CommandExecutor> command_executor;
 	};
 
-} // namespace Disarray::Client
+} // namespace App
