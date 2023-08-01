@@ -38,7 +38,9 @@ namespace Disarray {
 
 		template <typename T, typename... Args> void add_panel(Args&&... args)
 		{
+			// clang-format off
 			Ref<Layer> interface { nullptr };
+			// clang-format on
 			for (const auto& layer : layers)
 				if (layer->is_interface_layer()) {
 					interface = layer;

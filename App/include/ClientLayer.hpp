@@ -34,4 +34,4 @@ namespace Disarray::Client {
 		Ref<CommandExecutor> command_executor;
 	};
 
-} // namespace App
+} // namespace Disarray::Client
