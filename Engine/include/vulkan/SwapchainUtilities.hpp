@@ -8,7 +8,6 @@
 #include "vulkan/Surface.hpp"
 
 #include <GLFW/glfw3.h>
-
 #include <algorithm>
 #include <cstdint>
 #include <limits>

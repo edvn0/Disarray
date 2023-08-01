@@ -25,11 +25,20 @@ jobs:
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install git cmake -y
+          sudo apt-get install wget git cmake -y
+
+      - name: Install LLVM
+        run: |
+          sudo apt-get purge --auto-remove llvm python3-lldb-14 llvm-14
+          wget https://apt.llvm.org/llvm.sh
+          sudo chmod +x llvm.sh
+          sudo ./llvm.sh 16 -y
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: libxinerama-dev libxcursor-dev libxi-dev mesa-utils libglu1-mesa-dev freeglut3-dev mesa-common-dev libglew-dev libglfw3-dev libglm-dev libao-dev libmpg123-dev
+          packages: clang-format libxinerama-dev libxcursor-dev
+            libxi-dev mesa-utils libglu1-mesa-dev freeglut3-dev mesa-common-dev
+            libglew-dev libglfw3-dev libglm-dev libao-dev libmpg123-dev
           version: 1.0
 
       - name: Install ninja-build tool

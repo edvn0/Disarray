@@ -1,0 +1,3 @@
+# ignore third_party code from clang-format checks
+./ThirdParty
+./App/ThirdParty

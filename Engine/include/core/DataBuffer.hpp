@@ -21,8 +21,10 @@ namespace Disarray {
 
 		void reset();
 
-		template<typename T> requires (not std::is_same_v<T, bool>)
-		T& read(std::size_t element_offset = 0) {
+		template <typename T>
+			requires(not std::is_same_v<T, bool>)
+		T& read(std::size_t element_offset = 0)
+		{
 			return *reinterpret_cast<T*>(data + element_offset * sizeof(T));
 		}
 
