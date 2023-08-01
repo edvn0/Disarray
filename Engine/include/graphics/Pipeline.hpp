@@ -44,7 +44,7 @@ namespace Disarray {
 	}
 
 	struct LayoutElement {
-		constexpr LayoutElement(ElementType t, const std::string& debug = "Empty")
+		LayoutElement(ElementType t, const std::string& debug = "Empty")
 			: type(t)
 			, debug_name(debug)
 		{
@@ -66,7 +66,7 @@ namespace Disarray {
 	};
 
 	struct VertexLayout {
-		constexpr VertexLayout(std::initializer_list<LayoutElement> elems, const VertexBinding& bind = {})
+		VertexLayout(std::initializer_list<LayoutElement> elems, const VertexBinding& bind = {})
 			: elements(elems)
 			, binding(bind)
 		{

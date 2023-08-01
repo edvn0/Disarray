@@ -5,5 +5,5 @@ function(configure_defaults)
     set(GLFW_BUILD_EXAMPLES OFF)
     set(BUILD_SHARED_LIBS OFF)
 
-    find_package(OpenMP REQUIRED)
+    # find_package(OpenMP REQUIRED)
 endfunction(configure_defaults)

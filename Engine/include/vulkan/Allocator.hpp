@@ -63,7 +63,7 @@ namespace Disarray::Vulkan {
 		template <typename T> T* map_memory(VmaAllocation allocation)
 		{
 			T* data;
-			vmaMapMemory(allocator, allocation, std::bit_cast<void**>(&data));
+			vmaMapMemory(allocator, allocation, reinterpret_cast<void**>(&data));
 			return data;
 		}
 

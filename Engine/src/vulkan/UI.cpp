@@ -20,7 +20,7 @@ namespace Disarray::UI {
 	static ImageIdentifier add_image(VkSampler sampler, VkImageView view, VkImageLayout layout)
 	{
 		auto added = ImGui_ImplVulkan_AddTexture(sampler, view, layout);
-		return std::bit_cast<ImageIdentifier>(added);
+		return reinterpret_cast<ImageIdentifier>(added);
 	}
 
 	void image_button(Image& image)

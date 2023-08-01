@@ -7,9 +7,10 @@
 #include "vulkan/PhysicalDevice.hpp"
 #include "vulkan/Surface.hpp"
 
+#include <GLFW/glfw3.h>
+
 #include <algorithm>
 #include <cstdint>
-#include <glfw/glfw3.h>
 #include <limits>
 #include <vector>
 #include <vulkan/vulkan.h>

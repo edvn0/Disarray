@@ -1,4 +1,4 @@
-#include "core/app.hpp"
+#include "core/App.hpp"
 
 #include "core/AllocatorConfigurator.hpp"
 #include "core/CleanupAwaiter.hpp"

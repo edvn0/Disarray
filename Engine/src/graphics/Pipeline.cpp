@@ -1,5 +1,3 @@
-#pragma once
-
 #include "graphics/Pipeline.hpp"
 
 #include "vulkan/Pipeline.hpp"

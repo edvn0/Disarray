@@ -27,7 +27,7 @@ namespace Disarray::Vulkan {
 
 	void VertexBuffer::set_data(const void* data, std::uint32_t size)
 	{
-		std::memcpy(vma_allocation_info.pMappedData, std::bit_cast<std::byte*>(data), size);
+		std::memcpy(vma_allocation_info.pMappedData, reinterpret_cast<const std::byte*>(data), size);
 	}
 
 	void VertexBuffer::create_with_valid_data(Disarray::Swapchain& swapchain)
