@@ -21,8 +21,10 @@ namespace Disarray {
 
 		void reset();
 
-		template<typename T> requires (not std::is_same_v<T, bool>)
-		T& read(std::size_t element_offset = 0) {
+		template <typename T>
+			requires(not std::is_same_v<T, bool>)
+		T& read(std::size_t element_offset = 0)
+		{
 			return *std::bit_cast<T*>(data + element_offset * sizeof(T));
 		}
 
@@ -32,11 +34,11 @@ namespace Disarray {
 		auto* get_data() const { return data; }
 
 		operator bool() const { return is_valid(); }
-		bool is_valid() const {return size == 0 && data == nullptr;}
+		bool is_valid() const { return size == 0 && data == nullptr; }
 
 	private:
-		std::byte* data {nullptr};
-		std::size_t size {0};
+		std::byte* data { nullptr };
+		std::size_t size { 0 };
 	};
 
-}
+} // namespace Disarray

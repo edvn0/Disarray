@@ -24,4 +24,4 @@ namespace Disarray {
 		static Ref<IndexBuffer> construct(Disarray::Device&, Disarray::Swapchain&, const IndexBufferProperties&);
 	};
 
-}
+} // namespace Disarray

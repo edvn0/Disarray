@@ -10,4 +10,4 @@ namespace Disarray {
 	void initialise_allocator(Disarray::Device& device, Disarray::Instance& instance);
 	void destroy_allocator();
 
-}
+} // namespace Disarray

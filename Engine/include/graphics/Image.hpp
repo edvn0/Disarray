@@ -10,7 +10,7 @@ namespace Disarray {
 		Extent extent;
 		ImageFormat format;
 		DataBuffer data;
-		bool should_present {false};
+		bool should_present { false };
 		std::string debug_name;
 	};
 
@@ -22,4 +22,4 @@ namespace Disarray {
 		static Ref<Image> construct(Disarray::Device&, Disarray::Swapchain&, const ImageProperties&);
 	};
 
-}
+} // namespace Disarray

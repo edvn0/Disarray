@@ -24,18 +24,20 @@ namespace Disarray {
 
 	namespace Log {
 		using namespace std::string_view_literals;
-		static constexpr std::string_view red_begin_sv {"\033[1;31m"sv};
-		static constexpr std::string_view blue_begin_sv {"\033[1;34m"sv};
-		static constexpr std::string_view end_sv {"\033[0m"sv};
-		static std::string red_begin {red_begin_sv};
-		static std::string blue_begin {blue_begin_sv};
-		static std::string end {end_sv};
+		static constexpr std::string_view red_begin_sv { "\033[1;31m"sv };
+		static constexpr std::string_view blue_begin_sv { "\033[1;34m"sv };
+		static constexpr std::string_view end_sv { "\033[0m"sv };
+		static std::string red_begin { red_begin_sv };
+		static std::string blue_begin { blue_begin_sv };
+		static std::string end { end_sv };
 
-		static void debug(const std::string& scope, const std::string& message) {
+		static void debug(const std::string& scope, const std::string& message)
+		{
 			std::string formatted = blue_begin + "[Disarray::Engine - " + scope + "]: " + message + end;
 			Logging::Logger::logger().debug(formatted);
 		}
-		static void error(const std::string& scope, const std::string& message) {
+		static void error(const std::string& scope, const std::string& message)
+		{
 			std::string formatted = red_begin + "[Disarray::Engine - " + scope + "]: " + message + end;
 			Logging::Logger::logger().error(formatted);
 		}

@@ -9,7 +9,9 @@ namespace Disarray::Vulkan {
 	class VerificationException : public std::exception {
 	public:
 		VerificationException(std::string_view msg)
-			: message(msg) {}
+			: message(msg)
+		{
+		}
 
 		const char* what() const override { return message.data(); }
 

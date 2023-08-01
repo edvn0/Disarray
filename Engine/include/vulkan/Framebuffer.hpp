@@ -20,9 +20,9 @@ namespace Disarray::Vulkan {
 		void force_recreation() override;
 		void recreate(bool should_clean) override { recreate_framebuffer(should_clean); }
 
-		Disarray::RenderPass & get_render_pass() override {return *render_pass;};
+		Disarray::RenderPass& get_render_pass() override { return *render_pass; };
 
-		Image & get_image(std::uint32_t index) override { return textures.at(index)->get_image(); }
+		Image& get_image(std::uint32_t index) override { return textures.at(index)->get_image(); }
 
 		VkFramebuffer supply() const override { return framebuffers[swapchain.get_image_index()]; }
 

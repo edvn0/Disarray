@@ -70,7 +70,7 @@ namespace Disarray::Vulkan {
 		void unmap_memory(VmaAllocation allocation) { vmaUnmapMemory(allocator, allocation); }
 
 		VmaAllocation allocate_buffer(VkBuffer&, VkBufferCreateInfo, const AllocationProperties&);
-		VmaAllocation allocate_buffer(VkBuffer&,VmaAllocationInfo&, VkBufferCreateInfo, const AllocationProperties&);
+		VmaAllocation allocate_buffer(VkBuffer&, VmaAllocationInfo&, VkBufferCreateInfo, const AllocationProperties&);
 		VmaAllocation allocate_image(VkImage&, VkImageCreateInfo, const AllocationProperties&);
 
 		void deallocate_buffer(VmaAllocation, VkBuffer&);

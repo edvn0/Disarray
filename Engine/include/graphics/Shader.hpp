@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/Types.hpp"
+
 #include <filesystem>
 #include <string_view>
 
@@ -8,10 +9,7 @@ namespace Disarray {
 
 	class Device;
 
-	enum class ShaderType {
-		Vertex,
-		Fragment
-	};
+	enum class ShaderType { Vertex, Fragment };
 
 	struct ShaderProperties {
 		std::filesystem::path path;
@@ -28,4 +26,4 @@ namespace Disarray {
 		static Ref<Shader> construct(Disarray::Device& device, const ShaderProperties&);
 	};
 
-}
+} // namespace Disarray

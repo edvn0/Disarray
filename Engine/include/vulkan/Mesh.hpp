@@ -1,7 +1,6 @@
 #pragma once
 
 #include "graphics/Mesh.hpp"
-
 #include "graphics/Pipeline.hpp"
 
 namespace Disarray::Vulkan {

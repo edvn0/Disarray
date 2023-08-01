@@ -14,7 +14,7 @@ namespace Disarray {
 		bool keep_depth { true };
 		bool has_depth { true };
 		bool should_present { false };
-		std::string debug_name {"UnknownFramebuffer"};
+		std::string debug_name { "UnknownFramebuffer" };
 	};
 
 	class Framebuffer {
