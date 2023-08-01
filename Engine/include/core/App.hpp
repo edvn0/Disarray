@@ -38,9 +38,7 @@ namespace Disarray {
 
 		template <typename T, typename... Args> void add_panel(Args&&... args)
 		{
-			Ref<Layer> interface {
-				nullptr
-			};
+			Ref<Layer> interface { nullptr };
 			for (const auto& layer : layers)
 				if (layer->is_interface_layer()) {
 					interface = layer;

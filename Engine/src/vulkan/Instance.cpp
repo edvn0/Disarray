@@ -6,8 +6,8 @@
 #include "vulkan/QueueFamilyIndex.hpp"
 #include "vulkan/Verify.hpp"
 
-#include <cstring>
 #include <GLFW/glfw3.h>
+#include <cstring>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
