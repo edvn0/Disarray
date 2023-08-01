@@ -3,6 +3,7 @@
 #include "vulkan/Pipeline.hpp"
 
 #include "core/Types.hpp"
+#include "graphics/Framebuffer.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PushContantLayout.hpp"
 #include "graphics/RenderPass.hpp"
@@ -11,7 +12,6 @@
 #include "vulkan/Shader.hpp"
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/vulkan_core.h"
-#include "graphics/Framebuffer.hpp"
 
 namespace Disarray::Vulkan {
 
@@ -191,7 +191,7 @@ namespace Disarray::Vulkan {
 		std::vector<VkPushConstantRange> result;
 		std::transform(props.push_constant_layout.get_input_ranges().begin(), props.push_constant_layout.get_input_ranges().end(),
 			std::back_inserter(result), [](PushConstantRange a) -> VkPushConstantRange {
-				VkShaderStageFlags flags{};
+				VkShaderStageFlags flags {};
 				if (a.flags == PushConstantKind::Fragment) {
 					flags = VK_SHADER_STAGE_FRAGMENT_BIT;
 				}
@@ -260,13 +260,8 @@ namespace Disarray::Vulkan {
 		construct_layout();
 	}
 
-	Disarray::Framebuffer& Pipeline::get_framebuffer() {
-		return *props.framebuffer;
-	}
+	Disarray::Framebuffer& Pipeline::get_framebuffer() { return *props.framebuffer; }
 
-	Disarray::RenderPass& Pipeline::get_render_pass()
-	{
-		return props.framebuffer->get_render_pass();
-	}
+	Disarray::RenderPass& Pipeline::get_render_pass() { return props.framebuffer->get_render_pass(); }
 
 } // namespace Disarray::Vulkan

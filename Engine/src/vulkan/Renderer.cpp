@@ -26,17 +26,13 @@ namespace Disarray::Vulkan {
 		lines.submit(renderer, command_executor);
 	}
 
-	Renderer::Renderer(
-		Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::RendererProperties& properties)
+	Renderer::Renderer(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::RendererProperties& properties)
 		: device(dev)
 		, swapchain(sc)
 		, props(properties)
 	{
 		pipeline_cache = make_ref<PipelineCache>(device, swapchain, "Assets/Shaders");
-		default_framebuffer = Framebuffer::construct(device, swapchain,
-			{
-				.debug_name = "RendererFramebuffer"
-			});
+		default_framebuffer = Framebuffer::construct(device, swapchain, { .debug_name = "RendererFramebuffer" });
 
 		PipelineCacheCreationProperties pipeline_properties = {
 			.pipeline_key = "quad",
@@ -64,7 +60,7 @@ namespace Disarray::Vulkan {
 		render_batch.lines.construct(*this, device, swapchain);
 	}
 
-	Renderer::~Renderer() {}
+	Renderer::~Renderer() { }
 
 	void Renderer::set_extent(const Extent& e) { extent = e; }
 
@@ -74,8 +70,7 @@ namespace Disarray::Vulkan {
 
 		VkRenderPassBeginInfo render_pass_begin_info {};
 		render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		render_pass_begin_info.renderPass
-			= supply_cast<Vulkan::RenderPass>(fb.get_render_pass());
+		render_pass_begin_info.renderPass = supply_cast<Vulkan::RenderPass>(fb.get_render_pass());
 		render_pass_begin_info.framebuffer = supply_cast<Vulkan::Framebuffer>(fb);
 		render_pass_begin_info.renderArea.offset = { 0, 0 };
 
@@ -105,10 +100,7 @@ namespace Disarray::Vulkan {
 		vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 	}
 
-	void Renderer::end_pass(Disarray::CommandExecutor& executor)
-	{
-		vkCmdEndRenderPass(supply_cast<Vulkan::CommandExecutor>(executor));
-	}
+	void Renderer::end_pass(Disarray::CommandExecutor& executor) { vkCmdEndRenderPass(supply_cast<Vulkan::CommandExecutor>(executor)); }
 
 	void Renderer::draw_mesh(Disarray::CommandExecutor& executor, Disarray::Mesh& mesh)
 	{
@@ -129,9 +121,7 @@ namespace Disarray::Vulkan {
 		vkCmdDrawIndexed(command_buffer, mesh.get_indices().size(), 1, 0, 0, 0);
 	}
 
-	void Renderer::submit_batched_geometry(Disarray::CommandExecutor& executor) {
-		render_batch.submit(*this, executor);
-	}
+	void Renderer::submit_batched_geometry(Disarray::CommandExecutor& executor) { render_batch.submit(*this, executor); }
 
 	void Renderer::draw_planar_geometry(Geometry geometry, const GeometryProperties& properties)
 	{
@@ -165,12 +155,8 @@ namespace Disarray::Vulkan {
 		}
 	}
 
-	void Renderer::end_frame(UsageBadge<Disarray::App>)
-	{
-	}
+	void Renderer::end_frame(UsageBadge<Disarray::App>) { }
 
-	void Renderer::force_recreation() {
-		default_framebuffer->force_recreation();
-	}
+	void Renderer::force_recreation() { default_framebuffer->force_recreation(); }
 
 } // namespace Disarray::Vulkan

@@ -1,18 +1,19 @@
 #include "vulkan/Shader.hpp"
-#include "graphics/Shader.hpp"
-#include "vulkan/Verify.hpp"
 
+#include "graphics/Shader.hpp"
 #include "vulkan/Device.hpp"
+#include "vulkan/Verify.hpp"
 #include "vulkan/vulkan_core.h"
 
+#include <bit>
 #include <fstream>
 #include <stdexcept>
-#include <bit>
 
 namespace Disarray::Vulkan {
 
 	namespace {
-		auto to_stage(ShaderType type) {
+		auto to_stage(ShaderType type)
+		{
 			switch (type) {
 			case ShaderType::Vertex:
 				return VK_SHADER_STAGE_VERTEX_BIT;
@@ -32,9 +33,12 @@ namespace Disarray::Vulkan {
 
 			verify(vkCreateShaderModule(*device, &create_info, nullptr, &shader));
 		}
-	}
+	} // namespace
 
-	Shader::Shader(Disarray::Device& dev, const ShaderProperties& properties): device(dev), props(properties) {
+	Shader::Shader(Disarray::Device& dev, const ShaderProperties& properties)
+		: device(dev)
+		, props(properties)
+	{
 		auto source = read_file(props.path);
 		shader_path = props.path.string();
 
@@ -55,14 +59,15 @@ namespace Disarray::Vulkan {
 			vkDestroyShaderModule(supply_cast<Vulkan::Device>(device), shader_module, nullptr);
 	}
 
-	std::string Shader::read_file(const std::filesystem::path& path) {
-		std::ifstream stream {path, std::ios::ate | std::ios::in | std::ios::binary };
+	std::string Shader::read_file(const std::filesystem::path& path)
+	{
+		std::ifstream stream { path, std::ios::ate | std::ios::in | std::ios::binary };
 		if (!stream) {
 			throw std::runtime_error("Could not open stream to file");
 		}
 
 		const std::size_t size = stream.tellg();
-		std::string buffer {"", size};
+		std::string buffer { "", size };
 
 		stream.seekg(0);
 		stream.read(buffer.data(), size);
@@ -70,9 +75,10 @@ namespace Disarray::Vulkan {
 		return buffer;
 	}
 
-	void Shader::destroy_module() {
+	void Shader::destroy_module()
+	{
 		vkDestroyShaderModule(supply_cast<Vulkan::Device>(device), shader_module, nullptr);
 		was_destroyed_explicitly = true;
 	}
 
-}
+} // namespace Disarray::Vulkan

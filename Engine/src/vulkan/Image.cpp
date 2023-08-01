@@ -17,7 +17,8 @@ namespace Disarray::Vulkan {
 
 	static constexpr auto is_depth_format = [](auto format) { return format == ImageFormat::Depth || format == ImageFormat::DepthStencil; };
 
-	constexpr VkImageLayout to_vulkan_layout(ImageFormat format) {
+	constexpr VkImageLayout to_vulkan_layout(ImageFormat format)
+	{
 		switch (format) {
 		case ImageFormat::SRGB:
 			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -164,8 +165,7 @@ namespace Disarray::Vulkan {
 		image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
-		vkCmdPipelineBarrier(
-			buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+		vkCmdPipelineBarrier(buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
 
 		VkBufferImageCopy buffer_copy_region = {};
 		buffer_copy_region.imageSubresource.aspectMask = aspect_mask;
@@ -180,7 +180,8 @@ namespace Disarray::Vulkan {
 		vkCmdCopyBufferToImage(buffer, staging, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &buffer_copy_region);
 
 		VkImageLayout layout = to_vulkan_layout(props.format);
-		if (props.should_present) layout =VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		if (props.should_present)
+			layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		set_image_layout(buffer, info.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
 		set_image_layout(buffer, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout, subresource_range);
 

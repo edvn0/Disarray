@@ -8,8 +8,8 @@
 namespace Disarray::Vulkan {
 
 	template <>
-	void RenderBatchFor<QuadVertex, max_vertices, vertex_count<QuadVertex>>::construct(Renderer& renderer,
-		Disarray::Device& dev, Disarray::Swapchain& swapchain)
+	void RenderBatchFor<QuadVertex, max_vertices, vertex_count<QuadVertex>>::construct(
+		Renderer& renderer, Disarray::Device& dev, Disarray::Swapchain& swapchain)
 	{
 		pipeline = cast_to<Vulkan::Pipeline>(renderer.get_pipeline_cache().get("quad"));
 		std::vector<std::uint32_t> quad_indices;
@@ -31,13 +31,11 @@ namespace Disarray::Vulkan {
 				.count = quad_indices.size(),
 			});
 
-		vertex_buffer
-			= VertexBuffer::construct(dev, swapchain, { .size = vertices.size() * vertex_count, .count = vertices.size() });
+		vertex_buffer = VertexBuffer::construct(dev, swapchain, { .size = vertices.size() * vertex_count, .count = vertices.size() });
 	}
 
 	template <>
-	void RenderBatchFor<QuadVertex, max_vertices, vertex_count<QuadVertex>>::submit(
-		Renderer& renderer, Disarray::CommandExecutor& command_executor)
+	void RenderBatchFor<QuadVertex, max_vertices, vertex_count<QuadVertex>>::submit(Renderer& renderer, Disarray::CommandExecutor& command_executor)
 	{
 		if (submitted_indices == 0)
 			return;
@@ -96,8 +94,8 @@ namespace Disarray::Vulkan {
 	// LINES
 
 	template <>
-	void RenderBatchFor<LineVertex, max_vertices, vertex_count<LineVertex>>::construct(Renderer& renderer,
-		Disarray::Device& dev, Disarray::Swapchain& swapchain)
+	void RenderBatchFor<LineVertex, max_vertices, vertex_count<LineVertex>>::construct(
+		Renderer& renderer, Disarray::Device& dev, Disarray::Swapchain& swapchain)
 	{
 		pipeline = cast_to<Vulkan::Pipeline>(renderer.get_pipeline_cache().get("line"));
 
@@ -116,13 +114,11 @@ namespace Disarray::Vulkan {
 				.count = line_indices.size(),
 			});
 
-		vertex_buffer
-			= VertexBuffer::construct(dev, swapchain, { .size = vertices.size() * vertex_count, .count = vertices.size() });
+		vertex_buffer = VertexBuffer::construct(dev, swapchain, { .size = vertices.size() * vertex_count, .count = vertices.size() });
 	}
 
 	template <>
-	void RenderBatchFor<LineVertex, max_vertices, vertex_count<LineVertex>>::submit(
-		Renderer& renderer, Disarray::CommandExecutor& command_executor)
+	void RenderBatchFor<LineVertex, max_vertices, vertex_count<LineVertex>>::submit(Renderer& renderer, Disarray::CommandExecutor& command_executor)
 	{
 		if (submitted_indices == 0)
 			return;

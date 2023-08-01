@@ -8,7 +8,7 @@ namespace Disarray {
 
 	Ref<Pipeline> Pipeline::construct(Disarray::Device& device, Disarray::Swapchain& swapchain, const Disarray::PipelineProperties& props)
 	{
-		return make_ref<Vulkan::Pipeline>(device,swapchain, props);
+		return make_ref<Vulkan::Pipeline>(device, swapchain, props);
 	}
 
-}
+} // namespace Disarray

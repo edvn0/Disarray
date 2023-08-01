@@ -10,7 +10,13 @@ find_package(Vulkan REQUIRED COMPONENTS glslc)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/argparse)
 
-add_executable(${PROJECT_NAME} src/Application.cpp src/ClientLayer.cpp)
+set(APP_SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Application.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ClientLayer.cpp
+        PARENT_SCOPE)
+
+add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/src/Application.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ClientLayer.cpp)
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 target_link_libraries(${PROJECT_NAME} PRIVATE Engine argparse::argparse)
 
@@ -22,6 +28,6 @@ copy_directory_to_binary(Assets "Models;Shaders;Textures")
 
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")
     target_compile_definitions(${PROJECT_NAME} PRIVATE IS_DEBUG)
-endif()
+endif ()
 
 add_dependencies(${PROJECT_NAME} shaders)

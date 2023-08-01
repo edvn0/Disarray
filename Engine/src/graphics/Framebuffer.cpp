@@ -6,9 +6,9 @@
 
 namespace Disarray {
 
-	Ref<Framebuffer> Framebuffer::construct(Disarray::Device& device,Disarray::Swapchain& swapchain, const Disarray::FramebufferProperties& props)
+	Ref<Framebuffer> Framebuffer::construct(Disarray::Device& device, Disarray::Swapchain& swapchain, const Disarray::FramebufferProperties& props)
 	{
 		return make_ref<Vulkan::Framebuffer>(device, swapchain, props);
 	}
 
-}
+} // namespace Disarray

@@ -1,10 +1,12 @@
 #include "ui/UI.hpp"
+
 #include "Forward.hpp"
 #include "backends/imgui_impl_vulkan.h"
 #include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
 #include "imgui.h"
 #include "vulkan/Image.hpp"
+
 #include <bit>
 #include <memory>
 #include <unordered_map>
@@ -34,7 +36,7 @@ namespace Disarray::UI {
 			id = descriptor_info_cache[hash];
 		}
 
-		ImGui::ImageButton("Image", id, {64,64});
+		ImGui::ImageButton("Image", id, { 64, 64 });
 	}
 
-}
+} // namespace Disarray::UI

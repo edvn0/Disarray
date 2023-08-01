@@ -1,28 +1,36 @@
 #include "graphics/PipelineCache.hpp"
 
+#include "graphics/Framebuffer.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/Shader.hpp"
 #include "graphics/Swapchain.hpp"
 
 #include <filesystem>
-#include "graphics/Framebuffer.hpp"
 
 static constexpr auto extract_shader_type = [](const auto& p) {
-	if (p.extension() == ".spv") return p.filename().replace_extension().string();
-	else return p.filename().string();
+	if (p.extension() == ".spv")
+		return p.filename().replace_extension().string();
+	else
+		return p.filename().string();
 };
 static constexpr auto trim_extensions = [](const auto& p) {
-	if (p.extension() == ".spv") return p.filename().replace_extension().replace_extension();
-	else return p.filename().replace_extension();
+	if (p.extension() == ".spv")
+		return p.filename().replace_extension().replace_extension();
+	else
+		return p.filename().replace_extension();
 };
 static constexpr auto extract_name = [](const auto& p) {
-	if (p.extension() == ".spv") return p.filename().replace_extension().replace_extension().string();
-	else return p.filename().replace_extension().string();
+	if (p.extension() == ".spv")
+		return p.filename().replace_extension().replace_extension().string();
+	else
+		return p.filename().replace_extension().string();
 };
 
 static constexpr auto is_vertex = [](const auto& p) {
-	if (p.extension() == ".spv") return p.filename().replace_extension().extension() == ".vert";
-	else return p.filename().extension() == ".vert";
+	if (p.extension() == ".spv")
+		return p.filename().replace_extension().extension() == ".vert";
+	else
+		return p.filename().extension() == ".vert";
 };
 static constexpr auto compare_on_filename = [](const std::filesystem::path& left) {
 	// x.{vert,frag}.spv => x
@@ -38,14 +46,15 @@ static constexpr auto compare_on_filename = [](const std::filesystem::path& left
 
 namespace Disarray {
 
-	PipelineCache::~PipelineCache() {
+	PipelineCache::~PipelineCache()
+	{
 		shader_cache.clear();
 		pipeline_cache.clear();
 	}
 
 	PipelineCache::PipelineCache(Disarray::Device& dev, Disarray::Swapchain& sc, const std::filesystem::path& base)
 		: device(dev)
-		,swapchain(sc)
+		, swapchain(sc)
 		, path(base)
 	{
 		const auto all_files = get_unique_files_recursively();
@@ -63,7 +72,8 @@ namespace Disarray {
 					continue;
 
 				auto name = extract_name(current);
-				if (shader_cache.contains(name)) break;
+				if (shader_cache.contains(name))
+					break;
 
 				auto first_shader_type = is_vertex(current) ? ShaderType::Vertex : ShaderType::Fragment;
 				auto second_shader_type = is_vertex(other) ? ShaderType::Vertex : ShaderType::Fragment;
@@ -101,7 +111,8 @@ namespace Disarray {
 
 	const Ref<Disarray::Pipeline>& PipelineCache::get(const std::string& key) { return pipeline_cache[key]; }
 
-	const Ref<Disarray::Pipeline>& PipelineCache::put(const PipelineCacheCreationProperties& props) {
+	const Ref<Disarray::Pipeline>& PipelineCache::put(const PipelineCacheCreationProperties& props)
+	{
 		const auto& [vert, frag] = shader_cache[props.shader_key];
 		PipelineProperties properties {
 			.vertex_shader = vert,
@@ -121,4 +132,4 @@ namespace Disarray {
 
 	const PipelineCache::ShaderPair& PipelineCache::get_shader(const std::string& key) { return shader_cache[key]; }
 
-} // namespace Disarray::Vulkan
+} // namespace Disarray

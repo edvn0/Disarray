@@ -39,10 +39,10 @@ namespace Disarray::UI {
 	{
 		command_executor = CommandExecutor::construct(device, swapchain,
 			{
-			   .count = 3,
-			   .is_primary = false,
-			   .owned_by_swapchain = false,
-		   });
+				.count = 3,
+				.is_primary = false,
+				.owned_by_swapchain = false,
+			});
 		// 1: create descriptor pool for IMGUI
 		//  the size of the pool is very oversize, but it's copied from imgui demo itself.
 		VkDescriptorPoolSize pool_sizes[] = { { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 }, { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
@@ -89,15 +89,11 @@ namespace Disarray::UI {
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
 	}
 
-	void InterfaceLayer::handle_swapchain_recreation(Renderer& renderer)
-	{
-	}
+	void InterfaceLayer::handle_swapchain_recreation(Renderer& renderer) { }
 
 	void InterfaceLayer::update(float ts) { }
 
-	void InterfaceLayer::update(float ts, Renderer& renderer)
-	{
-	}
+	void InterfaceLayer::update(float ts, Renderer& renderer) { }
 
 	void InterfaceLayer::destruct()
 	{
@@ -106,7 +102,8 @@ namespace Disarray::UI {
 		ImGui::DestroyContext();
 	};
 
-	void InterfaceLayer::interface() {
+	void InterfaceLayer::interface()
+	{
 		static bool is_open { true };
 		ImGui::ShowDemoWindow(&is_open);
 	}
@@ -201,7 +198,7 @@ namespace Disarray::UI {
 			imgui_buffer->end();
 		}
 
-		std::array<VkCommandBuffer, 1> buffer {imgui_buffer->supply()};
+		std::array<VkCommandBuffer, 1> buffer { imgui_buffer->supply() };
 		vkCmdExecuteCommands(draw_command_buffer, 1, buffer.data());
 
 		vkCmdEndRenderPass(draw_command_buffer);

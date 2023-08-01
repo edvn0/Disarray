@@ -9,4 +9,4 @@ namespace Disarray {
 		return make_ref<Vulkan::Image>(device, swapchain, image_properties);
 	}
 
-}
+} // namespace Disarray

@@ -1,16 +1,13 @@
 #include "vulkan/Texture.hpp"
 
-#include "core/DataBuffer.hpp"
 #include "core/Log.hpp"
 #include "graphics/Image.hpp"
 #include "graphics/ImageLoader.hpp"
-#include "vulkan/Allocator.hpp"
 #include "vulkan/Image.hpp"
 
 namespace Disarray::Vulkan {
 
-	Texture::Texture(
-		Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::TextureProperties& properties)
+	Texture::Texture(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::TextureProperties& properties)
 		: device(dev)
 		, props(properties)
 	{
@@ -25,12 +22,9 @@ namespace Disarray::Vulkan {
 			});
 	}
 
-	Texture::~Texture() { Log::debug("Texture-Destructor", "Destroyed texture."); }
+	Texture::~Texture() { Log::debug("Texture-Destructor", "Destroyed texture " + props.debug_name); }
 
-	void Texture::recreate_texture(bool should_clean)
-	{
-		image->recreate(should_clean);
-	}
+	void Texture::recreate_texture(bool should_clean) { image->recreate(should_clean); }
 
 	void Texture::load_pixels()
 	{

@@ -25,7 +25,8 @@ namespace Disarray::Vulkan {
 		allocator.deallocate_buffer(allocation, buffer);
 	}
 
-	void VertexBuffer::set_data(const void* data, std::uint32_t size) {
+	void VertexBuffer::set_data(const void* data, std::uint32_t size)
+	{
 		std::memcpy(vma_allocation_info.pMappedData, std::bit_cast<std::byte*>(data), size);
 	}
 
@@ -51,8 +52,7 @@ namespace Disarray::Vulkan {
 		vertex_buffer_create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		allocation = allocator.allocate_buffer(buffer, vertex_buffer_create_info, { Usage::AUTO_PREFER_DEVICE });
 
-		auto&& [immediate, destruction]
-			= construct_immediate<Vulkan::CommandExecutor>(device, swapchain);
+		auto&& [immediate, destruction] = construct_immediate<Vulkan::CommandExecutor>(device, swapchain);
 
 		VkBufferCopy copy_region = {};
 		copy_region.size = props.size;
@@ -71,7 +71,7 @@ namespace Disarray::Vulkan {
 		buffer_create_info.size = props.size;
 		buffer_create_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
-		allocation = allocator.allocate_buffer(buffer, vma_allocation_info, buffer_create_info, {  Usage::CPU_TO_GPU, Creation::MAPPED_BIT });
+		allocation = allocator.allocate_buffer(buffer, vma_allocation_info, buffer_create_info, { Usage::CPU_TO_GPU, Creation::MAPPED_BIT });
 	}
 
 } // namespace Disarray::Vulkan
