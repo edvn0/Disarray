@@ -8,6 +8,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(THIRD_PARTY "${CMAKE_SOURCE_DIR}/ThirdParty")
 
+find_package(Vulkan REQUIRED)
+find_program(CLANG_FORMAT "clang-format")
+
 include("cmake/configure_defaults.cmake")
 configure_defaults()
 
@@ -19,7 +22,6 @@ add_subdirectory(App)
 set(ALL_SOURCES "")
 list(APPEND ALL_SOURCES ${ENGINE_SOURCES} ${APP_SOURCES})
 
-find_program(CLANG_FORMAT "clang-format")
 message(STATUS "Trying to find Clang format...")
 if(CLANG_FORMAT)
     message(STATUS "Clang format found: ${CLANG_FORMAT}")
