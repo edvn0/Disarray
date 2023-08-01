@@ -1,13 +1,13 @@
 #pragma once
 
-#include "vulkan/Image.hpp"
 #include "core/DataBuffer.hpp"
 #include "graphics/Texture.hpp"
+#include "vulkan/Image.hpp"
 #include "vulkan/PropertySupplier.hpp"
 
 namespace Disarray::Vulkan {
 
-	class Texture: public Disarray::Texture {
+	class Texture : public Disarray::Texture {
 	public:
 		Texture(Device&, Swapchain&, const TextureProperties&);
 		~Texture() override;
@@ -30,4 +30,4 @@ namespace Disarray::Vulkan {
 		TextureProperties props;
 	};
 
-}
+} // namespace Disarray::Vulkan

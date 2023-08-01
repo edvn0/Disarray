@@ -10,4 +10,4 @@ namespace Disarray::Vulkan::Utilities {
 
 	void set_image_layout(VkCommandBuffer command_buffer, VkImage image, VkImageLayout old_image_layout, VkImageLayout new_image_layout,
 		VkImageSubresourceRange subresource_range, VkPipelineStageFlags src_stage_mask, VkPipelineStageFlags dst_stage_mask);
-}
+} // namespace Disarray::Vulkan::Utilities

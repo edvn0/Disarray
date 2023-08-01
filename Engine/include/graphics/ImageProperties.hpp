@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 
 namespace Disarray {
 
@@ -9,16 +9,9 @@ namespace Disarray {
 		std::uint32_t width {};
 		std::uint32_t height {};
 
-		std::size_t get_size() const { return width*height;}
+		std::size_t get_size() const { return width * height; }
 	};
 
-	enum class ImageFormat {
-		SRGB,
-		RGB,
-		SBGR,
-		BGR,
-		Depth,
-		DepthStencil
-	};
+	enum class ImageFormat { SRGB, RGB, SBGR, BGR, Depth, DepthStencil };
 
-}
+} // namespace Disarray

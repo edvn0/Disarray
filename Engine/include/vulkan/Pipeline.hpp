@@ -15,12 +15,13 @@ namespace Disarray::Vulkan {
 		VkPipeline supply() const override { return pipeline; }
 		VkPipelineLayout get_layout() const { return layout; }
 
-		Disarray::Framebuffer & get_framebuffer() override;
-		Disarray::RenderPass & get_render_pass() override;
+		Disarray::Framebuffer& get_framebuffer() override;
+		Disarray::RenderPass& get_render_pass() override;
 
 	private:
 		void construct_layout();
-		std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo> retrieve_shader_stages(Ref<Shader> vertex, Ref<Shader> fragment) const;
+		std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo> retrieve_shader_stages(
+			Ref<Shader> vertex, Ref<Shader> fragment) const;
 
 		void recreate(bool should_clean = true);
 

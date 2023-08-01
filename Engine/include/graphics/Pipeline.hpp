@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Forward.hpp"
-#include "PushContantLayout.hpp"
+#include "PushConstantLayout.hpp"
 #include "core/Types.hpp"
 #include "graphics/Swapchain.hpp"
 
@@ -104,7 +104,7 @@ namespace Disarray {
 		PushConstantLayout push_constant_layout {};
 		Extent extent { 0, 0 };
 		PolygonMode polygon_mode { PolygonMode::Fill };
-		float line_width {1.0f};
+		float line_width { 1.0f };
 	};
 
 	class Pipeline {

@@ -1,9 +1,10 @@
 #pragma once
 
-#include "core/Types.hpp"
 #include "core/App.hpp"
+#include "core/Types.hpp"
 #include "graphics/Instance.hpp"
 #include "graphics/Surface.hpp"
+
 #include <utility>
 
 namespace Disarray {

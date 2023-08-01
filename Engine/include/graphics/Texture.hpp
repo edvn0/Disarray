@@ -9,7 +9,7 @@ namespace Disarray {
 		Extent extent;
 		ImageFormat format;
 		std::string path {};
-		bool should_present {false};
+		bool should_present { false };
 		std::string debug_name;
 	};
 
@@ -25,4 +25,4 @@ namespace Disarray {
 		static Ref<Texture> construct(Device&, Swapchain&, const TextureProperties&);
 	};
 
-}
+} // namespace Disarray

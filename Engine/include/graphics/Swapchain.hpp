@@ -1,8 +1,8 @@
 #pragma once
 
+#include "Forward.hpp"
 #include "ImageProperties.hpp"
 #include "core/Types.hpp"
-#include "Forward.hpp"
 
 namespace Disarray {
 

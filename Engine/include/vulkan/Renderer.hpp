@@ -34,7 +34,7 @@ namespace Disarray::Vulkan {
 		std::array<T, Vertices * VertexCount> vertices {};
 		Ref<Disarray::IndexBuffer> index_buffer { nullptr };
 		Ref<Disarray::VertexBuffer> vertex_buffer { nullptr };
-		Ref<Vulkan::Pipeline> pipeline { nullptr};
+		Ref<Vulkan::Pipeline> pipeline { nullptr };
 		std::uint32_t submitted_ts { 0 };
 		std::uint32_t submitted_indices { 0 };
 
@@ -88,8 +88,7 @@ namespace Disarray::Vulkan {
 		Renderer(Device&, Swapchain&, const RendererProperties&);
 		~Renderer() override;
 
-		void begin_pass(
-			Disarray::CommandExecutor&,  Disarray::Framebuffer&) override;
+		void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&) override;
 		void begin_pass(Disarray::CommandExecutor& command_executor) override { begin_pass(command_executor, *default_framebuffer); }
 		void end_pass(Disarray::CommandExecutor&) override;
 

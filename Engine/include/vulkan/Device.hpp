@@ -2,7 +2,6 @@
 
 #include "Forward.hpp"
 #include "graphics/Device.hpp"
-
 #include "vulkan/PropertySupplier.hpp"
 
 namespace Disarray::Vulkan {
@@ -17,7 +16,7 @@ namespace Disarray::Vulkan {
 
 		VkDevice supply() const override { return device; }
 
-		Disarray::PhysicalDevice & get_physical_device() override { return *physical_device; }
+		Disarray::PhysicalDevice& get_physical_device() override { return *physical_device; }
 
 	private:
 		Ref<Disarray::PhysicalDevice> physical_device;

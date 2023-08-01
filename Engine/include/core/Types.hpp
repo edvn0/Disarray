@@ -16,7 +16,9 @@ namespace Disarray {
 	template <class T>
 	concept ScopeOrRef = std::is_same_v<T, Scope<T>> || std::is_same_v<T, Ref<T>>;
 
-	template <class To, class From> requires(std::is_base_of_v<From, To>) decltype(auto) polymorphic_cast(From&& object)
+	template <class To, class From>
+		requires(std::is_base_of_v<From, To>)
+	decltype(auto) polymorphic_cast(From&& object)
 	{
 #ifdef IS_DEBUG
 		return dynamic_cast<To&>(std::forward<From>(object));
@@ -25,7 +27,9 @@ namespace Disarray {
 #endif
 	}
 
-	template <class To, class From> requires(std::is_base_of_v<From, To>) decltype(auto) polymorphic_cast(const From& object)
+	template <class To, class From>
+		requires(std::is_base_of_v<From, To>)
+	decltype(auto) polymorphic_cast(const From& object)
 	{
 #ifdef IS_DEBUG
 		return dynamic_cast<const To&>(object);
@@ -34,7 +38,9 @@ namespace Disarray {
 #endif
 	}
 
-	template <class To, class From>requires(std::is_base_of_v<From, To>) decltype(auto) polymorphic_cast(From& object)
+	template <class To, class From>
+		requires(std::is_base_of_v<From, To>)
+	decltype(auto) polymorphic_cast(From& object)
 	{
 #ifdef IS_DEBUG
 		return dynamic_cast<To&>(object);
@@ -66,7 +72,12 @@ namespace Disarray {
 		return polymorphic_cast<To>(obj);
 	}
 
-	template <class To, class From> requires(std::is_base_of_v<From, To> && requires(Ref<To> t) { t->supply(); }) decltype(auto) supply_cast(Ref<From> ptr) { return std::dynamic_pointer_cast<To>(ptr)->supply(); }
+	template <class To, class From>
+		requires(std::is_base_of_v<From, To> && requires(Ref<To> t) { t->supply(); })
+	decltype(auto) supply_cast(Ref<From> ptr)
+	{
+		return std::dynamic_pointer_cast<To>(ptr)->supply();
+	}
 
 	template <class To, class From>
 		requires(std::is_base_of_v<From, To> && requires(To t) { t.supply(); })

@@ -1,9 +1,9 @@
 #pragma once
 
 #include "core/Window.hpp"
-#include "vulkan/Swapchain.hpp"
 #include "vulkan/Instance.hpp"
 #include "vulkan/Surface.hpp"
+#include "vulkan/Swapchain.hpp"
 
 extern "C" {
 struct GLFWwindow;
@@ -33,7 +33,7 @@ namespace Disarray::Vulkan {
 
 	private:
 		struct UserData {
-			bool was_resized {false};
+			bool was_resized { false };
 		};
 		UserData* user_data;
 

@@ -45,4 +45,4 @@ namespace Disarray {
 		std::optional<std::uint32_t> present { std::nullopt };
 	};
 
-} // namespace Disarray::Vulkan
+} // namespace Disarray
