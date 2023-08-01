@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Forward.hpp"
 #include "core/Types.hpp"
 #include "core/UsageBadge.hpp"
 #include "graphics/Pipeline.hpp"
@@ -8,11 +9,10 @@
 
 #include <glm/glm.hpp>
 #include <optional>
-#include "Forward.hpp"
 
 namespace Disarray {
 
-	struct RendererProperties {};
+	struct RendererProperties { };
 
 	struct Extent;
 
@@ -26,12 +26,11 @@ namespace Disarray {
 	struct GeometryProperties {
 		glm::vec3 position {};
 		glm::vec3 to_position {};
-		std::optional<glm::vec3> dimensions{std::nullopt};
-		std::optional<float> radius {std::nullopt};
+		std::optional<glm::vec3> dimensions { std::nullopt };
+		std::optional<float> radius { std::nullopt };
 
-
-		template<Geometry T>
-		bool valid(){
+		template <Geometry T> bool valid()
+		{
 			if constexpr (T == Geometry::Circle) {
 				return radius.has_value() && !dimensions.has_value();
 			}
@@ -51,7 +50,7 @@ namespace Disarray {
 		virtual void submit_batched_geometry(Disarray::CommandExecutor&) = 0;
 	};
 
-	class Renderer: public IGraphics {
+	class Renderer : public IGraphics {
 	public:
 		virtual ~Renderer() = default;
 
@@ -70,4 +69,4 @@ namespace Disarray {
 		static Ref<Renderer> construct(Disarray::Device&, Disarray::Swapchain&, const RendererProperties&);
 	};
 
-}
+} // namespace Disarray

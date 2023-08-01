@@ -1,8 +1,8 @@
 #pragma once
 
+#include <glm/glm.hpp>
 #include <string>
 #include <vector>
-#include <glm/glm.hpp>
 
 namespace Disarray {
 
@@ -12,7 +12,8 @@ namespace Disarray {
 		glm::vec4 color;
 		glm::vec3 normals;
 
-		bool operator==(const Vertex& other) const {
+		bool operator==(const Vertex& other) const
+		{
 			return pos == other.pos && color == other.color && uvs == other.uvs && normals == other.normals;
 		}
 	};
@@ -34,4 +35,4 @@ namespace Disarray {
 		std::vector<Vertex> vertices;
 		std::vector<uint32_t> indices;
 	};
-}
+} // namespace Disarray

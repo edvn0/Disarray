@@ -34,7 +34,8 @@ namespace Disarray::Vulkan {
 		Disarray::RenderPass& get_render_pass() override;
 		Disarray::Framebuffer& get_current_framebuffer() override { return *framebuffer; };
 
-		PresentingSemaphores get_presenting_semaphores() {
+		PresentingSemaphores get_presenting_semaphores()
+		{
 			return { image_available_semaphores[current_frame], render_finished_semaphores[current_frame] };
 		}
 
@@ -42,7 +43,7 @@ namespace Disarray::Vulkan {
 		void present() override;
 
 		bool needs_recreation() override { return swapchain_needs_recreation; }
-		void reset_recreation_status() override {swapchain_needs_recreation =false; }
+		void reset_recreation_status() override { swapchain_needs_recreation = false; }
 
 		const auto& get_views() const { return swapchain_image_views; }
 
@@ -53,14 +54,14 @@ namespace Disarray::Vulkan {
 		void recreate_swapchain(Disarray::Swapchain* old = nullptr, bool should_clean = true);
 		void cleanup_swapchain();
 
-		bool swapchain_needs_recreation {false};
+		bool swapchain_needs_recreation { false };
 
 		Disarray::Window& window;
 		Disarray::Device& device;
 		VkSwapchainKHR swapchain;
 
-		std::uint32_t current_frame {0};
-		std::uint32_t image_index {0};
+		std::uint32_t current_frame { 0 };
+		std::uint32_t image_index { 0 };
 
 		Ref<Disarray::Framebuffer> framebuffer;
 

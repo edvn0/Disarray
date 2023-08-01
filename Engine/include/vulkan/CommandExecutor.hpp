@@ -1,5 +1,6 @@
 #pragma once
 
+#include "graphics/CommandExecutor.hpp"
 #include "graphics/Device.hpp"
 #include "graphics/PhysicalDevice.hpp"
 #include "graphics/QueueFamilyIndex.hpp"
@@ -7,14 +8,12 @@
 #include "vulkan/PropertySupplier.hpp"
 #include "vulkan/QueueFamilyIndex.hpp"
 #include "vulkan/Swapchain.hpp"
-#include "graphics/CommandExecutor.hpp"
 
 #include <vector>
 
 namespace Disarray::Vulkan {
 
-	class CommandExecutor: public Disarray::CommandExecutor, public PropertySupplier<VkCommandBuffer>
-	{
+	class CommandExecutor : public Disarray::CommandExecutor, public PropertySupplier<VkCommandBuffer> {
 	public:
 		CommandExecutor(Disarray::Device&, Disarray::Swapchain&, const Disarray::CommandExecutorProperties&);
 		~CommandExecutor() override;
@@ -29,7 +28,8 @@ namespace Disarray::Vulkan {
 
 		VkCommandBuffer supply() const override { return active; }
 
-		auto buffer_index() -> std::uint32_t {
+		auto buffer_index() -> std::uint32_t
+		{
 			// Frame dependent buffer
 			if (is_frame_dependent_executor) {
 				return current;
@@ -47,9 +47,9 @@ namespace Disarray::Vulkan {
 	private:
 		void recreate(bool should_clean = true);
 
-		std::uint32_t current {0};
-		std::uint32_t image_count {0};
-		bool is_frame_dependent_executor {false};
+		std::uint32_t current { 0 };
+		std::uint32_t image_count { 0 };
+		bool is_frame_dependent_executor { false };
 
 		Disarray::Device& device;
 		Disarray::Swapchain& swapchain;
@@ -58,9 +58,9 @@ namespace Disarray::Vulkan {
 		CommandExecutorProperties props;
 		VkCommandPool command_pool;
 		std::vector<VkCommandBuffer> command_buffers;
-		VkCommandBuffer active {nullptr};
+		VkCommandBuffer active { nullptr };
 		std::vector<VkFence> fences;
 		VkQueue graphics_queue;
 	};
 
-}
+} // namespace Disarray::Vulkan

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/Types.hpp"
+
 #include <filesystem>
 
 namespace Disarray {
@@ -28,4 +29,4 @@ namespace Disarray {
 		static Ref<Mesh> construct(Disarray::Device&, Disarray::Swapchain&, const MeshProperties& = {});
 	};
 
-}
+} // namespace Disarray

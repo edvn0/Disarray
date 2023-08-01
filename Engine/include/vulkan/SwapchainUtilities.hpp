@@ -7,10 +7,9 @@
 #include "vulkan/PhysicalDevice.hpp"
 #include "vulkan/Surface.hpp"
 
-#include <glfw/glfw3.h>
-
 #include <algorithm>
 #include <cstdint>
+#include <glfw/glfw3.h>
 #include <limits>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -78,16 +77,14 @@ namespace Disarray::Vulkan {
 		return VK_PRESENT_MODE_FIFO_KHR;
 	}
 
-	static VkExtent2D determine_extent(Disarray::Window& window, const VkSurfaceCapabilitiesKHR& capabilities) {
+	static VkExtent2D determine_extent(Disarray::Window& window, const VkSurfaceCapabilitiesKHR& capabilities)
+	{
 		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 			return capabilities.currentExtent;
 		} else {
 			const auto&& [width, height] = window.get_framebuffer_size();
 
-			VkExtent2D actual_extent = {
-				static_cast<uint32_t>(width),
-				static_cast<uint32_t>(height)
-			};
+			VkExtent2D actual_extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 
 			actual_extent.width = std::clamp(actual_extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
 			actual_extent.height = std::clamp(actual_extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);

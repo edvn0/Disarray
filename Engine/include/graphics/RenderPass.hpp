@@ -15,7 +15,7 @@ namespace Disarray {
 		bool keep_depth { true };
 		bool has_depth { true };
 		bool should_present { false };
-		std::string debug_name {"Unknown"};
+		std::string debug_name { "Unknown" };
 	};
 
 	class Device;

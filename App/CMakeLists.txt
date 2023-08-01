@@ -13,6 +13,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/argparse)
 set(APP_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Application.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ClientLayer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/ClientLayer.hpp
         PARENT_SCOPE)
 
 add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/src/Application.cpp

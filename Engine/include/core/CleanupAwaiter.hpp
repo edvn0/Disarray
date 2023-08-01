@@ -8,4 +8,4 @@ namespace Disarray {
 
 	void wait_for_cleanup(Disarray::Device&);
 
-}
+} // namespace Disarray

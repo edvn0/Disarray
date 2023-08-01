@@ -5,15 +5,12 @@
 
 namespace Disarray::Vulkan {
 
-	class Shader: public Disarray::Shader, public PropertySupplier<VkPipelineShaderStageCreateInfo>
-	{
+	class Shader : public Disarray::Shader, public PropertySupplier<VkPipelineShaderStageCreateInfo> {
 	public:
 		Shader(Disarray::Device& device, const ShaderProperties&);
 		~Shader() override;
 
-		VkPipelineShaderStageCreateInfo supply() const override {
-			return stage;
-		}
+		VkPipelineShaderStageCreateInfo supply() const override { return stage; }
 
 		void destroy_module() override;
 
@@ -22,7 +19,7 @@ namespace Disarray::Vulkan {
 	private:
 		std::string read_file(const std::filesystem::path&);
 
-		bool was_destroyed_explicitly {false};
+		bool was_destroyed_explicitly { false };
 
 		Disarray::Device& device;
 		ShaderProperties props;
@@ -31,4 +28,4 @@ namespace Disarray::Vulkan {
 		VkPipelineShaderStageCreateInfo stage;
 		VkShaderModule shader_module;
 	};
-}
+} // namespace Disarray::Vulkan

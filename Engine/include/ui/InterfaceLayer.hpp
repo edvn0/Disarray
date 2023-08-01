@@ -1,8 +1,7 @@
 #pragma once
 
-#include "core/Layer.hpp"
-
 #include "Forward.hpp"
+#include "core/Layer.hpp"
 #include "graphics/CommandExecutor.hpp"
 
 #include <vector>
@@ -24,11 +23,13 @@ namespace Disarray::UI {
 
 		void destruct() override;
 
-		bool is_interface_layer() const override {return true;}
+		bool is_interface_layer() const override { return true; }
 
-		template<typename T, typename... Args> requires (std::is_base_of_v<Panel, T>)
-		void add_panel(Args&&... args) {
-			panels.emplace_back(Ref<T> {new T {std::forward(args)...}});
+		template <typename T, typename... Args>
+			requires(std::is_base_of_v<Panel, T>)
+		void add_panel(Args&&... args)
+		{
+			panels.emplace_back(Ref<T> { new T { std::forward(args)... } });
 		}
 
 		void begin();
@@ -43,4 +44,4 @@ namespace Disarray::UI {
 		Ref<CommandExecutor> command_executor;
 	};
 
-}
+} // namespace Disarray::UI

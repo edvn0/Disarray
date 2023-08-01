@@ -5,16 +5,14 @@
 
 namespace Disarray::Vulkan {
 
-	class RenderPass: public Disarray::RenderPass, public PropertySupplier<VkRenderPass>
-	{
+	class RenderPass : public Disarray::RenderPass, public PropertySupplier<VkRenderPass> {
 	public:
 		RenderPass(Disarray::Device&, const RenderPassProperties&);
 		~RenderPass() override;
 
 		VkRenderPass supply() const override { return render_pass; }
 
-		void recreate(bool should_clean) override {
-			recreate_renderpass(should_clean); }
+		void recreate(bool should_clean) override { recreate_renderpass(should_clean); }
 		void force_recreation() override { recreate_renderpass(); };
 
 	private:
@@ -24,4 +22,4 @@ namespace Disarray::Vulkan {
 		RenderPassProperties props;
 		VkRenderPass render_pass;
 	};
-}
+} // namespace Disarray::Vulkan

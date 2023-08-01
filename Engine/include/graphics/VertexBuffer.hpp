@@ -24,4 +24,4 @@ namespace Disarray {
 		static Ref<VertexBuffer> construct(Disarray::Device&, Disarray::Swapchain&, const VertexBufferProperties&);
 	};
 
-}
+} // namespace Disarray

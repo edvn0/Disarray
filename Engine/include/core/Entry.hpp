@@ -26,11 +26,7 @@ int main(int argc, char** argv)
 	auto height = program.get<std::uint32_t>("height");
 	auto name = program.get<std::string>("name");
 
-	const Disarray::ApplicationProperties properties {
-		.width = width,
-		.height = height,
-		.name = std::string { name }
-	};
+	const Disarray::ApplicationProperties properties { .width = width, .height = height, .name = std::string { name } };
 
 	auto app = Disarray::create_application(properties);
 	app->run();

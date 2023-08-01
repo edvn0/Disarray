@@ -50,4 +50,4 @@ namespace Disarray {
 	private:
 		std::vector<PushConstantRange> ranges;
 	};
-}
+} // namespace Disarray

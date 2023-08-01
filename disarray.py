@@ -13,6 +13,7 @@ current_source_dir = os.path.dirname(os.path.realpath(__file__))
 class Target(enum.Enum):
     AllBuild = "ALL_BUILD"
     App = "App"
+    Format = "clang-format-Disarray"
 
 
 class BuildMode(enum.Enum):
@@ -38,7 +39,8 @@ class EnumAction(Action):
 
         # Ensure an Enum subclass is provided
         if enum_type is None:
-            raise ValueError("type must be assigned an Enum when using EnumAction")
+            raise ValueError(
+                "type must be assigned an Enum when using EnumAction")
         if not issubclass(enum_type, enum.Enum):
             raise TypeError("type must be an Enum when using EnumAction")
 
@@ -72,7 +74,8 @@ def __remove(path: str | Path):
 
 
 def remove_folder_in(base_folder: str, folder: str):
-    out = subprocess.run(args=["cmake", "--build", base_folder, "--target", "clean"])
+    out = subprocess.run(
+        args=["cmake", "--build", base_folder, "--target", "clean"])
     if out != 0:
         print("Could not remove folders")
 
@@ -103,7 +106,6 @@ def generate_cmake(
     compile_definitions = [
         f"-G {generator_string}",
         f"-D CMAKE_BUILD_TYPE={build_mode.value}",
-        f"-D BUILD_TESTING={'ON' if build_tests else 'OFF'}",
     ]
 
     builds_args = [f"-B {build_folder}", f"-S {current_source_dir}"]
@@ -111,7 +113,6 @@ def generate_cmake(
     cmake_args = (
         ["cmake"] + builds_args + extra_compile_definitions + compile_definitions
     )
-
 
     out = subprocess.run(args=cmake_args, shell=is_windows)
     if out.returncode != 0:
@@ -201,11 +202,15 @@ def main(args: Namespace):
 
     build_folder_exists = Path(build_folder).exists()
     if not build_folder_exists or args.force_configure:
-        generate_cmake(generator, compiler, build_folder, build_mode, args.build_tests)
+        generate_cmake(generator, compiler, build_folder,
+                       build_mode, args.build_tests)
+
+    if args.inplace_format:
+        build_cmake(build_folder, Target.Format, args.parallel)
 
     build_cmake(build_folder, target, args.parallel)
     should_run_tests = (build_mode == BuildMode.Debug or build_mode ==
-                             BuildMode.RelWithDebInfo)
+                        BuildMode.RelWithDebInfo)
     if args.build_tests and should_run_tests:
         run_tests(build_folder, args.parallel)
 
@@ -234,7 +239,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "-r", "--run", help="Run on completed build", action="store_true"
     )
-    parser.add_argument("-b", "--build-tests", help="Build tests", action="store_true")
+    parser.add_argument("-b", "--build-tests",
+                        help="Build tests", action="store_true")
     parser.add_argument(
         "-f", "--force-configure", help="Reconfigure CMake", action="store_true"
     )
@@ -257,6 +263,9 @@ if __name__ == "__main__":
         action=EnumAction,
         default=BuildMode.Debug,
     )
-    parser.add_argument("-j", "--parallel", help="Parallel build jobs", type=int, choices=range(1,12), default=6)
+    parser.add_argument("-j", "--parallel", help="Parallel build jobs",
+                        type=int, choices=range(1, 12), default=6)
+    parser.add_argument("-i", "--inplace_format",
+                        help="Format all Disarray source files.", action="store_true")
 
     main(parser.parse_args())
