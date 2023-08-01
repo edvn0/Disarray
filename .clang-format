@@ -27,7 +27,3 @@ UseTab: Always
 ColumnLimit: 150
 BreakBeforeConceptDeclarations: Always
 RequiresExpressionIndentation: Keyword
-AlignConsecutiveMacros:
-  Enabled: true
-  AcrossEmptyLines: true
-  AcrossComments: false

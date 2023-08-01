@@ -16,21 +16,8 @@ jobs:
           submodules: "recursive"
           fetch-depth: 0
 
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install wget git cmake -y
-
-      - name: Install LLVM
-        run: |
-          sudo apt-get purge --auto-remove llvm python3-lldb-14 llvm-14
-          wget https://apt.llvm.org/llvm.sh
-          sudo chmod +x llvm.sh
-          sudo ./llvm.sh 16 -y
-
-      - name: Lint Code Base
-        uses: super-linter/super-linter/slim@v5
-        env:
-            VALIDATE_ALL_CODEBASE: false
-            DEFAULT_BRANCH: main
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: DoozyX/clang-format-lint-action@v0.16.2
+        with:
+          source: '.'
+          extensions: 'hpp,cpp'
+          clangFormatVersion: 16

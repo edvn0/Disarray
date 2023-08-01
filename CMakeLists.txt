@@ -13,7 +13,7 @@ endif()
 set(THIRD_PARTY "${CMAKE_SOURCE_DIR}/ThirdParty")
 
 find_package(Vulkan REQUIRED)
-find_program(CLANG_FORMAT REQUIRED "clang-format")
+find_program(CLANG_FORMAT "clang-format")
 
 include("cmake/configure_defaults.cmake")
 configure_defaults()
