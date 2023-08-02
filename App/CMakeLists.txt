@@ -22,13 +22,13 @@ target_include_directories(${PROJECT_NAME} PRIVATE include)
 target_link_libraries(${PROJECT_NAME} PRIVATE Engine argparse::argparse)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness -Wno-unused-variable)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness -Wno-unused-variable -Wno-sign-compare)
     target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_LINUX)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     find_package(TBB REQUIRED)
 
     # VMA, STB ignores - -Wno-nullability-completeness -Wno-unused-variable
-    target_compile_options(${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness -Wno-unused-variable)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness -Wno-unused-variable -Wno-sign-compare)
     target_link_libraries(${PROJECT_NAME} PRIVATE tbb)
     target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_LINUX)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
