@@ -16,8 +16,8 @@
 namespace Disarray::Vulkan {
 
 	Framebuffer::Framebuffer(Disarray::Device& dev, Disarray::Swapchain& sc, const FramebufferProperties& properties)
-		: swapchain(sc)
-		, device(dev)
+		: device(dev)
+		, swapchain(sc)
 		, props(properties)
 	{
 		colour_count = props.colour_count;
@@ -60,7 +60,7 @@ namespace Disarray::Vulkan {
 					.should_present = props.should_present,
 					.debug_name = props.debug_name + "-ColorFramebuffer-" + std::to_string(++i),
 				}));
-			clear_values.emplace_back().color = { 0.0f, 0.0f, 0.0f, 1.0f };
+			clear_values.emplace_back().color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 		}
 		if (props.has_depth) {
 			depth_attachment.reset(new Vulkan::Image(device, swapchain,

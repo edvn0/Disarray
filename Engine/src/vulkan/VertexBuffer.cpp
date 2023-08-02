@@ -9,8 +9,8 @@ namespace Disarray::Vulkan {
 
 	VertexBuffer::VertexBuffer(Disarray::Device& dev, Disarray::Swapchain& swapchain, const Disarray::VertexBufferProperties& properties)
 		: device(dev)
-		, vertex_count(props.count)
 		, props(properties)
+		, vertex_count(props.count)
 	{
 		if (props.data) {
 			create_with_valid_data(swapchain);

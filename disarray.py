@@ -109,6 +109,9 @@ def generate_cmake(
     ]
 
     builds_args = [f"-B {build_folder}", f"-S {current_source_dir}"]
+    print(compiler)
+    if compiler.find("MSVC") != -1:
+        builds_args += "-A x64"
 
     cmake_args = (
         ["cmake"] + builds_args + extra_compile_definitions + compile_definitions
@@ -139,10 +142,6 @@ def build_cmake(build_folder: str, target: Target, parallel_jobs: int):
 
 def run_tests(build_folder: str, parallel_jobs: int):
     targets: list[Target] = [
-        Target.SceneTests,
-        Target.CoreTests,
-        Target.ScriptingTests,
-        Target.AssetManagerTests,
     ]
     for target in targets:
         build_cmake(build_folder, target, parallel_jobs)

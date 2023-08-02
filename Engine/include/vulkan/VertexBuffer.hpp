@@ -23,10 +23,10 @@ namespace Disarray::Vulkan {
 
 		Disarray::Device& device;
 		VertexBufferProperties props;
+		std::size_t vertex_count { 0 };
 
 		VmaAllocationInfo vma_allocation_info {};
 
-		std::size_t vertex_count { 0 };
 		VkBuffer buffer;
 		VmaAllocation allocation;
 	};

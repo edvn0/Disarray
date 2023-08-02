@@ -39,8 +39,8 @@ namespace Disarray::Vulkan {
 	}
 
 	Image::Image(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::ImageProperties& properties)
-		: swapchain(sc)
-		, device(dev)
+		: device(dev)
+		, swapchain(sc)
 		, props(properties)
 	{
 		recreate_image(false);

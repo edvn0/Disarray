@@ -64,10 +64,10 @@ namespace Disarray {
 		std::vector<std::filesystem::path> as_vector { all_files.begin(), all_files.end() };
 		std::sort(as_vector.begin(), as_vector.end());
 
-		for (auto i = 0; i < as_vector.size(); i++) {
+		for (std::size_t i = 0; i < as_vector.size(); i++) {
 			auto current = as_vector[i];
 			const auto compare_to_other = compare_on_filename(current);
-			for (auto j = i + 1; j < as_vector.size(); j++) {
+			for (std::size_t j = i + 1; j < as_vector.size(); j++) {
 				auto other = as_vector[j];
 				if (!compare_to_other(other))
 					continue;
@@ -96,7 +96,7 @@ namespace Disarray {
 	std::set<std::filesystem::path> PipelineCache::get_unique_files_recursively()
 	{
 		std::set<std::filesystem::path> paths;
-		for (const auto current : std::filesystem::recursive_directory_iterator { path }) {
+		for (const auto& current : std::filesystem::recursive_directory_iterator { path }) {
 			if (!current.is_regular_file() || current.path().extension() != ".spv")
 				continue;
 

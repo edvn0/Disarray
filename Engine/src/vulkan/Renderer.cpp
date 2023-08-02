@@ -32,6 +32,7 @@ namespace Disarray::Vulkan {
 		, swapchain(sc)
 		, props(properties)
 	{
+		Log::debug("Vulkan Renderer", props.debug_name);
 		pipeline_cache = make_scope<PipelineCache>(device, swapchain, "Assets/Shaders");
 		default_framebuffer = Framebuffer::construct(device, swapchain, { .debug_name = "RendererFramebuffer" });
 

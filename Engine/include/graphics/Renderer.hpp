@@ -13,7 +13,9 @@
 
 namespace Disarray {
 
-	struct RendererProperties { };
+	struct RendererProperties {
+		std::string debug_name { "Unknown" };
+	};
 
 	struct Extent;
 

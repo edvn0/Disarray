@@ -17,9 +17,9 @@
 #include "vulkan/Surface.hpp"
 #include "vulkan/SwapchainUtilities.hpp"
 #include "vulkan/Verify.hpp"
-#include "vulkan/vulkan_core.h"
 
 #include <algorithm>
+#include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {
 
@@ -51,7 +51,7 @@ namespace Disarray::Vulkan {
 
 		const auto vk_device = supply_cast<Vulkan::Device>(device);
 
-		for (size_t i = 0; i < image_count(); i++) {
+		for (std::uint32_t i = 0; i < image_count(); i++) {
 			verify(vkCreateSemaphore(vk_device, &semaphore_info, nullptr, &image_available_semaphores[i]));
 			verify(vkCreateSemaphore(vk_device, &semaphore_info, nullptr, &render_finished_semaphores[i]));
 			verify(vkCreateFence(vk_device, &fence_create_info, nullptr, &in_flight_fences[i]));
@@ -188,7 +188,7 @@ namespace Disarray::Vulkan {
 		vkGetSwapchainImagesKHR(supply_cast<Vulkan::Device>(device), swapchain, &image_count, swapchain_images.data());
 
 		swapchain_image_views.resize(image_count);
-		for (auto i = 0; i < swapchain_images.size(); i++) {
+		for (std::size_t i = 0; i < swapchain_images.size(); i++) {
 			VkImageViewCreateInfo image_view_create_info {};
 			image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 			image_view_create_info.image = swapchain_images[i];
