@@ -65,10 +65,10 @@ namespace Disarray {
 		std::vector<std::filesystem::path> as_vector { all_files.begin(), all_files.end() };
 		std::ranges::sort(as_vector.begin(), as_vector.end());
 
-		for (auto i = 0; i < as_vector.size(); i++) {
+		for (std::size_t i = 0; i < as_vector.size(); i++) {
 			const auto& current = as_vector[i];
 			const auto compare_to_other = compare_on_filename(current);
-			for (auto j = i + 1; j < as_vector.size(); j++) {
+			for (std::size_t j = i + 1; j < as_vector.size(); j++) {
 				const auto& other = as_vector[j];
 				if (!compare_to_other(other))
 					continue;
