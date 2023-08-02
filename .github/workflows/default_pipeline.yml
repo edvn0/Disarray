@@ -11,6 +11,7 @@ env:
   BUILD_TYPE: RelWithDebInfo
   CXX: g++-12
   CC: gcc-12
+  NINJA_STATUS: "[%f/%t] %c/s %e "
 
 jobs:
   build:

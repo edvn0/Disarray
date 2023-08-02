@@ -1,3 +1,5 @@
+#include "DisarrayPCH.hpp"
+
 #include "graphics/ImageLoader.hpp"
 
 #include "core/DataBuffer.hpp"
@@ -5,10 +7,8 @@
 
 #include <cstdint>
 #include <filesystem>
-#include <stdexcept>
-
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#include <stdexcept>
 
 namespace Disarray {
 

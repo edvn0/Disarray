@@ -1,3 +1,5 @@
+#include "DisarrayPCH.hpp"
+
 #include "vulkan/Shader.hpp"
 
 #include "graphics/Shader.hpp"
@@ -67,12 +69,13 @@ namespace Disarray::Vulkan {
 		}
 
 		const std::size_t size = stream.tellg();
-		std::string buffer { "", size };
+		std::vector<char> buffer {};
+		buffer.resize(size);
 
 		stream.seekg(0);
 		stream.read(buffer.data(), size);
 
-		return buffer;
+		return std::string { buffer.begin(), buffer.end() };
 	}
 
 	void Shader::destroy_module()

@@ -4,13 +4,7 @@ AllowShortLoopsOnASingleLine: false
 FixNamespaceComments: true
 IncludeBlocks: Regroup
 IncludeCategories:
-  - Regex: "av_pch.hpp"
-    Priority: -1
-  - Regex: "am_pch.hpp"
-    Priority: -1
-  - Regex: "scene_pch.hpp"
-    Priority: -1
-  - Regex: "script_pch.hpp"
+  - Regex: "DisarrayPCH.hpp"
     Priority: -1
   - Regex: '^"'
     Priority: 1

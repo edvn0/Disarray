@@ -1,3 +1,5 @@
+#include "DisarrayPCH.hpp"
+
 #include "vulkan/ImageUtilities.hpp"
 
 namespace Disarray::Vulkan::Utilities {
