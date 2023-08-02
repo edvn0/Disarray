@@ -1,3 +1,5 @@
+#include "DisarrayPCH.hpp"
+
 #include "vulkan/Verify.hpp"
 
 namespace Disarray::Vulkan {

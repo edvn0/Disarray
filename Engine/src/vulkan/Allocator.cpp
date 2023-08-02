@@ -1,3 +1,5 @@
+#include "DisarrayPCH.hpp"
+
 #include "vulkan/Allocator.hpp"
 
 #include "core/AllocatorConfigurator.hpp"

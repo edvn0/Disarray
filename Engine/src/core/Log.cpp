@@ -1,3 +1,5 @@
+#include "DisarrayPCH.hpp"
+
 #include "core/Log.hpp"
 
 #include <cstdarg> // va_start, va_end, std::va_list

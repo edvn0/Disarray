@@ -1,3 +1,5 @@
+#include "DisarrayPCH.hpp"
+
 #include "vulkan/Window.hpp"
 
 #include "GLFW/glfw3.h"

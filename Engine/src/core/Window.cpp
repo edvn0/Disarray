@@ -1,3 +1,5 @@
+#include "DisarrayPCH.hpp"
+
 #include "core/Window.hpp"
 
 #include "core/App.hpp"

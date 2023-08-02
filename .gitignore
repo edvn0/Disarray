@@ -4,6 +4,7 @@
 vscode-build
 build
 out
+cmake-build*
 
 .vs
 
@@ -16,11 +17,11 @@ Thumbs.db
 cmake-*
 
 __pycache__
-app/resources/scripts/*.pyc
-app/resources/scripts/*.exp
-app/resources/scripts/*.pyd
-app/resources/scripts/*.pdb
-app/resources/scripts/*.so
+App/Assets/Scripts/*.pyc
+App/Assets/Scripts/*.exp
+App/Assets/Scripts/*.pyd
+App/Assets/Scripts/*.pdb
+App/Assets/Scripts/*.so
 
 *.prof
 
@@ -72,8 +73,6 @@ compile_commands.json
 # Folders
 build*
 
-app/resources/scene/*.json
+App/Assets/Scene/*.json
 
-!app/resources/editor/*.png
-
-!third_party_builds/**
+!App/Assets/Editor/*.png

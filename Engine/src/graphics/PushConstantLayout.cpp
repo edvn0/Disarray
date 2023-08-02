@@ -1,3 +1,5 @@
+#include "DisarrayPCH.hpp"
+
 #include "graphics/PushConstantLayout.hpp"
 
 namespace Disarray {
