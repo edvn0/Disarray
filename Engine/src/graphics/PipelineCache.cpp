@@ -10,18 +10,13 @@
 
 #include <filesystem>
 
-static constexpr auto extract_shader_type = [](const auto& p) {
-	if (p.extension() == ".spv")
-		return p.filename().replace_extension().string();
-	else
-		return p.filename().string();
-};
 static constexpr auto trim_extensions = [](const auto& p) {
 	if (p.extension() == ".spv")
 		return p.filename().replace_extension().replace_extension();
 	else
 		return p.filename().replace_extension();
 };
+
 static constexpr auto extract_name = [](const auto& p) {
 	if (p.extension() == ".spv")
 		return p.filename().replace_extension().replace_extension().string();
