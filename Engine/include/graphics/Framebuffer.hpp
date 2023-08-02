@@ -2,7 +2,11 @@
 
 #include "Forward.hpp"
 #include "core/ReferenceCounted.hpp"
+#include "graphics/Device.hpp"
+#include "graphics/Image.hpp"
 #include "graphics/ImageProperties.hpp"
+#include "graphics/RenderPass.hpp"
+#include "graphics/Swapchain.hpp"
 
 namespace Disarray {
 
@@ -24,8 +28,8 @@ namespace Disarray {
 		virtual void force_recreation() = 0;
 		virtual void recreate(bool should_clean) = 0;
 
-		virtual Image& get_image(std::uint32_t index) = 0;
-		Image& get_image() { return get_image(0); };
+		virtual Disarray::Image& get_image(std::uint32_t index) = 0;
+		Disarray::Image& get_image() { return get_image(0); };
 
 		virtual Disarray::RenderPass& get_render_pass() = 0;
 

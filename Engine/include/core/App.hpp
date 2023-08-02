@@ -32,16 +32,17 @@ namespace Disarray {
 
 		template <typename T, typename... Args>
 		decltype(auto) add_layer(Args&&... args)
-			requires(std::is_base_of_v<Layer, T> && requires(Device& dev, PhysicalDevice& phy, Window& win, Swapchain& swap) { T(dev, win, swap); })
+			requires(std::is_base_of_v<Layer, T>
+				&& requires(Disarray::Device & dev, Disarray::Window& win, Disarray::Swapchain& swap) { T(dev, win, swap); })
 		{
-			return layers.emplace_back(std::shared_ptr<T> { new T(*device, *window, *swapchain, std::forward(args)...) });
+			return layers.emplace_back(std::shared_ptr<T> { new T(*device, *window, *swapchain, std::forward<Args>(args)...) });
 		}
 
 		template <typename T, typename... Args> void add_panel(Args&&... args)
 		{
-			// clang-format off
-			std::shared_ptr<Layer> interface { nullptr };
-			// clang-format on
+			std::shared_ptr<Layer> interface {
+				nullptr
+			};
 			for (const auto& layer : layers)
 				if (layer->is_interface_layer()) {
 					interface = layer;

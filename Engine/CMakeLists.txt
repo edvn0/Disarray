@@ -11,6 +11,7 @@ set(ENGINE_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/DataBuffer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Log.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Window.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/ReferenceCounted.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/glfw/GLFWClock.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/CommandExecutor.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/Device.cpp
@@ -133,6 +134,7 @@ add_library(${PROJECT_NAME} STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/App.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Window.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Log.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/ReferenceCounted.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/DataBuffer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/Device.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/Swapchain.cpp
@@ -189,6 +191,12 @@ target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan GPUOpen::Vulka
 
 if(CMAKE_CXX_COMPILER MATCHES "clang")
         target_compile_options(${PROJECT_NAME} PRIVATE -Wno-nullability-completeness)
+endif()
+
+if(CMAKE_CXX_COMPILER MATCHES "g")
+        find_package(TBB REQUIRED)
+        target_compile_options(${PROJECT_NAME} PRIVATE -Wno-nullability-completeness)
+        target_link_libraries(${PROJECT_NAME} PRIVATE tbb)
 endif()
 
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")

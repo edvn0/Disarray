@@ -5,13 +5,13 @@
 
 namespace Disarray {
 
-	Window::Window(const Disarray::ApplicationProperties& properties)
+	Window::Window(const WindowProperties& properties)
 		: props(properties)
 	{
 	}
 
-	Scope<Window> Window::construct(const Disarray::ApplicationProperties& properties) { return make_scope<Vulkan::Window>(properties); }
+	Scope<Window> Window::construct(const WindowProperties& properties) { return make_scope<Vulkan::Window>(properties); }
 
-	const Disarray::ApplicationProperties& Window::get_properties() { return props; }
+	const WindowProperties& Window::get_properties() { return props; }
 
 } // namespace Disarray

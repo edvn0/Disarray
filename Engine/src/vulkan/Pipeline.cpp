@@ -187,24 +187,24 @@ namespace Disarray::Vulkan {
 
 		pipeline_layout_info.pushConstantRangeCount = props.push_constant_layout.size(); // Optional
 		std::vector<VkPushConstantRange> result;
-		std::transform(props.push_constant_layout.get_input_ranges().begin(), props.push_constant_layout.get_input_ranges().end(),
-			std::back_inserter(result), [](PushConstantRange a) -> VkPushConstantRange {
-				VkShaderStageFlags flags {};
-				if (a.flags == PushConstantKind::Fragment) {
-					flags = VK_SHADER_STAGE_FRAGMENT_BIT;
-				}
-				if (a.flags == PushConstantKind::Vertex) {
-					flags = VK_SHADER_STAGE_VERTEX_BIT;
-				}
-				if (a.flags == PushConstantKind::Both) {
-					flags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-				}
-				return {
-					.stageFlags = flags,
-					.offset = a.offset,
-					.size = a.size,
-				};
-			});
+		for (const auto& layout : props.push_constant_layout.get_input_ranges()) {
+			auto& out = result.emplace_back();
+			VkShaderStageFlags flags {};
+			if (layout.flags == PushConstantKind::Fragment) {
+				flags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			}
+			if (layout.flags == PushConstantKind::Vertex) {
+				flags = VK_SHADER_STAGE_VERTEX_BIT;
+			}
+			if (layout.flags == PushConstantKind::Both) {
+				flags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+			}
+			out = {
+				.stageFlags = flags,
+				.offset = layout.offset,
+				.size = layout.size,
+			};
+		}
 		pipeline_layout_info.pPushConstantRanges = result.data(); // Optional
 
 		verify(vkCreatePipelineLayout(supply_cast<Vulkan::Device>(device), &pipeline_layout_info, nullptr, &layout));
@@ -244,7 +244,7 @@ namespace Disarray::Vulkan {
 	std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo> Pipeline::retrieve_shader_stages(
 		Ref<Disarray::Shader> vertex, Ref<Disarray::Shader> fragment) const
 	{
-		return { supply_cast<Vulkan::Shader>(vertex), supply_cast<Vulkan::Shader>(fragment) };
+		return { vertex.as<Vulkan::Shader>()->supply(), fragment.as<Vulkan::Shader>()->supply() };
 	}
 
 	void Pipeline::recreate(bool should_clean)

@@ -1,7 +1,6 @@
 #include "vulkan/Renderer.hpp"
 
 #include "core/Types.hpp"
-#include "glm/ext/matrix_transform.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Pipeline.hpp"
@@ -17,6 +16,7 @@
 #include "vulkan/VertexBuffer.hpp"
 
 #include <array>
+#include <glm/ext/matrix_transform.hpp>
 
 namespace Disarray::Vulkan {
 
@@ -31,7 +31,7 @@ namespace Disarray::Vulkan {
 		, swapchain(sc)
 		, props(properties)
 	{
-		pipeline_cache = make_ref<PipelineCache>(device, swapchain, "Assets/Shaders");
+		pipeline_cache = make_scope<PipelineCache>(device, swapchain, "Assets/Shaders");
 		default_framebuffer = Framebuffer::construct(device, swapchain, { .debug_name = "RendererFramebuffer" });
 
 		PipelineCacheCreationProperties pipeline_properties = {

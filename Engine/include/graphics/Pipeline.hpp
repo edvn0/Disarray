@@ -5,6 +5,7 @@
 #include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
 #include "graphics/Framebuffer.hpp"
+#include "graphics/Shader.hpp"
 #include "graphics/Swapchain.hpp"
 
 #include <stdexcept>

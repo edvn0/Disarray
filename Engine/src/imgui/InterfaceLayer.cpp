@@ -81,9 +81,16 @@ namespace Disarray::UI {
 		ImGui_ImplVulkan_Init(&init_info, supply_cast<Vulkan::RenderPass>(swapchain.get_render_pass()));
 
 		// execute a gpu command to upload imgui font textures
-		auto&& [immediate, destructor] = construct_immediate<Vulkan::CommandExecutor>(device, swapchain);
-		ImGui_ImplVulkan_CreateFontsTexture(immediate->supply());
-		destructor(immediate);
+		Disarray::CommandExecutorProperties props { .count = 1, .owned_by_swapchain = false };
+		auto executor = make_ref<Vulkan::CommandExecutor>(device, swapchain, props);
+		executor->begin();
+		auto destructor = [&device = device](auto& command_executor) {
+			command_executor->submit_and_end();
+			wait_for_cleanup(device);
+			command_executor.reset();
+		};
+		ImGui_ImplVulkan_CreateFontsTexture(executor->supply());
+		destructor(executor);
 
 		// clear font textures from cpu data
 		ImGui_ImplVulkan_DestroyFontUploadObjects();

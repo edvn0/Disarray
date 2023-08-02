@@ -5,11 +5,17 @@
 #include <cstdint>
 #include <type_traits>
 
+#ifdef TEST_REF_COUNTING
 #define DISARRAY_MAKE_REFERENCE_COUNTABLE(x)                                                                                                         \
 public:                                                                                                                                              \
 	x(const x&) = delete;                                                                                                                            \
 	x(x&&) = delete;                                                                                                                                 \
 	virtual ~x() override = default;
+#else
+#define DISARRAY_MAKE_REFERENCE_COUNTABLE(x)                                                                                                         \
+public:                                                                                                                                              \
+	virtual ~x() override = default;
+#endif
 
 namespace Disarray {
 
@@ -17,11 +23,9 @@ namespace Disarray {
 	public:
 		virtual ~ReferenceCountable() = default;
 
-		void increment_reference_counter() { ++reference_count; }
-
-		void decrement_reference_count() { --reference_count; }
-
-		std::uint32_t get_reference_count() const { return reference_count; }
+		virtual void increment_reference_count() { ++reference_count; }
+		virtual void decrement_reference_count() { --reference_count; }
+		virtual std::uint32_t get_reference_count() const { return reference_count; }
 
 	private:
 		mutable std::atomic<uint32_t> reference_count { 0 };
@@ -41,24 +45,33 @@ namespace Disarray {
 		ReferenceCounted()
 			: instance(nullptr)
 		{
-			static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from base");
+			static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
 		}
 
 		ReferenceCounted(std::nullptr_t)
 			: instance(nullptr)
 		{
-			static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from base");
+			static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
 		}
 
 		ReferenceCounted(T* inst)
 			: instance(inst)
 		{
-			static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from base");
+			static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
+		}
+
+		template <typename... Args>
+		ReferenceCounted(Args&&... args)
+			requires(std::is_constructible_v<T, Args...>)
+			: instance(new T { std::forward<Args>(args)... })
+		{
+			static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
 		}
 
 		ReferenceCounted(ReferenceCounted<T>&& other)
 			: instance(std::move(other.instance))
 		{
+			increment_reference_count();
 		}
 
 		ReferenceCounted(const ReferenceCounted<T>& other)

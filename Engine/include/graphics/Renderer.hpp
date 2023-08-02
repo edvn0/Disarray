@@ -6,6 +6,7 @@
 #include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Swapchain.hpp"
+#include "graphics/Mesh.hpp"
 
 #include <glm/glm.hpp>
 #include <optional>

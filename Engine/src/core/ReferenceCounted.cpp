@@ -13,7 +13,7 @@ namespace Disarray::MemoryTracking {
 		return reference_set;
 	}
 
-	static const auto& get_reference_mutex()
+	static auto& get_reference_mutex()
 	{
 		static std::mutex reference_mutex;
 		return reference_mutex;

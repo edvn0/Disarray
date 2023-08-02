@@ -4,6 +4,7 @@
 #include "core/Types.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PushConstantLayout.hpp"
+#include "graphics/Shader.hpp"
 #include "graphics/Swapchain.hpp"
 
 #include <algorithm>
@@ -13,6 +14,8 @@
 #include <utility>
 
 namespace Disarray {
+
+	class Framebuffer;
 
 	struct PipelineCacheCreationProperties {
 		std::string pipeline_key;
@@ -37,8 +40,6 @@ namespace Disarray {
 
 		const Ref<Disarray::Pipeline>& get(const std::string&);
 		const Ref<Disarray::Pipeline>& put(const PipelineCacheCreationProperties&);
-
-		template <class T> const Ref<T>& get_as(const std::string& key) { return get(key).as<T>(); }
 
 		const ShaderPair& get_shader(const std::string&);
 

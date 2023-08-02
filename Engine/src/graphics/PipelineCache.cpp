@@ -32,6 +32,7 @@ static constexpr auto is_vertex = [](const auto& p) {
 	else
 		return p.filename().extension() == ".vert";
 };
+
 static constexpr auto compare_on_filename = [](const std::filesystem::path& left) {
 	// x.{vert,frag}.spv => x
 	const auto file_name = trim_extensions(left);
@@ -82,9 +83,9 @@ namespace Disarray {
 				auto second_shader = Shader::construct(device, { .path = other, .type = second_shader_type });
 
 				if (first_shader_type == ShaderType::Vertex && second_shader_type == ShaderType::Fragment) {
-					shader_cache.try_emplace(name, std::make_pair(first_shader, second_shader));
+					shader_cache.insert(std::make_pair(name, std::make_pair(first_shader, second_shader)));
 				} else {
-					shader_cache.try_emplace(name, std::make_pair(second_shader, first_shader));
+					shader_cache.insert(std::make_pair(name, std::make_pair(second_shader, first_shader)));
 				}
 
 				break;

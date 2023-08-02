@@ -109,7 +109,7 @@ namespace Disarray::Vulkan {
 	private:
 		Disarray::Device& device;
 		Disarray::Swapchain& swapchain;
-		Ref<Disarray::PipelineCache> pipeline_cache;
+		Scope<Disarray::PipelineCache> pipeline_cache;
 		Ref<Disarray::Framebuffer> default_framebuffer;
 		RenderBatch<max_vertices> render_batch;
 		RendererProperties props;

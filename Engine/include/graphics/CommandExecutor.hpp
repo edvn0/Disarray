@@ -1,11 +1,7 @@
 #pragma once
 
 #include "core/CleanupAwaiter.hpp"
-#include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
-#include "graphics/Device.hpp"
-#include "graphics/PhysicalDevice.hpp"
-#include "graphics/Swapchain.hpp"
 
 #include <optional>
 
@@ -29,18 +25,5 @@ namespace Disarray {
 
 		virtual void force_recreation() = 0;
 	};
-
-	template <typename T> static decltype(auto) construct_immediate(Disarray::Device& device, Disarray::Swapchain& swapchain)
-	{
-		auto base_executor = CommandExecutor::construct(device, swapchain, { .count = 1, .owned_by_swapchain = false });
-		auto executor = base_executor.as<T>();
-		executor->begin();
-		auto destructor = [&device](auto& command_executor) {
-			command_executor->submit_and_end();
-			wait_for_cleanup(device);
-			command_executor.reset();
-		};
-		return std::make_pair(std::move(executor), std::move(destructor));
-	}
 
 } // namespace Disarray

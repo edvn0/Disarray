@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/ReferenceCounted.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Device.hpp"
 #include "graphics/PhysicalDevice.hpp"

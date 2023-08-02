@@ -146,8 +146,15 @@ namespace Disarray::Vulkan {
 			AllocationMapper<std::byte> mapper { staging_allocator, staging_allocation, props.data };
 		}
 
-		auto&& [immediate, destructor] = construct_immediate<Vulkan::CommandExecutor>(device, swapchain);
-		auto buffer = immediate->supply();
+		Disarray::CommandExecutorProperties command_executor_props { .count = 1, .owned_by_swapchain = false };
+		auto executor = make_ref<Vulkan::CommandExecutor>(device, swapchain, command_executor_props);
+		executor->begin();
+		auto destructor = [&device = device](auto& command_executor) {
+			command_executor->submit_and_end();
+			wait_for_cleanup(device);
+			command_executor.reset();
+		};
+		auto buffer = executor.as<Vulkan::CommandExecutor>()->supply();
 		VkImageSubresourceRange subresource_range = {};
 		subresource_range.aspectMask = aspect_mask;
 		subresource_range.baseMipLevel = 0;
@@ -185,7 +192,7 @@ namespace Disarray::Vulkan {
 		set_image_layout(buffer, info.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
 		set_image_layout(buffer, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout, subresource_range);
 
-		destructor(immediate);
+		destructor(executor);
 		staging_allocator.deallocate_buffer(staging_allocation, staging);
 	}
 

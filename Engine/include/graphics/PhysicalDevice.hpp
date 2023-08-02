@@ -12,7 +12,7 @@ namespace Disarray {
 	class PhysicalDevice : public ReferenceCountable {
 		DISARRAY_MAKE_REFERENCE_COUNTABLE(PhysicalDevice)
 	public:
-		static Ref<PhysicalDevice> construct(Disarray::Instance&, Disarray::Surface&);
+		static Ref<Disarray::PhysicalDevice> construct(Disarray::Instance&, Disarray::Surface&);
 
 		virtual Disarray::QueueFamilyIndex& get_queue_family_indexes() = 0;
 	};

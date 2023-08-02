@@ -19,7 +19,7 @@ namespace Disarray {
 
 	App::App(const Disarray::ApplicationProperties& props)
 	{
-		window = Window::construct(props);
+		window = Window::construct({ .width = props.width, .height = props.height, .name = props.name });
 		device = Device::construct(*window);
 
 		initialise_allocator(*device, window->get_instance());

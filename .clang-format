@@ -1,4 +1,4 @@
-﻿---
+---
 BasedOnStyle: WebKit
 AllowShortLoopsOnASingleLine: false
 FixNamespaceComments: true
@@ -26,4 +26,3 @@ TabWidth: 4
 UseTab: Always
 ColumnLimit: 150
 BreakBeforeConceptDeclarations: Always
-RequiresExpressionIndentation: Keyword
