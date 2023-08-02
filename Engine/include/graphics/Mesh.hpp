@@ -2,17 +2,15 @@
 
 #include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
+#include "graphics/Device.hpp"
+#include "graphics/IndexBuffer.hpp"
+#include "graphics/Pipeline.hpp"
+#include "graphics/Swapchain.hpp"
+#include "graphics/VertexBuffer.hpp"
 
 #include <filesystem>
 
 namespace Disarray {
-
-	class Device;
-	class VertexBuffer;
-	class IndexBuffer;
-	class Pipeline;
-	class Swapchain;
-	class PhysicalDevice;
 
 	struct MeshProperties {
 		std::string path;

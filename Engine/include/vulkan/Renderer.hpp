@@ -14,8 +14,6 @@
 
 namespace Disarray::Vulkan {
 
-	template <class T> constexpr std::size_t vertex_count { 0 };
-
 	struct PushConstant {
 		glm::mat4 object_transform { 1.0f };
 		glm::vec4 colour { 1.0f };
@@ -26,8 +24,8 @@ namespace Disarray::Vulkan {
 	// Forward declaration for the vulkan renderer!
 	class Renderer;
 
-	template <class T, std::size_t Vertices = max_vertices, std::size_t VertexCount = vertex_count<T>>
-		requires(std::is_default_constructible_v<T> && vertex_count<T> != 0)
+	template <class T, std::size_t Vertices = max_vertices, std::size_t VertexCount = 0>
+		requires(std::is_default_constructible_v<T> && VertexCount != 0)
 	struct RenderBatchFor {
 		static constexpr auto vertex_count = VertexCount;
 
@@ -62,17 +60,17 @@ namespace Disarray::Vulkan {
 		glm::vec2 normals { 1.0f };
 		glm::vec4 colour { 1.0f };
 	};
-	template <> constexpr auto vertex_count<QuadVertex> = 4;
+	static constexpr auto quad_vertex_count = 4;
 
 	struct LineVertex {
 		glm::vec3 pos { 1.0f };
 		glm::vec4 colour { 1.0f };
 	};
-	template <> constexpr auto vertex_count<LineVertex> = 2;
+	static constexpr auto line_vertex_count = 2;
 
 	template <std::size_t Vertices = max_vertices> struct RenderBatch {
-		RenderBatchFor<QuadVertex, Vertices> quads;
-		RenderBatchFor<LineVertex, Vertices> lines;
+		RenderBatchFor<QuadVertex, Vertices, quad_vertex_count> quads;
+		RenderBatchFor<LineVertex, Vertices, line_vertex_count> lines;
 
 		void reset()
 		{

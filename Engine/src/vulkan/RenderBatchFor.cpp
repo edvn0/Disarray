@@ -9,7 +9,7 @@
 namespace Disarray::Vulkan {
 
 	template <>
-	void RenderBatchFor<QuadVertex, max_vertices, vertex_count<QuadVertex>>::construct(
+	void RenderBatchFor<QuadVertex, max_vertices, quad_vertex_count>::construct(
 		Renderer& renderer, Disarray::Device& dev, Disarray::Swapchain& swapchain)
 	{
 		pipeline = renderer.get_pipeline_cache().get("quad").as<Vulkan::Pipeline>();
@@ -36,7 +36,7 @@ namespace Disarray::Vulkan {
 	}
 
 	template <>
-	void RenderBatchFor<QuadVertex, max_vertices, vertex_count<QuadVertex>>::submit(Renderer& renderer, Disarray::CommandExecutor& command_executor)
+	void RenderBatchFor<QuadVertex, max_vertices, quad_vertex_count>::submit(Renderer& renderer, Disarray::CommandExecutor& command_executor)
 	{
 		if (submitted_indices == 0)
 			return;
@@ -71,7 +71,7 @@ namespace Disarray::Vulkan {
 		vkCmdDrawIndexed(command_buffer, count, 1, 0, 0, 0);
 	}
 
-	template <> void RenderBatchFor<QuadVertex, max_vertices, vertex_count<QuadVertex>>::create_new(const Disarray::GeometryProperties& props)
+	template <> void RenderBatchFor<QuadVertex, max_vertices, quad_vertex_count>::create_new(const Disarray::GeometryProperties& props)
 	{
 		static constexpr std::size_t quad_vertex_count = 4;
 		static constexpr std::array<glm::vec2, 4> texture_coordinates = { glm::vec2 { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 1.0f } };
@@ -95,7 +95,7 @@ namespace Disarray::Vulkan {
 	// LINES
 
 	template <>
-	void RenderBatchFor<LineVertex, max_vertices, vertex_count<LineVertex>>::construct(
+	void RenderBatchFor<LineVertex, max_vertices, line_vertex_count>::construct(
 		Renderer& renderer, Disarray::Device& dev, Disarray::Swapchain& swapchain)
 	{
 		pipeline = renderer.get_pipeline_cache().get("line").as<Vulkan::Pipeline>();
@@ -119,7 +119,7 @@ namespace Disarray::Vulkan {
 	}
 
 	template <>
-	void RenderBatchFor<LineVertex, max_vertices, vertex_count<LineVertex>>::submit(Renderer& renderer, Disarray::CommandExecutor& command_executor)
+	void RenderBatchFor<LineVertex, max_vertices, line_vertex_count>::submit(Renderer& renderer, Disarray::CommandExecutor& command_executor)
 	{
 		if (submitted_indices == 0)
 			return;
@@ -154,7 +154,7 @@ namespace Disarray::Vulkan {
 		vkCmdDrawIndexed(command_buffer, count, 1, 0, 0, 0);
 	}
 
-	template <> void RenderBatchFor<LineVertex, max_vertices, vertex_count<LineVertex>>::create_new(const Disarray::GeometryProperties& props)
+	template <> void RenderBatchFor<LineVertex, max_vertices, line_vertex_count>::create_new(const Disarray::GeometryProperties& props)
 	{
 		{
 			auto& vertex = emplace();
