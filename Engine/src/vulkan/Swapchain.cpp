@@ -83,33 +83,32 @@ namespace Disarray::Vulkan {
 	{
 		VkSubmitInfo submit_info { VK_STRUCTURE_TYPE_SUBMIT_INFO };
 
-		VkSemaphore wait_semaphores[] = { image_available_semaphores[get_current_frame()] };
-		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		submit_info.pWaitSemaphores = wait_semaphores;
-		submit_info.waitSemaphoreCount = 1;
-		submit_info.pWaitDstStageMask = wait_stages;
-		submit_info.commandBufferCount = 1;
+		std::array<VkSemaphore, 1> wait_semaphores = { image_available_semaphores[get_current_frame()] };
+		std::array<VkPipelineStageFlags, 1> wait_stages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		submit_info.pWaitSemaphores = wait_semaphores.data();
+		submit_info.waitSemaphoreCount = static_cast<std::uint32_t>(wait_semaphores.size());
+		submit_info.pWaitDstStageMask = wait_stages.data();
+		submit_info.commandBufferCount = static_cast<std::uint32_t>(wait_stages.size());
 		submit_info.pCommandBuffers = &command_buffers[get_current_frame()].buffer;
 
-		VkSemaphore signal_semaphores[] = { render_finished_semaphores[get_current_frame()] };
-		submit_info.signalSemaphoreCount = 1;
-		submit_info.pSignalSemaphores = signal_semaphores;
+		std::array<VkSemaphore, 1> signal_semaphores = { render_finished_semaphores[get_current_frame()] };
+		submit_info.signalSemaphoreCount = static_cast<std::uint32_t>(signal_semaphores.size());
+		submit_info.pSignalSemaphores = signal_semaphores.data();
 
 		verify(vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight_fences[get_current_frame()]));
 
 		VkPresentInfoKHR present_info_khr { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
-		present_info_khr.waitSemaphoreCount = 1;
-		present_info_khr.pWaitSemaphores = signal_semaphores;
+		present_info_khr.waitSemaphoreCount = static_cast<std::uint32_t>(signal_semaphores.size());
+		present_info_khr.pWaitSemaphores = signal_semaphores.data();
 
-		VkSwapchainKHR swap_chains[] = { swapchain };
-		present_info_khr.swapchainCount = 1;
-		present_info_khr.pSwapchains = swap_chains;
+		std::array<VkSwapchainKHR, 1> swap_chains = { swapchain };
+		present_info_khr.swapchainCount = static_cast<std::uint32_t>(swap_chains.size());
+		present_info_khr.pSwapchains = swap_chains.data();
 		present_info_khr.pImageIndices = &image_index;
 
 		auto result = vkQueuePresentKHR(present_queue, &present_info_khr);
 
-		auto was_resized = window.was_resized();
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || was_resized) {
+		if (auto was_resized = window.was_resized(); was_resized || result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
 			recreate_swapchain();
 			window.reset_resize_status();
 		} else if (result != VK_SUCCESS) {
@@ -162,12 +161,12 @@ namespace Disarray::Vulkan {
 		create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
 		QueueFamilyIndex indices(device.get_physical_device(), window.get_surface());
-		uint32_t queue_family_indices[] = { indices.get_graphics_family(), indices.get_present_family() };
+		std::array<uint32_t, 2> queue_family_indices = { indices.get_graphics_family(), indices.get_present_family() };
 
 		if (indices.get_graphics_family() != indices.get_present_family()) {
 			create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-			create_info.queueFamilyIndexCount = 2;
-			create_info.pQueueFamilyIndices = queue_family_indices;
+			create_info.queueFamilyIndexCount = static_cast<std::uint32_t>(queue_family_indices.size());
+			create_info.pQueueFamilyIndices = queue_family_indices.data();
 		} else {
 			create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		}
@@ -178,7 +177,7 @@ namespace Disarray::Vulkan {
 		create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 		create_info.presentMode = present_mode;
 		create_info.clipped = VK_TRUE;
-		auto* old_vulkan = static_cast<Vulkan::Swapchain*>(old);
+		const auto* old_vulkan = static_cast<const Vulkan::Swapchain*>(old);
 		create_info.oldSwapchain = old ? old_vulkan->supply() : nullptr;
 
 		verify(vkCreateSwapchainKHR(supply_cast<Vulkan::Device>(device), &create_info, nullptr, &swapchain));

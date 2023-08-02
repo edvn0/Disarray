@@ -44,15 +44,12 @@ namespace Disarray::Vulkan {
 		void force_recreation() override { recreate(true); };
 		void recreate(bool should_clean) override;
 
-		VkImage get_image() { return info.image; }
-		VkImageView get_view() { return descriptor_info.imageView; }
-		VkSampler get_sampler() { return descriptor_info.sampler; }
-		VkImageLayout get_layout() { return descriptor_info.imageLayout; }
+		VkImage get_image() const { return info.image; }
+		VkImageView get_view() const { return descriptor_info.imageView; }
+		VkSampler get_sampler() const { return descriptor_info.sampler; }
+		VkImageLayout get_layout() const { return descriptor_info.imageLayout; }
 
-		Identifier hash_impl()
-		{
-			return reinterpret_cast<std::size_t>(descriptor_info.imageView) ^ reinterpret_cast<std::size_t>(descriptor_info.sampler);
-		};
+		Identifier hash_impl() { return bit_cast<std::size_t>(descriptor_info.imageView) ^ bit_cast<std::size_t>(descriptor_info.sampler); };
 
 	private:
 		void recreate_image(bool should_clean);

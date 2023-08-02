@@ -38,8 +38,9 @@ namespace Disarray::UI {
 				.is_primary = false,
 				.owned_by_swapchain = false,
 			});
-		VkDescriptorPoolSize pool_sizes[] = { { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 }, { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
-			{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 }, { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 }, { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+		std::array<VkDescriptorPoolSize, 11> pool_sizes = { VkDescriptorPoolSize { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 }, { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 }, { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 }, { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 }, { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 }, { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 } };
@@ -49,7 +50,7 @@ namespace Disarray::UI {
 		pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 		pool_info.maxSets = 1000;
 		pool_info.poolSizeCount = static_cast<std::uint32_t>(std::size(pool_sizes));
-		pool_info.pPoolSizes = pool_sizes;
+		pool_info.pPoolSizes = pool_sizes.data();
 
 		auto& vk_device = cast_to<Vulkan::Device>(device);
 		Vulkan::verify(vkCreateDescriptorPool(*vk_device, &pool_info, nullptr, &pool));

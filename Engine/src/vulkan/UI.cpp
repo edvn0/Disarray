@@ -4,9 +4,10 @@
 #include "backends/imgui_impl_vulkan.h"
 #include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
-#include "imgui.h"
+#include "util/BitCast.hpp"
 #include "vulkan/Image.hpp"
 
+#include <imgui.h>
 #include <unordered_map>
 
 namespace Disarray::UI {
@@ -27,13 +28,18 @@ namespace Disarray::UI {
 	}
 
 	using ImageIdentifier = Identifier;
+	using ImageCache = std::unordered_map<Identifier, ImageIdentifier>;
 
-	static std::unordered_map<Identifier, ImageIdentifier> descriptor_info_cache;
+	static ImageCache& get_cache()
+	{
+		static ImageCache cache {};
+		return cache;
+	}
 
 	static ImageIdentifier add_image(VkSampler sampler, VkImageView view, VkImageLayout layout)
 	{
 		auto added = ImGui_ImplVulkan_AddTexture(sampler, view, layout);
-		return reinterpret_cast<ImageIdentifier>(added);
+		return Disarray::bit_cast<ImageIdentifier>(added);
 	}
 
 	void image_button(Image& image, glm::vec2 size)
@@ -42,11 +48,11 @@ namespace Disarray::UI {
 
 		const auto hash = vk_image.hash();
 		ImageIdentifier id;
-		if (!descriptor_info_cache.contains(hash)) {
+		if (!get_cache().contains(hash)) {
 			id = add_image(vk_image.get_sampler(), vk_image.get_view(), vk_image.get_layout());
-			descriptor_info_cache[hash] = id;
+			get_cache()[hash] = id;
 		} else {
-			id = descriptor_info_cache[hash];
+			id = get_cache()[hash];
 		}
 
 		ImGui::ImageButton("Image", id, to_imgui<2>(size));
@@ -58,11 +64,11 @@ namespace Disarray::UI {
 
 		const auto hash = vk_image.hash();
 		ImageIdentifier id;
-		if (!descriptor_info_cache.contains(hash)) {
+		if (!get_cache().contains(hash)) {
 			id = add_image(vk_image.get_sampler(), vk_image.get_view(), vk_image.get_layout());
-			descriptor_info_cache[hash] = id;
+			get_cache()[hash] = id;
 		} else {
-			id = descriptor_info_cache[hash];
+			id = get_cache()[hash];
 		}
 
 		ImGui::Image(id, to_imgui<2>(size));

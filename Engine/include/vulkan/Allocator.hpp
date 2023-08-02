@@ -2,10 +2,10 @@
 
 #include "core/DataBuffer.hpp"
 #include "core/Types.hpp"
+#include "util/BitCast.hpp"
 #include "vulkan/MemoryAllocator.hpp"
 #include "vulkan/vulkan_core.h"
 
-#include <bit>
 #include <cstring>
 #include <string>
 
@@ -62,8 +62,8 @@ namespace Disarray::Vulkan {
 
 		template <typename T> T* map_memory(VmaAllocation allocation)
 		{
-			T* data;
-			vmaMapMemory(allocator, allocation, reinterpret_cast<void**>(&data));
+			T* data { nullptr };
+			vmaMapMemory(allocator, allocation, Disarray::bit_cast<void**>(&data));
 			return data;
 		}
 

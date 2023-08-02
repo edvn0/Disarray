@@ -9,6 +9,8 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: RelWithDebInfo
+  CXX: g++-12
+  CC: gcc-12
 
 jobs:
   build:
@@ -36,7 +38,7 @@ jobs:
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: libtbb-dev libxinerama-dev libxcursor-dev
+          packages: gcc-12 g++-12 libtbb-dev libxinerama-dev libxcursor-dev
             libxi-dev mesa-utils libglu1-mesa-dev freeglut3-dev mesa-common-dev
             libglew-dev libglfw3-dev libglm-dev libao-dev libmpg123-dev
           version: 1.0
@@ -63,6 +65,8 @@ jobs:
         # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
         run: cmake
           -B build
+          -D CMAKE_CXX_COMPILER=${{env.CXX}}
+          -D CMAKE_C_COMPILER=${{env.CC}}
           -D CMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
           -G Ninja
 
