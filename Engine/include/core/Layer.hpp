@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
 
 namespace Disarray {

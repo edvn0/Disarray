@@ -38,7 +38,7 @@ namespace Disarray::Vulkan {
 
 	class Image : public Disarray::Image, public Disarray::UniquelyIdentifiable<Vulkan::Image> {
 	public:
-		Image(Device&, Swapchain&, const ImageProperties&);
+		Image(Disarray::Device&, Disarray::Swapchain&, const ImageProperties&);
 		~Image() override;
 
 		void force_recreation() override { recreate(true); };
@@ -57,6 +57,7 @@ namespace Disarray::Vulkan {
 	private:
 		void recreate_image(bool should_clean);
 		void update_descriptor();
+		void destroy_resources();
 
 		ImageInfo info {};
 		VkDescriptorImageInfo descriptor_info;

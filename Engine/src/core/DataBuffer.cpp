@@ -19,6 +19,8 @@ namespace Disarray {
 		std::memcpy(data, new_data, s);
 	}
 
+	DataBuffer::DataBuffer(std::nullptr_t) { }
+
 	DataBuffer::~DataBuffer() { delete[] data; }
 
 	void DataBuffer::reset()

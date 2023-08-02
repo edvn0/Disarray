@@ -13,11 +13,13 @@
 #include "ui/InterfaceLayer.hpp"
 #include "vulkan/CommandExecutor.hpp"
 
+#include <memory>
+
 namespace Disarray {
 
 	App::App(const Disarray::ApplicationProperties& props)
 	{
-		window = Window::construct(props);
+		window = Window::construct({ .width = props.width, .height = props.height, .name = props.name });
 		device = Device::construct(*window);
 
 		initialise_allocator(*device, window->get_instance());
@@ -37,7 +39,7 @@ namespace Disarray {
 		auto constructed_renderer = Renderer::construct(*device, *swapchain, {});
 		constructed_renderer->set_extent({ .width = swapchain->get_extent().width, .height = swapchain->get_extent().height });
 		auto l = add_layer<UI::InterfaceLayer>();
-		auto ui_layer = cast_to<UI::InterfaceLayer>(l);
+		auto ui_layer = std::dynamic_pointer_cast<UI::InterfaceLayer>(l);
 
 		auto& renderer = *constructed_renderer;
 

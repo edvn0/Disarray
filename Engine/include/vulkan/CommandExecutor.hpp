@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/ReferenceCounted.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Device.hpp"
 #include "graphics/PhysicalDevice.hpp"
@@ -47,15 +48,14 @@ namespace Disarray::Vulkan {
 	private:
 		void recreate(bool should_clean = true);
 
-		std::uint32_t current { 0 };
-		std::uint32_t image_count { 0 };
-		bool is_frame_dependent_executor { false };
-
 		Disarray::Device& device;
 		Disarray::Swapchain& swapchain;
 		Disarray::QueueFamilyIndex& indexes;
-
 		CommandExecutorProperties props;
+		bool is_frame_dependent_executor { false };
+
+		std::uint32_t current { 0 };
+		std::uint32_t image_count { 0 };
 		VkCommandPool command_pool;
 		std::vector<VkCommandBuffer> command_buffers;
 		VkCommandBuffer active { nullptr };

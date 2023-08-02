@@ -3,6 +3,7 @@
 #include "Forward.hpp"
 #include "core/Types.hpp"
 #include "core/UsageBadge.hpp"
+#include "graphics/Mesh.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Swapchain.hpp"
@@ -12,7 +13,9 @@
 
 namespace Disarray {
 
-	struct RendererProperties { };
+	struct RendererProperties {
+		std::string debug_name { "Unknown" };
+	};
 
 	struct Extent;
 
@@ -50,10 +53,9 @@ namespace Disarray {
 		virtual void submit_batched_geometry(Disarray::CommandExecutor&) = 0;
 	};
 
-	class Renderer : public IGraphics {
+	class Renderer : public IGraphics, public ReferenceCountable {
 	public:
-		virtual ~Renderer() = default;
-
+		virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) = 0;
 		virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&) = 0;
 		virtual void begin_pass(Disarray::CommandExecutor&) = 0;
 		virtual void end_pass(Disarray::CommandExecutor&) = 0;

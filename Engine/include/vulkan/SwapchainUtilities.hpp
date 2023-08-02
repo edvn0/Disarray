@@ -22,14 +22,14 @@ namespace Disarray::Vulkan {
 		std::vector<VkPresentModeKHR> present_modes;
 	};
 
-	static ResolvedSwapchainSupport resolve_swapchain_support(VkPhysicalDevice device, Disarray::Surface& surf);
+	inline ResolvedSwapchainSupport resolve_swapchain_support(VkPhysicalDevice device, Disarray::Surface& surf);
 
-	static ResolvedSwapchainSupport resolve_swapchain_support(Disarray::PhysicalDevice& device, Disarray::Surface& surf)
+	inline ResolvedSwapchainSupport resolve_swapchain_support(Disarray::PhysicalDevice& device, Disarray::Surface& surf)
 	{
 		return resolve_swapchain_support(supply_cast<Vulkan::PhysicalDevice>(device), surf);
 	}
 
-	static ResolvedSwapchainSupport resolve_swapchain_support(VkPhysicalDevice physical_device, Disarray::Surface& surf)
+	inline ResolvedSwapchainSupport resolve_swapchain_support(VkPhysicalDevice physical_device, Disarray::Surface& surf)
 	{
 		auto surface = supply_cast<Vulkan::Surface>(surf);
 		ResolvedSwapchainSupport support;
@@ -54,7 +54,7 @@ namespace Disarray::Vulkan {
 		return support;
 	}
 
-	static VkSurfaceFormatKHR decide_surface_format(const std::vector<VkSurfaceFormatKHR>& formats)
+	inline VkSurfaceFormatKHR decide_surface_format(const std::vector<VkSurfaceFormatKHR>& formats)
 	{
 		for (const auto& format : formats) {
 			if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -66,7 +66,7 @@ namespace Disarray::Vulkan {
 		return formats[0];
 	}
 
-	static VkPresentModeKHR decide_present_mode(const std::vector<VkPresentModeKHR>& present_modes)
+	inline VkPresentModeKHR decide_present_mode(const std::vector<VkPresentModeKHR>& present_modes)
 	{
 		for (const auto& present_mode : present_modes) {
 			if (present_mode == VK_PRESENT_MODE_MAILBOX_KHR) {
@@ -77,7 +77,7 @@ namespace Disarray::Vulkan {
 		return VK_PRESENT_MODE_FIFO_KHR;
 	}
 
-	static VkExtent2D determine_extent(Disarray::Window& window, const VkSurfaceCapabilitiesKHR& capabilities)
+	inline VkExtent2D determine_extent(Disarray::Window& window, const VkSurfaceCapabilitiesKHR& capabilities)
 	{
 		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 			return capabilities.currentExtent;

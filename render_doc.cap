@@ -5,7 +5,7 @@
         "commandLine": "",
         "environment": [
         ],
-        "executable": "C:\\C\\Personal\\Disarray\\cmake-build-debug\\App\\App.exe",
+        "executable": "C:\\C\\Personal\\Disarray\\build-Debug-Ninja-cl.exe\\App\\App.exe",
         "inject": false,
         "numQueuedFrames": 1,
         "options": {

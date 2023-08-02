@@ -13,7 +13,7 @@ namespace Disarray::Vulkan {
 
 	class Window : public Disarray::Window {
 	public:
-		Window(const Disarray::ApplicationProperties&);
+		Window(const Disarray::WindowProperties&);
 		~Window() override;
 
 		bool should_close() const override;

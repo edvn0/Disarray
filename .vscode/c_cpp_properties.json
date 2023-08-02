@@ -12,8 +12,10 @@
                 "_UNICODE"
             ],
             "windowsSdkVersion": "10.0.22621.0",
-            "compilerPath": "cl.exe",
-            "cStandard": "c17"
+            "compilerPath": "/bin/clang++-17",
+            "cStandard": "c17",
+            "cppStandard": "c++20",
+            "compileCommands": "${workspaceFolder}/build-Debug-Ninja-clang++-17/compile_commands.json"
         }
     ],
     "version": 4

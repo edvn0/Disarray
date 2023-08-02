@@ -10,7 +10,7 @@ namespace Disarray::UI {
 
 	class InterfaceLayer : public Disarray::Layer {
 	public:
-		InterfaceLayer(Device& dev, Window& win, Swapchain& swap);
+		InterfaceLayer(Disarray::Device& dev, Disarray::Window& win, Disarray::Swapchain& swap);
 		~InterfaceLayer() override;
 
 		void construct(App&, Renderer&) override;
@@ -29,19 +29,19 @@ namespace Disarray::UI {
 			requires(std::is_base_of_v<Panel, T>)
 		void add_panel(Args&&... args)
 		{
-			panels.emplace_back(Ref<T> { new T { std::forward(args)... } });
+			panels.emplace_back(std::shared_ptr<T> { new T { std::forward<Args>(args)... } });
 		}
 
 		void begin();
 		void end();
 
 	private:
-		std::vector<Ref<Panel>> panels {};
+		std::vector<std::shared_ptr<Panel>> panels {};
 		Device& device;
 		Window& window;
 		Swapchain& swapchain;
 
-		Ref<CommandExecutor> command_executor;
+		Ref<Disarray::CommandExecutor> command_executor;
 	};
 
 } // namespace Disarray::UI

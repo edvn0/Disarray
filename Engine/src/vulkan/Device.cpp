@@ -14,7 +14,7 @@ namespace Disarray::Vulkan {
 	Device::Device(Disarray::Window& window)
 		: physical_device(PhysicalDevice::construct(window.get_instance(), window.get_surface()))
 	{
-		auto queue_family_index = physical_device->get_queue_family_indexes();
+		auto& queue_family_index = physical_device->get_queue_family_indexes();
 		std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
 		std::set<uint32_t> unique_queue_families { queue_family_index.get_graphics_family(), queue_family_index.get_present_family() };
 
@@ -34,13 +34,13 @@ namespace Disarray::Vulkan {
 
 		VkDeviceCreateInfo device_create_info {};
 		device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		device_create_info.queueCreateInfoCount = queue_create_infos.size();
+		device_create_info.queueCreateInfoCount = static_cast<std::uint32_t>(queue_create_infos.size());
 		device_create_info.pQueueCreateInfos = queue_create_infos.data();
 		device_create_info.pEnabledFeatures = &features;
-		device_create_info.enabledExtensionCount = Config::device_extensions.size();
+		device_create_info.enabledExtensionCount = static_cast<std::uint32_t>(Config::device_extensions.size());
 		device_create_info.ppEnabledExtensionNames = Config::device_extensions.data();
 
-		const auto vk_device = cast_to<Vulkan::PhysicalDevice>(physical_device);
+		const auto vk_device = physical_device.as<Vulkan::PhysicalDevice>();
 		verify(vkCreateDevice(vk_device->supply(), &device_create_info, nullptr, &device));
 
 		vkGetDeviceQueue(device, queue_family_index.get_graphics_family(), 0, &graphics);

@@ -4,22 +4,17 @@
 #include "backends/imgui_impl_vulkan.h"
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
-#include "graphics/Image.hpp"
-#include "graphics/ImageProperties.hpp"
-#include "graphics/RenderPass.hpp"
-#include "imgui.h"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/PhysicalDevice.hpp"
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Renderer.hpp"
-#include "vulkan/Surface.hpp"
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/Verify.hpp"
 #include "vulkan/Window.hpp"
-#include "vulkan/vulkan_core.h"
 
+#include <imgui.h>
 #include <vulkan/vulkan.h>
 
 namespace Disarray::UI {
@@ -43,8 +38,6 @@ namespace Disarray::UI {
 				.is_primary = false,
 				.owned_by_swapchain = false,
 			});
-		// 1: create descriptor pool for IMGUI
-		//  the size of the pool is very oversize, but it's copied from imgui demo itself.
 		VkDescriptorPoolSize pool_sizes[] = { { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 }, { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
 			{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 }, { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 }, { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 }, { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
@@ -55,19 +48,15 @@ namespace Disarray::UI {
 		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 		pool_info.maxSets = 1000;
-		pool_info.poolSizeCount = std::size(pool_sizes);
+		pool_info.poolSizeCount = static_cast<std::uint32_t>(std::size(pool_sizes));
 		pool_info.pPoolSizes = pool_sizes;
 
 		auto& vk_device = cast_to<Vulkan::Device>(device);
 		Vulkan::verify(vkCreateDescriptorPool(*vk_device, &pool_info, nullptr, &pool));
 		ImGui::CreateContext();
 
-		// 2: initialize imgui library
 		ImGui_ImplGlfw_InitForVulkan(static_cast<GLFWwindow*>(window.native()), true);
 
-		// this initializes the core structures of imgui
-
-		// this initializes imgui for Vulkan
 		ImGui_ImplVulkan_InitInfo init_info = {};
 		init_info.Instance = supply_cast<Vulkan::Instance>(window.get_instance());
 		init_info.PhysicalDevice = supply_cast<Vulkan::PhysicalDevice>(device.get_physical_device());
@@ -80,10 +69,16 @@ namespace Disarray::UI {
 
 		ImGui_ImplVulkan_Init(&init_info, supply_cast<Vulkan::RenderPass>(swapchain.get_render_pass()));
 
-		// execute a gpu command to upload imgui font textures
-		auto&& [immediate, destructor] = construct_immediate<Vulkan::CommandExecutor>(device, swapchain);
-		ImGui_ImplVulkan_CreateFontsTexture(immediate->supply());
-		destructor(immediate);
+		Disarray::CommandExecutorProperties props { .count = 1, .owned_by_swapchain = false };
+		auto executor = make_ref<Vulkan::CommandExecutor>(device, swapchain, props);
+		executor->begin();
+		auto destructor = [&device = device](auto& exec) {
+			exec->submit_and_end();
+			wait_for_cleanup(device);
+			exec.reset();
+		};
+		ImGui_ImplVulkan_CreateFontsTexture(executor->supply());
+		destructor(executor);
 
 		// clear font textures from cpu data
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
@@ -136,25 +131,28 @@ namespace Disarray::UI {
 		begin_info.pNext = nullptr;
 		vkBeginCommandBuffer(draw_command_buffer, &begin_info);
 
+		auto vk_render_pass = supply_cast<Vulkan::RenderPass>(vk_swapchain.get_render_pass());
+		auto vk_framebuffer = vk_swapchain.get_current_framebuffer();
+
 		VkRenderPassBeginInfo render_pass_begin_info = {};
 		render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		render_pass_begin_info.renderPass = supply_cast<Vulkan::RenderPass>(vk_swapchain.get_render_pass());
+		render_pass_begin_info.renderPass = vk_render_pass;
 		render_pass_begin_info.renderArea.offset.x = 0;
 		render_pass_begin_info.renderArea.offset.y = 0;
 		render_pass_begin_info.renderArea.extent.width = width;
 		render_pass_begin_info.renderArea.extent.height = height;
 		render_pass_begin_info.clearValueCount = static_cast<std::uint32_t>(clear_values.size());
 		render_pass_begin_info.pClearValues = clear_values.data();
-		render_pass_begin_info.framebuffer = supply_cast<Vulkan::Framebuffer>(vk_swapchain.get_current_framebuffer());
+		render_pass_begin_info.framebuffer = vk_framebuffer;
 
 		vkCmdBeginRenderPass(draw_command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
-		auto imgui_buffer = cast_to<Vulkan::CommandExecutor>(command_executor);
+		auto imgui_buffer = command_executor.as<Vulkan::CommandExecutor>();
 		{
 			VkCommandBufferInheritanceInfo inheritance_info = {};
 			inheritance_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-			inheritance_info.renderPass = supply_cast<Vulkan::RenderPass>(vk_swapchain.get_render_pass());
-			inheritance_info.framebuffer = supply_cast<Vulkan::Framebuffer>(vk_swapchain.get_current_framebuffer());
+			inheritance_info.renderPass = vk_render_pass;
+			inheritance_info.framebuffer = vk_framebuffer;
 
 			VkCommandBufferBeginInfo cbi = {};
 			cbi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

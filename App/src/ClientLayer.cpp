@@ -10,14 +10,6 @@ namespace Disarray::Client {
 
 	AppLayer::~AppLayer() { }
 
-	void AppLayer::interface()
-	{
-		ImGui::Begin("App");
-		auto& img = framebuffer->get_image(0);
-		UI::image_button(img);
-		ImGui::End();
-	}
-
 	void AppLayer::construct(App& app, Renderer& renderer)
 	{
 		VertexLayout layout { {
@@ -31,12 +23,14 @@ namespace Disarray::Client {
 
 		framebuffer = Framebuffer::construct(device, swapchain,
 			{ .format = Disarray::ImageFormat::SBGR,
-				.load_colour = false,
+				.load_colour = true,
 				.keep_colour = true,
-				.load_depth = false,
+				.load_depth = true,
 				.keep_depth = true,
 				.has_depth = true,
+				.should_present = false,
 				.debug_name = "FirstFramebuffer" });
+
 		const auto& [vert, frag] = renderer.get_pipeline_cache().get_shader("main");
 		PipelineProperties props = {
 			.vertex_shader = vert,
@@ -47,15 +41,6 @@ namespace Disarray::Client {
 			.extent = { extent.width, extent.height },
 		};
 		pipeline = Pipeline::construct(device, swapchain, props);
-
-		second_framebuffer = Framebuffer::construct(device, swapchain,
-			{ .format = Disarray::ImageFormat::SBGR,
-				.load_colour = true,
-				.keep_colour = true,
-				.load_depth = true,
-				.keep_depth = true,
-				.has_depth = true,
-				.debug_name = "SecondFramebuffer" });
 
 		command_executor = CommandExecutor::construct(device, swapchain, { .count = 3, .is_primary = true });
 
@@ -76,13 +61,21 @@ namespace Disarray::Client {
 #undef IS_TESTING
 	};
 
+	void AppLayer::interface()
+	{
+		ImGui::Begin("App");
+		auto& img = framebuffer->get_image(0);
+		auto viewport_size = ImGui::GetContentRegionAvail();
+		// UI::image(img, { viewport_size.x, viewport_size.y });
+		ImGui::End();
+	}
+
 	void AppLayer::handle_swapchain_recreation(Renderer& renderer)
 	{
 		renderer.set_extent(swapchain.get_extent());
 		pipeline->force_recreation();
 		viking_room->force_recreation();
 		framebuffer->force_recreation();
-		second_framebuffer->force_recreation();
 	}
 
 	void AppLayer::update(float ts) {
@@ -93,14 +86,14 @@ namespace Disarray::Client {
 	{
 		command_executor->begin();
 		{
-			renderer.begin_pass(*command_executor, *framebuffer);
+			renderer.begin_pass(*command_executor, *framebuffer, true);
 			// const auto&& [mid_x, mid_y] = renderer.center_position();
 			renderer.draw_mesh(*command_executor, *viking_mesh);
 
 			renderer.end_pass(*command_executor);
 		}
 		{
-			renderer.begin_pass(*command_executor, *second_framebuffer);
+			renderer.begin_pass(*command_executor, *framebuffer);
 			// const auto&& [mid_x, mid_y] = renderer.center_position();
 			static glm::vec3 pos { 0, 0, 0 };
 			renderer.draw_planar_geometry(Geometry::Rectangle, { .position = pos, .dimensions = { { 1.f, 1.f, 1.f } } });
