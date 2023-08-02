@@ -33,7 +33,7 @@ namespace Disarray {
 		template <typename T, typename... Args>
 		decltype(auto) add_layer(Args&&... args)
 			requires(std::is_base_of_v<Layer, T>
-				&& requires(Disarray::Device & dev, Disarray::Window& win, Disarray::Swapchain& swap) { T(dev, win, swap); })
+				&& requires(Disarray::Device& dev, Disarray::Window& win, Disarray::Swapchain& swap) { T(dev, win, swap); })
 		{
 			return layers.emplace_back(std::shared_ptr<T> { new T(*device, *window, *swapchain, std::forward<Args>(args)...) });
 		}
