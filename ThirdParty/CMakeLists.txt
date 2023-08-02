@@ -14,7 +14,17 @@ function(add_imgui)
     add_subdirectory(imgui)
 endfunction()
 
+function(add_tinyobjloader)
+    add_subdirectory(tinyobjloader)
+endfunction()
+
+function(add_stb_image)
+    add_subdirectory(stb_image)
+endfunction()
+
 add_glfw()
 add_glm()
 add_vma()
 add_imgui()
+add_tinyobjloader()
+add_stb_image()

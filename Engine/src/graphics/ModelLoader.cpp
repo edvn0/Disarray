@@ -2,12 +2,11 @@
 
 #include "graphics/ModelLoader.hpp"
 
+#include "tinyobjloader.h"
+
 #include <algorithm>
 #include <glm/ext/matrix_transform.hpp>
 #include <unordered_map>
-
-#define TINYOBJLOADER_IMPLEMENTATION
-#include "tinyobjloader.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <execution>

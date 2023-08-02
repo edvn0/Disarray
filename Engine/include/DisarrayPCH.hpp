@@ -1,6 +1,8 @@
 #pragma once
 
 #include <array>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
 #include <bit>
 #include <concepts>
 #include <cstdarg> // va_start, va_end, std::va_list
