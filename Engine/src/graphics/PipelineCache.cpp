@@ -1,5 +1,6 @@
 #include "graphics/PipelineCache.hpp"
 
+#include "core/Log.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/Shader.hpp"
@@ -62,13 +63,13 @@ namespace Disarray {
 
 		// create all pairs of shaders
 		std::vector<std::filesystem::path> as_vector { all_files.begin(), all_files.end() };
-		std::sort(as_vector.begin(), as_vector.end());
+		std::ranges::sort(as_vector.begin(), as_vector.end());
 
-		for (std::size_t i = 0; i < as_vector.size(); i++) {
-			auto current = as_vector[i];
+		for (auto i = 0; i < as_vector.size(); i++) {
+			const auto& current = as_vector[i];
 			const auto compare_to_other = compare_on_filename(current);
-			for (std::size_t j = i + 1; j < as_vector.size(); j++) {
-				auto other = as_vector[j];
+			for (auto j = i + 1; j < as_vector.size(); j++) {
+				const auto& other = as_vector[j];
 				if (!compare_to_other(other))
 					continue;
 
@@ -83,17 +84,15 @@ namespace Disarray {
 				auto second_shader = Shader::construct(device, { .path = other, .type = second_shader_type });
 
 				if (first_shader_type == ShaderType::Vertex && second_shader_type == ShaderType::Fragment) {
-					shader_cache.insert(std::make_pair(name, std::make_pair(first_shader, second_shader)));
+					shader_cache.try_emplace(name, std::make_pair(first_shader, second_shader));
 				} else {
-					shader_cache.insert(std::make_pair(name, std::make_pair(second_shader, first_shader)));
+					shader_cache.try_emplace(name, std::make_pair(second_shader, first_shader));
 				}
-
-				break;
 			}
 		}
 	}
 
-	std::set<std::filesystem::path> PipelineCache::get_unique_files_recursively()
+	std::set<std::filesystem::path> PipelineCache::get_unique_files_recursively() const
 	{
 		std::set<std::filesystem::path> paths;
 		for (const auto& current : std::filesystem::recursive_directory_iterator { path }) {
@@ -107,7 +106,7 @@ namespace Disarray {
 
 	void PipelineCache::force_recreation()
 	{
-		for_each(pipeline_cache, [](PipelineCacheValueType& pipeline) { pipeline.second->force_recreation(); });
+		CollectionOperations::for_each(pipeline_cache, [](PipelineCacheValueType& pipeline) { pipeline.second->force_recreation(); });
 	}
 
 	const Ref<Disarray::Pipeline>& PipelineCache::get(const std::string& key) { return pipeline_cache[key]; }
@@ -127,8 +126,10 @@ namespace Disarray {
 		};
 
 		auto pipeline = Pipeline::construct(device, swapchain, properties);
-		auto out = pipeline_cache.insert(std::make_pair(props.pipeline_key, std::move(pipeline)));
-		return out.first->second;
+		const auto& [pair, could] = pipeline_cache.try_emplace(props.pipeline_key, std::move(pipeline));
+		if (!could)
+			Log::error("PipelineCache - Put", "Could not insert pipeline.");
+		return pair->second;
 	}
 
 	const PipelineCache::ShaderPair& PipelineCache::get_shader(const std::string& key) { return shader_cache[key]; }

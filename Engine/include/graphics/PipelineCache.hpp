@@ -15,6 +15,15 @@
 
 namespace Disarray {
 
+	namespace CollectionOperations {
+
+		template <typename Collection, typename Func> static inline void for_each(Collection& coll, Func&& func)
+		{
+			std::ranges::for_each(std::begin(coll), std::end(coll), std::forward<Func>(func));
+		}
+
+	} // namespace CollectionOperations
+
 	class Framebuffer;
 
 	struct PipelineCacheCreationProperties {
@@ -30,8 +39,18 @@ namespace Disarray {
 	};
 
 	class PipelineCache {
+		struct StringHash {
+			using is_transparent = void; // enables heterogeneous lookup
+
+			std::size_t operator()(std::string_view sv) const
+			{
+				std::hash<std::string_view> hasher;
+				return hasher(sv);
+			}
+		};
+
 		using ShaderPair = std::pair<Ref<Disarray::Shader>, Ref<Disarray::Shader>>;
-		using PipelineMap = std::unordered_map<std::string, Ref<Disarray::Pipeline>>;
+		using PipelineMap = std::unordered_map<std::string, Ref<Disarray::Pipeline>, StringHash, std::equal_to<>>;
 		using PipelineCacheValueType = PipelineMap::value_type;
 
 	public:
@@ -46,12 +65,8 @@ namespace Disarray {
 		void force_recreation();
 
 	private:
-		std::set<std::filesystem::path> get_unique_files_recursively();
+		std::set<std::filesystem::path> get_unique_files_recursively() const;
 
-		template <typename Collection, typename Func> static inline void for_each(Collection& coll, Func&& func)
-		{
-			std::ranges::for_each(coll.begin(), coll.end(), func);
-		}
 		Disarray::Device& device;
 		Disarray::Swapchain& swapchain;
 		std::filesystem::path path { "Assets/Shaders" };

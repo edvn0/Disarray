@@ -194,6 +194,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   target_compile_options(${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness -Wno-unused-variable)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     find_package(TBB REQUIRED)
+    # VMA, STB ignores - -Wno-nullability-completeness -Wno-unused-variable
     target_compile_options(${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness -Wno-unused-variable)
     target_link_libraries(${PROJECT_NAME} PRIVATE tbb)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")

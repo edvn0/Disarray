@@ -48,7 +48,7 @@ namespace Disarray {
 
 	DataBuffer::DataBuffer(DataBuffer&& other) noexcept
 		: data(std::move(other.data))
-		, size(std::move(other.size))
+		, size(other.size)
 	{
 	}
 
@@ -59,7 +59,7 @@ namespace Disarray {
 		return *this;
 	}
 
-	void swap(DataBuffer& first, DataBuffer& second)
+	void swap(DataBuffer& first, DataBuffer& second) noexcept
 	{
 		using std::swap;
 

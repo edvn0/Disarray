@@ -9,7 +9,7 @@ namespace Disarray {
 		std::uint32_t width {};
 		std::uint32_t height {};
 
-		std::size_t get_size() const { return width * height; }
+		std::uint32_t get_size() const { return width * height; }
 	};
 
 	enum class ImageFormat { SRGB, RGB, SBGR, BGR, Depth, DepthStencil };

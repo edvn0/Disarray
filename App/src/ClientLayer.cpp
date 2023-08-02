@@ -1,5 +1,7 @@
 #include "ClientLayer.hpp"
 
+#include <array>
+
 namespace Disarray::Client {
 	AppLayer::AppLayer(Device& dev, Window& win, Swapchain& swap)
 		: device(dev)
@@ -8,7 +10,7 @@ namespace Disarray::Client {
 
 		};
 
-	AppLayer::~AppLayer() { }
+	AppLayer::~AppLayer() = default;
 
 	void AppLayer::construct(App& app, Renderer& renderer)
 	{
@@ -48,8 +50,8 @@ namespace Disarray::Client {
 #define IS_TESTING
 #ifdef IS_TESTING
 		{
-			std::uint32_t white_tex[] = { 0 };
-			auto pixels = DataBuffer(white_tex, sizeof(std::uint32_t));
+			std::array<std::uint32_t, 1> white_tex = { 1 };
+			DataBuffer pixels { white_tex.data(), sizeof(std::uint32_t) };
 			TextureProperties texture_properties { .extent = swapchain.get_extent(), .format = ImageFormat::SBGR, .debug_name = "white_tex" };
 			Ref<Texture> tex = Texture::construct(device, swapchain, texture_properties);
 			texture_properties.path = "Assets/Textures/viking_room.png";
@@ -66,7 +68,7 @@ namespace Disarray::Client {
 		ImGui::Begin("App");
 		auto& img = framebuffer->get_image(0);
 		auto viewport_size = ImGui::GetContentRegionAvail();
-		// UI::image(img, { viewport_size.x, viewport_size.y });
+		UI::image(img, { viewport_size.x, viewport_size.y });
 		ImGui::End();
 	}
 
@@ -110,6 +112,9 @@ namespace Disarray::Client {
 		command_executor->submit_and_end();
 	}
 
-	void AppLayer::destruct() { }
+	void AppLayer::destruct()
+	{
+		// This should be done later on!
+	}
 
 } // namespace Disarray::Client
