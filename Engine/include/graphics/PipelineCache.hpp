@@ -4,6 +4,7 @@
 #include "core/Types.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PushConstantLayout.hpp"
+#include "graphics/Shader.hpp"
 #include "graphics/Swapchain.hpp"
 
 #include <algorithm>
@@ -13,6 +14,8 @@
 #include <utility>
 
 namespace Disarray {
+
+	class Framebuffer;
 
 	struct PipelineCacheCreationProperties {
 		std::string pipeline_key;

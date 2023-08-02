@@ -32,6 +32,7 @@ static constexpr auto is_vertex = [](const auto& p) {
 	else
 		return p.filename().extension() == ".vert";
 };
+
 static constexpr auto compare_on_filename = [](const std::filesystem::path& left) {
 	// x.{vert,frag}.spv => x
 	const auto file_name = trim_extensions(left);
@@ -63,10 +64,10 @@ namespace Disarray {
 		std::vector<std::filesystem::path> as_vector { all_files.begin(), all_files.end() };
 		std::sort(as_vector.begin(), as_vector.end());
 
-		for (auto i = 0; i < as_vector.size(); i++) {
+		for (std::size_t i = 0; i < as_vector.size(); i++) {
 			auto current = as_vector[i];
 			const auto compare_to_other = compare_on_filename(current);
-			for (auto j = i + 1; j < as_vector.size(); j++) {
+			for (std::size_t j = i + 1; j < as_vector.size(); j++) {
 				auto other = as_vector[j];
 				if (!compare_to_other(other))
 					continue;
@@ -82,9 +83,9 @@ namespace Disarray {
 				auto second_shader = Shader::construct(device, { .path = other, .type = second_shader_type });
 
 				if (first_shader_type == ShaderType::Vertex && second_shader_type == ShaderType::Fragment) {
-					shader_cache.try_emplace(name, std::make_pair(first_shader, second_shader));
+					shader_cache.insert(std::make_pair(name, std::make_pair(first_shader, second_shader)));
 				} else {
-					shader_cache.try_emplace(name, std::make_pair(second_shader, first_shader));
+					shader_cache.insert(std::make_pair(name, std::make_pair(second_shader, first_shader)));
 				}
 
 				break;
@@ -95,7 +96,7 @@ namespace Disarray {
 	std::set<std::filesystem::path> PipelineCache::get_unique_files_recursively()
 	{
 		std::set<std::filesystem::path> paths;
-		for (const auto current : std::filesystem::recursive_directory_iterator { path }) {
+		for (const auto& current : std::filesystem::recursive_directory_iterator { path }) {
 			if (!current.is_regular_file() || current.path().extension() != ".spv")
 				continue;
 
@@ -126,7 +127,7 @@ namespace Disarray {
 		};
 
 		auto pipeline = Pipeline::construct(device, swapchain, properties);
-		const auto& out = pipeline_cache.try_emplace(props.pipeline_key, pipeline);
+		auto out = pipeline_cache.insert(std::make_pair(props.pipeline_key, std::move(pipeline)));
 		return out.first->second;
 	}
 

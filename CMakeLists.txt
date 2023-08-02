@@ -6,9 +6,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-if(CMAKE_GENERATOR STREQUAL "Ninja")
-  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-endif()
+if (CMAKE_GENERATOR STREQUAL "Ninja")
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+endif ()
 
 set(THIRD_PARTY "${CMAKE_SOURCE_DIR}/ThirdParty")
 
@@ -26,11 +26,11 @@ add_subdirectory(App)
 set(ALL_SOURCES "")
 list(APPEND ALL_SOURCES ${ENGINE_SOURCES} ${APP_SOURCES})
 
-if(CLANG_FORMAT)
+if (CLANG_FORMAT)
     message(STATUS "Clang format found: ${CLANG_FORMAT}")
     set(FORMATTABLE_FILES ${ALL_SOURCES})
 
     add_custom_target(
             "clang-format-${PROJECT_NAME}" COMMAND ${CLANG_FORMAT} -i -style=file
             ${FORMATTABLE_FILES})
-endif()
+endif ()

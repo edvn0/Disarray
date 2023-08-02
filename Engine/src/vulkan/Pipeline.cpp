@@ -84,7 +84,7 @@ namespace Disarray::Vulkan {
 		binding_description.inputRate = bindings.input_rate == InputRate::Vertex ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
 
 		std::vector<VkVertexInputAttributeDescription> attribute_descriptions {};
-		std::size_t location = 0;
+		std::uint32_t location = 0;
 		for (const auto& attribute : props.layout.elements) {
 			auto& new_attribute = attribute_descriptions.emplace_back();
 			new_attribute.binding = 0;
@@ -95,7 +95,7 @@ namespace Disarray::Vulkan {
 
 		vertex_input_info.vertexBindingDescriptionCount = 1;
 		vertex_input_info.pVertexBindingDescriptions = &binding_description;
-		vertex_input_info.vertexAttributeDescriptionCount = attribute_descriptions.size();
+		vertex_input_info.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(attribute_descriptions.size());
 		vertex_input_info.pVertexAttributeDescriptions = attribute_descriptions.data();
 
 		VkPipelineInputAssemblyStateCreateInfo input_assembly {};
@@ -185,26 +185,26 @@ namespace Disarray::Vulkan {
 		pipeline_layout_info.setLayoutCount = 0; // Optional
 		pipeline_layout_info.pSetLayouts = nullptr; // Optional
 
-		pipeline_layout_info.pushConstantRangeCount = props.push_constant_layout.size(); // Optional
+		pipeline_layout_info.pushConstantRangeCount = static_cast<std::uint32_t>(props.push_constant_layout.size()); // Optional
 		std::vector<VkPushConstantRange> result;
-		std::transform(props.push_constant_layout.get_input_ranges().begin(), props.push_constant_layout.get_input_ranges().end(),
-			std::back_inserter(result), [](PushConstantRange a) -> VkPushConstantRange {
-				VkShaderStageFlags flags {};
-				if (a.flags == PushConstantKind::Fragment) {
-					flags = VK_SHADER_STAGE_FRAGMENT_BIT;
-				}
-				if (a.flags == PushConstantKind::Vertex) {
-					flags = VK_SHADER_STAGE_VERTEX_BIT;
-				}
-				if (a.flags == PushConstantKind::Both) {
-					flags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-				}
-				return {
-					.stageFlags = flags,
-					.offset = a.offset,
-					.size = a.size,
-				};
-			});
+		for (const auto& pc_layout : props.push_constant_layout.get_input_ranges()) {
+			auto& out = result.emplace_back();
+			VkShaderStageFlags flags {};
+			if (pc_layout.flags == PushConstantKind::Fragment) {
+				flags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			}
+			if (pc_layout.flags == PushConstantKind::Vertex) {
+				flags = VK_SHADER_STAGE_VERTEX_BIT;
+			}
+			if (pc_layout.flags == PushConstantKind::Both) {
+				flags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+			}
+			out = {
+				.stageFlags = flags,
+				.offset = pc_layout.offset,
+				.size = pc_layout.size,
+			};
+		}
 		pipeline_layout_info.pPushConstantRanges = result.data(); // Optional
 
 		verify(vkCreatePipelineLayout(supply_cast<Vulkan::Device>(device), &pipeline_layout_info, nullptr, &layout));
@@ -244,7 +244,7 @@ namespace Disarray::Vulkan {
 	std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo> Pipeline::retrieve_shader_stages(
 		Ref<Disarray::Shader> vertex, Ref<Disarray::Shader> fragment) const
 	{
-		return { supply_cast<Vulkan::Shader>(vertex), supply_cast<Vulkan::Shader>(fragment) };
+		return { vertex.as<Vulkan::Shader>()->supply(), fragment.as<Vulkan::Shader>()->supply() };
 	}
 
 	void Pipeline::recreate(bool should_clean)

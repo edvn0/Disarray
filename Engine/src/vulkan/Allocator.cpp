@@ -10,10 +10,13 @@
 #include "vulkan/vulkan_core.h"
 
 namespace Disarray {
-	void initialise_allocator(Disarray::Device& device, Disarray::Instance& instance)
+	void initialise_allocator(Disarray::Device& dev, Disarray::Instance& inst)
 	{
-		Vulkan::Allocator::initialise(
-			cast_to<Vulkan::Device>(device), cast_to<Vulkan::PhysicalDevice>(device.get_physical_device()), cast_to<Vulkan::Instance>(instance));
+		auto& device = cast_to<Vulkan::Device>(dev);
+		auto& physical = device.get_physical_device();
+		auto& vk_physical = cast_to<Vulkan::PhysicalDevice>(physical);
+		auto& instance = cast_to<Vulkan::Instance>(inst);
+		Vulkan::Allocator::initialise(device, vk_physical, instance);
 	}
 
 	void destroy_allocator() { Vulkan::Allocator::shutdown(); }

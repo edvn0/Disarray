@@ -2,6 +2,7 @@
 
 #include "Forward.hpp"
 #include "core/DataBuffer.hpp"
+#include "core/ReferenceCounted.hpp"
 #include "graphics/ImageProperties.hpp"
 
 namespace Disarray {
@@ -14,9 +15,9 @@ namespace Disarray {
 		std::string debug_name;
 	};
 
-	class Image {
+	class Image : public ReferenceCountable {
+		DISARRAY_MAKE_REFERENCE_COUNTABLE(Image)
 	public:
-		virtual ~Image() = default;
 		virtual void force_recreation() = 0;
 		virtual void recreate(bool should_clean) = 0;
 		static Ref<Image> construct(Disarray::Device&, Disarray::Swapchain&, const ImageProperties&);

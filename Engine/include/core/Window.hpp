@@ -1,6 +1,5 @@
 #pragma once
 
-#include "core/App.hpp"
 #include "core/Types.hpp"
 #include "graphics/Instance.hpp"
 #include "graphics/Surface.hpp"
@@ -9,11 +8,17 @@
 
 namespace Disarray {
 
+	struct WindowProperties {
+		std::uint32_t width { 0 };
+		std::uint32_t height { 0 };
+		std::string name {};
+	};
+
 	class Window {
 	public:
 		virtual ~Window() = default;
 
-		const ApplicationProperties& get_properties();
+		const WindowProperties& get_properties();
 
 		virtual bool should_close() const = 0;
 		virtual void update() = 0;
@@ -31,13 +36,13 @@ namespace Disarray {
 		virtual std::pair<float, float> get_framebuffer_scale() = 0;
 
 	protected:
-		Window(const ApplicationProperties&);
+		Window(const WindowProperties&);
 
 	private:
-		ApplicationProperties props;
+		WindowProperties props;
 
 	public:
-		static Scope<Window> construct(const ApplicationProperties&);
+		static Scope<Disarray::Window> construct(const WindowProperties&);
 	};
 
 } // namespace Disarray

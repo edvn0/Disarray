@@ -9,7 +9,7 @@
 
 namespace Disarray::Vulkan {
 
-	Window::Window(const Disarray::ApplicationProperties& properties)
+	Window::Window(const Disarray::WindowProperties& properties)
 		: Disarray::Window(properties)
 	{
 		if (const auto initialised = glfwInit(); !initialised) {

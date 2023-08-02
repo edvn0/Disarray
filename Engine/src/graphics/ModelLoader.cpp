@@ -1,8 +1,7 @@
 #include "graphics/ModelLoader.hpp"
 
-#include "glm/ext/matrix_transform.hpp"
-
 #include <algorithm>
+#include <glm/ext/matrix_transform.hpp>
 #include <unordered_map>
 
 #define TINYOBJLOADER_IMPLEMENTATION

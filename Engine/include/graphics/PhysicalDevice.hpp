@@ -1,20 +1,20 @@
 #pragma once
 
+#include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
+#include "graphics/QueueFamilyIndex.hpp"
 
 namespace Disarray {
 
 	class Instance;
 	class Surface;
-	class QueueFamilyIndex;
 
-	class PhysicalDevice {
+	class PhysicalDevice : public ReferenceCountable {
+		DISARRAY_MAKE_REFERENCE_COUNTABLE(PhysicalDevice)
 	public:
-		static Ref<PhysicalDevice> construct(Disarray::Instance&, Disarray::Surface&);
+		static Ref<Disarray::PhysicalDevice> construct(Disarray::Instance&, Disarray::Surface&);
 
 		virtual Disarray::QueueFamilyIndex& get_queue_family_indexes() = 0;
-
-		virtual ~PhysicalDevice() = default;
 	};
 
 } // namespace Disarray

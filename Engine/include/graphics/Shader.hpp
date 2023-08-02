@@ -1,13 +1,13 @@
 #pragma once
 
+#include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
+#include "graphics/Device.hpp"
 
 #include <filesystem>
 #include <string_view>
 
 namespace Disarray {
-
-	class Device;
 
 	enum class ShaderType { Vertex, Fragment };
 
@@ -17,13 +17,13 @@ namespace Disarray {
 		std::string_view entry_point = "main";
 	};
 
-	class Shader {
+	class Shader : public ReferenceCountable {
+		DISARRAY_MAKE_REFERENCE_COUNTABLE(Shader)
 	public:
-		virtual ~Shader() = default;
 		virtual std::string_view path() const = 0;
 		virtual void destroy_module() = 0;
 
-		static Ref<Shader> construct(Disarray::Device& device, const ShaderProperties&);
+		static Ref<Disarray::Shader> construct(Disarray::Device& device, const ShaderProperties&);
 	};
 
 } // namespace Disarray

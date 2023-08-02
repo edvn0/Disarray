@@ -2,9 +2,13 @@
 
 #include "Forward.hpp"
 #include "PushConstantLayout.hpp"
+#include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
+#include "graphics/Framebuffer.hpp"
+#include "graphics/Shader.hpp"
 #include "graphics/Swapchain.hpp"
 
+#include <cstdint>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -53,8 +57,8 @@ namespace Disarray {
 
 		ElementType type;
 		std::string debug_name;
-		std::size_t size { 0 };
-		std::size_t offset { 0 };
+		std::uint32_t size { 0 };
+		std::uint32_t offset { 0 };
 	};
 
 	enum class InputRate { Vertex, Instance };
@@ -86,14 +90,13 @@ namespace Disarray {
 
 		const VertexBinding& construct_binding() { return binding; }
 
-		std::size_t total_size { 0 };
+		std::uint32_t total_size { 0 };
 		std::vector<LayoutElement> elements;
 		VertexBinding binding;
 	};
 
 	class Device;
 	class Shader;
-	class RenderPass;
 	class Swapchain;
 
 	struct PipelineProperties {
@@ -107,9 +110,9 @@ namespace Disarray {
 		float line_width { 1.0f };
 	};
 
-	class Pipeline {
+	class Pipeline : public ReferenceCountable {
+		DISARRAY_MAKE_REFERENCE_COUNTABLE(Pipeline)
 	public:
-		virtual ~Pipeline() = default;
 		virtual void force_recreation() = 0;
 
 		virtual Disarray::RenderPass& get_render_pass() = 0;

@@ -9,8 +9,8 @@ namespace Disarray::Vulkan {
 
 	VertexBuffer::VertexBuffer(Disarray::Device& dev, Disarray::Swapchain& swapchain, const Disarray::VertexBufferProperties& properties)
 		: device(dev)
-		, vertex_count(props.count)
 		, props(properties)
+		, vertex_count(props.count)
 	{
 		if (props.data) {
 			create_with_valid_data(swapchain);
@@ -52,13 +52,20 @@ namespace Disarray::Vulkan {
 		vertex_buffer_create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		allocation = allocator.allocate_buffer(buffer, vertex_buffer_create_info, { Usage::AUTO_PREFER_DEVICE });
 
-		auto&& [immediate, destruction] = construct_immediate<Vulkan::CommandExecutor>(device, swapchain);
+		Disarray::CommandExecutorProperties command_executor_props { .count = 1, .owned_by_swapchain = false };
+		auto executor = make_ref<Vulkan::CommandExecutor>(device, swapchain, command_executor_props);
+		executor->begin();
+		auto destructor = [&device = device](auto& command_executor) {
+			command_executor->submit_and_end();
+			wait_for_cleanup(device);
+			command_executor.reset();
+		};
 
 		VkBufferCopy copy_region = {};
 		copy_region.size = props.size;
-		vkCmdCopyBuffer(immediate->supply(), staging_buffer, buffer, 1, &copy_region);
+		vkCmdCopyBuffer(executor->supply(), staging_buffer, buffer, 1, &copy_region);
 
-		destruction(immediate);
+		destructor(executor);
 		allocator.deallocate_buffer(staging_buffer_allocation, staging_buffer);
 	}
 

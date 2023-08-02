@@ -21,7 +21,7 @@ namespace Disarray::Vulkan {
 	private:
 		void construct_layout();
 		std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo> retrieve_shader_stages(
-			Ref<Shader> vertex, Ref<Shader> fragment) const;
+			Ref<Disarray::Shader> vertex, Ref<Disarray::Shader> fragment) const;
 
 		void recreate(bool should_clean = true);
 

@@ -81,6 +81,19 @@
         "map": "cpp",
         "unordered_set": "cpp",
         "functional": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "any": "cpp",
+        "*.tcc": "cpp",
+        "codecvt": "cpp",
+        "condition_variable": "cpp",
+        "cwctype": "cpp",
+        "memory_resource": "cpp",
+        "numeric": "cpp",
+        "string_view": "cpp",
+        "numbers": "cpp",
+        "semaphore": "cpp",
+        "shared_mutex": "cpp",
+        "cfenv": "cpp",
+        "variant": "cpp"
     }
 }
