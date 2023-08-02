@@ -9,6 +9,7 @@ namespace Disarray {
 	public:
 		DataBuffer() = default;
 		explicit DataBuffer(std::size_t);
+		DataBuffer(std::nullptr_t);
 		DataBuffer(const void* data, std::size_t);
 
 		DataBuffer(const DataBuffer&);

@@ -29,7 +29,6 @@ namespace Disarray {
 		virtual void reset_recreation_status() = 0;
 
 		virtual Disarray::RenderPass& get_render_pass() = 0;
-		virtual Disarray::Framebuffer& get_current_framebuffer() = 0;
 
 		virtual ~Swapchain() = default;
 	};

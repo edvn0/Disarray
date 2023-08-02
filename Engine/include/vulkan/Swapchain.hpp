@@ -5,8 +5,9 @@
 #include "graphics/PhysicalDevice.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/Swapchain.hpp"
+#include "vulkan/Framebuffer.hpp"
 #include "vulkan/PropertySupplier.hpp"
-#include "vulkan/vulkan_core.h"
+#include "vulkan/RenderPass.hpp"
 
 #include <vector>
 
@@ -22,21 +23,21 @@ namespace Disarray::Vulkan {
 		Swapchain(Disarray::Window&, Disarray::Device&, Disarray::Swapchain* = nullptr);
 		~Swapchain() override;
 
-		std::uint32_t image_count() const override { return swapchain_images.size(); }
+		std::uint32_t image_count() const override { return static_cast<std::uint32_t>(swapchain_images.size()); }
 		Disarray::Extent get_extent() const override { return { extent.width, extent.height }; }
 
 		std::uint32_t get_current_frame() override { return current_frame; }
 		std::uint32_t advance_frame() override { return current_frame++; }
 		std::uint32_t get_image_index() override { return image_index; }
 
-		VkCommandBuffer get_drawbuffer() { return command_buffers[get_image_index()]; }
+		VkCommandBuffer get_drawbuffer() { return command_buffers[get_current_frame()].buffer; }
 
 		Disarray::RenderPass& get_render_pass() override;
-		Disarray::Framebuffer& get_current_framebuffer() override { return *framebuffer; };
+		VkFramebuffer get_current_framebuffer() { return framebuffers[get_current_frame()]; };
 
 		PresentingSemaphores get_presenting_semaphores()
 		{
-			return { image_available_semaphores[current_frame], render_finished_semaphores[current_frame] };
+			return { image_available_semaphores[get_current_frame()], render_finished_semaphores[get_current_frame()] };
 		}
 
 		bool prepare_frame() override;
@@ -52,6 +53,7 @@ namespace Disarray::Vulkan {
 	private:
 		void create_synchronisation_objects();
 		void recreate_swapchain(Disarray::Swapchain* old = nullptr, bool should_clean = true);
+		void recreate_framebuffer(bool should_clean);
 		void cleanup_swapchain();
 
 		bool swapchain_needs_recreation { false };
@@ -63,7 +65,8 @@ namespace Disarray::Vulkan {
 		std::uint32_t current_frame { 0 };
 		std::uint32_t image_index { 0 };
 
-		Ref<Disarray::Framebuffer> framebuffer;
+		std::vector<VkFramebuffer> framebuffers;
+		Ref<Vulkan::RenderPass> render_pass { nullptr };
 
 		std::vector<VkImage> swapchain_images;
 		std::vector<VkImageView> swapchain_image_views;
@@ -71,8 +74,11 @@ namespace Disarray::Vulkan {
 		std::vector<VkSemaphore> render_finished_semaphores;
 		std::vector<VkFence> in_flight_fences;
 
-		VkCommandPool command_pool;
-		std::vector<VkCommandBuffer> command_buffers;
+		struct CommandBuffer {
+			VkCommandBuffer buffer;
+			VkCommandPool command_pool;
+		};
+		std::vector<CommandBuffer> command_buffers;
 
 		VkQueue present_queue;
 		VkQueue graphics_queue;

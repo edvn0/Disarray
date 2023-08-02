@@ -118,7 +118,7 @@ namespace Disarray::Vulkan {
 	void CommandExecutor::begin(VkCommandBufferBeginInfo begin_info)
 	{
 		if (props.owned_by_swapchain) {
-			active = static_cast<Vulkan::Swapchain&>(swapchain).get_drawbuffer();
+			active = cast_to<Vulkan::Swapchain>(swapchain).get_drawbuffer();
 		} else {
 			active = command_buffers[buffer_index()];
 		}

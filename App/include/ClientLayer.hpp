@@ -29,7 +29,6 @@ namespace Disarray::Client {
 		Ref<Texture> viking_room;
 
 		Ref<Framebuffer> framebuffer;
-		Ref<Framebuffer> second_framebuffer;
 
 		Ref<CommandExecutor> command_executor;
 	};

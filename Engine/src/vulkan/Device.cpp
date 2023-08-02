@@ -34,10 +34,10 @@ namespace Disarray::Vulkan {
 
 		VkDeviceCreateInfo device_create_info {};
 		device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		device_create_info.queueCreateInfoCount = queue_create_infos.size();
+		device_create_info.queueCreateInfoCount = static_cast<std::uint32_t>(queue_create_infos.size());
 		device_create_info.pQueueCreateInfos = queue_create_infos.data();
 		device_create_info.pEnabledFeatures = &features;
-		device_create_info.enabledExtensionCount = Config::device_extensions.size();
+		device_create_info.enabledExtensionCount = static_cast<std::uint32_t>(Config::device_extensions.size());
 		device_create_info.ppEnabledExtensionNames = Config::device_extensions.data();
 
 		const auto vk_device = physical_device.as<Vulkan::PhysicalDevice>();

@@ -30,8 +30,8 @@ namespace Disarray::MemoryTracking {
 	void register_alive_impl(void* instance)
 	{
 		std::scoped_lock lock(get_reference_mutex());
+		auto& reference_set = get_reference_set();
 		ensure(instance != nullptr, "Instance was for some reason already nullptr.");
-		ensure(!get_reference_set().contains(instance), "Instance was already registered.");
-		get_reference_set().insert(instance);
+		reference_set.insert(instance);
 	}
 } // namespace Disarray::MemoryTracking

@@ -3,11 +3,12 @@
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/ImageProperties.hpp"
+#include "util/FormattingUtilities.hpp"
 #include "vulkan/Allocator.hpp"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Device.hpp"
-#include "vulkan/ImageUtilities.hpp"
-#include "vulkan/vulkan_core.h"
+
+#include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {
 
@@ -45,29 +46,32 @@ namespace Disarray::Vulkan {
 		recreate_image(false);
 	}
 
-	Image::~Image()
+	void Image::destroy_resources()
 	{
+		Allocator allocator { "Image[" + props.debug_name + "]" };
+		Log::debug("Image-Destructor", "Destroyed image (" + props.debug_name + ") - " + FormattingUtilities::pointer_to_string(info.image));
+		Log::debug("Image-Destructor", "Destroyed sampler - " + FormattingUtilities::pointer_to_string(info.sampler));
+		Log::debug("Image-Destructor", "Destroyed view - " + FormattingUtilities::pointer_to_string(info.view));
 		vkDestroyImageView(supply_cast<Vulkan::Device>(device), info.view, nullptr);
 		vkDestroySampler(supply_cast<Vulkan::Device>(device), info.sampler, nullptr);
-		Allocator allocator { "Image Destructor[" + props.debug_name + "]" };
 		allocator.deallocate_image(info.allocation, info.image);
-		Log::debug("Image-Destructor", "Destroyed image " + props.debug_name);
+		info.view = nullptr;
+		info.sampler = nullptr;
+		info.image = nullptr;
+		update_descriptor();
 	}
+
+	Image::~Image() { destroy_resources(); }
 
 	void Image::recreate(bool should_clean) { recreate_image(should_clean); }
 
 	void Image::recreate_image(bool should_clean)
 	{
 		if (should_clean) {
-			Allocator allocator { "Image Recreator[" + props.debug_name + "]" };
-			vkDestroyImageView(supply_cast<Vulkan::Device>(device), info.view, nullptr);
-			vkDestroySampler(supply_cast<Vulkan::Device>(device), info.sampler, nullptr);
-			allocator.deallocate_image(info.allocation, info.image);
+			destroy_resources();
 		}
 
-		if (is_depth_format(props.format)) {
-			props.extent = swapchain.get_extent();
-		}
+		props.extent = swapchain.get_extent();
 
 		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT;
 		if (is_depth_format(props.format)) {
@@ -96,7 +100,7 @@ namespace Disarray::Vulkan {
 		image_create_info.tiling = VK_IMAGE_TILING_OPTIMAL;
 		image_create_info.usage = usage;
 		{
-			Allocator allocator { "Image allocator[" + props.debug_name + "]" };
+			Allocator allocator { "Image[" + props.debug_name + "]" };
 			info.allocation = allocator.allocate_image(info.image, image_create_info, { .usage = Usage::GPU_ONLY });
 		}
 
@@ -187,8 +191,6 @@ namespace Disarray::Vulkan {
 		vkCmdCopyBufferToImage(buffer, staging, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &buffer_copy_region);
 
 		VkImageLayout layout = to_vulkan_layout(props.format);
-		if (props.should_present)
-			layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		set_image_layout(buffer, info.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
 		set_image_layout(buffer, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout, subresource_range);
 

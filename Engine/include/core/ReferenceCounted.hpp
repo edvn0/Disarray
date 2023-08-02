@@ -5,17 +5,9 @@
 #include <cstdint>
 #include <type_traits>
 
-#ifdef TEST_REF_COUNTING
-#define DISARRAY_MAKE_REFERENCE_COUNTABLE(x)                                                                                                         \
-public:                                                                                                                                              \
-	x(const x&) = delete;                                                                                                                            \
-	x(x&&) = delete;                                                                                                                                 \
-	virtual ~x() override = default;
-#else
 #define DISARRAY_MAKE_REFERENCE_COUNTABLE(x)                                                                                                         \
 public:                                                                                                                                              \
 	virtual ~x() override = default;
-#endif
 
 namespace Disarray {
 
@@ -23,16 +15,19 @@ namespace Disarray {
 	public:
 		virtual ~ReferenceCountable() = default;
 
-		virtual void increment_reference_count() { ++reference_count; }
-		virtual void decrement_reference_count() { --reference_count; }
-		virtual std::uint32_t get_reference_count() const { return reference_count; }
+		void increment_reference_count() { ++reference_count; }
+
+		void decrement_reference_count() { --reference_count; }
+
+		std::uint32_t get_reference_count() const { return reference_count; }
 
 	private:
-		mutable std::atomic<uint32_t> reference_count { 0 };
+		std::atomic<uint32_t> reference_count = 0;
 	};
 
 	namespace MemoryTracking {
 		void register_dead_impl(void*);
+
 		void register_alive_impl(void*);
 
 		template <class T> void register_dead(T* instance) { register_dead_impl(reinterpret_cast<void*>(instance)); }
@@ -40,7 +35,7 @@ namespace Disarray {
 		template <class T> void register_alive(T* instance) { register_alive_impl(reinterpret_cast<void*>(instance)); }
 	} // namespace MemoryTracking
 
-	template <class T> struct ReferenceCounted {
+	template <class T> class ReferenceCounted {
 	public:
 		ReferenceCounted()
 			: instance(nullptr)
@@ -58,6 +53,7 @@ namespace Disarray {
 			: instance(inst)
 		{
 			static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
+			increment_reference_count();
 		}
 
 		template <typename... Args>
@@ -66,6 +62,7 @@ namespace Disarray {
 			: instance(new T { std::forward<Args>(args)... })
 		{
 			static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
+			increment_reference_count();
 		}
 
 		ReferenceCounted(ReferenceCounted<T>&& other)
@@ -136,15 +133,19 @@ namespace Disarray {
 		}
 
 		operator bool() { return instance != nullptr; }
+
 		operator bool() const { return instance != nullptr; }
 
 		T* operator->() { return instance; }
+
 		const T* operator->() const { return instance; }
 
 		T& operator*() { return *instance; }
+
 		const T& operator*() const { return *instance; }
 
 		T* get() { return instance; }
+
 		const T* get() const { return instance; }
 
 		void reset(T* inst = nullptr)
@@ -194,6 +195,7 @@ namespace Disarray {
 		}
 
 		template <class T2> friend class ReferenceCounted;
+
 		mutable T* instance;
 	};
 

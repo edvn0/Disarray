@@ -189,14 +189,17 @@ add_library(${PROJECT_NAME} STATIC
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/tinyobjloader ${THIRD_PARTY}/stb ${THIRD_PARTY}/imgui)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator imgui)
 
-if(CMAKE_CXX_COMPILER MATCHES "clang")
-        target_compile_options(${PROJECT_NAME} PRIVATE -Wno-nullability-completeness)
-endif()
 
-if(CMAKE_CXX_COMPILER MATCHES "g")
-        find_package(TBB REQUIRED)
-        target_compile_options(${PROJECT_NAME} PRIVATE -Wno-nullability-completeness)
-        target_link_libraries(${PROJECT_NAME} PRIVATE tbb)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    find_package(TBB REQUIRED)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness)
+    target_link_libraries(${PROJECT_NAME} PRIVATE tbb)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    # VMA, STB ignores - /wd4244 /wd4100 /wd4189 /wd4127 /wd4324 /wd4201
+    # [[noreturn]] - /wd4702
+    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4244 /wd4100 /wd4189 /wd4127 /wd4324 /wd4201 /wd4702)
 endif()
 
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")

@@ -10,12 +10,16 @@
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Config.hpp"
 #include "vulkan/Device.hpp"
+#include "vulkan/Framebuffer.hpp"
 #include "vulkan/PhysicalDevice.hpp"
 #include "vulkan/QueueFamilyIndex.hpp"
+#include "vulkan/RenderPass.hpp"
 #include "vulkan/Surface.hpp"
 #include "vulkan/SwapchainUtilities.hpp"
 #include "vulkan/Verify.hpp"
 #include "vulkan/vulkan_core.h"
+
+#include <algorithm>
 
 namespace Disarray::Vulkan {
 
@@ -34,9 +38,9 @@ namespace Disarray::Vulkan {
 
 	void Swapchain::create_synchronisation_objects()
 	{
-		image_available_semaphores.resize(Config::max_frames_in_flight);
-		render_finished_semaphores.resize(Config::max_frames_in_flight);
-		in_flight_fences.resize(Config::max_frames_in_flight);
+		image_available_semaphores.resize(image_count());
+		render_finished_semaphores.resize(image_count());
+		in_flight_fences.resize(image_count());
 
 		VkSemaphoreCreateInfo semaphore_info {};
 		semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -47,7 +51,7 @@ namespace Disarray::Vulkan {
 
 		const auto vk_device = supply_cast<Vulkan::Device>(device);
 
-		for (size_t i = 0; i < Vulkan::Config::max_frames_in_flight; i++) {
+		for (size_t i = 0; i < image_count(); i++) {
 			verify(vkCreateSemaphore(vk_device, &semaphore_info, nullptr, &image_available_semaphores[i]));
 			verify(vkCreateSemaphore(vk_device, &semaphore_info, nullptr, &render_finished_semaphores[i]));
 			verify(vkCreateFence(vk_device, &fence_create_info, nullptr, &in_flight_fences[i]));
@@ -69,24 +73,23 @@ namespace Disarray::Vulkan {
 			throw std::runtime_error("failed to acquire swap chain image!");
 		}
 
-		vkResetFences(vk_device, 1, &in_flight_fences[get_current_frame()]);
-		vkResetCommandBuffer(command_buffers[get_current_frame()], 0);
+		verify(vkResetFences(vk_device, 1, &in_flight_fences[get_current_frame()]));
+		verify(vkResetCommandPool(vk_device, command_buffers[get_current_frame()].command_pool, 0));
 
 		return true;
 	}
 
 	void Swapchain::present()
 	{
-		VkSubmitInfo submit_info {};
-		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		VkSubmitInfo submit_info { VK_STRUCTURE_TYPE_SUBMIT_INFO };
 
 		VkSemaphore wait_semaphores[] = { image_available_semaphores[get_current_frame()] };
 		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		submit_info.waitSemaphoreCount = 1;
 		submit_info.pWaitSemaphores = wait_semaphores;
+		submit_info.waitSemaphoreCount = 1;
 		submit_info.pWaitDstStageMask = wait_stages;
 		submit_info.commandBufferCount = 1;
-		submit_info.pCommandBuffers = &command_buffers[get_current_frame()];
+		submit_info.pCommandBuffers = &command_buffers[get_current_frame()].buffer;
 
 		VkSemaphore signal_semaphores[] = { render_finished_semaphores[get_current_frame()] };
 		submit_info.signalSemaphoreCount = 1;
@@ -94,9 +97,7 @@ namespace Disarray::Vulkan {
 
 		verify(vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight_fences[get_current_frame()]));
 
-		VkPresentInfoKHR present_info_khr {};
-		present_info_khr.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
+		VkPresentInfoKHR present_info_khr { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
 		present_info_khr.waitSemaphoreCount = 1;
 		present_info_khr.pWaitSemaphores = signal_semaphores;
 
@@ -115,7 +116,8 @@ namespace Disarray::Vulkan {
 			throw std::runtime_error("failed to present swap chain image!");
 		}
 
-		current_frame = (current_frame + 1) % Config::max_frames_in_flight;
+		current_frame = (current_frame + 1) % image_count();
+		verify(vkWaitForFences(supply_cast<Vulkan::Device>(device), 1, &in_flight_fences[current_frame], true, UINT64_MAX));
 	}
 
 	void Swapchain::recreate_swapchain(Disarray::Swapchain* old, bool should_clean)
@@ -128,6 +130,15 @@ namespace Disarray::Vulkan {
 		if (should_clean) {
 			cleanup_swapchain();
 		}
+
+		render_pass = make_ref<Vulkan::RenderPass>(device,
+			RenderPassProperties {
+				.image_format = ImageFormat::SBGR,
+				.keep_depth = false,
+				.has_depth = false,
+				.should_present = true,
+				.debug_name { "Swapchain RenderPass" },
+			});
 
 		const auto& [capabilities, formats, present_modes]
 			= resolve_swapchain_support(supply_cast<Vulkan::PhysicalDevice>(device.get_physical_device()), window.get_surface());
@@ -198,48 +209,40 @@ namespace Disarray::Vulkan {
 
 		create_synchronisation_objects();
 
-		auto count = swapchain_images.size();
-		if (count > Config::max_frames_in_flight)
-			count = Config::max_frames_in_flight;
-
 		VkCommandPoolCreateInfo pool_info {};
 		pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 		pool_info.queueFamilyIndex = graphics_family;
 
-		verify(vkCreateCommandPool(supply_cast<Vulkan::Device>(device), &pool_info, nullptr, &command_pool));
-		command_buffers.resize(count);
 		VkCommandBufferAllocateInfo alloc_info {};
 		alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		alloc_info.commandPool = command_pool;
 		alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		alloc_info.commandBufferCount = count;
-		verify(vkAllocateCommandBuffers(supply_cast<Vulkan::Device>(device), &alloc_info, command_buffers.data()));
+		alloc_info.commandBufferCount = 1;
 
-		if (!framebuffer) {
-			framebuffer = Framebuffer::construct(device, *this,
-				{ .format = ImageFormat::SBGR,
-					.load_colour = true,
-					.keep_colour = true,
-					.load_depth = false,
-					.keep_depth = false,
-					.has_depth = false,
-					.should_present = true,
-					.debug_name = "SwapchainFramebuffer" });
-		} else {
-			framebuffer->recreate(should_clean);
+		command_buffers.resize(image_count);
+		for (auto& cmd_buffer : command_buffers) {
+			verify(vkCreateCommandPool(supply_cast<Vulkan::Device>(device), &pool_info, nullptr, &cmd_buffer.command_pool));
+			alloc_info.commandPool = cmd_buffer.command_pool;
+			verify(vkAllocateCommandBuffers(supply_cast<Vulkan::Device>(device), &alloc_info, &cmd_buffer.buffer));
 		}
+
+		recreate_framebuffer(should_clean);
 	}
 
 	void Swapchain::cleanup_swapchain()
 	{
 		const auto vk_device = supply_cast<Vulkan::Device>(device);
 
-		framebuffer.reset();
+		render_pass.reset();
 
-		vkDestroyCommandPool(vk_device, command_pool, nullptr);
+		for (auto& fb : framebuffers) {
+			vkDestroyFramebuffer(vk_device, fb, nullptr);
+		}
 
-		for (size_t i = 0; i < Config::max_frames_in_flight; i++) {
+		for (auto& [_, command_pool] : command_buffers)
+			vkDestroyCommandPool(vk_device, command_pool, nullptr);
+
+		for (size_t i = 0; i < image_count(); i++) {
 			vkDestroySemaphore(vk_device, render_finished_semaphores[i], nullptr);
 			vkDestroySemaphore(vk_device, image_available_semaphores[i], nullptr);
 			vkDestroyFence(vk_device, in_flight_fences[i], nullptr);
@@ -252,6 +255,35 @@ namespace Disarray::Vulkan {
 		vkDestroySwapchainKHR(vk_device, swapchain, nullptr);
 	}
 
-	Disarray::RenderPass& Swapchain::get_render_pass() { return framebuffer->get_render_pass(); }
+	Disarray::RenderPass& Swapchain::get_render_pass() { return *render_pass; }
+
+	void Swapchain::recreate_framebuffer(bool should_clean)
+	{
+		const auto vk_device = supply_cast<Vulkan::Device>(device);
+
+		if (should_clean) {
+			for (auto& fb : framebuffers) {
+				vkDestroyFramebuffer(vk_device, fb, nullptr);
+			}
+		}
+
+		framebuffers.resize(image_count());
+
+		std::uint32_t i { 0 };
+		for (auto& fb : framebuffers) {
+			VkImageView attachments[] = { swapchain_image_views[i++] };
+
+			VkFramebufferCreateInfo fb_create_info {};
+			fb_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			fb_create_info.renderPass = render_pass->supply();
+			fb_create_info.attachmentCount = 1;
+			fb_create_info.pAttachments = attachments;
+			fb_create_info.width = extent.width;
+			fb_create_info.height = extent.height;
+			fb_create_info.layers = 1;
+
+			verify(vkCreateFramebuffer(vk_device, &fb_create_info, nullptr, &fb));
+		}
+	}
 
 } // namespace Disarray::Vulkan

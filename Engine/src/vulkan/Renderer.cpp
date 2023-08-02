@@ -14,6 +14,7 @@
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/VertexBuffer.hpp"
+#include "vulkan/vulkan_core.h"
 
 #include <array>
 #include <glm/ext/matrix_transform.hpp>
@@ -64,7 +65,7 @@ namespace Disarray::Vulkan {
 
 	void Renderer::set_extent(const Extent& e) { extent = e; }
 
-	void Renderer::begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& fb)
+	void Renderer::begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& fb, bool explicit_clear)
 	{
 		auto command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 
@@ -85,6 +86,40 @@ namespace Disarray::Vulkan {
 		render_pass_begin_info.pClearValues = clear_values.data();
 
 		vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+
+		if (explicit_clear) {
+			auto& vk_framebuffer = cast_to<Vulkan::Framebuffer>(fb);
+
+			std::vector<VkClearValue> fb_clear_values = vk_framebuffer.get_clear_values();
+
+			const std::uint32_t color_attachment_count = vk_framebuffer.get_colour_attachment_count();
+			const std::uint32_t total_attachment_count = color_attachment_count + (vk_framebuffer.has_depth() ? 1 : 0);
+
+			std::vector<VkClearAttachment> attachments(total_attachment_count);
+			std::vector<VkClearRect> clear_rects(total_attachment_count);
+			for (uint32_t i = 0; i < color_attachment_count; i++) {
+				attachments[i].aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				attachments[i].colorAttachment = i;
+				attachments[i].clearValue = fb_clear_values[i];
+
+				clear_rects[i].rect.offset = { (int32_t)0, (int32_t)0 };
+				clear_rects[i].rect.extent = extent_2_d;
+				clear_rects[i].baseArrayLayer = 0;
+				clear_rects[i].layerCount = 1;
+			}
+
+			if (vk_framebuffer.has_depth()) {
+				attachments[color_attachment_count].aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+				attachments[color_attachment_count].clearValue = fb_clear_values[color_attachment_count];
+				clear_rects[color_attachment_count].rect.offset = { 0, 0 };
+				clear_rects[color_attachment_count].rect.extent = extent_2_d;
+				clear_rects[color_attachment_count].baseArrayLayer = 0;
+				clear_rects[color_attachment_count].layerCount = 1;
+			}
+
+			vkCmdClearAttachments(command_buffer, total_attachment_count, attachments.data(), total_attachment_count, clear_rects.data());
+		}
+
 		VkViewport viewport {};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
@@ -118,7 +153,7 @@ namespace Disarray::Vulkan {
 
 		vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(mesh.get_indices()), 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdDrawIndexed(command_buffer, mesh.get_indices().size(), 1, 0, 0, 0);
+		vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(mesh.get_indices().size()), 1, 0, 0, 0);
 	}
 
 	void Renderer::submit_batched_geometry(Disarray::CommandExecutor& executor) { render_batch.submit(*this, executor); }

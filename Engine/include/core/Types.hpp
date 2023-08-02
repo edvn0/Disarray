@@ -11,7 +11,7 @@ namespace Disarray {
 
 	template <class T> using Ref = ReferenceCounted<T>;
 	template <class T, class... Args> Ref<T> make_ref(Args&&... args) { return ReferenceCounted<T> { new T { std::forward<Args>(args)... } }; }
-	template <class T, class... Args> Ref<T> make_ref_inplace(Args&&... args) { return ReferenceCounted<T> { std::forward<Args>(args)...  }; }
+	template <class T, class... Args> Ref<T> make_ref_inplace(Args&&... args) { return ReferenceCounted<T> { std::forward<Args>(args)... }; }
 
 	template <class T> using Scope = std::unique_ptr<T>;
 	template <class T, class... Args> Scope<T> make_scope(Args&&... args) { return Scope<T> { new T { std::forward<Args>(args)... } }; }
@@ -94,6 +94,27 @@ namespace Disarray {
 		return polymorphic_cast<To>(obj).supply();
 	}
 
-	[[noreturn]] static auto unreachable() { throw std::runtime_error("Reached unreachable code."); }
+	template <class To, class From>
+		requires(std::is_base_of_v<From, To> && requires(To t) { t.supply_indexed(); })
+	decltype(auto) indexed_supply_cast(From&& obj)
+	{
+		return polymorphic_cast<To>(std::forward<From>(obj)).supply_indexed();
+	}
+
+	template <class To, class From>
+		requires(std::is_base_of_v<From, To> && requires(To t) { t.supply_indexed(); })
+	decltype(auto) indexed_supply_cast(From& obj)
+	{
+		return polymorphic_cast<To>(obj).supply_indexed();
+	}
+
+	template <class To, class From>
+		requires(std::is_base_of_v<From, To> && requires(To t) { t.supply_indexed(); })
+	decltype(auto) indexed_supply_cast(const From& obj)
+	{
+		return polymorphic_cast<To>(obj).supply_indexed();
+	}
+
+	[[noreturn]] inline auto unreachable() { throw std::runtime_error("Reached unreachable code."); }
 
 } // namespace Disarray

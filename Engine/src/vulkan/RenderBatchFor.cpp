@@ -73,7 +73,6 @@ namespace Disarray::Vulkan {
 
 	template <> void RenderBatchFor<QuadVertex, max_vertices, quad_vertex_count>::create_new(const Disarray::GeometryProperties& props)
 	{
-		static constexpr std::size_t quad_vertex_count = 4;
 		static constexpr std::array<glm::vec2, 4> texture_coordinates = { glm::vec2 { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 1.0f } };
 		static constexpr std::array<glm::vec4, 4> quad_positions
 			= { glm::vec4 { -0.5f, -0.5f, 0.0f, 1.0f }, { 0.5f, -0.5f, 0.0f, 1.0f }, { 0.5f, 0.5f, 0.0f, 1.0f }, { -0.5f, 0.5f, 0.0f, 1.0f } };

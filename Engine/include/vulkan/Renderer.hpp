@@ -86,7 +86,9 @@ namespace Disarray::Vulkan {
 		Renderer(Device&, Swapchain&, const RendererProperties&);
 		~Renderer() override;
 
-		void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&) override;
+		void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) override;
+		void begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& fb) override { begin_pass(executor, fb, false); };
+		;
 		void begin_pass(Disarray::CommandExecutor& command_executor) override { begin_pass(command_executor, *default_framebuffer); }
 		void end_pass(Disarray::CommandExecutor&) override;
 

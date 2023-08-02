@@ -87,12 +87,12 @@ namespace Disarray::Vulkan {
 		create_info.pApplicationInfo = &app_info;
 
 		const auto exts = get_required_extensions();
-		create_info.enabledExtensionCount = exts.size();
+		create_info.enabledExtensionCount = static_cast<std::uint32_t>(exts.size());
 		create_info.ppEnabledExtensionNames = exts.data();
 
 		VkDebugUtilsMessengerCreateInfoEXT debug_create_info {};
 		if constexpr (Config::use_validation_layers) {
-			create_info.enabledLayerCount = static_cast<uint32_t>(requested_layers.size());
+			create_info.enabledLayerCount = static_cast<std::uint32_t>(requested_layers.size());
 			create_info.ppEnabledLayerNames = requested_layers.data();
 
 			populate_debug_messenger_create_info(debug_create_info);

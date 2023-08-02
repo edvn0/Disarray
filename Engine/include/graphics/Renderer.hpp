@@ -3,10 +3,10 @@
 #include "Forward.hpp"
 #include "core/Types.hpp"
 #include "core/UsageBadge.hpp"
+#include "graphics/Mesh.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Swapchain.hpp"
-#include "graphics/Mesh.hpp"
 
 #include <glm/glm.hpp>
 #include <optional>
@@ -53,6 +53,7 @@ namespace Disarray {
 
 	class Renderer : public IGraphics, public ReferenceCountable {
 	public:
+		virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) = 0;
 		virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&) = 0;
 		virtual void begin_pass(Disarray::CommandExecutor&) = 0;
 		virtual void end_pass(Disarray::CommandExecutor&) = 0;

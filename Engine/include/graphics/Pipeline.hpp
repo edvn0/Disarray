@@ -8,6 +8,7 @@
 #include "graphics/Shader.hpp"
 #include "graphics/Swapchain.hpp"
 
+#include <cstdint>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -56,8 +57,8 @@ namespace Disarray {
 
 		ElementType type;
 		std::string debug_name;
-		std::size_t size { 0 };
-		std::size_t offset { 0 };
+		std::uint32_t size { 0 };
+		std::uint32_t offset { 0 };
 	};
 
 	enum class InputRate { Vertex, Instance };
@@ -89,7 +90,7 @@ namespace Disarray {
 
 		const VertexBinding& construct_binding() { return binding; }
 
-		std::size_t total_size { 0 };
+		std::uint32_t total_size { 0 };
 		std::vector<LayoutElement> elements;
 		VertexBinding binding;
 	};
