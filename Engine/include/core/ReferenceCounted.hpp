@@ -1,5 +1,7 @@
 #pragma once
 
+#include "util/BitCast.hpp"
+
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
@@ -30,9 +32,9 @@ namespace Disarray {
 
 		void register_alive_impl(void*);
 
-		template <class T> void register_dead(T* instance) { register_dead_impl(reinterpret_cast<void*>(instance)); }
+		template <class T> void register_dead(T* instance) { register_dead_impl(bit_cast<void*>(instance)); }
 
-		template <class T> void register_alive(T* instance) { register_alive_impl(reinterpret_cast<void*>(instance)); }
+		template <class T> void register_alive(T* instance) { register_alive_impl(bit_cast<void*>(instance)); }
 	} // namespace MemoryTracking
 
 	template <class T> class ReferenceCounted {

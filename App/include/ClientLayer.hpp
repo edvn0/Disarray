@@ -3,8 +3,6 @@
 
 namespace Disarray::Client {
 
-	using namespace Disarray;
-
 	class AppLayer : public Layer {
 	public:
 		AppLayer(Device& dev, Window& win, Swapchain& swap);

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "util/BitCast.hpp"
+
 #include <cstddef>
 #include <vector>
 
@@ -10,6 +12,7 @@ namespace Disarray {
 		DataBuffer() = default;
 		explicit DataBuffer(std::size_t);
 		DataBuffer(std::nullptr_t);
+
 		DataBuffer(const void* data, std::size_t);
 
 		DataBuffer(const DataBuffer&);
@@ -23,18 +26,18 @@ namespace Disarray {
 		void reset();
 
 		template <typename T>
-			requires(not std::is_same_v<T, bool>)
+			requires(!std::is_same_v<T, bool>)
 		T& read(std::size_t element_offset = 0)
 		{
-			return *reinterpret_cast<T*>(data + element_offset * sizeof(T));
+			return *bit_cast<T*>(data + element_offset * sizeof(T));
 		}
 
-		friend void swap(DataBuffer& first, DataBuffer& second);
+		friend void swap(DataBuffer& first, DataBuffer& second) noexcept;
 
 		auto get_size() const { return size; }
 		auto* get_data() const { return data; }
 
-		operator bool() const { return is_valid(); }
+		explicit(false) operator bool() const { return is_valid(); }
 		bool is_valid() const { return size == 0 && data == nullptr; }
 
 	private:

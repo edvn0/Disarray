@@ -9,6 +9,8 @@
 
 namespace Disarray {
 
+	using UnkownData = void*;
+
 	template <class T> using Ref = ReferenceCounted<T>;
 	template <class T, class... Args> Ref<T> make_ref(Args&&... args) { return ReferenceCounted<T> { new T { std::forward<Args>(args)... } }; }
 	template <class T, class... Args> Ref<T> make_ref_inplace(Args&&... args) { return ReferenceCounted<T> { std::forward<Args>(args)... }; }
