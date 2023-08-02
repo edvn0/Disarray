@@ -1,3 +1,5 @@
+#include "DisarrayPCH.hpp"
+
 #include "vulkan/Mesh.hpp"
 
 #include "graphics/IndexBuffer.hpp"

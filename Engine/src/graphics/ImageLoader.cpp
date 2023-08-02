@@ -1,3 +1,5 @@
+#include "DisarrayPCH.hpp"
+
 #include "graphics/ImageLoader.hpp"
 
 #include "core/DataBuffer.hpp"

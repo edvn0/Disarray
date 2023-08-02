@@ -1,3 +1,5 @@
+#include "DisarrayPCH.hpp"
+
 #include "graphics/ModelLoader.hpp"
 
 #include <algorithm>

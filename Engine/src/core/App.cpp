@@ -1,3 +1,5 @@
+#include "DisarrayPCH.hpp"
+
 #include "core/App.hpp"
 
 #include "core/AllocatorConfigurator.hpp"

@@ -1,3 +1,5 @@
+#include "DisarrayPCH.hpp"
+
 #include "ui/InterfaceLayer.hpp"
 
 #include "backends/imgui_impl_glfw.h"

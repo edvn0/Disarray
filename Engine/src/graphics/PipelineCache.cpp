@@ -1,3 +1,5 @@
+#include "DisarrayPCH.hpp"
+
 #include "graphics/PipelineCache.hpp"
 
 #include "core/Log.hpp"
