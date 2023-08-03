@@ -23,7 +23,7 @@ namespace Disarray::Vulkan {
 		, props(properties)
 	{
 		colour_count = props.colour_count;
-		render_pass = props.optional_renderpass ? props.optional_renderpass.as<Vulkan::RenderPass>()
+		render_pass = props.optional_renderpass ? cast_to<Vulkan::RenderPass>(props.optional_renderpass)
 												: make_ref<Vulkan::RenderPass>(device,
 													RenderPassProperties {
 														.image_format = props.format,

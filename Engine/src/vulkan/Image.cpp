@@ -160,7 +160,7 @@ namespace Disarray::Vulkan {
 			wait_for_cleanup(device);
 			command_executor.reset();
 		};
-		auto buffer = executor.as<Vulkan::CommandExecutor>()->supply();
+		auto buffer = supply_cast<Vulkan::CommandExecutor>(*executor);
 		VkImageSubresourceRange subresource_range = {};
 		subresource_range.aspectMask = aspect_mask;
 		subresource_range.baseMipLevel = 0;

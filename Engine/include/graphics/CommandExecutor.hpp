@@ -11,6 +11,7 @@ namespace Disarray {
 		std::optional<std::uint32_t> count { std::nullopt };
 		bool is_primary { true };
 		bool owned_by_swapchain { false };
+		bool record_stats { false };
 	};
 
 	class CommandExecutor : public ReferenceCountable {
@@ -23,6 +24,7 @@ namespace Disarray {
 		virtual void end() = 0;
 		virtual void submit_and_end() = 0;
 
+		virtual void recreate(bool should_clean) = 0;
 		virtual void force_recreation() = 0;
 	};
 

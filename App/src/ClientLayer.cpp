@@ -1,14 +1,18 @@
 #include "ClientLayer.hpp"
 
+#include "core/Log.hpp"
+#include "util/FormattingUtilities.hpp"
+
 #include <array>
 
 namespace Disarray::Client {
 	AppLayer::AppLayer(Device& dev, Window& win, Swapchain& swap)
 		: device(dev)
 		, window(win)
-		, swapchain(swap) {
-
-		};
+		, swapchain(swap)
+	{
+		Log::error("AppLayer", FormattingUtilities::pointer_to_string(window.native()));
+	};
 
 	AppLayer::~AppLayer() = default;
 
@@ -44,7 +48,7 @@ namespace Disarray::Client {
 		};
 		pipeline = Pipeline::construct(device, swapchain, props);
 
-		command_executor = CommandExecutor::construct(device, swapchain, { .count = 3, .is_primary = true });
+		command_executor = CommandExecutor::construct(device, swapchain, { .count = 3, .is_primary = true, .record_stats = true });
 
 		viking_mesh = Mesh::construct(device, swapchain, { .path = "Assets/Models/viking.mesh", .pipeline = pipeline });
 #define IS_TESTING
@@ -74,10 +78,11 @@ namespace Disarray::Client {
 
 	void AppLayer::handle_swapchain_recreation(Renderer& renderer)
 	{
+		command_executor->recreate(true);
 		renderer.set_extent(swapchain.get_extent());
-		pipeline->force_recreation();
-		viking_room->force_recreation();
-		framebuffer->force_recreation();
+		pipeline->recreate(true);
+		viking_room->recreate(true);
+		framebuffer->recreate(true);
 	}
 
 	void AppLayer::update(float ts) {
@@ -108,7 +113,6 @@ namespace Disarray::Client {
 			renderer.submit_batched_geometry(*command_executor);
 			renderer.end_pass(*command_executor);
 		}
-
 		command_executor->submit_and_end();
 	}
 

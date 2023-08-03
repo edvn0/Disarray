@@ -61,6 +61,8 @@ set(ENGINE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/Verify.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/VertexBuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/Window.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/DebugConfigurator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/DebugMarker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Disarray.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/core/AllocatorConfigurator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/core/App.hpp
@@ -183,6 +185,8 @@ add_library(${PROJECT_NAME} STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/Framebuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/PhysicalDevice.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/RenderBatchFor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/DebugConfigurator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/DebugMarker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/QueueFamilyIndex.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/imgui)

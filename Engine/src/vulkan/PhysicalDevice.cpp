@@ -10,24 +10,27 @@
 #include "vulkan/Instance.hpp"
 #include "vulkan/QueueFamilyIndex.hpp"
 #include "vulkan/SwapchainUtilities.hpp"
+#include "vulkan/vulkan_core.h"
 
 namespace Disarray::Vulkan {
 
 	PhysicalDevice::PhysicalDevice(Disarray::Instance& inst, Disarray::Surface& surf)
 	{
-		static auto is_device_suitable = [](VkPhysicalDevice device, Disarray::Surface& surf) {
-			Vulkan::QueueFamilyIndex indices(device, surf);
+		static auto is_device_suitable = [](VkPhysicalDevice device, Disarray::Surface& s) {
+			Vulkan::QueueFamilyIndex indices(device, s);
 			ExtensionSupport extension_support(device);
 
 			bool swapchain_is_allowed = false;
 			if (extension_support) {
-				const auto&& [capabilities, formats, modes] = resolve_swapchain_support(device, surf);
+				const auto&& [capabilities, formats, modes] = resolve_swapchain_support(device, s);
 				swapchain_is_allowed = !formats.empty() && !modes.empty();
+			} else {
+				Log::error("PhysicalDevice", "Extension support is missing.");
 			}
 			return indices && extension_support && swapchain_is_allowed;
 		};
 
-		auto& instance = cast_to<Vulkan::Instance>(inst);
+		const auto& instance = cast_to<Vulkan::Instance>(inst);
 		uint32_t device_count = 0;
 		vkEnumeratePhysicalDevices(*instance, &device_count, nullptr);
 
@@ -49,9 +52,11 @@ namespace Disarray::Vulkan {
 			throw std::runtime_error("failed to find a suitable GPU!");
 		}
 
+		vkGetPhysicalDeviceProperties(physical_device, &device_properties);
+
 		queue_family_index = make_ref<Vulkan::QueueFamilyIndex>(physical_device, surf);
 	}
 
-	PhysicalDevice::~PhysicalDevice() { }
+	PhysicalDevice::~PhysicalDevice() = default;
 
 } // namespace Disarray::Vulkan

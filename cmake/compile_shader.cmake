@@ -34,6 +34,6 @@ function(compile_shaders)
         )
         list(APPEND SPV_SHADERS ${SHADER_BINARY_DIR}/${FILENAME}.spv)
     endforeach()
-
     add_custom_target(shaders ALL DEPENDS ${SPV_SHADERS})
+    set_source_files_properties(shaders PROPERTIES SYMBOLIC 1)
 endfunction()

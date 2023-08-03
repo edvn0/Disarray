@@ -30,16 +30,16 @@ namespace Disarray {
 		tinyobj::attrib_t attrib;
 		std::vector<tinyobj::shape_t> shapes;
 		std::vector<tinyobj::material_t> materials;
-		std::string warn, err;
+		std::string warn;
 
-		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.c_str())) {
+		if (std::string err; !tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.c_str())) {
 			throw std::runtime_error(warn + err);
 		}
 
 		std::unordered_map<Vertex, uint32_t> unique_vertices {};
 
 		for (const auto& shape : shapes) {
-			std::for_each(std::begin(shape.mesh.indices), std::end(shape.mesh.indices), [&](const auto& index) {
+			std::ranges::for_each(std::begin(shape.mesh.indices), std::end(shape.mesh.indices), [&](const auto& index) {
 				Vertex vertex {};
 
 				vertex.pos = { attrib.vertices[3 * index.vertex_index + 0], attrib.vertices[3 * index.vertex_index + 1],
@@ -52,7 +52,7 @@ namespace Disarray {
 				vertex.normals = { attrib.normals[3 * index.normal_index + 0], attrib.normals[3 * index.normal_index + 1],
 					attrib.normals[3 * index.normal_index + 2] };
 
-				if (unique_vertices.count(vertex) == 0) {
+				if (!unique_vertices.contains(vertex)) {
 					unique_vertices[vertex] = static_cast<uint32_t>(vertices.size());
 					vertices.push_back(vertex);
 				}

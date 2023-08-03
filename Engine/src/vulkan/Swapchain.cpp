@@ -36,7 +36,11 @@ namespace Disarray::Vulkan {
 		graphics_queue = cast_to<Vulkan::Device>(device).get_graphics_queue();
 	}
 
-	Swapchain::~Swapchain() { cleanup_swapchain(); }
+	Swapchain::~Swapchain()
+	{
+		cleanup_swapchain();
+		Log::debug("Swapchain", "Swapchain destroyed.");
+	}
 
 	void Swapchain::create_synchronisation_objects()
 	{
@@ -227,7 +231,7 @@ namespace Disarray::Vulkan {
 			verify(vkAllocateCommandBuffers(supply_cast<Vulkan::Device>(device), &alloc_info, &cmd_buffer.buffer));
 		}
 
-		recreate_framebuffer(should_clean);
+		recreate_framebuffer();
 	}
 
 	void Swapchain::cleanup_swapchain()
@@ -258,15 +262,9 @@ namespace Disarray::Vulkan {
 
 	Disarray::RenderPass& Swapchain::get_render_pass() { return *render_pass; }
 
-	void Swapchain::recreate_framebuffer(bool should_clean)
+	void Swapchain::recreate_framebuffer()
 	{
 		const auto vk_device = supply_cast<Vulkan::Device>(device);
-
-		if (should_clean) {
-			for (auto& fb : framebuffers) {
-				vkDestroyFramebuffer(vk_device, fb, nullptr);
-			}
-		}
 
 		framebuffers.resize(image_count());
 

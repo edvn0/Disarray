@@ -16,7 +16,7 @@ namespace Disarray::Vulkan {
 
 	QueueFamilyIndex::QueueFamilyIndex(VkPhysicalDevice device, Disarray::Surface& sur)
 	{
-		auto& surface = cast_to<Vulkan::Surface>(sur);
+		const auto& surface = cast_to<Vulkan::Surface>(sur);
 
 		uint32_t family_count = 0;
 		vkGetPhysicalDeviceQueueFamilyProperties(device, &family_count, nullptr);

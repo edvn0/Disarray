@@ -1,5 +1,6 @@
 #include "DisarrayPCH.hpp"
 
+#include "core/Types.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/IndexBuffer.hpp"
@@ -14,7 +15,7 @@ namespace Disarray::Vulkan {
 	void RenderBatchFor<QuadVertex, max_vertices, quad_vertex_count>::construct(
 		Renderer& renderer, Disarray::Device& dev, Disarray::Swapchain& swapchain)
 	{
-		pipeline = renderer.get_pipeline_cache().get("quad").as<Vulkan::Pipeline>();
+		pipeline = cast_to<Vulkan::Pipeline>(renderer.get_pipeline_cache().get("quad"));
 		std::vector<std::uint32_t> quad_indices;
 		quad_indices.resize(vertices.size() * 6);
 		std::uint32_t offset = 0;
@@ -57,11 +58,11 @@ namespace Disarray::Vulkan {
 		vkCmdPushConstants(command_buffer, pipeline->get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),
 			renderer.get_push_constant());
 
-		const std::array<VkBuffer, 1> vbs { vb.as<Vulkan::VertexBuffer>()->supply() };
+		const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vb) };
 		constexpr VkDeviceSize offsets { 0 };
 		vkCmdBindVertexBuffers(command_buffer, 0, 1, vbs.data(), &offsets);
 
-		vkCmdBindIndexBuffer(command_buffer, ib.as<Vulkan::IndexBuffer>()->supply(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(*ib), 0, VK_INDEX_TYPE_UINT32);
 
 		/*
 		 * if (pipeline->get_vulkan_pipeline_layout()) {
@@ -99,7 +100,7 @@ namespace Disarray::Vulkan {
 	void RenderBatchFor<LineVertex, max_vertices, line_vertex_count>::construct(
 		Renderer& renderer, Disarray::Device& dev, Disarray::Swapchain& swapchain)
 	{
-		pipeline = renderer.get_pipeline_cache().get("line").as<Vulkan::Pipeline>();
+		pipeline = cast_to<Vulkan::Pipeline>(renderer.get_pipeline_cache().get("line"));
 
 		std::vector<std::uint32_t> line_indices;
 		line_indices.resize(vertices.size() * vertex_count);
@@ -139,11 +140,11 @@ namespace Disarray::Vulkan {
 		vkCmdPushConstants(command_buffer, pipeline->get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),
 			renderer.get_push_constant());
 
-		const std::array<VkBuffer, 1> vbs { vb.as<Vulkan::VertexBuffer>()->supply() };
+		const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vb) };
 		constexpr VkDeviceSize offsets { 0 };
 		vkCmdBindVertexBuffers(command_buffer, 0, 1, vbs.data(), &offsets);
 
-		vkCmdBindIndexBuffer(command_buffer, ib.as<Vulkan::IndexBuffer>()->supply(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(*ib), 0, VK_INDEX_TYPE_UINT32);
 
 		/*
 		 * if (pipeline->get_vulkan_pipeline_layout()) {

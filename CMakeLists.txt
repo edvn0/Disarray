@@ -22,7 +22,6 @@ add_subdirectory(Engine)
 add_subdirectory(ThirdParty)
 add_subdirectory(App)
 
-
 set(ALL_SOURCES "")
 list(APPEND ALL_SOURCES ${ENGINE_SOURCES} ${APP_SOURCES})
 

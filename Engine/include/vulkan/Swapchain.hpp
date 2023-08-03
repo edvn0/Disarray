@@ -53,7 +53,7 @@ namespace Disarray::Vulkan {
 	private:
 		void create_synchronisation_objects();
 		void recreate_swapchain(Disarray::Swapchain* old = nullptr, bool should_clean = true);
-		void recreate_framebuffer(bool should_clean);
+		void recreate_framebuffer();
 		void cleanup_swapchain();
 
 		bool swapchain_needs_recreation { false };

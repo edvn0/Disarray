@@ -5,6 +5,7 @@
 #include "core/AllocatorConfigurator.hpp"
 #include "core/CleanupAwaiter.hpp"
 #include "core/Clock.hpp"
+#include "core/DebugConfigurator.hpp"
 #include "core/Log.hpp"
 #include "core/Window.hpp"
 #include "graphics/Device.hpp"
@@ -24,6 +25,7 @@ namespace Disarray {
 		window = Window::construct({ .width = props.width, .height = props.height, .name = props.name });
 		device = Device::construct(*window);
 
+		initialise_debug_applications(*device);
 		initialise_allocator(*device, window->get_instance());
 		swapchain = Swapchain::construct(*window, *device);
 	}

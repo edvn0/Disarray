@@ -4,10 +4,10 @@
 #include "core/Types.hpp"
 #include "util/BitCast.hpp"
 #include "vulkan/MemoryAllocator.hpp"
-#include "vulkan/vulkan_core.h"
 
 #include <cstring>
 #include <string>
+#include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {
 

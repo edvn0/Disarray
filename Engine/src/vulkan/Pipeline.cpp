@@ -64,7 +64,7 @@ namespace Disarray::Vulkan {
 		, swapchain(sc)
 		, props(properties)
 	{
-		recreate(false);
+		recreate_pipeline(false);
 	}
 
 	void Pipeline::construct_layout()
@@ -246,10 +246,12 @@ namespace Disarray::Vulkan {
 	std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo> Pipeline::retrieve_shader_stages(
 		Ref<Disarray::Shader> vertex, Ref<Disarray::Shader> fragment) const
 	{
-		return { vertex.as<Vulkan::Shader>()->supply(), fragment.as<Vulkan::Shader>()->supply() };
+		return { supply_cast<Vulkan::Shader>(*vertex), supply_cast<Vulkan::Shader>(*fragment) };
 	}
 
-	void Pipeline::recreate(bool should_clean)
+	void Pipeline::recreate(bool should_clean) { recreate_pipeline(should_clean); }
+
+	void Pipeline::recreate_pipeline(bool should_clean)
 	{
 		if (should_clean) {
 			vkDestroyPipelineLayout(supply_cast<Vulkan::Device>(device), layout, nullptr);

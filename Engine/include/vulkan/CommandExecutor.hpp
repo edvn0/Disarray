@@ -14,6 +14,16 @@
 
 namespace Disarray::Vulkan {
 
+	struct PipelineStatistics {
+		uint64_t input_assembly_vertices { 0 };
+		uint64_t input_assembly_primitives { 0 };
+		uint64_t vertex_shader_invocations { 0 };
+		uint64_t clipping_invocations { 0 };
+		uint64_t clipping_primitives { 0 };
+		uint64_t fragment_shader_invocations { 0 };
+		uint64_t compute_shader_invocations { 0 };
+	};
+
 	class CommandExecutor : public Disarray::CommandExecutor, public PropertySupplier<VkCommandBuffer> {
 	public:
 		CommandExecutor(Disarray::Device&, Disarray::Swapchain&, const Disarray::CommandExecutorProperties&);
@@ -25,7 +35,8 @@ namespace Disarray::Vulkan {
 
 		void begin(VkCommandBufferBeginInfo);
 
-		void force_recreation() override { recreate(); }
+		void force_recreation() override { recreate_executor(); }
+		void recreate(bool should_clean) override { return recreate_executor(should_clean); }
 
 		VkCommandBuffer supply() const override { return active; }
 
@@ -46,7 +57,10 @@ namespace Disarray::Vulkan {
 		}
 
 	private:
-		void recreate(bool should_clean = true);
+		void recreate_executor(bool should_clean = true);
+		void create_query_pools();
+		void record_stats();
+		void destroy_executor();
 
 		Disarray::Device& device;
 		Disarray::Swapchain& swapchain;
@@ -61,6 +75,16 @@ namespace Disarray::Vulkan {
 		VkCommandBuffer active { nullptr };
 		std::vector<VkFence> fences;
 		VkQueue graphics_queue;
+
+		std::uint32_t timestamp_query_count { 0 };
+		uint32_t timestamp_next_available_query { 2 };
+		std::vector<VkQueryPool> timestamp_query_pools;
+		std::vector<VkQueryPool> pipeline_statistics_query_pools;
+		std::vector<std::vector<uint64_t>> timestamp_query_results;
+		std::vector<std::vector<float>> execution_gpu_times;
+
+		std::uint32_t pipeline_query_count { 0 };
+		std::vector<PipelineStatistics> pipeline_statistics_query_results;
 	};
 
 } // namespace Disarray::Vulkan

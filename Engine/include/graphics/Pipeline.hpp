@@ -118,6 +118,8 @@ namespace Disarray {
 		virtual Disarray::RenderPass& get_render_pass() = 0;
 		virtual Disarray::Framebuffer& get_framebuffer() = 0;
 
+		virtual void recreate(bool should_clear) = 0;
+
 		static Ref<Pipeline> construct(Disarray::Device&, Disarray::Swapchain&, const PipelineProperties&);
 	};
 

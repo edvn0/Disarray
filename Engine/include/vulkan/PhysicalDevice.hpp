@@ -16,9 +16,12 @@ namespace Disarray::Vulkan {
 
 		VkPhysicalDevice supply() const override { return physical_device; }
 
+		VkPhysicalDeviceLimits get_limits() const { return device_properties.limits; }
+
 	private:
 		VkPhysicalDevice physical_device;
 		Ref<Disarray::QueueFamilyIndex> queue_family_index;
+		VkPhysicalDeviceProperties device_properties;
 	};
 
 } // namespace Disarray::Vulkan

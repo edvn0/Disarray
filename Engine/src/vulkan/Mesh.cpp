@@ -8,6 +8,8 @@
 
 namespace Disarray::Vulkan {
 
+	Mesh::~Mesh() = default;
+
 	Mesh::Mesh(Disarray::Device& dev, Disarray::Swapchain& swapchain, const Disarray::MeshProperties& properties)
 		: device(dev)
 		, props(properties)
@@ -18,7 +20,5 @@ namespace Disarray::Vulkan {
 		indices = Disarray::IndexBuffer::construct(
 			device, swapchain, { .data = loader.get_indices().data(), .size = loader.get_indices_size(), .count = loader.get_indices_count() });
 	}
-
-	Mesh::~Mesh() { }
 
 } // namespace Disarray::Vulkan

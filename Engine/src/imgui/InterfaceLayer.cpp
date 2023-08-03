@@ -5,6 +5,7 @@
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "vulkan/CommandExecutor.hpp"
+#include "vulkan/DebugMarker.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/PhysicalDevice.hpp"
@@ -85,7 +86,7 @@ namespace Disarray::UI {
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
 	}
 
-	void InterfaceLayer::handle_swapchain_recreation(Renderer& renderer) { }
+	void InterfaceLayer::handle_swapchain_recreation(Renderer&) { command_executor->recreate(true); }
 
 	void InterfaceLayer::update(float ts) { }
 
@@ -146,9 +147,11 @@ namespace Disarray::UI {
 		render_pass_begin_info.pClearValues = clear_values.data();
 		render_pass_begin_info.framebuffer = vk_framebuffer;
 
+		Vulkan::DebugMarker::begin_region(draw_command_buffer, "Interface", { 1, 0, 0, 1 });
+
 		vkCmdBeginRenderPass(draw_command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
-		auto imgui_buffer = command_executor.as<Vulkan::CommandExecutor>();
+		auto& imgui_buffer = cast_to<Vulkan::CommandExecutor>(*command_executor);
 		{
 			VkCommandBufferInheritanceInfo inheritance_info = {};
 			inheritance_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
@@ -159,9 +162,9 @@ namespace Disarray::UI {
 			cbi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 			cbi.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 			cbi.pInheritanceInfo = &inheritance_info;
-			imgui_buffer->begin(cbi);
+			imgui_buffer.begin(cbi);
 
-			const auto& command_buffer = imgui_buffer->supply();
+			const auto& command_buffer = imgui_buffer.supply();
 			VkViewport viewport;
 			viewport.x = 0.0f;
 			viewport.y = static_cast<float>(height);
@@ -194,12 +197,13 @@ namespace Disarray::UI {
 			// UI scale and translate via push constants
 			ImGui_ImplVulkan_RenderDrawData(main_draw_data, command_buffer);
 
-			imgui_buffer->end();
+			imgui_buffer.end();
 		}
 
-		std::array<VkCommandBuffer, 1> buffer { imgui_buffer->supply() };
+		std::array<VkCommandBuffer, 1> buffer { imgui_buffer.supply() };
 		vkCmdExecuteCommands(draw_command_buffer, 1, buffer.data());
 
+		Vulkan::DebugMarker::end_region(draw_command_buffer);
 		vkCmdEndRenderPass(draw_command_buffer);
 
 		Vulkan::verify(vkEndCommandBuffer(draw_command_buffer));
