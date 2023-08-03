@@ -71,6 +71,7 @@ namespace Disarray {
 					layer->handle_swapchain_recreation(renderer);
 				layer->update(time_step, renderer);
 			}
+			statistics.cpu_time = time_step;
 			ui_layer->begin();
 			for (auto& layer : layers) {
 				layer->interface();
@@ -78,8 +79,11 @@ namespace Disarray {
 			ui_layer->end();
 			renderer.end_frame({});
 
+			auto begin_present_time = Clock::ns();
 			swapchain->reset_recreation_status();
 			swapchain->present();
+			statistics.presentation_time = Clock::ns() - begin_present_time;
+			statistics.frame_time = Clock::ms() - current_time;
 			current_time = Clock::ms();
 		}
 

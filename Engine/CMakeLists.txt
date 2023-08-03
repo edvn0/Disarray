@@ -10,6 +10,7 @@ set(ENGINE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/App.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/DataBuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Log.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Layer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/ReferenceCounted.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/glfw/GLFWClock.cpp
@@ -136,6 +137,7 @@ add_library(${PROJECT_NAME} STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/App.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Log.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Layer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/ReferenceCounted.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/DataBuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/Device.cpp

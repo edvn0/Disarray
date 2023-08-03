@@ -4,6 +4,8 @@
 
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
+#include "graphics/Device.hpp"
+#include "graphics/Renderer.hpp"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/DebugMarker.hpp"
 #include "vulkan/Device.hpp"
@@ -20,16 +22,22 @@
 
 namespace Disarray::UI {
 
-	static VkDescriptorPool pool;
+	struct InterfaceLayer::RendererSpecific {
+		Device& device;
+		VkDescriptorPool pool;
+
+		~RendererSpecific() { vkDestroyDescriptorPool(supply_cast<Vulkan::Device>(device), pool, nullptr); }
+	};
 
 	InterfaceLayer::InterfaceLayer(Device& dev, Window& win, Swapchain& swap)
 		: device(dev)
 		, window(win)
 		, swapchain(swap)
 	{
+		pimpl = std::make_unique<RendererSpecific>(device);
 	}
 
-	InterfaceLayer::~InterfaceLayer() { vkDestroyDescriptorPool(supply_cast<Vulkan::Device>(device), pool, nullptr); }
+	InterfaceLayer::~InterfaceLayer() { }
 
 	void InterfaceLayer::construct(App&, Renderer& renderer)
 	{
@@ -54,8 +62,27 @@ namespace Disarray::UI {
 		pool_info.pPoolSizes = pool_sizes.data();
 
 		auto& vk_device = cast_to<Vulkan::Device>(device);
-		Vulkan::verify(vkCreateDescriptorPool(*vk_device, &pool_info, nullptr, &pool));
+		Vulkan::verify(vkCreateDescriptorPool(*vk_device, &pool_info, nullptr, &pimpl->pool));
 		ImGui::CreateContext();
+
+		ImGuiIO& io = ImGui::GetIO();
+		(void)io;
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+		// io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
+		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport / Platform Windows
+		// io.ConfigViewportsNoDecoration = false;
+		// io.ConfigViewportsNoAutoMerge = true;
+		// io.ConfigViewportsNoTaskBarIcon = true;
+
+		ImGui::StyleColorsDark();
+
+		ImGuiStyle& style = ImGui::GetStyle();
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+			style.WindowRounding = 0.0f;
+			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+		}
+		style.Colors[ImGuiCol_WindowBg] = ImVec4(0.15f, 0.15f, 0.15f, style.Colors[ImGuiCol_WindowBg].w);
 
 		ImGui_ImplGlfw_InitForVulkan(static_cast<GLFWwindow*>(window.native()), true);
 
@@ -64,21 +91,14 @@ namespace Disarray::UI {
 		init_info.PhysicalDevice = supply_cast<Vulkan::PhysicalDevice>(device.get_physical_device());
 		init_info.Device = *vk_device;
 		init_info.Queue = vk_device.get_graphics_queue();
-		init_info.DescriptorPool = pool;
+		init_info.DescriptorPool = pimpl->pool;
 		init_info.MinImageCount = 3;
 		init_info.ImageCount = 3;
 		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
 		ImGui_ImplVulkan_Init(&init_info, supply_cast<Vulkan::RenderPass>(swapchain.get_render_pass()));
 
-		Disarray::CommandExecutorProperties props { .count = 1, .owned_by_swapchain = false };
-		auto executor = make_ref<Vulkan::CommandExecutor>(device, swapchain, props);
-		executor->begin();
-		auto destructor = [&device = device](auto& exec) {
-			exec->submit_and_end();
-			wait_for_cleanup(device);
-			exec.reset();
-		};
+		auto&& [executor, destructor] = Vulkan::construct_immediate<Vulkan::CommandExecutor>(device, swapchain);
 		ImGui_ImplVulkan_CreateFontsTexture(executor->supply());
 		destructor(executor);
 
@@ -90,7 +110,12 @@ namespace Disarray::UI {
 
 	void InterfaceLayer::update(float ts) { }
 
-	void InterfaceLayer::update(float ts, Renderer& renderer) { }
+	void InterfaceLayer::update(float ts, Renderer& renderer)
+	{
+		for (auto& panel : panels) {
+			panel->update(ts, renderer);
+		}
+	}
 
 	void InterfaceLayer::destruct()
 	{
@@ -101,8 +126,9 @@ namespace Disarray::UI {
 
 	void InterfaceLayer::interface()
 	{
-		static bool is_open { true };
-		ImGui::ShowDemoWindow(&is_open);
+		for (auto& panel : panels) {
+			panel->interface();
+		}
 	}
 
 	void InterfaceLayer::begin()

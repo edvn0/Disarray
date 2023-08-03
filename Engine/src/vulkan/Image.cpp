@@ -141,7 +141,8 @@ namespace Disarray::Vulkan {
 
 		VkDeviceSize size = props.data.is_valid() ? props.data.get_size() : props.extent.get_size() * sizeof(float);
 		VkBuffer staging;
-		VkBufferCreateInfo staging_create_info { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		VkBufferCreateInfo staging_create_info {};
+		staging_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		staging_create_info.size = size;
 		staging_create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 		staging_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;

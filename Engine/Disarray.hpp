@@ -2,9 +2,11 @@
 #define DISARRAY_CLIENT_INCLUDE
 
 #include "core/App.hpp"
+#include "core/Clock.hpp"
 #include "core/DataBuffer.hpp"
 #include "core/Layer.hpp"
 #include "core/Log.hpp"
+#include "core/Panel.hpp"
 #include "core/Types.hpp"
 #include "core/Window.hpp"
 #include "graphics/CommandExecutor.hpp"
@@ -17,8 +19,11 @@
 #include "graphics/Shader.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/Texture.hpp"
+#include "panels/StatisticsPanel.hpp"
 #include "ui/UI.hpp"
+#include "util/FormattingUtilities.hpp"
 
+#include <glm/glm.hpp>
 #include <imgui.h>
 
 #endif

@@ -22,6 +22,20 @@ namespace Disarray {
 		std::string name {};
 	};
 
+	/**
+	 * @brief Statistics for the app
+	 */
+	struct ApplicationStatistics {
+		/** @brief (ms) Time for rendering */
+		double cpu_time { 0 };
+
+		/** @brief (ms) Time for full frame */
+		double frame_time { 0 };
+
+		/** @brief (ns) Time for presentation */
+		double presentation_time { 0 };
+	};
+
 	class App {
 	public:
 		virtual ~App();
@@ -38,7 +52,11 @@ namespace Disarray {
 			return layers.emplace_back(std::shared_ptr<T> { new T(*device, *window, *swapchain, std::forward<Args>(args)...) });
 		}
 
-		template <typename T, typename... Args> void add_panel(Args&&... args)
+		template <typename T, typename... Args>
+			requires(std::is_base_of_v<Panel, T>
+				&& requires(Disarray::Device& dev, Disarray::Window& win, Disarray::Swapchain& swap,
+					Args&&... args) { T(dev, win, swap, std::forward<Args>(args)...); })
+		void add_panel(Args&&... args)
 		{
 			std::shared_ptr<Layer> interface {
 				nullptr
@@ -53,12 +71,15 @@ namespace Disarray {
 			interface_layer->template add_panel<T>(std::forward<Args>(args)...);
 		}
 
+		const auto& get_statistics() const { return statistics; }
+
 	private:
 		Scope<Window> window { nullptr };
 		Scope<PhysicalDevice> physical_device { nullptr };
 		Scope<Device> device { nullptr };
 		Scope<Swapchain> swapchain { nullptr };
 		std::vector<std::shared_ptr<Layer>> layers {};
+		ApplicationStatistics statistics;
 	};
 
 	extern std::unique_ptr<Disarray::App> create_application(const Disarray::ApplicationProperties&);

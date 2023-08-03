@@ -31,6 +31,13 @@ namespace Disarray {
 
 	template <class To, class From>
 		requires(std::is_base_of_v<From, To>)
+	Ref<To> polymorphic_cast(Ref<From>&& object)
+	{
+		return Ref<To> { std::move(object) };
+	}
+
+	template <class To, class From>
+		requires(std::is_base_of_v<From, To>)
 	decltype(auto) polymorphic_cast(const From& object)
 	{
 #ifdef IS_DEBUG

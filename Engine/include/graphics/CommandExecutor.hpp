@@ -4,6 +4,7 @@
 #include "core/Types.hpp"
 
 #include <optional>
+#include <type_traits>
 
 namespace Disarray {
 
@@ -17,6 +18,13 @@ namespace Disarray {
 	class CommandExecutor : public ReferenceCountable {
 		DISARRAY_MAKE_REFERENCE_COUNTABLE(CommandExecutor)
 	public:
+		template <class T>
+			requires(std::is_base_of_v<CommandExecutor, T>)
+		static Ref<T> construct_as(Disarray::Device& device, Disarray::Swapchain& swapchain, const CommandExecutorProperties& props)
+		{
+			return cast_to<T>(CommandExecutor::construct(device, swapchain, props));
+		}
+
 		static Ref<CommandExecutor> construct(Disarray::Device&, Disarray::Swapchain&, const CommandExecutorProperties&);
 		static Ref<CommandExecutor> construct_from_swapchain(Disarray::Device&, Disarray::Swapchain&, CommandExecutorProperties);
 

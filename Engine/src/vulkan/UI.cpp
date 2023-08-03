@@ -9,6 +9,7 @@
 #include "util/BitCast.hpp"
 #include "vulkan/Image.hpp"
 
+#include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <unordered_map>
 
@@ -44,7 +45,7 @@ namespace Disarray::UI {
 		return Disarray::bit_cast<ImageIdentifier>(added);
 	}
 
-	void image_button(Image& image, glm::vec2 size)
+	void image_button(Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
 	{
 		auto& vk_image = cast_to<Vulkan::Image>(image);
 
@@ -57,10 +58,10 @@ namespace Disarray::UI {
 			id = get_cache()[hash];
 		}
 
-		ImGui::ImageButton("Image", id, to_imgui<2>(size));
+		ImGui::ImageButton("Image", id, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
 	}
 
-	void image(Image& image, glm::vec2 size)
+	void image(Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
 	{
 		auto& vk_image = cast_to<Vulkan::Image>(image);
 
@@ -73,7 +74,20 @@ namespace Disarray::UI {
 			id = get_cache()[hash];
 		}
 
-		ImGui::Image(id, to_imgui<2>(size));
+		ImGui::Image(id, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
+	}
+
+	void scope(std::string_view name, UIFunction&& func)
+	{
+		ImGui::Begin(name.data(), nullptr);
+		func();
+		ImGui::End();
+	}
+
+	bool is_maximised(Window& window)
+	{
+		auto* glfw_window = static_cast<GLFWwindow*>(window.native());
+		return static_cast<bool>(glfwGetWindowAttrib(glfw_window, GLFW_MAXIMIZED));
 	}
 
 } // namespace Disarray::UI

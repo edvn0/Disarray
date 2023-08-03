@@ -10,6 +10,8 @@
 #include "vulkan/QueueFamilyIndex.hpp"
 #include "vulkan/Swapchain.hpp"
 
+#include <tuple>
+#include <type_traits>
 #include <vector>
 
 namespace Disarray::Vulkan {
@@ -86,5 +88,20 @@ namespace Disarray::Vulkan {
 		std::uint32_t pipeline_query_count { 0 };
 		std::vector<PipelineStatistics> pipeline_statistics_query_results;
 	};
+
+	template <typename T>
+		requires(std::is_base_of_v<CommandExecutor, T>)
+	static std::tuple<Ref<T>, std::function<void(Ref<T>&)>> construct_immediate(Disarray::Device& device, Disarray::Swapchain& swapchain)
+	{
+		static constexpr Disarray::CommandExecutorProperties props { .count = 1, .owned_by_swapchain = false };
+		auto executor = CommandExecutor::construct_as<T>(device, swapchain, props);
+		executor->begin();
+		auto destructor = [&device = device](Ref<T>& exec) {
+			exec->submit_and_end();
+			wait_for_cleanup(device);
+			exec.reset();
+		};
+		return { executor, destructor };
+	}
 
 } // namespace Disarray::Vulkan

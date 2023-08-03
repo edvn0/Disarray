@@ -1,4 +1,5 @@
 #include <Disarray.hpp>
+#include <array>
 #include <vector>
 
 namespace Disarray::Client {
@@ -22,6 +23,10 @@ namespace Disarray::Client {
 
 		Ref<Pipeline> pipeline;
 		Ref<Pipeline> geometry_pipeline;
+
+		bool viewport_panel_mouse_over { false };
+		bool viewport_panel_focused { false };
+		std::array<glm::vec2, 2> viewport_bounds {};
 
 		Ref<Mesh> viking_mesh;
 		Ref<Texture> viking_room;
