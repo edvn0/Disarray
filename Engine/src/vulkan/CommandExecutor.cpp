@@ -11,6 +11,7 @@
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/Verify.hpp"
 
+#include <core/Ensure.hpp>
 #include <util/FormattingUtilities.hpp>
 #include <vulkan/vulkan.h>
 
@@ -31,7 +32,11 @@ namespace Disarray::Vulkan {
 		recreate_executor(false);
 	}
 
-	CommandExecutor::~CommandExecutor() { destroy_executor(); }
+	CommandExecutor::~CommandExecutor()
+	{
+		Log::debug("CommandExecutor - Destructor", "Start destroying...");
+		destroy_executor();
+	}
 
 	void CommandExecutor::recreate_executor(bool should_clean)
 	{
@@ -42,6 +47,75 @@ namespace Disarray::Vulkan {
 			destroy_executor();
 		}
 
+		create_base_structures();
+		create_query_pools();
+	}
+
+	void CommandExecutor::create_query_pools()
+	{
+		if (!props.record_stats)
+			return;
+
+		const auto& vk_device = supply_cast<Vulkan::Device>(device);
+
+		VkQueryPoolCreateInfo query_pool_create_info = {};
+		query_pool_create_info.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+		query_pool_create_info.pNext = nullptr;
+
+		// Timestamp queries
+		const uint32_t max_user_queries = 16;
+		timestamp_query_count = 2 + 2 * max_user_queries;
+
+		query_pool_create_info.queryType = VK_QUERY_TYPE_TIMESTAMP;
+		query_pool_create_info.queryCount = timestamp_query_count;
+		timestamp_query_pools.resize(image_count);
+		for (auto& timestamp_query_pool : timestamp_query_pools) {
+			verify(vkCreateQueryPool(vk_device, &query_pool_create_info, nullptr, &timestamp_query_pool));
+			Log::debug("CommandExecutor - Create Query Pool", "Constructed as " + FormattingUtilities::pointer_to_string(timestamp_query_pool));
+		}
+
+		timestamp_query_results.resize(image_count);
+		for (auto& timestamp_query_result : timestamp_query_results)
+			timestamp_query_result.resize(timestamp_query_count);
+
+		execution_gpu_times.resize(image_count);
+		for (auto& execution_gpu_time : execution_gpu_times)
+			execution_gpu_time.resize(timestamp_query_count / 2);
+
+		// Pipeline statistics queries
+		pipeline_query_count = 7;
+		query_pool_create_info.queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS;
+		query_pool_create_info.queryCount = pipeline_query_count;
+		query_pool_create_info.pipelineStatistics = VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT
+			| VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT | VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT
+			| VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT | VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT
+			| VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT | VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT;
+
+		pipeline_statistics_query_pools.resize(image_count);
+		for (auto& pipeline_statistics_query_pool : pipeline_statistics_query_pools)
+			verify(vkCreateQueryPool(vk_device, &query_pool_create_info, nullptr, &pipeline_statistics_query_pool));
+
+		pipeline_statistics_query_results.resize(image_count);
+	}
+
+	void CommandExecutor::destroy_executor()
+	{
+		if (props.owned_by_swapchain)
+			return;
+		const auto& vk_device = supply_cast<Vulkan::Device>(device);
+
+		vkDestroyCommandPool(vk_device, command_pool, nullptr);
+		if (props.record_stats)
+			for (auto& pool : timestamp_query_pools) {
+				Log::error("CommandExecutor - Destroy Executor", "Destroying query pool: " + FormattingUtilities::pointer_to_string(pool));
+				vkDestroyQueryPool(vk_device, pool, nullptr);
+			}
+		for (auto& fence : fences)
+			vkDestroyFence(vk_device, fence, nullptr);
+	}
+
+	void CommandExecutor::create_base_structures()
+	{
 		const auto vk_device = supply_cast<Vulkan::Device>(device);
 
 		VkCommandPoolCreateInfo pool_info {};
@@ -49,7 +123,7 @@ namespace Disarray::Vulkan {
 		pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		pool_info.queueFamilyIndex = indexes.get_graphics_family();
 
-		verify(vkCreateCommandPool(supply_cast<Vulkan::Device>(device), &pool_info, nullptr, &command_pool));
+		verify(vkCreateCommandPool(vk_device, &pool_info, nullptr, &command_pool));
 
 		auto count = props.count ? *props.count : swapchain.image_count();
 		if (count > Config::max_frames_in_flight)
@@ -65,8 +139,8 @@ namespace Disarray::Vulkan {
 		verify(vkAllocateCommandBuffers(vk_device, &alloc_info, command_buffers.data()));
 
 		for (auto& buffer : command_buffers) {
-			DebugMarker::set_object_tag(supply_cast<Vulkan::Device>(device), buffer, VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT, 0, sizeof(demo), &demo);
-			DebugMarker::set_object_name(supply_cast<Vulkan::Device>(device), buffer, VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT, "Submit");
+			DebugMarker::set_object_tag(vk_device, buffer, VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT, 0, sizeof(demo), &demo);
+			DebugMarker::set_object_name(vk_device, buffer, VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT, "Submit");
 		}
 
 		graphics_queue = cast_to<Vulkan::Device>(device).get_graphics_queue();
@@ -80,9 +154,9 @@ namespace Disarray::Vulkan {
 		for (size_t i = 0; i < image_count; i++) {
 			verify(vkCreateFence(vk_device, &fence_create_info, nullptr, &fences[i]));
 		}
-
-		create_query_pools();
 	}
+
+	void CommandExecutor::wait_indefinite() { vkDeviceWaitIdle(supply_cast<Vulkan::Device>(device)); }
 
 	void CommandExecutor::begin()
 	{
@@ -170,70 +244,8 @@ namespace Disarray::Vulkan {
 		current = (current + 1) % image_count;
 	}
 
-	void CommandExecutor::create_query_pools()
-	{
-		if (!props.record_stats)
-			return;
-
-		const auto& vk_device = supply_cast<Vulkan::Device>(device);
-		VkQueryPoolCreateInfo query_pool_create_info = {};
-		query_pool_create_info.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
-		query_pool_create_info.pNext = nullptr;
-
-		// Timestamp queries
-		const uint32_t max_user_queries = 16;
-		timestamp_query_count = 2 + 2 * max_user_queries;
-
-		query_pool_create_info.queryType = VK_QUERY_TYPE_TIMESTAMP;
-		query_pool_create_info.queryCount = timestamp_query_count;
-		timestamp_query_pools.resize(image_count);
-		for (auto& timestamp_query_pool : timestamp_query_pools) {
-			verify(vkCreateQueryPool(vk_device, &query_pool_create_info, nullptr, &timestamp_query_pool));
-			Log::debug("CommandExecutor - Create Query Pool", "Constructed as " + FormattingUtilities::pointer_to_string(timestamp_query_pool));
-		}
-
-		timestamp_query_results.resize(image_count);
-		for (auto& timestamp_query_result : timestamp_query_results)
-			timestamp_query_result.resize(timestamp_query_count);
-
-		execution_gpu_times.resize(image_count);
-		for (auto& execution_gpu_time : execution_gpu_times)
-			execution_gpu_time.resize(timestamp_query_count / 2);
-
-		// Pipeline statistics queries
-		pipeline_query_count = 7;
-		query_pool_create_info.queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS;
-		query_pool_create_info.queryCount = pipeline_query_count;
-		query_pool_create_info.pipelineStatistics = VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT
-			| VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT | VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT
-			| VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT | VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT
-			| VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT | VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT;
-
-		pipeline_statistics_query_pools.resize(image_count);
-		for (auto& pipeline_statistics_query_pool : pipeline_statistics_query_pools)
-			verify(vkCreateQueryPool(vk_device, &query_pool_create_info, nullptr, &pipeline_statistics_query_pool));
-
-		pipeline_statistics_query_results.resize(image_count);
-	}
-
-	void CommandExecutor::destroy_executor()
-	{
-		if (props.owned_by_swapchain)
-			return;
-		const auto& vk_device = supply_cast<Vulkan::Device>(device);
-
-		vkDestroyCommandPool(vk_device, command_pool, nullptr);
-		for (auto& pool : timestamp_query_pools) {
-			Log::error("CommandExecutor - Destroy Executor", "Destroying " + FormattingUtilities::pointer_to_string(pool));
-			vkDestroyQueryPool(vk_device, pool, nullptr);
-		}
-		for (auto& fence : fences)
-			vkDestroyFence(vk_device, fence, nullptr);
-	}
-
 	void CommandExecutor::record_stats()
 	{
-
 		if (props.record_stats) {
 			// Timestamp query
 			vkCmdResetQueryPool(active, timestamp_query_pools[buffer_index()], 0, timestamp_query_count);

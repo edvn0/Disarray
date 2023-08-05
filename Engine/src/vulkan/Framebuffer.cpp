@@ -45,6 +45,9 @@ namespace Disarray::Vulkan {
 	{
 		vkDestroyFramebuffer(supply_cast<Vulkan::Device>(device), framebuffer, nullptr);
 		attachments.clear();
+		if (props.has_depth) {
+			depth_attachment.reset();
+		}
 	}
 
 	void Framebuffer::force_recreation() { recreate_framebuffer(); }
@@ -82,11 +85,7 @@ namespace Disarray::Vulkan {
 			depth_attachment->force_recreation();
 		}
 
-		for (auto& image : attachments)
-			image->recreate(should_clean);
-
-		if (depth_attachment)
-			depth_attachment->recreate(should_clean);
+		create_attachments();
 
 		std::vector<VkImageView> fb_attachments;
 		for (auto& image : attachments) {

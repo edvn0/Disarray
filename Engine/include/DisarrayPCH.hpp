@@ -1,14 +1,18 @@
 #pragma once
 
+#include "core/Log.hpp"
+
 #include <array>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <bit>
+#include <chrono>
 #include <concepts>
 #include <cstdarg> // va_start, va_end, std::va_list
 #include <cstddef> // std::size_t
 #include <execution>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <functional>
 #include <glm/ext/matrix_clip_space.hpp>

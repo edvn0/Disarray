@@ -7,6 +7,7 @@
 #include "core/Clock.hpp"
 #include "core/DebugConfigurator.hpp"
 #include "core/Log.hpp"
+#include "core/ThreadPool.hpp"
 #include "core/Window.hpp"
 #include "graphics/Device.hpp"
 #include "graphics/PhysicalDevice.hpp"
@@ -14,6 +15,7 @@
 #include "graphics/Renderer.hpp"
 #include "graphics/Swapchain.hpp"
 #include "ui/InterfaceLayer.hpp"
+#include "ui/UI.hpp"
 #include "vulkan/CommandExecutor.hpp"
 
 #include <memory>
@@ -30,25 +32,25 @@ namespace Disarray {
 		swapchain = Swapchain::construct(*window, *device);
 	}
 
-	App::~App()
-	{
-		swapchain.reset();
-		destroy_allocator();
-	};
+	App::~App() { destroy_allocator(); }
 
 	void App::run()
 	{
 		on_attach();
 
+		ThreadPool pool { 2 };
+
 		auto constructed_renderer = Renderer::construct(*device, *swapchain, {});
 		constructed_renderer->set_extent({ .width = swapchain->get_extent().width, .height = swapchain->get_extent().height });
-		auto l = add_layer<UI::InterfaceLayer>();
+		auto& l = add_layer<UI::InterfaceLayer>();
 		auto ui_layer = std::dynamic_pointer_cast<UI::InterfaceLayer>(l);
+
+		UI::DescriptorCache::initialise();
 
 		auto& renderer = *constructed_renderer;
 
 		for (auto& layer : layers) {
-			layer->construct(*this, renderer);
+			layer->construct(*this, renderer, pool);
 		}
 
 		static float current_time = Clock::ms();
@@ -89,10 +91,14 @@ namespace Disarray {
 
 		wait_for_cleanup(*device);
 
+		UI::DescriptorCache::destruct();
+
 		for (auto& layer : layers) {
 			layer->destruct();
 		}
 		layers.clear();
+
+		on_detach();
 	}
 
 } // namespace Disarray

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Forward.hpp"
 #include "core/Window.hpp"
 #include "graphics/Image.hpp"
 #include "graphics/Texture.hpp"
@@ -9,6 +10,20 @@
 #include <glm/glm.hpp>
 
 namespace Disarray::UI {
+
+	using ImageIdentifier = std::uint64_t;
+	class DescriptorCache {
+		using ImageCache = std::unordered_map<ImageIdentifier, std::unique_ptr<ImageIdentifier>>;
+
+	public:
+		static void initialise();
+		static void destruct();
+
+		static auto& get_cache() { return cache; }
+
+	private:
+		inline static ImageCache cache {};
+	};
 
 	static constexpr std::array<glm::vec2, 2> default_uvs = { glm::vec2 { 0.f, 0.f }, glm::vec2 { 1.f, 1.f } };
 

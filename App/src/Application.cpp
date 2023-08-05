@@ -11,6 +11,7 @@ public:
 	using Disarray::App::App;
 
 	void on_attach() override { add_layer<Disarray::Client::AppLayer>(); }
+	void on_detach() override { }
 };
 
 extern std::unique_ptr<Disarray::App> Disarray::create_application(const Disarray::ApplicationProperties& props)

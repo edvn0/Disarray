@@ -39,7 +39,7 @@ namespace Disarray::UI {
 
 	InterfaceLayer::~InterfaceLayer() { }
 
-	void InterfaceLayer::construct(App&, Renderer& renderer)
+	void InterfaceLayer::construct(App&, Renderer& renderer, ThreadPool&)
 	{
 		command_executor = CommandExecutor::construct(device, swapchain,
 			{
@@ -98,9 +98,10 @@ namespace Disarray::UI {
 
 		ImGui_ImplVulkan_Init(&init_info, supply_cast<Vulkan::RenderPass>(swapchain.get_render_pass()));
 
-		auto&& [executor, destructor] = Vulkan::construct_immediate<Vulkan::CommandExecutor>(device, swapchain);
-		ImGui_ImplVulkan_CreateFontsTexture(executor->supply());
-		destructor(executor);
+		{
+			auto executor = Vulkan::construct_immediate(device, swapchain);
+			ImGui_ImplVulkan_CreateFontsTexture(executor->supply());
+		}
 
 		// clear font textures from cpu data
 		ImGui_ImplVulkan_DestroyFontUploadObjects();

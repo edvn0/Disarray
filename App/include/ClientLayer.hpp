@@ -10,7 +10,7 @@ namespace Disarray::Client {
 		~AppLayer() override;
 
 		void interface() override;
-		void construct(App& app, Renderer& renderer) override;
+		void construct(App& app, Renderer& renderer, ThreadPool&) override;
 		void handle_swapchain_recreation(Renderer& renderer) override;
 		void update(float ts) override;
 		void update(float ts, Renderer& renderer) override;

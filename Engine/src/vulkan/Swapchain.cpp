@@ -16,12 +16,14 @@
 #include "vulkan/PhysicalDevice.hpp"
 #include "vulkan/QueueFamilyIndex.hpp"
 #include "vulkan/RenderPass.hpp"
+#include "vulkan/Structures.hpp"
 #include "vulkan/Surface.hpp"
 #include "vulkan/SwapchainUtilities.hpp"
 #include "vulkan/Verify.hpp"
 
 #include <algorithm>
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 namespace Disarray::Vulkan {
 
@@ -87,7 +89,7 @@ namespace Disarray::Vulkan {
 
 	void Swapchain::present()
 	{
-		VkSubmitInfo submit_info { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+		auto submit_info = vk_structures<VkSubmitInfo> {}();
 
 		std::array<VkSemaphore, 1> wait_semaphores = { image_available_semaphores[get_current_frame()] };
 		std::array<VkPipelineStageFlags, 1> wait_stages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -103,7 +105,7 @@ namespace Disarray::Vulkan {
 
 		verify(vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight_fences[get_current_frame()]));
 
-		VkPresentInfoKHR present_info_khr { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
+		auto present_info_khr = vk_structures<VkPresentInfoKHR> {}();
 		present_info_khr.waitSemaphoreCount = static_cast<std::uint32_t>(signal_semaphores.size());
 		present_info_khr.pWaitSemaphores = signal_semaphores.data();
 

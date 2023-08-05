@@ -30,14 +30,7 @@ namespace Disarray::UI {
 		unreachable();
 	}
 
-	using ImageIdentifier = Identifier;
-	using ImageCache = std::unordered_map<Identifier, ImageIdentifier>;
-
-	static ImageCache& get_cache()
-	{
-		static ImageCache cache {};
-		return cache;
-	}
+	auto& get_cache() { return DescriptorCache::get_cache(); }
 
 	static ImageIdentifier add_image(VkSampler sampler, VkImageView view, VkImageLayout layout)
 	{
@@ -50,12 +43,13 @@ namespace Disarray::UI {
 		auto& vk_image = cast_to<Vulkan::Image>(image);
 
 		const auto hash = vk_image.hash();
+		auto& cache = get_cache();
 		ImageIdentifier id;
 		if (!get_cache().contains(hash)) {
 			id = add_image(vk_image.get_sampler(), vk_image.get_view(), vk_image.get_layout());
-			get_cache()[hash] = id;
+			cache.try_emplace(hash, std::make_unique<ImageIdentifier>(id));
 		} else {
-			id = get_cache()[hash];
+			id = *get_cache()[hash];
 		}
 
 		ImGui::ImageButton("Image", id, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
@@ -66,12 +60,13 @@ namespace Disarray::UI {
 		auto& vk_image = cast_to<Vulkan::Image>(image);
 
 		const auto hash = vk_image.hash();
+		auto& cache = get_cache();
 		ImageIdentifier id;
 		if (!get_cache().contains(hash)) {
 			id = add_image(vk_image.get_sampler(), vk_image.get_view(), vk_image.get_layout());
-			get_cache()[hash] = id;
+			cache.try_emplace(hash, std::make_unique<ImageIdentifier>(id));
 		} else {
-			id = get_cache()[hash];
+			id = *cache[hash];
 		}
 
 		ImGui::Image(id, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
@@ -88,6 +83,15 @@ namespace Disarray::UI {
 	{
 		auto* glfw_window = static_cast<GLFWwindow*>(window.native());
 		return static_cast<bool>(glfwGetWindowAttrib(glfw_window, GLFW_MAXIMIZED));
+	}
+
+	void DescriptorCache::initialise() { cache.reserve(100); }
+
+	void DescriptorCache::destruct()
+	{
+		for (auto& [k, v] : cache) {
+			ImGui_ImplVulkan_RemoveTexture(Disarray::bit_cast<VkDescriptorSet>(*v));
+		}
 	}
 
 } // namespace Disarray::UI

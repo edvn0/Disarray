@@ -46,9 +46,10 @@ namespace Disarray::Vulkan {
 
 	Window::~Window()
 	{
-		// delete user_data;
+		surface.reset();
 		glfwDestroyWindow(window);
 		glfwTerminate();
+		Log::debug("Window", "Window destroyed.");
 	}
 
 	void Window::update() { glfwPollEvents(); }

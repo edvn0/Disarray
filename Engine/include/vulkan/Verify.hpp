@@ -20,11 +20,6 @@ namespace Disarray::Vulkan {
 	};
 
 	std::string_view from_vulkan_result(VkResult result);
-	static constexpr void verify(VkResult result)
-	{
-		if (result != VK_SUCCESS) {
-			throw VerificationException(from_vulkan_result(result));
-		}
-	}
+	void verify(VkResult result);
 
 } // namespace Disarray::Vulkan

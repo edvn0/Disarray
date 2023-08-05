@@ -19,7 +19,7 @@ set(APP_SOURCES
 add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/src/Application.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ClientLayer.cpp)
 target_include_directories(${PROJECT_NAME} PRIVATE include)
-target_link_libraries(${PROJECT_NAME} PRIVATE Engine argparse::argparse)
+target_link_libraries(${PROJECT_NAME} PRIVATE Engine argparse::argparse thread-pool)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness -Wno-unused-variable -Wno-sign-compare)

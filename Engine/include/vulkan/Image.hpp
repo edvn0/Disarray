@@ -49,7 +49,7 @@ namespace Disarray::Vulkan {
 		VkSampler get_sampler() const { return descriptor_info.sampler; }
 		VkImageLayout get_layout() const { return descriptor_info.imageLayout; }
 
-		Identifier hash_impl() { return bit_cast<std::size_t>(descriptor_info.imageView) ^ bit_cast<std::size_t>(descriptor_info.sampler); };
+		Identifier hash_impl() { return bit_cast<std::uint64_t>(descriptor_info.imageView) ^ bit_cast<std::uint64_t>(descriptor_info.sampler); };
 
 	private:
 		void recreate_image(bool should_clean);

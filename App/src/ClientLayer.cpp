@@ -74,7 +74,7 @@ namespace Disarray::Client {
 		Swapchain& swapchain;
 	};
 
-	void AppLayer::construct(App& app, Renderer& renderer)
+	void AppLayer::construct(App& app, Renderer& renderer, ThreadPool& pool)
 	{
 		app.add_panel<StatisticsPanel>(app.get_statistics());
 		app.add_panel<B>();
@@ -110,7 +110,8 @@ namespace Disarray::Client {
 		};
 		pipeline = Pipeline::construct(device, swapchain, props);
 
-		command_executor = CommandExecutor::construct(device, swapchain, { .count = 3, .is_primary = true, .record_stats = true });
+		// TODO: Record stats does not work with recreation of query pools.
+		command_executor = CommandExecutor::construct(device, swapchain, { .count = 3, .is_primary = true, .record_stats = false });
 
 		viking_mesh = Mesh::construct(device, swapchain, { .path = "Assets/Models/viking.mesh", .pipeline = pipeline });
 #define IS_TESTING
@@ -202,11 +203,11 @@ namespace Disarray::Client {
 
 	void AppLayer::handle_swapchain_recreation(Renderer& renderer)
 	{
-		command_executor->recreate(true);
 		renderer.set_extent(swapchain.get_extent());
 		pipeline->recreate(true);
 		viking_room->recreate(true);
 		framebuffer->recreate(true);
+		command_executor->recreate(true);
 	}
 
 	void AppLayer::update(float ts) {
@@ -240,9 +241,6 @@ namespace Disarray::Client {
 		command_executor->submit_and_end();
 	}
 
-	void AppLayer::destruct()
-	{
-		// This should be done later on!
-	}
+	void AppLayer::destruct() { command_executor.reset(); }
 
 } // namespace Disarray::Client

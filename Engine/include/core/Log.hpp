@@ -1,5 +1,7 @@
 #pragma once
 
+#include <chrono>
+#include <format>
 #include <string>
 
 namespace Disarray {
@@ -31,16 +33,19 @@ namespace Disarray {
 		static std::string blue_begin { blue_begin_sv };
 		static std::string end { end_sv };
 
+		inline std::string current_time() { return std::format("{:%F %T}", std::chrono::system_clock::now()); }
+
 		inline void debug(const std::string& scope, const std::string& message)
 		{
 #ifdef IS_DEBUG
-			std::string formatted = blue_begin + "[Disarray::Engine - " + scope + "]: " + message + end;
+			std::string formatted = blue_begin + "[" + current_time() + " - Disarray::Engine - " + scope + "]: " + message + end;
 			Logging::Logger::logger().debug(formatted);
 #endif
 		}
+
 		inline void error(const std::string& scope, const std::string& message)
 		{
-			std::string formatted = red_begin + "[Disarray::Engine - " + scope + "]: " + message + end;
+			std::string formatted = red_begin + "[" + current_time() + " - Disarray::Engine - " + scope + "]: " + message + end;
 			Logging::Logger::logger().error(formatted);
 		}
 

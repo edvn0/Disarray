@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/ReferenceCounted.hpp"
+#include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
 
 namespace Disarray {
@@ -12,7 +13,7 @@ namespace Disarray {
 	public:
 		virtual ~Layer() = default;
 
-		virtual void construct(App&, Renderer&);
+		virtual void construct(App&, Renderer&, ThreadPool&);
 		virtual void handle_swapchain_recreation(Renderer&);
 		virtual void interface();
 		virtual void update(float ts);

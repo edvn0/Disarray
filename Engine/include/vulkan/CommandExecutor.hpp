@@ -58,6 +58,8 @@ namespace Disarray::Vulkan {
 			return 0;
 		}
 
+		void wait_indefinite();
+
 	private:
 		void recreate_executor(bool should_clean = true);
 		void create_query_pools();
@@ -87,21 +89,27 @@ namespace Disarray::Vulkan {
 
 		std::uint32_t pipeline_query_count { 0 };
 		std::vector<PipelineStatistics> pipeline_statistics_query_results;
+		void create_base_structures();
 	};
 
-	template <typename T>
-		requires(std::is_base_of_v<CommandExecutor, T>)
-	static std::tuple<Ref<T>, std::function<void(Ref<T>&)>> construct_immediate(Disarray::Device& device, Disarray::Swapchain& swapchain)
+	namespace {
+		void submit_and_delete_executor(Vulkan::CommandExecutor* to_destroy)
+		{
+			to_destroy->submit_and_end();
+			Log::debug("Vulkan Immediate executor - Destructor", "Called destructor!");
+			to_destroy->wait_indefinite();
+			delete to_destroy;
+		}
+	} // namespace
+
+	constexpr auto deleter = [](Vulkan::CommandExecutor* l) { submit_and_delete_executor(l); };
+	using ImmediateExecutor = std::unique_ptr<Vulkan::CommandExecutor, decltype(deleter)>;
+	ImmediateExecutor construct_immediate(Disarray::Device& device, Disarray::Swapchain& swapchain)
 	{
 		static constexpr Disarray::CommandExecutorProperties props { .count = 1, .owned_by_swapchain = false };
-		auto executor = CommandExecutor::construct_as<T>(device, swapchain, props);
+		ImmediateExecutor executor { new CommandExecutor { device, swapchain, props } };
 		executor->begin();
-		auto destructor = [&device = device](Ref<T>& exec) {
-			exec->submit_and_end();
-			wait_for_cleanup(device);
-			exec.reset();
-		};
-		return { executor, destructor };
+		return executor;
 	}
 
 } // namespace Disarray::Vulkan

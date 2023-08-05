@@ -43,6 +43,7 @@ namespace Disarray {
 		void run();
 
 		virtual void on_attach() = 0;
+		virtual void on_detach() = 0;
 
 		template <typename T, typename... Args>
 		decltype(auto) add_layer(Args&&... args)
