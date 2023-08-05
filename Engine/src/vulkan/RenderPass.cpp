@@ -82,8 +82,7 @@ namespace Disarray::Vulkan {
 		if (props.has_depth)
 			attachments.push_back(depth_attachment);
 
-		VkRenderPassCreateInfo render_pass_info {};
-		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		auto render_pass_info = vk_structures<VkRenderPassCreateInfo> {}();
 		render_pass_info.attachmentCount = static_cast<std::uint32_t>(attachments.size());
 		render_pass_info.pAttachments = attachments.data();
 		render_pass_info.subpassCount = 1;

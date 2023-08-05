@@ -120,6 +120,8 @@ namespace Disarray {
 			.extent = props.extent,
 			.polygon_mode = props.polygon_mode,
 			.line_width = props.line_width,
+			.descriptor_set_layout = props.descriptor_set_layout,
+			.descriptor_set_layout_count = props.descriptor_set_layout_count,
 		};
 
 		auto pipeline = Pipeline::construct(device, swapchain, properties);

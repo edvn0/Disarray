@@ -1,33 +1,16 @@
 #pragma once
 
+#include "BaseBuffer.hpp"
 #include "graphics/IndexBuffer.hpp"
 #include "vulkan/MemoryAllocator.hpp"
 #include "vulkan/PropertySupplier.hpp"
 
 namespace Disarray::Vulkan {
 
-	class IndexBuffer : public Disarray::IndexBuffer, public PropertySupplier<VkBuffer> {
+	class IndexBuffer : public Disarray::IndexBuffer, public Vulkan::BaseBuffer {
+		MAKE_SUB_BUFFER(IndexBuffer)
 	public:
-		IndexBuffer(Disarray::Device& dev, Disarray::Swapchain& swapchain, const IndexBufferProperties&);
-		~IndexBuffer() override;
-
-		std::size_t size() override { return index_count; }
-		void set_data(const void*, std::size_t) override;
-
-		VkBuffer supply() const override { return buffer; }
-
-	private:
-		void create_with_valid_data(Disarray::Swapchain&);
-		void create_with_empty_data();
-
-		Disarray::Device& device;
-		IndexBufferProperties props;
-
-		VmaAllocationInfo vma_allocation_info {};
-
-		std::size_t index_count { 0 };
-		VkBuffer buffer;
-		VmaAllocation allocation;
+		IndexBuffer(Disarray::Device&, Disarray::Swapchain&, const BufferProperties&);
 	};
 
 } // namespace Disarray::Vulkan

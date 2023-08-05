@@ -13,6 +13,8 @@
 #include <unordered_map>
 #include <utility>
 
+using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;
+
 namespace Disarray {
 
 	namespace CollectionOperations {
@@ -36,6 +38,8 @@ namespace Disarray {
 		Extent extent { 0, 0 };
 		PolygonMode polygon_mode { PolygonMode::Fill };
 		float line_width { 1.0f };
+		const VkDescriptorSetLayout* descriptor_set_layout { nullptr };
+		std::uint32_t descriptor_set_layout_count { 0 };
 	};
 
 	class PipelineCache {

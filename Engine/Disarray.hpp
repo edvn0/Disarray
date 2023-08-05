@@ -4,6 +4,7 @@
 #include "core/App.hpp"
 #include "core/Clock.hpp"
 #include "core/DataBuffer.hpp"
+#include "core/Input.hpp"
 #include "core/Layer.hpp"
 #include "core/Log.hpp"
 #include "core/Panel.hpp"

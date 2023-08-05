@@ -184,8 +184,8 @@ namespace Disarray::Vulkan {
 
 		VkPipelineLayoutCreateInfo pipeline_layout_info {};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipeline_layout_info.setLayoutCount = 0; // Optional
-		pipeline_layout_info.pSetLayouts = nullptr; // Optional
+		pipeline_layout_info.setLayoutCount = props.descriptor_set_layout_count; // Optional
+		pipeline_layout_info.pSetLayouts = props.descriptor_set_layout; // Optional
 
 		pipeline_layout_info.pushConstantRangeCount = static_cast<std::uint32_t>(props.push_constant_layout.size()); // Optional
 		std::vector<VkPushConstantRange> result;

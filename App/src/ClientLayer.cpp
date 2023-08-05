@@ -117,10 +117,12 @@ namespace Disarray::Client {
 #define IS_TESTING
 #ifdef IS_TESTING
 		{
-			std::array<std::uint32_t, 1> white_tex = { 1 };
-			DataBuffer pixels { white_tex.data(), sizeof(std::uint32_t) };
+			std::array<std::uint32_t, 1> white_tex_data = { 1 };
+			DataBuffer pixels { white_tex_data.data(), sizeof(std::uint32_t) };
 			TextureProperties texture_properties { .extent = swapchain.get_extent(), .format = ImageFormat::SBGR, .debug_name = "white_tex" };
-			Ref<Texture> tex = Texture::construct(device, swapchain, texture_properties);
+			Ref<Texture> white_tex = Texture::construct(device, swapchain, texture_properties);
+			renderer.expose_to_shaders(*white_tex);
+
 			texture_properties.path = "Assets/Textures/viking_room.png";
 			texture_properties.debug_name = "viking";
 			viking_room = Texture::construct(device, swapchain, texture_properties);
@@ -203,7 +205,6 @@ namespace Disarray::Client {
 
 	void AppLayer::handle_swapchain_recreation(Renderer& renderer)
 	{
-		renderer.set_extent(swapchain.get_extent());
 		pipeline->recreate(true);
 		viking_room->recreate(true);
 		framebuffer->recreate(true);
@@ -229,7 +230,21 @@ namespace Disarray::Client {
 			// const auto&& [mid_x, mid_y] = renderer.center_position();
 			static glm::vec3 pos { 0, 0, 0 };
 			renderer.draw_planar_geometry(Geometry::Rectangle, { .position = pos, .dimensions = { { 1.f, 1.f, 1.f } } });
-			pos += 0.001;
+			if (Input::button_pressed(KeyCode::A)) {
+				pos.x -= 0.001f;
+			}
+
+			if (Input::button_pressed(KeyCode::D)) {
+				pos.x += 0.001f;
+			}
+
+			if (Input::button_pressed(KeyCode::W)) {
+				pos.y -= 0.001f;
+			}
+
+			if (Input::button_pressed(KeyCode::S)) {
+				pos.y += 0.001f;
+			}
 			// renderer.draw_text("Hello world!", 0, 0, 12.f);
 			// static glm::vec3 pos_circle {-0.5,0,0};
 			renderer.draw_planar_geometry(Geometry::Line, { .position = { -0.5, -0.5, 0 }, .to_position = { 0.5, 0.5, 0 } });

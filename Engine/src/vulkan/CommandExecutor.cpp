@@ -58,9 +58,7 @@ namespace Disarray::Vulkan {
 
 		const auto& vk_device = supply_cast<Vulkan::Device>(device);
 
-		VkQueryPoolCreateInfo query_pool_create_info = {};
-		query_pool_create_info.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
-		query_pool_create_info.pNext = nullptr;
+		auto query_pool_create_info = vk_structures<VkQueryPoolCreateInfo> {}();
 
 		// Timestamp queries
 		const uint32_t max_user_queries = 16;

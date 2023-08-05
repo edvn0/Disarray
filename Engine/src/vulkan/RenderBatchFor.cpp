@@ -53,6 +53,9 @@ namespace Disarray::Vulkan {
 		// const auto& descriptor = descriptor_sets[renderer.get_current_frame()];
 		const auto index_count = submitted_indices;
 
+		const std::array<VkDescriptorSet, 1> desc { renderer.get_descriptor_set() };
+		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->get_layout(), 0, 1, desc.data(), 0, nullptr);
+
 		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->supply());
 
 		vkCmdPushConstants(command_buffer, pipeline->get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),

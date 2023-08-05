@@ -13,6 +13,7 @@
 #include "vulkan/PhysicalDevice.hpp"
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Renderer.hpp"
+#include "vulkan/Structures.hpp"
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/Verify.hpp"
 #include "vulkan/Window.hpp"
@@ -54,8 +55,7 @@ namespace Disarray::UI {
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 }, { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 }, { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 } };
 
-		VkDescriptorPoolCreateInfo pool_info = {};
-		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		auto pool_info = Vulkan::vk_structures<VkDescriptorPoolCreateInfo> {}();
 		pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 		pool_info.maxSets = 1000;
 		pool_info.poolSizeCount = static_cast<std::uint32_t>(std::size(pool_sizes));
@@ -154,8 +154,7 @@ namespace Disarray::UI {
 		auto& vk_swapchain = cast_to<Vulkan::Swapchain>(swapchain);
 		const VkCommandBuffer draw_command_buffer = vk_swapchain.get_drawbuffer();
 
-		VkCommandBufferBeginInfo begin_info = {};
-		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		auto begin_info = Vulkan::vk_structures<VkCommandBufferBeginInfo> {}();
 		begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 		begin_info.pNext = nullptr;
 		vkBeginCommandBuffer(draw_command_buffer, &begin_info);

@@ -47,6 +47,13 @@ namespace Disarray::Vulkan {
 		STRATEGY_MASK = STRATEGY_MIN_MEMORY_BIT | STRATEGY_MIN_TIME_BIT | STRATEGY_MIN_OFFSET_BIT,
 	};
 
+	inline constexpr Creation operator|(Creation left, Creation right)
+	{
+		return static_cast<Creation>(static_cast<std::uint32_t>(left) | static_cast<std::uint32_t>(right));
+	}
+
+	inline constexpr Creation& operator|=(Creation& a, Creation b) { return a = a | b; }
+
 	struct AllocationProperties {
 		Usage usage;
 		Creation creation;

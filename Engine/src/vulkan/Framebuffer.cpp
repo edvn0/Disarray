@@ -94,8 +94,7 @@ namespace Disarray::Vulkan {
 			if (props.has_depth)
 				fb_attachments.push_back(depth_attachment->get_view());
 
-			VkFramebufferCreateInfo framebuffer_info {};
-			framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			auto framebuffer_info = vk_structures<VkFramebufferCreateInfo> {}();
 			framebuffer_info.renderPass = render_pass->supply();
 			framebuffer_info.attachmentCount = static_cast<std::uint32_t>(fb_attachments.size());
 			framebuffer_info.pAttachments = fb_attachments.data();

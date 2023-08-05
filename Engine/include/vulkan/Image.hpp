@@ -49,6 +49,8 @@ namespace Disarray::Vulkan {
 		VkSampler get_sampler() const { return descriptor_info.sampler; }
 		VkImageLayout get_layout() const { return descriptor_info.imageLayout; }
 
+		const auto& get_descriptor_info() const { return descriptor_info; }
+
 		Identifier hash_impl() { return bit_cast<std::uint64_t>(descriptor_info.imageView) ^ bit_cast<std::uint64_t>(descriptor_info.sampler); };
 
 	private:

@@ -1,6 +1,6 @@
 #include "DisarrayPCH.hpp"
 
-#include "vulkan/VertexBuffer.hpp"
+#include "vulkan/UniformBuffer.hpp"
 
 #include "graphics/PhysicalDevice.hpp"
 #include "vulkan/Allocator.hpp"
@@ -11,8 +11,8 @@
 
 namespace Disarray::Vulkan {
 
-	VertexBuffer::VertexBuffer(Disarray::Device& dev, Disarray::Swapchain& swapchain, const Disarray::BufferProperties& properties)
-		: BaseBuffer(dev, swapchain, BufferType::Vertex, properties)
+	UniformBuffer::UniformBuffer(Disarray::Device& dev, Disarray::Swapchain& swapchain, const Disarray::BufferProperties& properties)
+		: BaseBuffer(dev, swapchain, BufferType::Uniform, properties)
 	{
 	}
 

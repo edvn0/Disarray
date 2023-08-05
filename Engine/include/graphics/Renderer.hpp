@@ -7,9 +7,12 @@
 #include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Swapchain.hpp"
+#include "graphics/Texture.hpp"
 
 #include <glm/glm.hpp>
 #include <optional>
+
+using VkDescriptorSet = struct VkDescriptorSet_T*;
 
 namespace Disarray {
 
@@ -53,14 +56,24 @@ namespace Disarray {
 		virtual void submit_batched_geometry(Disarray::CommandExecutor&) = 0;
 	};
 
-	class Renderer : public IGraphics, public ReferenceCountable {
+	class IGraphicsResource {
+	public:
+		virtual ~IGraphicsResource() = default;
+
+		virtual void expose_to_shaders(Image&) = 0;
+		virtual void expose_to_shaders(Texture& tex) { expose_to_shaders(tex.get_image()); };
+		virtual VkDescriptorSet get_descriptor_set(std::uint32_t) = 0;
+		virtual VkDescriptorSet get_descriptor_set() = 0;
+	};
+
+	class Renderer : public IGraphics, public IGraphicsResource, public ReferenceCountable {
 	public:
 		virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) = 0;
 		virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&) = 0;
 		virtual void begin_pass(Disarray::CommandExecutor&) = 0;
 		virtual void end_pass(Disarray::CommandExecutor&) = 0;
 
-		virtual void set_extent(const Extent&) = 0;
+		virtual void on_resize() = 0;
 		virtual PipelineCache& get_pipeline_cache() = 0;
 
 		virtual void begin_frame(UsageBadge<App>) = 0;

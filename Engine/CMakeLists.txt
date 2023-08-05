@@ -153,14 +153,16 @@ add_library(${PROJECT_NAME} STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/ImageLoader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/RenderPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/Renderer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/VertexBuffer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/VertexBuffer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/UniformBuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/IndexBuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/Mesh.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/ModelLoader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/Framebuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/Pipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/PipelineCache.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/glfw/GLFWClock.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/glfw/GLFWClock.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/glfw/GLFWInput.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/InterfaceLayer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/Device.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/Allocator.cpp
@@ -189,6 +191,9 @@ add_library(${PROJECT_NAME} STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/RenderBatchFor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/DebugConfigurator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/DebugMarker.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/BaseBuffer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/UniformBuffer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/Structures.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/QueueFamilyIndex.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/imgui)

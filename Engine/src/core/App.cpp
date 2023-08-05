@@ -18,6 +18,7 @@
 #include "ui/UI.hpp"
 #include "vulkan/CommandExecutor.hpp"
 
+#include <core/Input.hpp>
 #include <memory>
 
 namespace Disarray {
@@ -30,6 +31,8 @@ namespace Disarray {
 		initialise_debug_applications(*device);
 		initialise_allocator(*device, window->get_instance());
 		swapchain = Swapchain::construct(*window, *device);
+
+		Input::construct({}, *window);
 	}
 
 	App::~App() { destroy_allocator(); }
@@ -41,7 +44,7 @@ namespace Disarray {
 		ThreadPool pool { 2 };
 
 		auto constructed_renderer = Renderer::construct(*device, *swapchain, {});
-		constructed_renderer->set_extent({ .width = swapchain->get_extent().width, .height = swapchain->get_extent().height });
+		constructed_renderer->on_resize();
 		auto& l = add_layer<UI::InterfaceLayer>();
 		auto ui_layer = std::dynamic_pointer_cast<UI::InterfaceLayer>(l);
 

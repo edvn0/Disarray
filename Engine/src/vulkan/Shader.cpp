@@ -4,8 +4,8 @@
 
 #include "graphics/Shader.hpp"
 #include "vulkan/Device.hpp"
+#include "vulkan/Structures.hpp"
 #include "vulkan/Verify.hpp"
-#include "vulkan/vulkan_core.h"
 
 #include <bit>
 #include <fstream>
@@ -28,8 +28,7 @@ namespace Disarray::Vulkan {
 
 		void create_module(Vulkan::Device& device, const std::string& code, VkShaderModule& shader)
 		{
-			VkShaderModuleCreateInfo create_info {};
-			create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+			auto create_info = vk_structures<VkShaderModuleCreateInfo> {}();
 			create_info.codeSize = code.size();
 			create_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
 

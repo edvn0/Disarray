@@ -9,6 +9,12 @@ layout(location = 0) out vec4 fragColor;
 layout(location = 1) out vec2 uvs;
 layout(location = 2) out vec2 outNormals;
 
+layout(set = 0, binding = 0) uniform Uniform {
+    mat4 view;
+    mat4 proj;
+    mat4 view_projection;
+} UBO;
+
 layout(push_constant) uniform constants
 {
 	mat4 object_transform;
