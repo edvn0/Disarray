@@ -31,7 +31,6 @@ function(compile_shaders)
                     -V ${source} -o ${SHADER_BINARY_DIR}/${FILENAME}.spv
                     OUTPUT ${SHADER_BINARY_DIR}/${FILENAME}.spv
                     DEPENDS ${source} ${SHADER_BINARY_DIR}
-                    COMMENT "Compiling ${FILENAME}"
             )
             list(APPEND SPV_SHADERS ${SHADER_BINARY_DIR}/${FILENAME}.spv)
         endforeach()
@@ -39,6 +38,6 @@ function(compile_shaders)
         add_custom_target(shaders ALL DEPENDS ${SPV_SHADERS})
         set_source_files_properties(shaders PROPERTIES SYMBOLIC 1)
     else()
-        message(STATUS "Could not find glslangValidator.")
+        message(AUTHOR_WARNING "Could not find glslangValidator. Won't compile shaders.")
     endif()
 endfunction()

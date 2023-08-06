@@ -111,14 +111,13 @@ namespace Disarray::Vulkan {
 		void expose_to_shaders(Disarray::Image&) override;
 		VkDescriptorSet get_descriptor_set(std::uint32_t) override;
 		VkDescriptorSet get_descriptor_set() override { return get_descriptor_set(swapchain.get_current_frame()); };
-		VkDescriptorSetLayout get_descriptor_set_layout() override { return layout; }
-		std::uint32_t get_descriptor_set_layout_count() override { return 1; }
+		const std::vector<VkDescriptorSetLayout>& get_descriptor_set_layouts() override { return layouts; }
 		// End IGraphicsResource
 
 		void on_resize() override;
 		PipelineCache& get_pipeline_cache() override { return *pipeline_cache; }
 
-		void begin_frame(UsageBadge<App>) override;
+		void begin_frame(UsageBadge<App>, Camera&) override;
 		void end_frame(UsageBadge<App>) override;
 
 		void force_recreation() override;
@@ -138,7 +137,7 @@ namespace Disarray::Vulkan {
 			VkDescriptorSet set;
 			void destroy(Disarray::Device& dev);
 		};
-		VkDescriptorSetLayout layout;
+		std::vector<VkDescriptorSetLayout> layouts;
 		VkDescriptorPool pool;
 		std::vector<FrameDescriptor> descriptors;
 		void initialise_descriptors();

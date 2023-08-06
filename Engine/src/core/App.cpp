@@ -20,6 +20,7 @@
 
 #include <core/Input.hpp>
 #include <memory>
+#include <scene/Camera.hpp>
 
 namespace Disarray {
 
@@ -45,8 +46,12 @@ namespace Disarray {
 
 		auto constructed_renderer = Renderer::construct(*device, *swapchain, {});
 		constructed_renderer->on_resize();
+
 		auto& l = add_layer<UI::InterfaceLayer>();
 		auto ui_layer = std::dynamic_pointer_cast<UI::InterfaceLayer>(l);
+
+		EditorCamera camera { 73.f, static_cast<float>(swapchain->get_extent().width), static_cast<float>(swapchain->get_extent().height), 0.1f,
+			1000.f, nullptr };
 
 		UI::DescriptorCache::initialise();
 
@@ -68,9 +73,12 @@ namespace Disarray {
 				continue;
 			}
 
-			renderer.begin_frame({});
+			renderer.begin_frame({}, camera);
 			const auto needs_recreation = swapchain->needs_recreation();
 			float time_step = Clock::ms() - current_time;
+			camera.on_update(time_step);
+			if (needs_recreation)
+				camera.set_viewport_size(swapchain->get_extent());
 			for (auto& layer : layers) {
 				if (needs_recreation)
 					layer->handle_swapchain_recreation(renderer);

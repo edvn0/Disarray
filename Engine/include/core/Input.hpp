@@ -5,6 +5,8 @@
 #include "core/UsageBadge.hpp"
 #include "core/Window.hpp"
 
+#include <glm/glm.hpp>
+
 namespace Disarray {
 
 	class App;
@@ -15,6 +17,7 @@ namespace Disarray {
 
 		static bool button_pressed(MouseCode code);
 		static bool button_pressed(KeyCode code);
+		static glm::vec2 mouse_position();
 
 		static void destruct();
 	};

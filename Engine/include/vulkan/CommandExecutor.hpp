@@ -63,6 +63,8 @@ namespace Disarray::Vulkan {
 			return pipeline_statistics_query_results[frame_index];
 		}
 
+		bool has_stats() const override { return props.record_stats; }
+
 	private:
 		void recreate_executor(bool should_clean = true);
 		void create_query_pools();

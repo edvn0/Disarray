@@ -10,19 +10,26 @@
 
 namespace Disarray::Client {
 
+	using namespace std::string_view_literals;
+
 	class ExecutionStatisticsPanel : public Panel {
 		static constexpr auto update_interval_ms = 0.1;
 
 	public:
 		ExecutionStatisticsPanel(Device&, Window&, Swapchain& sc, const CommandExecutor& exec)
 			: executor(exec)
-			, swapchain(sc) {};
+			, swapchain(sc)
+			, has_stats(exec.has_stats()) {
+
+			};
 
 		void update(float ts, Renderer& renderer) override { }
 
 		void interface() override
 		{
-			using namespace std::string_view_literals;
+			if (!has_stats)
+				return;
+
 			UI::scope("ExecutionStatisticsPanel"sv, [&]() {
 				if (ImGui::BeginTable("StatisticsTable", 2)) {
 					{
@@ -36,49 +43,49 @@ namespace Disarray::Client {
 					{
 						ImGui::TableNextRow();
 						ImGui::TableNextColumn();
-						ImGui::Text("%s", "Input Assembly Vertices");
+						ImGui::Text("%s", "IA Vertices");
 						ImGui::TableNextColumn();
 						ImGui::Text("%lu", pipeline_stats.input_assembly_vertices);
 					}
 					{
 						ImGui::TableNextRow();
 						ImGui::TableNextColumn();
-						ImGui::Text("%s", "Input Assembly Primitives");
+						ImGui::Text("%s", "IA Primitives");
 						ImGui::TableNextColumn();
 						ImGui::Text("%lu", pipeline_stats.input_assembly_primitives);
 					}
 					{
 						ImGui::TableNextRow();
 						ImGui::TableNextColumn();
-						ImGui::Text("%s", "Vertex Shader Calls");
+						ImGui::Text("%s", "VS Calls");
 						ImGui::TableNextColumn();
 						ImGui::Text("%lu", pipeline_stats.vertex_shader_invocations);
 					}
 					{
 						ImGui::TableNextRow();
 						ImGui::TableNextColumn();
-						ImGui::Text("%s", "Clipping Calls");
+						ImGui::Text("%s", "Clip Calls");
 						ImGui::TableNextColumn();
 						ImGui::Text("%lu", pipeline_stats.clipping_invocations);
 					}
 					{
 						ImGui::TableNextRow();
 						ImGui::TableNextColumn();
-						ImGui::Text("%s", "Clipping Primitives");
+						ImGui::Text("%s", "Clip Primitives");
 						ImGui::TableNextColumn();
 						ImGui::Text("%lu", pipeline_stats.clipping_primitives);
 					}
 					{
 						ImGui::TableNextRow();
 						ImGui::TableNextColumn();
-						ImGui::Text("%s", "Fragment Shader Calls");
+						ImGui::Text("%s", "FS Calls");
 						ImGui::TableNextColumn();
 						ImGui::Text("%lu", pipeline_stats.fragment_shader_invocations);
 					}
 					{
 						ImGui::TableNextRow();
 						ImGui::TableNextColumn();
-						ImGui::Text("%s", "Compute Shader Calls");
+						ImGui::Text("%s", "CS Calls");
 						ImGui::TableNextColumn();
 						ImGui::Text("%lu", pipeline_stats.compute_shader_invocations);
 					}
@@ -90,6 +97,7 @@ namespace Disarray::Client {
 	private:
 		const CommandExecutor& executor;
 		Swapchain& swapchain;
+		bool has_stats { true };
 	};
 
 } // namespace Disarray::Client

@@ -6,10 +6,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-if (CMAKE_GENERATOR STREQUAL "Ninja")
-    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-endif()
-
 set(THIRD_PARTY "${CMAKE_SOURCE_DIR}/ThirdParty")
 
 find_package(Vulkan REQUIRED)
@@ -32,4 +28,11 @@ if (CLANG_FORMAT)
     add_custom_target(
             "clang-format-${PROJECT_NAME}" COMMAND ${CLANG_FORMAT} -i -style=file
             ${FORMATTABLE_FILES})
+endif()
+
+if (CMAKE_GENERATOR STREQUAL "Ninja")
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+    add_custom_command(COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_BINARY_DIR}/compile_commands.json ${CMAKE_SOURCE_DIR} OUTPUT OUT)
+    message(STATUS "Copying ${CMAKE_BINARY_DIR}/compile_commands.json to ${CMAKE_SOURCE_DIR}")
 endif()

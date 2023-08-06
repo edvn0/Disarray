@@ -46,6 +46,8 @@ namespace Disarray {
 		virtual float get_gpu_execution_time(uint32_t frame_index, uint32_t query_index = 0) const = 0;
 		virtual const PipelineStatistics& get_pipeline_statistics(uint32_t frame_index) const = 0;
 
+		virtual bool has_stats() const = 0;
+
 		virtual void recreate(bool should_clean) = 0;
 		virtual void force_recreation() = 0;
 	};

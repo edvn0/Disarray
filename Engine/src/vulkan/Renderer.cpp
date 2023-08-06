@@ -52,8 +52,6 @@ namespace Disarray::Vulkan {
 		auto samples = SampleCount::ONE;
 		geometry_framebuffer = Framebuffer::construct(device, swapchain, { .samples = samples, .debug_name = "RendererFramebuffer" });
 
-		const std::array<VkDescriptorSetLayout, 1> desc_layout { layout };
-
 		PipelineCacheCreationProperties pipeline_properties = {
 			.pipeline_key = "quad",
 			.shader_key = "quad",
@@ -63,8 +61,8 @@ namespace Disarray::Vulkan {
 			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, std::size_t { 80 } } },
 			.extent = swapchain.get_extent(),
 			.samples = samples,
-			.descriptor_set_layout = desc_layout.data(),
-			.descriptor_set_layout_count = static_cast<std::uint32_t>(desc_layout.size()),
+			.descriptor_set_layout = layouts.data(),
+			.descriptor_set_layout_count = static_cast<std::uint32_t>(layouts.size()),
 		};
 		{
 			// Quad
@@ -83,7 +81,15 @@ namespace Disarray::Vulkan {
 		render_batch.lines.construct(*this, device, swapchain);
 	}
 
-	Renderer::~Renderer() { }
+	Renderer::~Renderer()
+	{
+		const auto& vk_device = supply_cast<Vulkan::Device>(device);
+		std::for_each(std::begin(layouts), std::end(layouts),
+			[&vk_device](VkDescriptorSetLayout& layout) { vkDestroyDescriptorSetLayout(vk_device, layout, nullptr); });
+
+		vkDestroyDescriptorPool(vk_device, pool, nullptr);
+		descriptors.clear();
+	}
 
 	void Renderer::on_resize() { extent = swapchain.get_extent(); }
 
@@ -210,14 +216,14 @@ namespace Disarray::Vulkan {
 		}
 	}
 
-	void Renderer::begin_frame(UsageBadge<App>)
+	void Renderer::begin_frame(UsageBadge<App>, Camera& camera)
 	{
 		// TODO: Move to some kind of scene scope?
 		render_batch.reset();
 
-		uniform.view = glm::lookAt(glm::vec3(0, 2, 2), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		uniform.proj = glm::perspective(glm::radians(72.0f), extent.aspect_ratio(), 0.1f, 1000.0f);
-		uniform.view_projection = uniform.proj * uniform.view;
+		uniform.view = camera.get_view_matrix();
+		uniform.proj = camera.get_projection_matrix();
+		uniform.view_projection = camera.get_view_projection();
 
 		auto& current_uniform = frame_ubos[swapchain.get_current_frame()];
 		current_uniform->set_data<UBO>(&uniform);
@@ -266,7 +272,8 @@ namespace Disarray::Vulkan {
 		layout_create_info.bindingCount = static_cast<std::uint32_t>(bindings.size());
 		layout_create_info.pBindings = bindings.data();
 
-		verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &layout));
+		layouts.resize(1);
+		verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, layouts.data()));
 
 		auto frames = swapchain.image_count();
 
@@ -282,12 +289,12 @@ namespace Disarray::Vulkan {
 
 		verify(vkCreateDescriptorPool(vk_device, &pool_create_info, nullptr, &pool));
 
-		std::vector<VkDescriptorSetLayout> layouts(swapchain.image_count(), layout);
+		std::vector<VkDescriptorSetLayout> desc_layouts(swapchain.image_count(), layouts[0]);
 		VkDescriptorSetAllocateInfo alloc_info {};
 		alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		alloc_info.descriptorPool = pool;
 		alloc_info.descriptorSetCount = static_cast<uint32_t>(swapchain.image_count());
-		alloc_info.pSetLayouts = layouts.data();
+		alloc_info.pSetLayouts = desc_layouts.data();
 
 		std::vector<VkDescriptorSet> sets(swapchain.image_count());
 		descriptors.resize(swapchain.image_count());

@@ -8,7 +8,7 @@
 
 namespace Disarray::Client {
 
-	template <class Position = glm::vec3> static constexpr auto axes(Renderer& renderer, const Position& position)
+	template <class Position = glm::vec3> static constexpr auto draw_axes(Renderer& renderer, const Position& position)
 	{
 		renderer.draw_planar_geometry(Geometry::Line, { .position = position, .to_position = position + glm::vec3 { 10.0, 0, 0 } });
 		renderer.draw_planar_geometry(Geometry::Line, { .position = position, .to_position = position + glm::vec3 { 0, -10.0, 0 } });
@@ -112,17 +112,17 @@ namespace Disarray::Client {
 				.debug_name = "FirstFramebuffer" });
 
 		const auto& [vert, frag] = renderer.get_pipeline_cache().get_shader("main");
-		std::array<VkDescriptorSetLayout, 1> layouts { renderer.get_descriptor_set_layout() };
 		PipelineProperties props = {
 			.vertex_shader = vert,
+
 			.fragment_shader = frag,
 			.framebuffer = framebuffer,
 			.layout = layout,
 			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, std::size_t { 80 } } },
 			.extent = { extent.width, extent.height },
 			.samples = SampleCount::ONE,
-			.descriptor_set_layout = layouts.data(),
-			.descriptor_set_layout_count = renderer.get_descriptor_set_layout_count(),
+			.descriptor_set_layout = renderer.get_descriptor_set_layouts().data(),
+			.descriptor_set_layout_count = static_cast<std::uint32_t>(renderer.get_descriptor_set_layouts().size()),
 		};
 		pipeline = Pipeline::construct(device, swapchain, props);
 
@@ -150,7 +150,6 @@ namespace Disarray::Client {
 
 	void AppLayer::interface()
 	{
-		// ImGui + Dockspace Setup ------------------------------------------------------------------------------
 		ImGuiIO& io = ImGui::GetIO();
 		ImGuiStyle& style = ImGui::GetStyle();
 
@@ -205,7 +204,6 @@ namespace Disarray::Client {
 			auto window_size = ImGui::GetWindowSize();
 			ImVec2 min_bound = ImGui::GetWindowPos();
 
-			// NOTE(Peter): This currently just subtracts 0 because I removed the toolbar window, but I'll keep it in just in case
 			min_bound.x -= viewport_offset.x;
 			min_bound.y -= viewport_offset.y;
 
@@ -218,38 +216,6 @@ namespace Disarray::Client {
 
 		ImGui::End();
 	}
-
-	struct Controller {
-		glm::vec3& pos;
-		glm::mat4& rot;
-
-		void update(float ts)
-		{
-			if (Input::button_pressed(KeyCode::A)) {
-				pos.x -= ts * 0.001f;
-			}
-
-			if (Input::button_pressed(KeyCode::D)) {
-				pos.x += ts * 0.001f;
-			}
-
-			if (Input::button_pressed(KeyCode::W)) {
-				pos.y -= ts * 0.001f;
-			}
-
-			if (Input::button_pressed(KeyCode::S)) {
-				pos.y += ts * 0.001f;
-			}
-
-			if (Input::button_pressed(KeyCode::Q)) {
-				rot = glm::rotate(rot, ts * glm::radians(1.f), glm::vec3 { 0, 0, 1 });
-			}
-
-			if (Input::button_pressed(KeyCode::E)) {
-				rot = glm::rotate(rot, ts * -glm::radians(1.f), glm::vec3 { 0, 0, 1 });
-			}
-		}
-	};
 
 	void AppLayer::handle_swapchain_recreation(Renderer& renderer)
 	{
@@ -279,13 +245,13 @@ namespace Disarray::Client {
 			renderer.begin_pass(*command_executor, *framebuffer);
 			static glm::vec3 pos { 0, 0, 0 };
 			static glm::mat4 rot { 1.0f };
-			static Controller controller { pos, rot };
-			controller.update(ts);
 			renderer.draw_planar_geometry(Geometry::Rectangle, { .position = pos, .rotation = rot, .dimensions = { { 1.f, 1.f, 1.f } } });
+
 			// renderer.draw_text("Hello world!", 0, 0, 12.f);
-			// static glm::vec3 pos_circle {-0.5,0,0};
-			axes(renderer, glm::vec3 { 0, -0.1, 0 });
-			// renderer.draw_planar_geometry(Geometry::Circle, { .position = pos_circle, .dimensions = { { 1.f, 1.f, 1.f } } });
+			draw_axes(renderer, glm::vec3 { 0, -0.1, 0 });
+
+			static glm::vec3 pos_circle { -0.5, 0, 0 };
+			renderer.draw_planar_geometry(Geometry::Circle, { .position = pos_circle, .dimensions = { { 1.f, 1.f, 1.f } } });
 
 			renderer.submit_batched_geometry(*command_executor);
 			renderer.end_pass(*command_executor);

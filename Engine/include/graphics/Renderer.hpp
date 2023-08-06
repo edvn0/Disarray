@@ -13,6 +13,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <optional>
+#include <scene/Camera.hpp>
 
 using VkDescriptorSet = struct VkDescriptorSet_T*;
 using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;
@@ -75,8 +76,7 @@ namespace Disarray {
 		virtual void expose_to_shaders(Texture& tex) { expose_to_shaders(tex.get_image()); };
 		virtual VkDescriptorSet get_descriptor_set(std::uint32_t) = 0;
 		virtual VkDescriptorSet get_descriptor_set() = 0;
-		virtual VkDescriptorSetLayout get_descriptor_set_layout() = 0;
-		virtual std::uint32_t get_descriptor_set_layout_count() = 0;
+		virtual const std::vector<VkDescriptorSetLayout>& get_descriptor_set_layouts() = 0;
 	};
 
 	class Renderer : public IGraphics, public IGraphicsResource, public ReferenceCountable {
@@ -89,7 +89,7 @@ namespace Disarray {
 		virtual void on_resize() = 0;
 		virtual PipelineCache& get_pipeline_cache() = 0;
 
-		virtual void begin_frame(UsageBadge<App>) = 0;
+		virtual void begin_frame(UsageBadge<App>, Camera& camera) = 0;
 		virtual void end_frame(UsageBadge<App>) = 0;
 
 		virtual void force_recreation() = 0;
