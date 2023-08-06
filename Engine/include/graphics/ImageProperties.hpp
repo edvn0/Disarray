@@ -2,9 +2,9 @@
 
 #include "core/Types.hpp"
 
-#include <fmt/format.h>
 #include <cstddef>
 #include <cstdint>
+#include <fmt/format.h>
 
 namespace Disarray {
 
@@ -29,25 +29,25 @@ namespace Disarray {
 
 } // namespace Disarray
 
-template <> struct fmt::formatter<Disarray::SampleCount> : fmt::formatter<std::string> {
+template <> struct fmt::formatter<Disarray::SampleCount> : fmt::formatter<std::string_view> {
 	auto format(Disarray::SampleCount samples, format_context& ctx)
 	{
 		switch (samples) {
 
 		case Disarray::SampleCount::ONE:
-			return formatter<string>::format(std::format("[{}]", 1), ctx);
+			return formatter<std::string_view>::format(fmt::format("[{}]", 1), ctx);
 		case Disarray::SampleCount::TWO:
-			return formatter<string>::format(std::format("[{}]", 2), ctx);
+			return formatter<std::string_view>::format(fmt::format("[{}]", 2), ctx);
 		case Disarray::SampleCount::FOUR:
-			return formatter<string>::format(std::format("[{}]", 4), ctx);
+			return formatter<std::string_view>::format(fmt::format("[{}]", 4), ctx);
 		case Disarray::SampleCount::EIGHT:
-			return formatter<string>::format(std::format("[{}]", 8), ctx);
+			return formatter<std::string_view>::format(fmt::format("[{}]", 8), ctx);
 		case Disarray::SampleCount::SIXTEEN:
-			return formatter<string>::format(std::format("[{}]", 16), ctx);
+			return formatter<std::string_view>::format(fmt::format("[{}]", 16), ctx);
 		case Disarray::SampleCount::THIRTY_TWO:
-			return formatter<string>::format(std::format("[{}]", 32), ctx);
+			return formatter<std::string_view>::format(fmt::format("[{}]", 32), ctx);
 		case Disarray::SampleCount::SIXTY_FOUR:
-			return formatter<string>::format(std::format("[{}]", 64), ctx);
+			return formatter<std::string_view>::format(fmt::format("[{}]", 64), ctx);
 		default:
 			Disarray::unreachable();
 		}
