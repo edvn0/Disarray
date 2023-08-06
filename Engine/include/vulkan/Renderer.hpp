@@ -129,6 +129,7 @@ namespace Disarray::Vulkan {
 		Disarray::Device& device;
 		Disarray::Swapchain& swapchain;
 		Scope<Disarray::PipelineCache> pipeline_cache;
+		std::vector<Ref<Disarray::Texture>> texture_cache;
 		Ref<Disarray::Framebuffer> geometry_framebuffer;
 		BatchRenderer<max_vertices> render_batch;
 

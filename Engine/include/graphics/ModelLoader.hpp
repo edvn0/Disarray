@@ -20,7 +20,6 @@ namespace Disarray {
 		void rotate_by(glm::mat4 rotation)
 		{
 			pos = glm::vec4(pos, 1.0f) * rotation;
-			uvs = glm::vec4(uvs, 1.0f, 1.0f) * rotation;
 			normals = glm::vec4(normals, 1.0f) * rotation;
 		}
 	};

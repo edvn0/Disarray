@@ -3,10 +3,10 @@
 #include "core/CleanupAwaiter.hpp"
 #include "core/Types.hpp"
 
-#include <optional>
-#include <type_traits>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
+#include <type_traits>
 
 namespace Disarray {
 

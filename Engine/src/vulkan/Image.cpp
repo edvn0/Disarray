@@ -70,8 +70,6 @@ namespace Disarray::Vulkan {
 			destroy_resources();
 		}
 
-		props.extent = swapchain.get_extent();
-
 		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT;
 		if (is_depth_format(props.format)) {
 			usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -96,9 +94,9 @@ namespace Disarray::Vulkan {
 		image_create_info.samples = to_vulkan_samples(props.samples);
 		image_create_info.mipLevels = 1;
 		image_create_info.arrayLayers = 1;
-		image_create_info.samples = VK_SAMPLE_COUNT_1_BIT;
 		image_create_info.tiling = VK_IMAGE_TILING_OPTIMAL;
 		image_create_info.usage = usage;
+		image_create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		{
 			Allocator allocator { "Image[" + props.debug_name + "]" };
 			info.allocation = allocator.allocate_image(info.image, image_create_info, { .usage = Usage::GPU_ONLY });
@@ -125,7 +123,7 @@ namespace Disarray::Vulkan {
 		sampler_create_info.minFilter = VK_FILTER_LINEAR;
 		sampler_create_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
-		sampler_create_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler_create_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		sampler_create_info.addressModeV = sampler_create_info.addressModeU;
 		sampler_create_info.addressModeW = sampler_create_info.addressModeU;
 		sampler_create_info.mipLodBias = 0.0f;
@@ -184,10 +182,11 @@ namespace Disarray::Vulkan {
 			buffer_copy_region.imageExtent.depth = 1;
 			buffer_copy_region.bufferOffset = 0;
 
+			set_image_layout(buffer, info.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
+
 			vkCmdCopyBufferToImage(buffer, staging, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &buffer_copy_region);
 
-			VkImageLayout layout = to_vulkan_layout(props.format);
-			set_image_layout(buffer, info.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
+			auto layout = to_vulkan_layout(props.format);
 			set_image_layout(buffer, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout, subresource_range);
 		}
 
@@ -196,10 +195,7 @@ namespace Disarray::Vulkan {
 
 	void Image::update_descriptor()
 	{
-		if (props.format == ImageFormat::DepthStencil || props.format == ImageFormat::Depth)
-			descriptor_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-		else
-			descriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		descriptor_info.imageLayout = to_vulkan_layout(props.format);
 
 		descriptor_info.imageView = info.view;
 		descriptor_info.sampler = info.sampler;

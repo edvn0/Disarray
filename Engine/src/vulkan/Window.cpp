@@ -7,6 +7,7 @@
 #include "core/Log.hpp"
 #include "vulkan/Swapchain.hpp"
 
+#include <graphics/ImageLoader.hpp>
 #include <string>
 
 namespace Disarray::Vulkan {
@@ -73,6 +74,16 @@ namespace Disarray::Vulkan {
 			user_data.pos_x = px;
 			user_data.pos_y = py;
 			glfwShowWindow(window);
+		}
+
+		{
+			DataBuffer buffer;
+			ImageLoader loader { "Assets/Icons/Disarray_Logo.png", buffer };
+			std::array<GLFWimage, 1> images {};
+			images[0].width = loader.get_extent().width;
+			images[0].height = loader.get_extent().height;
+			images[0].pixels = Disarray::bit_cast<unsigned char*>(buffer.get_data());
+			glfwSetWindowIcon(window, 1, images.data());
 		}
 
 		if (window == nullptr)

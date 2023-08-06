@@ -16,6 +16,12 @@ Thumbs.db
 .idea
 cmake-*
 
+# Our icons
+!App/Assets/Icons/*.png
+
+App/Assets/Textures
+App/Assets/Models
+
 __pycache__
 App/Assets/Scripts/*.pyc
 App/Assets/Scripts/*.exp
@@ -28,10 +34,6 @@ App/Assets/Scripts/*.so
 VS
 *.cache
 .cache
-
-*.png
-*.jpg
-*.jpeg
 
 *.spv
 

@@ -5,12 +5,30 @@
 
 namespace Disarray::Vulkan {
 
-	template <class T> struct vk_structures {
+	template <class T, std::size_t Count = 1> struct vk_structures {
 		T operator()() = delete;
+		std::array<T, Count> multiple() { throw std::runtime_error("Not implemented!"); }
 	};
 
 	template <> struct vk_structures<VkSubmitInfo> {
 		VkSubmitInfo operator()();
+	};
+
+	template <std::size_t Count> struct vk_structures<VkWriteDescriptorSet, Count> {
+		VkWriteDescriptorSet operator()()
+		{
+			return {
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.pNext = nullptr,
+			};
+		}
+		std::array<VkWriteDescriptorSet, Count> multiple()
+		{
+			auto make = operator()();
+			std::array<VkWriteDescriptorSet, Count> array;
+			array.fill(make);
+			return array;
+		}
 	};
 
 	template <> struct vk_structures<VkDescriptorPoolSize> {

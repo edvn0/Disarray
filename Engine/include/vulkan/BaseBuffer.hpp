@@ -39,8 +39,8 @@ public:                                                                         
 		BufferType type;
 		BufferProperties props;
 		std::size_t count { 0 };
-		
-    VmaAllocationInfo vma_allocation_info {};
+
+		VmaAllocationInfo vma_allocation_info {};
 		VkBuffer buffer;
 		VmaAllocation allocation;
 	};

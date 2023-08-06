@@ -270,7 +270,7 @@ namespace Disarray::Client {
 			renderer.begin_pass(*command_executor, *framebuffer, true);
 			static glm::vec3 pos { -1.f };
 			static glm::quat rotation = glm::angleAxis(glm::radians(45.f), glm::vec3 { 0, 1, 0 });
-			static glm::vec3 scale { 0.5f };
+			static glm::vec3 scale { 2.5f };
 			renderer.draw_mesh(*command_executor, *viking_mesh, { .position = pos, .scale = scale, .rotation = rotation });
 
 			renderer.end_pass(*command_executor);

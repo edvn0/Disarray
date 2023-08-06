@@ -215,13 +215,8 @@ namespace Disarray::Vulkan {
 		// TODO: Move to some kind of scene scope?
 		render_batch.reset();
 
-		// UBO
-		static auto start_time = Clock::ms();
-		auto current = Clock::ms();
-		auto diff_seconds = (current - start_time) / 1000.0f;
-
 		uniform.view = glm::lookAt(glm::vec3(0, 2, 2), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		uniform.proj = glm::perspective(glm::radians(72.0f), swapchain.get_extent().width / (float)swapchain.get_extent().height, 0.1f, 1000.0f);
+		uniform.proj = glm::perspective(glm::radians(72.0f), extent.aspect_ratio(), 0.1f, 1000.0f);
 		uniform.view_projection = uniform.proj * uniform.view;
 
 		auto& current_uniform = frame_ubos[swapchain.get_current_frame()];
@@ -244,14 +239,27 @@ namespace Disarray::Vulkan {
 	{
 		auto vk_device = supply_cast<Vulkan::Device>(device);
 
-		std::array<VkDescriptorSetLayoutBinding, 1> bindings {};
+		TextureProperties texture_properties { .debug_name = "viking" };
+		texture_properties.path = "Assets/Textures/viking_room.png";
+		texture_properties.format = ImageFormat::SRGB;
+		auto viking_room = texture_cache.emplace_back(Texture::construct(device, swapchain, texture_properties));
+
+		std::array<VkDescriptorSetLayoutBinding, 2> bindings {};
 		{
-			auto ubo_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
-			ubo_binding.descriptorCount = 1;
-			ubo_binding.binding = 0;
-			ubo_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			ubo_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
-			bindings[0] = ubo_binding;
+			auto binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
+			binding.descriptorCount = 1;
+			binding.binding = 0;
+			binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+			bindings[0] = binding;
+		}
+		{
+			auto binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
+			binding.descriptorCount = 1;
+			binding.binding = 1;
+			binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			bindings[1] = binding;
 		}
 
 		auto layout_create_info = vk_structures<VkDescriptorSetLayoutCreateInfo> {}();
@@ -262,8 +270,9 @@ namespace Disarray::Vulkan {
 
 		auto frames = swapchain.image_count();
 
-		std::array<VkDescriptorPoolSize, 1> sizes;
+		std::array<VkDescriptorPoolSize, 2> sizes;
 		sizes[0] = vk_structures<VkDescriptorPoolSize> {}(frames, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		sizes[1] = vk_structures<VkDescriptorPoolSize> {}(frames, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
 		auto pool_create_info = vk_structures<VkDescriptorPoolCreateInfo> {}();
 		pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -286,25 +295,29 @@ namespace Disarray::Vulkan {
 		vkAllocateDescriptorSets(vk_device, &alloc_info, sets.data());
 		for (auto& descriptor : descriptors) {
 			descriptor.set = sets[i];
+
 			VkDescriptorBufferInfo buffer_info {};
 			buffer_info.buffer = cast_to<Vulkan::UniformBuffer>(frame_ubos[i])->supply();
 			buffer_info.offset = 0;
 			buffer_info.range = sizeof(UBO);
 
-			VkWriteDescriptorSet descriptor_write {};
-			descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptor_write.dstSet = descriptors[i].set;
-			descriptor_write.dstBinding = 0;
-			descriptor_write.dstArrayElement = 0;
+			auto write_sets = vk_structures<VkWriteDescriptorSet, 2> {}.multiple();
+			write_sets[0].dstSet = descriptors[i].set;
+			write_sets[0].dstBinding = 0;
+			write_sets[0].dstArrayElement = 0;
+			write_sets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			write_sets[0].descriptorCount = 1;
+			write_sets[0].pBufferInfo = &buffer_info;
 
-			descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptor_write.descriptorCount = 1;
+			VkDescriptorImageInfo image_info = cast_to<Vulkan::Image>(viking_room->get_image()).get_descriptor_info();
+			write_sets[1].dstSet = descriptors[i].set;
+			write_sets[1].dstBinding = 1;
+			write_sets[1].dstArrayElement = 0;
+			write_sets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			write_sets[1].descriptorCount = 1;
+			write_sets[1].pImageInfo = &image_info;
 
-			descriptor_write.pBufferInfo = &buffer_info;
-			descriptor_write.pImageInfo = nullptr; // Optional
-			descriptor_write.pTexelBufferView = nullptr; // Optional
-
-			vkUpdateDescriptorSets(vk_device, 1, &descriptor_write, 0, nullptr);
+			vkUpdateDescriptorSets(vk_device, static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
 			i++;
 		}
 	}
