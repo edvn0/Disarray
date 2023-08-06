@@ -7,9 +7,22 @@
 
 extern "C" {
 struct GLFWwindow;
+struct GLFWmonitor;
+struct GLFWvidmode;
 }
 
 namespace Disarray::Vulkan {
+
+	struct UserData {
+		bool was_resized { false };
+		bool fullscreen { false };
+		std::uint32_t width { 0 };
+		std::uint32_t height { 0 };
+		int pos_x { 0 };
+		int pos_y { 0 };
+		const GLFWvidmode* mode { nullptr };
+		GLFWmonitor* monitor { nullptr };
+	};
 
 	class Window : public Disarray::Window {
 	public:
@@ -32,10 +45,7 @@ namespace Disarray::Vulkan {
 		std::pair<float, float> get_framebuffer_scale() override;
 
 	private:
-		struct UserData {
-			bool was_resized { false };
-		};
-		UserData* user_data;
+		UserData user_data;
 
 		GLFWwindow* window { nullptr };
 		Scope<Instance> instance { nullptr };

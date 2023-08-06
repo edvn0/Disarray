@@ -32,11 +32,7 @@ namespace Disarray::Vulkan {
 		recreate_executor(false);
 	}
 
-	CommandExecutor::~CommandExecutor()
-	{
-		Log::debug("CommandExecutor - Destructor", "Start destroying...");
-		destroy_executor();
-	}
+	CommandExecutor::~CommandExecutor() { destroy_executor(); }
 
 	void CommandExecutor::recreate_executor(bool should_clean)
 	{

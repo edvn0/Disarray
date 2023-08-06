@@ -16,7 +16,6 @@ namespace Disarray::Vulkan {
 		} else {
 			create_with_empty_data();
 		}
-		Log::debug("BaseBuffer", "Constructed a buffer with count of " + std::to_string(count));
 	}
 
 	void BaseBuffer::create_with_valid_data(Disarray::Swapchain& swapchain)

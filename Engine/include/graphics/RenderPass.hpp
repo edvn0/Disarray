@@ -10,6 +10,7 @@ namespace Disarray {
 	struct RenderPassProperties {
 		ImageFormat image_format { ImageFormat::SBGR };
 		ImageFormat depth_format { ImageFormat::Depth };
+		SampleCount samples { SampleCount::ONE };
 		bool load_colour { false };
 		bool keep_colour { true };
 		bool load_depth { false };

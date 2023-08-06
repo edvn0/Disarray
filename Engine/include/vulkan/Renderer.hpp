@@ -29,10 +29,14 @@ namespace Disarray::Vulkan {
 	struct RenderBatchFor {
 		static constexpr auto vertex_count = VertexCount;
 
+		// We want for example to be able to write 100 quads, which requires 100 * vertex_count(Quad) = 6 vertices
 		std::array<T, Vertices * VertexCount> vertices {};
-		Ref<Disarray::IndexBuffer> index_buffer { nullptr };
-		Ref<Disarray::VertexBuffer> vertex_buffer { nullptr };
+		Scope<Disarray::IndexBuffer> index_buffer { nullptr };
+		Scope<Disarray::VertexBuffer> vertex_buffer { nullptr };
+
+		// From the pipeline cache!
 		Ref<Vulkan::Pipeline> pipeline { nullptr };
+
 		std::uint32_t submitted_ts { 0 };
 		std::uint32_t submitted_indices { 0 };
 
@@ -94,7 +98,7 @@ namespace Disarray::Vulkan {
 
 		void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) override;
 		void begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& fb) override { begin_pass(executor, fb, false); }
-		void begin_pass(Disarray::CommandExecutor& command_executor) override { begin_pass(command_executor, *default_framebuffer); }
+		void begin_pass(Disarray::CommandExecutor& command_executor) override { begin_pass(command_executor, *geometry_framebuffer); }
 		void end_pass(Disarray::CommandExecutor&) override;
 
 		// IGraphics
@@ -123,7 +127,7 @@ namespace Disarray::Vulkan {
 		Disarray::Device& device;
 		Disarray::Swapchain& swapchain;
 		Scope<Disarray::PipelineCache> pipeline_cache;
-		Ref<Disarray::Framebuffer> default_framebuffer;
+		Ref<Disarray::Framebuffer> geometry_framebuffer;
 		BatchRenderer<max_vertices> render_batch;
 
 		// TODO: FrameDescriptor::construct(device, props)....

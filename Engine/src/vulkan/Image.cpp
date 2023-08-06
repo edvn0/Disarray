@@ -51,9 +51,6 @@ namespace Disarray::Vulkan {
 	void Image::destroy_resources()
 	{
 		Allocator allocator { "Image[" + props.debug_name + "]" };
-		Log::debug("Image-Destructor", "Destroyed image (" + props.debug_name + ") - " + FormattingUtilities::pointer_to_string(info.image));
-		Log::debug("Image-Destructor", "Destroyed sampler - " + FormattingUtilities::pointer_to_string(info.sampler));
-		Log::debug("Image-Destructor", "Destroyed view - " + FormattingUtilities::pointer_to_string(info.view));
 		vkDestroyImageView(supply_cast<Vulkan::Device>(device), info.view, nullptr);
 		vkDestroySampler(supply_cast<Vulkan::Device>(device), info.sampler, nullptr);
 		allocator.deallocate_image(info.allocation, info.image);
@@ -96,6 +93,7 @@ namespace Disarray::Vulkan {
 		image_create_info.extent.width = props.extent.width;
 		image_create_info.extent.height = props.extent.height;
 		image_create_info.extent.depth = 1;
+		image_create_info.samples = to_vulkan_samples(props.samples);
 		image_create_info.mipLevels = 1;
 		image_create_info.arrayLayers = 1;
 		image_create_info.samples = VK_SAMPLE_COUNT_1_BIT;

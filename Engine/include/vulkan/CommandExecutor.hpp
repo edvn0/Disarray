@@ -96,7 +96,6 @@ namespace Disarray::Vulkan {
 		void submit_and_delete_executor(Vulkan::CommandExecutor* to_destroy)
 		{
 			to_destroy->submit_and_end();
-			Log::debug("Vulkan Immediate executor - Destructor", "Called destructor!");
 			to_destroy->wait_indefinite();
 			delete to_destroy;
 		}

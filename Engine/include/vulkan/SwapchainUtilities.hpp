@@ -20,6 +20,7 @@ namespace Disarray::Vulkan {
 		VkSurfaceCapabilitiesKHR capabilities;
 		std::vector<VkSurfaceFormatKHR> surface_formats;
 		std::vector<VkPresentModeKHR> present_modes;
+		VkSampleCountFlagBits msaa { VK_SAMPLE_COUNT_1_BIT };
 	};
 
 	inline ResolvedSwapchainSupport resolve_swapchain_support(VkPhysicalDevice device, Disarray::Surface& surf);
@@ -49,6 +50,29 @@ namespace Disarray::Vulkan {
 		if (present_mode_count != 0) {
 			support.present_modes.resize(present_mode_count);
 			vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_mode_count, support.present_modes.data());
+		}
+
+		VkPhysicalDeviceProperties properties;
+		vkGetPhysicalDeviceProperties(physical_device, &properties);
+
+		VkSampleCountFlags counts = properties.limits.framebufferColorSampleCounts & properties.limits.framebufferDepthSampleCounts;
+		if (counts & VK_SAMPLE_COUNT_64_BIT) {
+			support.msaa = VK_SAMPLE_COUNT_64_BIT;
+		}
+		if (counts & VK_SAMPLE_COUNT_32_BIT) {
+			support.msaa = VK_SAMPLE_COUNT_32_BIT;
+		}
+		if (counts & VK_SAMPLE_COUNT_16_BIT) {
+			support.msaa = VK_SAMPLE_COUNT_16_BIT;
+		}
+		if (counts & VK_SAMPLE_COUNT_8_BIT) {
+			support.msaa = VK_SAMPLE_COUNT_8_BIT;
+		}
+		if (counts & VK_SAMPLE_COUNT_4_BIT) {
+			support.msaa = VK_SAMPLE_COUNT_4_BIT;
+		}
+		if (counts & VK_SAMPLE_COUNT_2_BIT) {
+			support.msaa = VK_SAMPLE_COUNT_2_BIT;
 		}
 
 		return support;

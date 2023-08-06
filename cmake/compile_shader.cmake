@@ -1,6 +1,6 @@
 function(compile_shaders)
-    set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Shaders)
-    set(SHADER_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/Assets/Shaders)
+    set(SHADER_SOURCE_DIR ${CMAKE_SOURCE_DIR}/App/Assets/Shaders)
+    set(SHADER_BINARY_DIR ${PROJECT_BINARY_DIR}/Assets/Shaders)
 
     file(GLOB_RECURSE SHADERS
             ${SHADER_SOURCE_DIR}/*.vert

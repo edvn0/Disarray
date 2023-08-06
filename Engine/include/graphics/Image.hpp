@@ -12,6 +12,7 @@ namespace Disarray {
 		ImageFormat format;
 		DataBuffer data;
 		bool should_present { false };
+		SampleCount samples { SampleCount::ONE };
 		std::string debug_name;
 	};
 

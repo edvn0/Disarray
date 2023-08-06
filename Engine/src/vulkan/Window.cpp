@@ -11,6 +11,30 @@
 
 namespace Disarray::Vulkan {
 
+	inline void key_callback(GLFWwindow* handle, int key, int scancode, int action, int mods)
+	{
+		if (action != GLFW_RELEASE)
+			return;
+
+		if (key == GLFW_KEY_ESCAPE) {
+			glfwSetWindowShouldClose(handle, true);
+			return;
+		}
+
+		auto& user_data = *static_cast<UserData*>(glfwGetWindowUserPointer(handle));
+		if (key == GLFW_KEY_F11) {
+			// if we are in fullscreen already, don't!
+			if (!user_data.fullscreen) {
+				glfwGetWindowPos(handle, &user_data.pos_x, &user_data.pos_y);
+				glfwSetWindowMonitor(handle, user_data.monitor, 0, 0, user_data.mode->width, user_data.mode->height, user_data.mode->refreshRate);
+			} else {
+				glfwSetWindowMonitor(handle, nullptr, user_data.pos_x, user_data.pos_y, user_data.width, user_data.height, 0);
+			}
+			user_data.fullscreen = !user_data.fullscreen;
+			return;
+		}
+	}
+
 	Window::Window(const Disarray::WindowProperties& properties)
 		: Disarray::Window(properties)
 	{
@@ -20,16 +44,42 @@ namespace Disarray::Vulkan {
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		const auto& [width, height, name] = get_properties();
-		// glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+		const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+		glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+		glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+		glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+		glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+
+		user_data.monitor = glfwGetPrimaryMonitor();
+		user_data.width = width;
+		user_data.height = height;
+		user_data.mode = mode;
+
+#ifdef PREFER_FULLSCREEN
+		window = glfwCreateWindow(mode->width, mode->height, name.c_str(), glfwGetPrimaryMonitor(), nullptr);
+		user_data.fullscreen = true;
+#else
+		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 		window = glfwCreateWindow(width, height, name.c_str(), nullptr, nullptr);
+		user_data.fullscreen = false;
+
+		glfwSetWindowPos(window, 100, 100);
+
+		int px;
+		int py;
+		glfwGetWindowPos(window, &px, &py);
+		user_data.pos_x = px;
+		user_data.pos_y = py;
+		glfwShowWindow(window);
+#endif
 
 		if (window == nullptr)
 			throw;
 
 		instance = make_scope<Vulkan::Instance>();
 		surface = make_scope<Vulkan::Surface>(*instance, window);
-
-		user_data = new UserData();
 
 		glfwSetWindowUserPointer(window, &user_data);
 
@@ -38,10 +88,7 @@ namespace Disarray::Vulkan {
 			data.was_resized = true;
 		});
 
-		glfwSetKeyCallback(window, [](GLFWwindow* handle, int key, int scancode, int action, int mods) {
-			if (key == GLFW_KEY_ESCAPE)
-				glfwSetWindowShouldClose(handle, true);
-		});
+		glfwSetKeyCallback(window, &key_callback);
 	}
 
 	Window::~Window()
@@ -64,9 +111,9 @@ namespace Disarray::Vulkan {
 		return { width, height };
 	}
 
-	void Window::reset_resize_status() { user_data->was_resized = false; }
+	void Window::reset_resize_status() { user_data.was_resized = false; }
 
-	bool Window::was_resized() const { return user_data->was_resized; }
+	bool Window::was_resized() const { return user_data.was_resized; }
 
 	void Window::wait_for_minimisation()
 	{

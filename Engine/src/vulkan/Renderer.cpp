@@ -48,21 +48,24 @@ namespace Disarray::Vulkan {
 
 		initialise_descriptors();
 
-		Log::debug("Vulkan Renderer", props.debug_name);
 		pipeline_cache = make_scope<PipelineCache>(device, swapchain, "Assets/Shaders");
-		default_framebuffer = Framebuffer::construct(device, swapchain, { .debug_name = "RendererFramebuffer" });
+		auto samples = swapchain.get_samples();
+		geometry_framebuffer = Framebuffer::construct(device, swapchain, { .samples = samples, .debug_name = "RendererFramebuffer" });
 
 		const std::array<VkDescriptorSetLayout, 1> desc_layout { layout };
 
-		PipelineCacheCreationProperties pipeline_properties = { .pipeline_key = "quad",
+		PipelineCacheCreationProperties pipeline_properties = {
+			.pipeline_key = "quad",
 			.shader_key = "quad",
-			.framebuffer = default_framebuffer,
+			.framebuffer = geometry_framebuffer,
 			.layout = { LayoutElement { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float2, "normals" },
 				{ ElementType::Float4, "colour" } },
 			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, std::size_t { 80 } } },
 			.extent = swapchain.get_extent(),
+			.samples = swapchain.get_samples(),
 			.descriptor_set_layout = desc_layout.data(),
-			.descriptor_set_layout_count = static_cast<std::uint32_t>(desc_layout.size()) };
+			.descriptor_set_layout_count = static_cast<std::uint32_t>(desc_layout.size()),
+		};
 		{
 			// Quad
 			pipeline_cache->put(pipeline_properties);
@@ -236,7 +239,7 @@ namespace Disarray::Vulkan {
 	void Renderer::force_recreation()
 	{
 		on_resize();
-		default_framebuffer->force_recreation();
+		// default_framebuffer->force_recreation();
 	}
 
 	void Renderer::initialise_descriptors()
@@ -285,25 +288,25 @@ namespace Disarray::Vulkan {
 		vkAllocateDescriptorSets(vk_device, &alloc_info, sets.data());
 		for (auto& descriptor : descriptors) {
 			descriptor.set = sets[i];
-			VkDescriptorBufferInfo bufferInfo {};
-			bufferInfo.buffer = cast_to<Vulkan::UniformBuffer>(frame_ubos[i])->supply();
-			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(UBO);
+			VkDescriptorBufferInfo buffer_info {};
+			buffer_info.buffer = cast_to<Vulkan::UniformBuffer>(frame_ubos[i])->supply();
+			buffer_info.offset = 0;
+			buffer_info.range = sizeof(UBO);
 
-			VkWriteDescriptorSet descriptorWrite {};
-			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrite.dstSet = descriptors[i].set;
-			descriptorWrite.dstBinding = 0;
-			descriptorWrite.dstArrayElement = 0;
+			VkWriteDescriptorSet descriptor_write {};
+			descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptor_write.dstSet = descriptors[i].set;
+			descriptor_write.dstBinding = 0;
+			descriptor_write.dstArrayElement = 0;
 
-			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrite.descriptorCount = 1;
+			descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptor_write.descriptorCount = 1;
 
-			descriptorWrite.pBufferInfo = &bufferInfo;
-			descriptorWrite.pImageInfo = nullptr; // Optional
-			descriptorWrite.pTexelBufferView = nullptr; // Optional
+			descriptor_write.pBufferInfo = &buffer_info;
+			descriptor_write.pImageInfo = nullptr; // Optional
+			descriptor_write.pTexelBufferView = nullptr; // Optional
 
-			vkUpdateDescriptorSets(vk_device, 1, &descriptorWrite, 0, nullptr);
+			vkUpdateDescriptorSets(vk_device, 1, &descriptor_write, 0, nullptr);
 			i++;
 		}
 	}

@@ -91,6 +91,7 @@ namespace Disarray::Client {
 
 		framebuffer = Framebuffer::construct(device, swapchain,
 			{ .format = Disarray::ImageFormat::SBGR,
+				.samples = SampleCount::ONE,
 				.load_colour = true,
 				.keep_colour = true,
 				.load_depth = true,
@@ -107,6 +108,7 @@ namespace Disarray::Client {
 			.layout = layout,
 			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, std::size_t { 80 } } },
 			.extent = { extent.width, extent.height },
+			.samples = swapchain.get_samples(),
 		};
 		pipeline = Pipeline::construct(device, swapchain, props);
 

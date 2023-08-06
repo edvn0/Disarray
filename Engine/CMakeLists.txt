@@ -217,6 +217,10 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_WINDOWS)
 endif()
 
+if (DISARRAY_LOG_ALLOCATIONS)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG_ALLOCATIONS)
+endif()
+
 if(NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")
     target_compile_definitions(${PROJECT_NAME} PRIVATE IS_DEBUG)
 endif()

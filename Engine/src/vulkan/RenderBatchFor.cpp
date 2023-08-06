@@ -28,14 +28,15 @@ namespace Disarray::Vulkan {
 			quad_indices[i + 5] = 0 + offset;
 			offset += 4;
 		}
-		index_buffer = IndexBuffer::construct(dev, swapchain,
-			{
+		index_buffer = make_scope<Vulkan::IndexBuffer>(dev, swapchain,
+			BufferProperties {
 				.data = quad_indices.data(),
 				.size = quad_indices.size() * vertex_count,
 				.count = quad_indices.size(),
 			});
 
-		vertex_buffer = VertexBuffer::construct(dev, swapchain, { .size = vertices.size() * vertex_count, .count = vertices.size() });
+		vertex_buffer
+			= make_scope<Vulkan::VertexBuffer>(dev, swapchain, BufferProperties { .size = vertices.size() * vertex_count, .count = vertices.size() });
 	}
 
 	template <>
@@ -113,14 +114,16 @@ namespace Disarray::Vulkan {
 			line_indices[i + 1] = offset + 1;
 			offset += vertex_count;
 		}
-		index_buffer = IndexBuffer::construct(dev, swapchain,
-			{
+
+		index_buffer = make_scope<Vulkan::IndexBuffer>(dev, swapchain,
+			BufferProperties {
 				.data = line_indices.data(),
 				.size = line_indices.size() * vertex_count,
 				.count = line_indices.size(),
 			});
 
-		vertex_buffer = VertexBuffer::construct(dev, swapchain, { .size = vertices.size() * vertex_count, .count = vertices.size() });
+		vertex_buffer
+			= make_scope<Vulkan::VertexBuffer>(dev, swapchain, BufferProperties { .size = vertices.size() * vertex_count, .count = vertices.size() });
 	}
 
 	template <>

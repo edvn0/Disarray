@@ -120,6 +120,7 @@ namespace Disarray {
 			.extent = props.extent,
 			.polygon_mode = props.polygon_mode,
 			.line_width = props.line_width,
+			.samples = props.samples,
 			.descriptor_set_layout = props.descriptor_set_layout,
 			.descriptor_set_layout_count = props.descriptor_set_layout_count,
 		};

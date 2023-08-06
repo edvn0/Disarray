@@ -31,6 +31,11 @@ namespace Disarray::Vulkan {
 		: window(win)
 		, device(dev)
 	{
+#ifdef HAS_MSAA
+		samples = cast_to<Vulkan::PhysicalDevice>(dev.get_physical_device()).get_sample_count();
+#else
+		samples = SampleCount::ONE;
+#endif
 		recreate_swapchain(old, false);
 		swapchain_needs_recreation = false;
 
@@ -141,13 +146,14 @@ namespace Disarray::Vulkan {
 		render_pass = make_ref<Vulkan::RenderPass>(device,
 			RenderPassProperties {
 				.image_format = ImageFormat::SBGR,
+				.samples = samples,
 				.keep_depth = false,
 				.has_depth = false,
 				.should_present = true,
 				.debug_name { "Swapchain RenderPass" },
 			});
 
-		const auto& [capabilities, formats, present_modes]
+		const auto& [capabilities, formats, present_modes, msaa]
 			= resolve_swapchain_support(supply_cast<Vulkan::PhysicalDevice>(device.get_physical_device()), window.get_surface());
 		format = decide_surface_format(formats);
 		present_mode = decide_present_mode(present_modes);
@@ -272,13 +278,13 @@ namespace Disarray::Vulkan {
 
 		std::uint32_t i { 0 };
 		for (auto& fb : framebuffers) {
-			VkImageView attachments[] = { swapchain_image_views[i++] };
+			std::array<VkImageView, 1> attachments = { swapchain_image_views[i++] };
 
 			VkFramebufferCreateInfo fb_create_info {};
 			fb_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			fb_create_info.renderPass = render_pass->supply();
-			fb_create_info.attachmentCount = 1;
-			fb_create_info.pAttachments = attachments;
+			fb_create_info.attachmentCount = static_cast<std::uint32_t>(attachments.size());
+			fb_create_info.pAttachments = attachments.data();
 			fb_create_info.width = extent.width;
 			fb_create_info.height = extent.height;
 			fb_create_info.layers = 1;
