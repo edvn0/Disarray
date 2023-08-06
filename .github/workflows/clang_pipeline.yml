@@ -1,4 +1,4 @@
-name: CMake
+name: Clang17 CMake Build
 
 on:
   push:
