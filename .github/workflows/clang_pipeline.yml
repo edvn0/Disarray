@@ -1,4 +1,4 @@
-name: GNU12 CMake Build
+name: Clang17 CMake Build
 
 on:
   push:
@@ -8,8 +8,8 @@ on:
 
 env:
   BUILD_TYPE: RelWithDebInfo
-  CXX: g++-12
-  CC: gcc-12
+  CXX: clang++-17
+  CC: clang-17
   NINJA_STATUS: "[%f/%t] %c/s %e "
 
 jobs:
@@ -31,7 +31,7 @@ jobs:
           sudo apt-get purge --auto-remove llvm python3-lldb-14 llvm-14
           wget https://apt.llvm.org/llvm.sh
           sudo chmod +x llvm.sh
-          sudo ./llvm.sh 16 -y
+          sudo ./llvm.sh 17 -y
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
