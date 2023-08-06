@@ -36,11 +36,11 @@ public:                                                                         
 
 		Disarray::Device& device;
 
-		std::size_t count { 0 };
-		BufferProperties props;
 		BufferType type;
-
-		VmaAllocationInfo vma_allocation_info {};
+		BufferProperties props;
+		std::size_t count { 0 };
+		
+    VmaAllocationInfo vma_allocation_info {};
 		VkBuffer buffer;
 		VmaAllocation allocation;
 	};

@@ -5,17 +5,19 @@
 
 #include <optional>
 #include <type_traits>
+#include <cstddef>
+#include <cstdint>
 
 namespace Disarray {
 
 	struct PipelineStatistics {
-		uint64_t input_assembly_vertices { 0 };
-		uint64_t input_assembly_primitives { 0 };
-		uint64_t vertex_shader_invocations { 0 };
-		uint64_t clipping_invocations { 0 };
-		uint64_t clipping_primitives { 0 };
-		uint64_t fragment_shader_invocations { 0 };
-		uint64_t compute_shader_invocations { 0 };
+		std::uint64_t input_assembly_vertices { 0 };
+		std::uint64_t input_assembly_primitives { 0 };
+		std::uint64_t vertex_shader_invocations { 0 };
+		std::uint64_t clipping_invocations { 0 };
+		std::uint64_t clipping_primitives { 0 };
+		std::uint64_t fragment_shader_invocations { 0 };
+		std::uint64_t compute_shader_invocations { 0 };
 	};
 
 	struct CommandExecutorProperties {
@@ -36,7 +38,6 @@ namespace Disarray {
 		}
 
 		static Ref<CommandExecutor> construct(Disarray::Device&, Disarray::Swapchain&, const CommandExecutorProperties&);
-		static Ref<CommandExecutor> construct_from_swapchain(Disarray::Device&, Disarray::Swapchain&, CommandExecutorProperties);
 
 		virtual void begin() = 0;
 		virtual void end() = 0;

@@ -38,49 +38,49 @@ namespace Disarray::Client {
 						ImGui::TableNextColumn();
 						ImGui::Text("%s", "Input Assembly Vertices");
 						ImGui::TableNextColumn();
-						ImGui::Text("%llu", pipeline_stats.input_assembly_vertices);
+						ImGui::Text("%lu", pipeline_stats.input_assembly_vertices);
 					}
 					{
 						ImGui::TableNextRow();
 						ImGui::TableNextColumn();
 						ImGui::Text("%s", "Input Assembly Primitives");
 						ImGui::TableNextColumn();
-						ImGui::Text("%llu", pipeline_stats.input_assembly_primitives);
+						ImGui::Text("%lu", pipeline_stats.input_assembly_primitives);
 					}
 					{
 						ImGui::TableNextRow();
 						ImGui::TableNextColumn();
 						ImGui::Text("%s", "Vertex Shader Calls");
 						ImGui::TableNextColumn();
-						ImGui::Text("%llu", pipeline_stats.vertex_shader_invocations);
+						ImGui::Text("%lu", pipeline_stats.vertex_shader_invocations);
 					}
 					{
 						ImGui::TableNextRow();
 						ImGui::TableNextColumn();
 						ImGui::Text("%s", "Clipping Calls");
 						ImGui::TableNextColumn();
-						ImGui::Text("%llu", pipeline_stats.clipping_invocations);
+						ImGui::Text("%lu", pipeline_stats.clipping_invocations);
 					}
 					{
 						ImGui::TableNextRow();
 						ImGui::TableNextColumn();
 						ImGui::Text("%s", "Clipping Primitives");
 						ImGui::TableNextColumn();
-						ImGui::Text("%llu", pipeline_stats.clipping_primitives);
+						ImGui::Text("%lu", pipeline_stats.clipping_primitives);
 					}
 					{
 						ImGui::TableNextRow();
 						ImGui::TableNextColumn();
 						ImGui::Text("%s", "Fragment Shader Calls");
 						ImGui::TableNextColumn();
-						ImGui::Text("%llu", pipeline_stats.fragment_shader_invocations);
+						ImGui::Text("%lu", pipeline_stats.fragment_shader_invocations);
 					}
 					{
 						ImGui::TableNextRow();
 						ImGui::TableNextColumn();
 						ImGui::Text("%s", "Compute Shader Calls");
 						ImGui::TableNextColumn();
-						ImGui::Text("%llu", pipeline_stats.compute_shader_invocations);
+						ImGui::Text("%lu", pipeline_stats.compute_shader_invocations);
 					}
 					ImGui::EndTable();
 				}
@@ -88,9 +88,8 @@ namespace Disarray::Client {
 		}
 
 	private:
-		double should_update_counter { 0.0 };
-		Swapchain& swapchain;
 		const CommandExecutor& executor;
+		Swapchain& swapchain;
 	};
 
 } // namespace Disarray::Client

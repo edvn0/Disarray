@@ -106,7 +106,7 @@ namespace Disarray::Vulkan {
 
 	constexpr auto deleter = [](Vulkan::CommandExecutor* l) { submit_and_delete_executor(l); };
 	using ImmediateExecutor = std::unique_ptr<Vulkan::CommandExecutor, decltype(deleter)>;
-	ImmediateExecutor construct_immediate(Disarray::Device& device, Disarray::Swapchain& swapchain)
+	inline ImmediateExecutor construct_immediate(Disarray::Device& device, Disarray::Swapchain& swapchain)
 	{
 		static constexpr Disarray::CommandExecutorProperties props { .count = 1, .owned_by_swapchain = false };
 		ImmediateExecutor executor { new CommandExecutor { device, swapchain, props } };

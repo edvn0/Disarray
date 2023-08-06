@@ -7,8 +7,8 @@ namespace Disarray::Vulkan {
 
 	BaseBuffer::BaseBuffer(Disarray::Device& dev, Disarray::Swapchain& sc, BufferType t, const Disarray::BufferProperties& properties)
 		: device(dev)
-		, props(properties)
 		, type(t)
+		, props(properties)
 		, count(properties.count)
 	{
 		if (props.data) {
