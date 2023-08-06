@@ -59,4 +59,6 @@ if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")
     target_compile_definitions(${PROJECT_NAME} PRIVATE IS_DEBUG)
 endif ()
 
-add_dependencies(${PROJECT_NAME} shaders)
+if (${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE})
+  add_dependencies(${PROJECT_NAME} shaders)
+endif()

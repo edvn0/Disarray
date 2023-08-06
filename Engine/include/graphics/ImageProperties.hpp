@@ -2,6 +2,7 @@
 
 #include "core/Types.hpp"
 
+#include <fmt/format.h>
 #include <cstddef>
 #include <cstdint>
 
@@ -28,7 +29,7 @@ namespace Disarray {
 
 } // namespace Disarray
 
-template <> struct std::formatter<Disarray::SampleCount> : std::formatter<std::string> {
+template <> struct fmt::formatter<Disarray::SampleCount> : fmt::formatter<std::string> {
 	auto format(Disarray::SampleCount samples, format_context& ctx)
 	{
 		switch (samples) {
