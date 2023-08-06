@@ -12,7 +12,8 @@
 #include <cstddef> // std::size_t
 #include <execution>
 #include <filesystem>
-#include <format>
+#include <fmt/chrono.h>
+#include <fmt/format.h>
 #include <fstream>
 #include <functional>
 #include <glm/ext/matrix_clip_space.hpp>

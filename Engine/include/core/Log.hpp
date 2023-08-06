@@ -1,7 +1,8 @@
 #pragma once
 
 #include <chrono>
-#include <format>
+#include <fmt/chrono.h>
+#include <fmt/format.h>
 #include <string>
 
 namespace Disarray {
@@ -33,7 +34,7 @@ namespace Disarray {
 		static std::string blue_begin { blue_begin_sv };
 		static std::string end { end_sv };
 
-		inline std::string current_time() { return std::format("{:%F %T}", std::chrono::system_clock::now()); }
+		inline std::string current_time() { return fmt::format("{:%F %T}", std::chrono::system_clock::now()); }
 
 		inline void debug(const std::string& scope, const std::string& message)
 		{
