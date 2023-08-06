@@ -16,12 +16,14 @@
 #include "vulkan/PhysicalDevice.hpp"
 #include "vulkan/QueueFamilyIndex.hpp"
 #include "vulkan/RenderPass.hpp"
+#include "vulkan/Structures.hpp"
 #include "vulkan/Surface.hpp"
 #include "vulkan/SwapchainUtilities.hpp"
 #include "vulkan/Verify.hpp"
 
 #include <algorithm>
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 namespace Disarray::Vulkan {
 
@@ -29,6 +31,11 @@ namespace Disarray::Vulkan {
 		: window(win)
 		, device(dev)
 	{
+#ifdef HAS_MSAA
+		samples = cast_to<Vulkan::PhysicalDevice>(dev.get_physical_device()).get_sample_count();
+#else
+		samples = SampleCount::ONE;
+#endif
 		recreate_swapchain(old, false);
 		swapchain_needs_recreation = false;
 
@@ -36,7 +43,11 @@ namespace Disarray::Vulkan {
 		graphics_queue = cast_to<Vulkan::Device>(device).get_graphics_queue();
 	}
 
-	Swapchain::~Swapchain() { cleanup_swapchain(); }
+	Swapchain::~Swapchain()
+	{
+		cleanup_swapchain();
+		Log::debug("Swapchain", "Swapchain destroyed.");
+	}
 
 	void Swapchain::create_synchronisation_objects()
 	{
@@ -83,7 +94,7 @@ namespace Disarray::Vulkan {
 
 	void Swapchain::present()
 	{
-		VkSubmitInfo submit_info { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+		auto submit_info = vk_structures<VkSubmitInfo> {}();
 
 		std::array<VkSemaphore, 1> wait_semaphores = { image_available_semaphores[get_current_frame()] };
 		std::array<VkPipelineStageFlags, 1> wait_stages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -99,7 +110,7 @@ namespace Disarray::Vulkan {
 
 		verify(vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight_fences[get_current_frame()]));
 
-		VkPresentInfoKHR present_info_khr { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
+		auto present_info_khr = vk_structures<VkPresentInfoKHR> {}();
 		present_info_khr.waitSemaphoreCount = static_cast<std::uint32_t>(signal_semaphores.size());
 		present_info_khr.pWaitSemaphores = signal_semaphores.data();
 
@@ -135,13 +146,14 @@ namespace Disarray::Vulkan {
 		render_pass = make_ref<Vulkan::RenderPass>(device,
 			RenderPassProperties {
 				.image_format = ImageFormat::SBGR,
+				.samples = samples,
 				.keep_depth = false,
 				.has_depth = false,
 				.should_present = true,
 				.debug_name { "Swapchain RenderPass" },
 			});
 
-		const auto& [capabilities, formats, present_modes]
+		const auto& [capabilities, formats, present_modes, msaa]
 			= resolve_swapchain_support(supply_cast<Vulkan::PhysicalDevice>(device.get_physical_device()), window.get_surface());
 		format = decide_surface_format(formats);
 		present_mode = decide_present_mode(present_modes);
@@ -227,7 +239,7 @@ namespace Disarray::Vulkan {
 			verify(vkAllocateCommandBuffers(supply_cast<Vulkan::Device>(device), &alloc_info, &cmd_buffer.buffer));
 		}
 
-		recreate_framebuffer(should_clean);
+		recreate_framebuffer();
 	}
 
 	void Swapchain::cleanup_swapchain()
@@ -258,27 +270,21 @@ namespace Disarray::Vulkan {
 
 	Disarray::RenderPass& Swapchain::get_render_pass() { return *render_pass; }
 
-	void Swapchain::recreate_framebuffer(bool should_clean)
+	void Swapchain::recreate_framebuffer()
 	{
 		const auto vk_device = supply_cast<Vulkan::Device>(device);
-
-		if (should_clean) {
-			for (auto& fb : framebuffers) {
-				vkDestroyFramebuffer(vk_device, fb, nullptr);
-			}
-		}
 
 		framebuffers.resize(image_count());
 
 		std::uint32_t i { 0 };
 		for (auto& fb : framebuffers) {
-			VkImageView attachments[] = { swapchain_image_views[i++] };
+			std::array<VkImageView, 1> attachments = { swapchain_image_views[i++] };
 
 			VkFramebufferCreateInfo fb_create_info {};
 			fb_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			fb_create_info.renderPass = render_pass->supply();
-			fb_create_info.attachmentCount = 1;
-			fb_create_info.pAttachments = attachments;
+			fb_create_info.attachmentCount = static_cast<std::uint32_t>(attachments.size());
+			fb_create_info.pAttachments = attachments.data();
 			fb_create_info.width = extent.width;
 			fb_create_info.height = extent.height;
 			fb_create_info.layers = 1;

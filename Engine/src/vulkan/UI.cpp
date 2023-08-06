@@ -9,6 +9,7 @@
 #include "util/BitCast.hpp"
 #include "vulkan/Image.hpp"
 
+#include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <unordered_map>
 
@@ -29,14 +30,7 @@ namespace Disarray::UI {
 		unreachable();
 	}
 
-	using ImageIdentifier = Identifier;
-	using ImageCache = std::unordered_map<Identifier, ImageIdentifier>;
-
-	static ImageCache& get_cache()
-	{
-		static ImageCache cache {};
-		return cache;
-	}
+	auto& get_cache() { return DescriptorCache::get_cache(); }
 
 	static ImageIdentifier add_image(VkSampler sampler, VkImageView view, VkImageLayout layout)
 	{
@@ -44,36 +38,60 @@ namespace Disarray::UI {
 		return Disarray::bit_cast<ImageIdentifier>(added);
 	}
 
-	void image_button(Image& image, glm::vec2 size)
+	void image_button(Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
 	{
 		auto& vk_image = cast_to<Vulkan::Image>(image);
 
 		const auto hash = vk_image.hash();
+		auto& cache = get_cache();
 		ImageIdentifier id;
 		if (!get_cache().contains(hash)) {
 			id = add_image(vk_image.get_sampler(), vk_image.get_view(), vk_image.get_layout());
-			get_cache()[hash] = id;
+			cache.try_emplace(hash, std::make_unique<ImageIdentifier>(id));
 		} else {
-			id = get_cache()[hash];
+			id = *get_cache()[hash];
 		}
 
-		ImGui::ImageButton("Image", id, to_imgui<2>(size));
+		ImGui::ImageButton("Image", id, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
 	}
 
-	void image(Image& image, glm::vec2 size)
+	void image(Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
 	{
 		auto& vk_image = cast_to<Vulkan::Image>(image);
 
 		const auto hash = vk_image.hash();
+		auto& cache = get_cache();
 		ImageIdentifier id;
 		if (!get_cache().contains(hash)) {
 			id = add_image(vk_image.get_sampler(), vk_image.get_view(), vk_image.get_layout());
-			get_cache()[hash] = id;
+			cache.try_emplace(hash, std::make_unique<ImageIdentifier>(id));
 		} else {
-			id = get_cache()[hash];
+			id = *cache[hash];
 		}
 
-		ImGui::Image(id, to_imgui<2>(size));
+		ImGui::Image(id, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
+	}
+
+	void scope(std::string_view name, UIFunction&& func)
+	{
+		ImGui::Begin(name.data(), nullptr);
+		func();
+		ImGui::End();
+	}
+
+	bool is_maximised(Window& window)
+	{
+		auto* glfw_window = static_cast<GLFWwindow*>(window.native());
+		return static_cast<bool>(glfwGetWindowAttrib(glfw_window, GLFW_MAXIMIZED));
+	}
+
+	void DescriptorCache::initialise() { cache.reserve(100); }
+
+	void DescriptorCache::destruct()
+	{
+		for (auto& [k, v] : cache) {
+			ImGui_ImplVulkan_RemoveTexture(Disarray::bit_cast<VkDescriptorSet>(*v));
+		}
 	}
 
 } // namespace Disarray::UI

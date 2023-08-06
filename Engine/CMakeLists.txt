@@ -10,6 +10,7 @@ set(ENGINE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/App.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/DataBuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Log.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Layer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/ReferenceCounted.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/glfw/GLFWClock.cpp
@@ -61,6 +62,8 @@ set(ENGINE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/Verify.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/VertexBuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/Window.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/DebugConfigurator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/DebugMarker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Disarray.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/core/AllocatorConfigurator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/core/App.hpp
@@ -134,6 +137,7 @@ add_library(${PROJECT_NAME} STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/App.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Log.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Layer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/ReferenceCounted.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/DataBuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/Device.cpp
@@ -149,14 +153,16 @@ add_library(${PROJECT_NAME} STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/ImageLoader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/RenderPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/Renderer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/VertexBuffer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/VertexBuffer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/UniformBuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/IndexBuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/Mesh.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/ModelLoader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/Framebuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/Pipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/PipelineCache.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/glfw/GLFWClock.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/glfw/GLFWClock.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/glfw/GLFWInput.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/InterfaceLayer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/Device.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/Allocator.cpp
@@ -183,10 +189,21 @@ add_library(${PROJECT_NAME} STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/Framebuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/PhysicalDevice.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/RenderBatchFor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/DebugConfigurator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/DebugMarker.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/BaseBuffer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/UniformBuffer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/Structures.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/QueueFamilyIndex.cpp)
 
+FetchContent_Declare(fmt
+        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+        GIT_TAG master
+)
+FetchContent_MakeAvailable(fmt)
+
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/imgui)
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator imgui tinyobjloader stb_image)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator imgui tinyobjloader stb_image thread-pool fmt::fmt)
 target_precompile_headers(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/DisarrayPCH.hpp)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -204,6 +221,10 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # [[noreturn]] - /wd4702
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4244 /wd4100 /wd4189 /wd4127 /wd4324 /wd4201 /wd4702)
     target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_WINDOWS)
+endif()
+
+if (DISARRAY_LOG_ALLOCATIONS)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG_ALLOCATIONS)
 endif()
 
 if(NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")

@@ -10,7 +10,8 @@ namespace Disarray::Vulkan {
 		Pipeline(Disarray::Device&, Disarray::Swapchain&, const PipelineProperties&);
 		~Pipeline() override;
 
-		void force_recreation() override { recreate(); };
+		void force_recreation() override { recreate(true); };
+		void recreate(bool should_clean) override;
 
 		VkPipeline supply() const override { return pipeline; }
 		VkPipelineLayout get_layout() const { return layout; }
@@ -18,12 +19,13 @@ namespace Disarray::Vulkan {
 		Disarray::Framebuffer& get_framebuffer() override;
 		Disarray::RenderPass& get_render_pass() override;
 
+		const PipelineProperties& get_properties() const override { return props; }
+
 	private:
 		void construct_layout();
 		std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo> retrieve_shader_stages(
 			Ref<Disarray::Shader> vertex, Ref<Disarray::Shader> fragment) const;
-
-		void recreate(bool should_clean = true);
+		void recreate_pipeline(bool should_clean);
 
 		Disarray::Device& device;
 		Disarray::Swapchain& swapchain;

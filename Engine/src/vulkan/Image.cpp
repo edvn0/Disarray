@@ -51,9 +51,6 @@ namespace Disarray::Vulkan {
 	void Image::destroy_resources()
 	{
 		Allocator allocator { "Image[" + props.debug_name + "]" };
-		Log::debug("Image-Destructor", "Destroyed image (" + props.debug_name + ") - " + FormattingUtilities::pointer_to_string(info.image));
-		Log::debug("Image-Destructor", "Destroyed sampler - " + FormattingUtilities::pointer_to_string(info.sampler));
-		Log::debug("Image-Destructor", "Destroyed view - " + FormattingUtilities::pointer_to_string(info.view));
 		vkDestroyImageView(supply_cast<Vulkan::Device>(device), info.view, nullptr);
 		vkDestroySampler(supply_cast<Vulkan::Device>(device), info.sampler, nullptr);
 		allocator.deallocate_image(info.allocation, info.image);
@@ -72,8 +69,6 @@ namespace Disarray::Vulkan {
 		if (should_clean) {
 			destroy_resources();
 		}
-
-		props.extent = swapchain.get_extent();
 
 		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT;
 		if (is_depth_format(props.format)) {
@@ -96,11 +91,12 @@ namespace Disarray::Vulkan {
 		image_create_info.extent.width = props.extent.width;
 		image_create_info.extent.height = props.extent.height;
 		image_create_info.extent.depth = 1;
+		image_create_info.samples = to_vulkan_samples(props.samples);
 		image_create_info.mipLevels = 1;
 		image_create_info.arrayLayers = 1;
-		image_create_info.samples = VK_SAMPLE_COUNT_1_BIT;
 		image_create_info.tiling = VK_IMAGE_TILING_OPTIMAL;
 		image_create_info.usage = usage;
+		image_create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		{
 			Allocator allocator { "Image[" + props.debug_name + "]" };
 			info.allocation = allocator.allocate_image(info.image, image_create_info, { .usage = Usage::GPU_ONLY });
@@ -127,7 +123,7 @@ namespace Disarray::Vulkan {
 		sampler_create_info.minFilter = VK_FILTER_LINEAR;
 		sampler_create_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
-		sampler_create_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler_create_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		sampler_create_info.addressModeV = sampler_create_info.addressModeU;
 		sampler_create_info.addressModeW = sampler_create_info.addressModeU;
 		sampler_create_info.mipLodBias = 0.0f;
@@ -141,7 +137,8 @@ namespace Disarray::Vulkan {
 
 		VkDeviceSize size = props.data.is_valid() ? props.data.get_size() : props.extent.get_size() * sizeof(float);
 		VkBuffer staging;
-		VkBufferCreateInfo staging_create_info { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		VkBufferCreateInfo staging_create_info {};
+		staging_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		staging_create_info.size = size;
 		staging_create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 		staging_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -152,60 +149,53 @@ namespace Disarray::Vulkan {
 			AllocationMapper<std::byte> mapper { staging_allocator, staging_allocation, props.data };
 		}
 
-		Disarray::CommandExecutorProperties command_executor_props { .count = 1, .owned_by_swapchain = false };
-		auto executor = make_ref<Vulkan::CommandExecutor>(device, swapchain, command_executor_props);
-		executor->begin();
-		auto destructor = [&device = device](auto& command_executor) {
-			command_executor->submit_and_end();
-			wait_for_cleanup(device);
-			command_executor.reset();
-		};
-		auto buffer = executor.as<Vulkan::CommandExecutor>()->supply();
-		VkImageSubresourceRange subresource_range = {};
-		subresource_range.aspectMask = aspect_mask;
-		subresource_range.baseMipLevel = 0;
-		subresource_range.levelCount = 1;
-		subresource_range.layerCount = 1;
+		{
+			auto executor = construct_immediate(device, swapchain);
+			auto buffer = supply_cast<Vulkan::CommandExecutor>(*executor);
+			VkImageSubresourceRange subresource_range = {};
+			subresource_range.aspectMask = aspect_mask;
+			subresource_range.baseMipLevel = 0;
+			subresource_range.levelCount = 1;
+			subresource_range.layerCount = 1;
 
-		VkImageMemoryBarrier image_memory_barrier {};
-		image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		image_memory_barrier.image = info.image;
-		image_memory_barrier.subresourceRange = subresource_range;
-		image_memory_barrier.srcAccessMask = 0;
-		image_memory_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			VkImageMemoryBarrier image_memory_barrier {};
+			image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			image_memory_barrier.image = info.image;
+			image_memory_barrier.subresourceRange = subresource_range;
+			image_memory_barrier.srcAccessMask = 0;
+			image_memory_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
-		vkCmdPipelineBarrier(buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+			vkCmdPipelineBarrier(
+				buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
 
-		VkBufferImageCopy buffer_copy_region = {};
-		buffer_copy_region.imageSubresource.aspectMask = aspect_mask;
-		buffer_copy_region.imageSubresource.mipLevel = 0;
-		buffer_copy_region.imageSubresource.baseArrayLayer = 0;
-		buffer_copy_region.imageSubresource.layerCount = 1;
-		buffer_copy_region.imageExtent.width = props.extent.width;
-		buffer_copy_region.imageExtent.height = props.extent.height;
-		buffer_copy_region.imageExtent.depth = 1;
-		buffer_copy_region.bufferOffset = 0;
+			VkBufferImageCopy buffer_copy_region = {};
+			buffer_copy_region.imageSubresource.aspectMask = aspect_mask;
+			buffer_copy_region.imageSubresource.mipLevel = 0;
+			buffer_copy_region.imageSubresource.baseArrayLayer = 0;
+			buffer_copy_region.imageSubresource.layerCount = 1;
+			buffer_copy_region.imageExtent.width = props.extent.width;
+			buffer_copy_region.imageExtent.height = props.extent.height;
+			buffer_copy_region.imageExtent.depth = 1;
+			buffer_copy_region.bufferOffset = 0;
 
-		vkCmdCopyBufferToImage(buffer, staging, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &buffer_copy_region);
+			set_image_layout(buffer, info.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
 
-		VkImageLayout layout = to_vulkan_layout(props.format);
-		set_image_layout(buffer, info.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
-		set_image_layout(buffer, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout, subresource_range);
+			vkCmdCopyBufferToImage(buffer, staging, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &buffer_copy_region);
 
-		destructor(executor);
+			auto layout = to_vulkan_layout(props.format);
+			set_image_layout(buffer, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout, subresource_range);
+		}
+
 		staging_allocator.deallocate_buffer(staging_allocation, staging);
 	}
 
 	void Image::update_descriptor()
 	{
-		if (props.format == ImageFormat::DepthStencil || props.format == ImageFormat::Depth)
-			descriptor_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-		else
-			descriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		descriptor_info.imageLayout = to_vulkan_layout(props.format);
 
 		descriptor_info.imageView = info.view;
 		descriptor_info.sampler = info.sampler;

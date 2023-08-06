@@ -263,7 +263,8 @@ if __name__ == "__main__":
         default=BuildMode.Debug,
     )
     parser.add_argument("-j", "--parallel", help="Parallel build jobs",
-                        type=int, choices=range(1, 12), default=6)
+                        type=int, choices=range(1, 17), default=12)
+
     parser.add_argument("-i", "--inplace_format",
                         help="Format all Disarray source files.", action="store_true")
 

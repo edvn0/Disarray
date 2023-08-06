@@ -17,6 +17,7 @@ namespace Disarray {
 
 		virtual std::uint32_t image_count() const = 0;
 		virtual Extent get_extent() const = 0;
+		virtual SampleCount get_samples() = 0;
 
 		virtual std::uint32_t get_current_frame() = 0;
 		virtual std::uint32_t advance_frame() = 0;

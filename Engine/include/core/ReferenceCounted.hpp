@@ -89,8 +89,9 @@ namespace Disarray {
 
 		template <class T2> ReferenceCounted(ReferenceCounted<T2>&& other)
 		{
-			instance = static_cast<T*>(other.instance);
-			other.instance = nullptr;
+			auto* other_instance = std::move(other.instance);
+			instance = static_cast<T*>(other_instance);
+			increment_reference_count();
 		}
 
 		static ReferenceCounted<T> copy_without_increment(const ReferenceCounted<T>& other)

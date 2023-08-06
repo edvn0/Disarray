@@ -1,6 +1,6 @@
 function(compile_shaders)
-    set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Shaders)
-    set(SHADER_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/Assets/Shaders)
+    set(SHADER_SOURCE_DIR ${CMAKE_SOURCE_DIR}/App/Assets/Shaders)
+    set(SHADER_BINARY_DIR ${PROJECT_BINARY_DIR}/Assets/Shaders)
 
     file(GLOB_RECURSE SHADERS
             ${SHADER_SOURCE_DIR}/*.vert
@@ -22,18 +22,23 @@ function(compile_shaders)
             COMMENT "Creating ${SHADER_BINARY_DIR}"
     )
 
-    foreach(source IN LISTS SHADERS)
-        get_filename_component(FILENAME ${source} NAME)
-        add_custom_command(
-                COMMAND
-                ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE}
-                -V ${source} -o ${SHADER_BINARY_DIR}/${FILENAME}.spv
-                OUTPUT ${SHADER_BINARY_DIR}/${FILENAME}.spv
-                DEPENDS ${source} ${SHADER_BINARY_DIR}
-                COMMENT "Compiling ${FILENAME}"
-        )
-        list(APPEND SPV_SHADERS ${SHADER_BINARY_DIR}/${FILENAME}.spv)
-    endforeach()
+    if(NOT ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} STREQUAL "")
+        foreach(source IN LISTS SHADERS)
+            get_filename_component(FILENAME ${source} NAME)
+            add_custom_command(
+                    COMMAND
+                    ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE}
+                    -V ${source} -o ${SHADER_BINARY_DIR}/${FILENAME}.spv
+                    OUTPUT ${SHADER_BINARY_DIR}/${FILENAME}.spv
+                    DEPENDS ${source} ${SHADER_BINARY_DIR}
+                    COMMENT "Compiling ${FILENAME}"
+            )
+            list(APPEND SPV_SHADERS ${SHADER_BINARY_DIR}/${FILENAME}.spv)
+        endforeach()
 
-    add_custom_target(shaders ALL DEPENDS ${SPV_SHADERS})
+        add_custom_target(shaders ALL DEPENDS ${SPV_SHADERS})
+        set_source_files_properties(shaders PROPERTIES SYMBOLIC 1)
+    else()
+        message(STATUS "Could not find glslangValidator.")
+    endif()
 endfunction()

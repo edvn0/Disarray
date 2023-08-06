@@ -6,7 +6,7 @@
 
 namespace Disarray {
 
-	Ref<IndexBuffer> IndexBuffer::construct(Disarray::Device& device, Disarray::Swapchain& swapchain, const Disarray::IndexBufferProperties& props)
+	Ref<IndexBuffer> IndexBuffer::construct(Disarray::Device& device, Disarray::Swapchain& swapchain, const Disarray::BufferProperties& props)
 	{
 		return make_ref<Vulkan::IndexBuffer>(device, swapchain, props);
 	}

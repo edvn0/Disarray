@@ -13,6 +13,8 @@
 #include <utility>
 #include <vector>
 
+using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;
+
 namespace Disarray {
 
 	enum class PolygonMode { Fill, Line, Point };
@@ -108,6 +110,9 @@ namespace Disarray {
 		Extent extent { 0, 0 };
 		PolygonMode polygon_mode { PolygonMode::Fill };
 		float line_width { 1.0f };
+		SampleCount samples { SampleCount::ONE };
+		const VkDescriptorSetLayout* descriptor_set_layout { nullptr };
+		std::uint32_t descriptor_set_layout_count { 0 };
 	};
 
 	class Pipeline : public ReferenceCountable {
@@ -117,6 +122,10 @@ namespace Disarray {
 
 		virtual Disarray::RenderPass& get_render_pass() = 0;
 		virtual Disarray::Framebuffer& get_framebuffer() = 0;
+
+		virtual void recreate(bool should_clear) = 0;
+
+		virtual const PipelineProperties& get_properties() const = 0;
 
 		static Ref<Pipeline> construct(Disarray::Device&, Disarray::Swapchain&, const PipelineProperties&);
 	};

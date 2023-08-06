@@ -5,7 +5,9 @@
 #include "core/AllocatorConfigurator.hpp"
 #include "core/CleanupAwaiter.hpp"
 #include "core/Clock.hpp"
+#include "core/DebugConfigurator.hpp"
 #include "core/Log.hpp"
+#include "core/ThreadPool.hpp"
 #include "core/Window.hpp"
 #include "graphics/Device.hpp"
 #include "graphics/PhysicalDevice.hpp"
@@ -13,40 +15,45 @@
 #include "graphics/Renderer.hpp"
 #include "graphics/Swapchain.hpp"
 #include "ui/InterfaceLayer.hpp"
+#include "ui/UI.hpp"
 #include "vulkan/CommandExecutor.hpp"
 
+#include <core/Input.hpp>
 #include <memory>
 
 namespace Disarray {
 
 	App::App(const Disarray::ApplicationProperties& props)
 	{
-		window = Window::construct({ .width = props.width, .height = props.height, .name = props.name });
+		window = Window::construct({ .width = props.width, .height = props.height, .name = props.name, .is_fullscreen = props.is_fullscreen });
 		device = Device::construct(*window);
 
+		initialise_debug_applications(*device);
 		initialise_allocator(*device, window->get_instance());
 		swapchain = Swapchain::construct(*window, *device);
+
+		Input::construct({}, *window);
 	}
 
-	App::~App()
-	{
-		swapchain.reset();
-		destroy_allocator();
-	};
+	App::~App() { destroy_allocator(); }
 
 	void App::run()
 	{
 		on_attach();
 
+		ThreadPool pool { 2 };
+
 		auto constructed_renderer = Renderer::construct(*device, *swapchain, {});
-		constructed_renderer->set_extent({ .width = swapchain->get_extent().width, .height = swapchain->get_extent().height });
-		auto l = add_layer<UI::InterfaceLayer>();
+		constructed_renderer->on_resize();
+		auto& l = add_layer<UI::InterfaceLayer>();
 		auto ui_layer = std::dynamic_pointer_cast<UI::InterfaceLayer>(l);
+
+		UI::DescriptorCache::initialise();
 
 		auto& renderer = *constructed_renderer;
 
 		for (auto& layer : layers) {
-			layer->construct(*this, renderer);
+			layer->construct(*this, renderer, pool);
 		}
 
 		static float current_time = Clock::ms();
@@ -69,6 +76,7 @@ namespace Disarray {
 					layer->handle_swapchain_recreation(renderer);
 				layer->update(time_step, renderer);
 			}
+			statistics.cpu_time = time_step;
 			ui_layer->begin();
 			for (auto& layer : layers) {
 				layer->interface();
@@ -76,17 +84,24 @@ namespace Disarray {
 			ui_layer->end();
 			renderer.end_frame({});
 
+			auto begin_present_time = Clock::ns();
 			swapchain->reset_recreation_status();
 			swapchain->present();
+			statistics.presentation_time = Clock::ns() - begin_present_time;
+			statistics.frame_time = Clock::ms() - current_time;
 			current_time = Clock::ms();
 		}
 
 		wait_for_cleanup(*device);
 
+		UI::DescriptorCache::destruct();
+
 		for (auto& layer : layers) {
 			layer->destruct();
 		}
 		layers.clear();
+
+		on_detach();
 	}
 
 } // namespace Disarray

@@ -3,6 +3,14 @@
 #include "vulkan/Verify.hpp"
 
 namespace Disarray::Vulkan {
+
+	void verify(VkResult result)
+	{
+		if (result != VK_SUCCESS) {
+			throw VerificationException(from_vulkan_result(result));
+		}
+	}
+
 	std::string_view from_vulkan_result(VkResult result)
 	{
 		switch (result) {

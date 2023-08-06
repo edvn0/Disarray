@@ -1,5 +1,6 @@
 #include "DisarrayPCH.hpp"
 
+#include "core/Types.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/IndexBuffer.hpp"
@@ -14,7 +15,7 @@ namespace Disarray::Vulkan {
 	void RenderBatchFor<QuadVertex, max_vertices, quad_vertex_count>::construct(
 		Renderer& renderer, Disarray::Device& dev, Disarray::Swapchain& swapchain)
 	{
-		pipeline = renderer.get_pipeline_cache().get("quad").as<Vulkan::Pipeline>();
+		pipeline = cast_to<Vulkan::Pipeline>(renderer.get_pipeline_cache().get("quad"));
 		std::vector<std::uint32_t> quad_indices;
 		quad_indices.resize(vertices.size() * 6);
 		std::uint32_t offset = 0;
@@ -27,14 +28,15 @@ namespace Disarray::Vulkan {
 			quad_indices[i + 5] = 0 + offset;
 			offset += 4;
 		}
-		index_buffer = IndexBuffer::construct(dev, swapchain,
-			{
+		index_buffer = make_scope<Vulkan::IndexBuffer>(dev, swapchain,
+			BufferProperties {
 				.data = quad_indices.data(),
 				.size = quad_indices.size() * vertex_count,
 				.count = quad_indices.size(),
 			});
 
-		vertex_buffer = VertexBuffer::construct(dev, swapchain, { .size = vertices.size() * vertex_count, .count = vertices.size() });
+		vertex_buffer
+			= make_scope<Vulkan::VertexBuffer>(dev, swapchain, BufferProperties { .size = vertices.size() * vertex_count, .count = vertices.size() });
 	}
 
 	template <>
@@ -52,16 +54,19 @@ namespace Disarray::Vulkan {
 		// const auto& descriptor = descriptor_sets[renderer.get_current_frame()];
 		const auto index_count = submitted_indices;
 
+		const std::array<VkDescriptorSet, 1> desc { renderer.get_descriptor_set() };
+		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->get_layout(), 0, 1, desc.data(), 0, nullptr);
+
 		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->supply());
 
 		vkCmdPushConstants(command_buffer, pipeline->get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),
 			renderer.get_push_constant());
 
-		const std::array<VkBuffer, 1> vbs { vb.as<Vulkan::VertexBuffer>()->supply() };
+		const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vb) };
 		constexpr VkDeviceSize offsets { 0 };
 		vkCmdBindVertexBuffers(command_buffer, 0, 1, vbs.data(), &offsets);
 
-		vkCmdBindIndexBuffer(command_buffer, ib.as<Vulkan::IndexBuffer>()->supply(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(*ib), 0, VK_INDEX_TYPE_UINT32);
 
 		/*
 		 * if (pipeline->get_vulkan_pipeline_layout()) {
@@ -80,7 +85,8 @@ namespace Disarray::Vulkan {
 			= { glm::vec4 { -0.5f, -0.5f, 0.0f, 1.0f }, { 0.5f, -0.5f, 0.0f, 1.0f }, { 0.5f, 0.5f, 0.0f, 1.0f }, { -0.5f, 0.5f, 0.0f, 1.0f } };
 		static constexpr glm::vec4 quad_normal = glm::vec4 { 0, 0, 1, 0 };
 
-		glm::mat4 transform = glm::scale(glm::mat4 { 1.0f }, *props.dimensions) * glm::translate(glm::mat4 { 1.0f }, props.position);
+		glm::mat4 transform
+			= glm::translate(glm::mat4 { 1.0f }, props.position) * glm::scale(glm::mat4 { 1.0f }, *props.dimensions) * glm::mat4_cast(props.rotation);
 
 		for (std::size_t i = 0; i < quad_vertex_count; i++) {
 			auto& vertex = emplace();
@@ -99,7 +105,7 @@ namespace Disarray::Vulkan {
 	void RenderBatchFor<LineVertex, max_vertices, line_vertex_count>::construct(
 		Renderer& renderer, Disarray::Device& dev, Disarray::Swapchain& swapchain)
 	{
-		pipeline = renderer.get_pipeline_cache().get("line").as<Vulkan::Pipeline>();
+		pipeline = cast_to<Vulkan::Pipeline>(renderer.get_pipeline_cache().get("line"));
 
 		std::vector<std::uint32_t> line_indices;
 		line_indices.resize(vertices.size() * vertex_count);
@@ -109,14 +115,16 @@ namespace Disarray::Vulkan {
 			line_indices[i + 1] = offset + 1;
 			offset += vertex_count;
 		}
-		index_buffer = IndexBuffer::construct(dev, swapchain,
-			{
+
+		index_buffer = make_scope<Vulkan::IndexBuffer>(dev, swapchain,
+			BufferProperties {
 				.data = line_indices.data(),
 				.size = line_indices.size() * vertex_count,
 				.count = line_indices.size(),
 			});
 
-		vertex_buffer = VertexBuffer::construct(dev, swapchain, { .size = vertices.size() * vertex_count, .count = vertices.size() });
+		vertex_buffer
+			= make_scope<Vulkan::VertexBuffer>(dev, swapchain, BufferProperties { .size = vertices.size() * vertex_count, .count = vertices.size() });
 	}
 
 	template <>
@@ -139,11 +147,13 @@ namespace Disarray::Vulkan {
 		vkCmdPushConstants(command_buffer, pipeline->get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),
 			renderer.get_push_constant());
 
-		const std::array<VkBuffer, 1> vbs { vb.as<Vulkan::VertexBuffer>()->supply() };
+		const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vb) };
 		constexpr VkDeviceSize offsets { 0 };
 		vkCmdBindVertexBuffers(command_buffer, 0, 1, vbs.data(), &offsets);
 
-		vkCmdBindIndexBuffer(command_buffer, ib.as<Vulkan::IndexBuffer>()->supply(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(*ib), 0, VK_INDEX_TYPE_UINT32);
+
+		vkCmdSetLineWidth(command_buffer, pipeline->get_properties().line_width);
 
 		/*
 		 * if (pipeline->get_vulkan_pipeline_layout()) {
@@ -152,7 +162,7 @@ namespace Disarray::Vulkan {
 		}*/
 
 		const auto count = index_count;
-		vkCmdDrawIndexed(command_buffer, count, 1, 0, 0, 0);
+		vkCmdDrawIndexed(command_buffer, count, count / 2, 0, 0, 0);
 	}
 
 	template <> void RenderBatchFor<LineVertex, max_vertices, line_vertex_count>::create_new(const Disarray::GeometryProperties& props)

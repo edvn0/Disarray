@@ -4,12 +4,16 @@
 
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
+#include "graphics/Device.hpp"
+#include "graphics/Renderer.hpp"
 #include "vulkan/CommandExecutor.hpp"
+#include "vulkan/DebugMarker.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/PhysicalDevice.hpp"
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Renderer.hpp"
+#include "vulkan/Structures.hpp"
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/Verify.hpp"
 #include "vulkan/Window.hpp"
@@ -19,18 +23,24 @@
 
 namespace Disarray::UI {
 
-	static VkDescriptorPool pool;
+	struct InterfaceLayer::RendererSpecific {
+		Device& device;
+		VkDescriptorPool pool;
+
+		~RendererSpecific() { vkDestroyDescriptorPool(supply_cast<Vulkan::Device>(device), pool, nullptr); }
+	};
 
 	InterfaceLayer::InterfaceLayer(Device& dev, Window& win, Swapchain& swap)
 		: device(dev)
 		, window(win)
 		, swapchain(swap)
 	{
+		pimpl = std::make_unique<RendererSpecific>(device);
 	}
 
-	InterfaceLayer::~InterfaceLayer() { vkDestroyDescriptorPool(supply_cast<Vulkan::Device>(device), pool, nullptr); }
+	InterfaceLayer::~InterfaceLayer() { }
 
-	void InterfaceLayer::construct(App&, Renderer& renderer)
+	void InterfaceLayer::construct(App&, Renderer& renderer, ThreadPool&)
 	{
 		command_executor = CommandExecutor::construct(device, swapchain,
 			{
@@ -45,16 +55,34 @@ namespace Disarray::UI {
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 }, { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 }, { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 } };
 
-		VkDescriptorPoolCreateInfo pool_info = {};
-		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		auto pool_info = Vulkan::vk_structures<VkDescriptorPoolCreateInfo> {}();
 		pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 		pool_info.maxSets = 1000;
 		pool_info.poolSizeCount = static_cast<std::uint32_t>(std::size(pool_sizes));
 		pool_info.pPoolSizes = pool_sizes.data();
 
 		auto& vk_device = cast_to<Vulkan::Device>(device);
-		Vulkan::verify(vkCreateDescriptorPool(*vk_device, &pool_info, nullptr, &pool));
+		Vulkan::verify(vkCreateDescriptorPool(*vk_device, &pool_info, nullptr, &pimpl->pool));
 		ImGui::CreateContext();
+
+		ImGuiIO& io = ImGui::GetIO();
+		(void)io;
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+		// io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
+		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport / Platform Windows
+		// io.ConfigViewportsNoDecoration = false;
+		// io.ConfigViewportsNoAutoMerge = true;
+		// io.ConfigViewportsNoTaskBarIcon = true;
+
+		ImGui::StyleColorsDark();
+
+		ImGuiStyle& style = ImGui::GetStyle();
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+			style.WindowRounding = 0.0f;
+			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+		}
+		style.Colors[ImGuiCol_WindowBg] = ImVec4(0.15f, 0.15f, 0.15f, style.Colors[ImGuiCol_WindowBg].w);
 
 		ImGui_ImplGlfw_InitForVulkan(static_cast<GLFWwindow*>(window.native()), true);
 
@@ -63,33 +91,32 @@ namespace Disarray::UI {
 		init_info.PhysicalDevice = supply_cast<Vulkan::PhysicalDevice>(device.get_physical_device());
 		init_info.Device = *vk_device;
 		init_info.Queue = vk_device.get_graphics_queue();
-		init_info.DescriptorPool = pool;
+		init_info.DescriptorPool = pimpl->pool;
 		init_info.MinImageCount = 3;
 		init_info.ImageCount = 3;
 		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
 		ImGui_ImplVulkan_Init(&init_info, supply_cast<Vulkan::RenderPass>(swapchain.get_render_pass()));
 
-		Disarray::CommandExecutorProperties props { .count = 1, .owned_by_swapchain = false };
-		auto executor = make_ref<Vulkan::CommandExecutor>(device, swapchain, props);
-		executor->begin();
-		auto destructor = [&device = device](auto& exec) {
-			exec->submit_and_end();
-			wait_for_cleanup(device);
-			exec.reset();
-		};
-		ImGui_ImplVulkan_CreateFontsTexture(executor->supply());
-		destructor(executor);
+		{
+			auto executor = Vulkan::construct_immediate(device, swapchain);
+			ImGui_ImplVulkan_CreateFontsTexture(executor->supply());
+		}
 
 		// clear font textures from cpu data
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
 	}
 
-	void InterfaceLayer::handle_swapchain_recreation(Renderer& renderer) { }
+	void InterfaceLayer::handle_swapchain_recreation(Renderer&) { command_executor->recreate(true); }
 
 	void InterfaceLayer::update(float ts) { }
 
-	void InterfaceLayer::update(float ts, Renderer& renderer) { }
+	void InterfaceLayer::update(float ts, Renderer& renderer)
+	{
+		for (auto& panel : panels) {
+			panel->update(ts, renderer);
+		}
+	}
 
 	void InterfaceLayer::destruct()
 	{
@@ -100,8 +127,9 @@ namespace Disarray::UI {
 
 	void InterfaceLayer::interface()
 	{
-		static bool is_open { true };
-		ImGui::ShowDemoWindow(&is_open);
+		for (auto& panel : panels) {
+			panel->interface();
+		}
 	}
 
 	void InterfaceLayer::begin()
@@ -126,8 +154,7 @@ namespace Disarray::UI {
 		auto& vk_swapchain = cast_to<Vulkan::Swapchain>(swapchain);
 		const VkCommandBuffer draw_command_buffer = vk_swapchain.get_drawbuffer();
 
-		VkCommandBufferBeginInfo begin_info = {};
-		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		auto begin_info = Vulkan::vk_structures<VkCommandBufferBeginInfo> {}();
 		begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 		begin_info.pNext = nullptr;
 		vkBeginCommandBuffer(draw_command_buffer, &begin_info);
@@ -146,9 +173,11 @@ namespace Disarray::UI {
 		render_pass_begin_info.pClearValues = clear_values.data();
 		render_pass_begin_info.framebuffer = vk_framebuffer;
 
+		Vulkan::DebugMarker::begin_region(draw_command_buffer, "Interface", { 1, 0, 0, 1 });
+
 		vkCmdBeginRenderPass(draw_command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
-		auto imgui_buffer = command_executor.as<Vulkan::CommandExecutor>();
+		auto& imgui_buffer = cast_to<Vulkan::CommandExecutor>(*command_executor);
 		{
 			VkCommandBufferInheritanceInfo inheritance_info = {};
 			inheritance_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
@@ -159,9 +188,9 @@ namespace Disarray::UI {
 			cbi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 			cbi.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 			cbi.pInheritanceInfo = &inheritance_info;
-			imgui_buffer->begin(cbi);
+			imgui_buffer.begin(cbi);
 
-			const auto& command_buffer = imgui_buffer->supply();
+			const auto& command_buffer = imgui_buffer.supply();
 			VkViewport viewport;
 			viewport.x = 0.0f;
 			viewport.y = static_cast<float>(height);
@@ -194,12 +223,13 @@ namespace Disarray::UI {
 			// UI scale and translate via push constants
 			ImGui_ImplVulkan_RenderDrawData(main_draw_data, command_buffer);
 
-			imgui_buffer->end();
+			imgui_buffer.end();
 		}
 
-		std::array<VkCommandBuffer, 1> buffer { imgui_buffer->supply() };
+		std::array<VkCommandBuffer, 1> buffer { imgui_buffer.supply() };
 		vkCmdExecuteCommands(draw_command_buffer, 1, buffer.data());
 
+		Vulkan::DebugMarker::end_region(draw_command_buffer);
 		vkCmdEndRenderPass(draw_command_buffer);
 
 		Vulkan::verify(vkEndCommandBuffer(draw_command_buffer));

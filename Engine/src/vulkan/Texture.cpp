@@ -32,6 +32,7 @@ namespace Disarray::Vulkan {
 	{
 		if (!props.path.empty()) {
 			ImageLoader loader { props.path, pixels };
+			props.extent = loader.get_extent();
 		}
 	}
 

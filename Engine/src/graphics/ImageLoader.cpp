@@ -3,9 +3,9 @@
 #include "graphics/ImageLoader.hpp"
 
 #include "core/DataBuffer.hpp"
+#include "core/Ensure.hpp"
 #include "core/Log.hpp"
 
-#include <cstdint>
 #include <filesystem>
 #include <stb_image.h>
 #include <stdexcept>
@@ -22,8 +22,12 @@ namespace Disarray {
 			return;
 		}
 
-		data = stbi_load(path.c_str(), &tex_width, &tex_height, &tex_channels, STBI_rgb_alpha);
-		size = tex_width * tex_height * 4;
+		int requested = STBI_rgb_alpha;
+		data = stbi_load(path.c_str(), &tex_width, &tex_height, &tex_channels, requested);
+		size = tex_width * tex_height * requested;
+
+		extent.width = static_cast<std::uint32_t>(tex_width);
+		extent.height = static_cast<std::uint32_t>(tex_height);
 
 		DataBuffer data_buffer { data, size };
 		buffer.copy_from(data_buffer);

@@ -13,7 +13,7 @@ namespace Disarray::Vulkan {
 
 	class Instance : public Disarray::Instance, public PropertySupplier<VkInstance> {
 	public:
-		Instance(std::vector<const char*>&& vec = std::vector<const char*> { "VK_LAYER_KHRONOS_validation" });
+		Instance(const std::vector<const char*>& vec = { "VK_LAYER_KHRONOS_validation" });
 		~Instance() override;
 
 		VkInstance supply() const override { return instance; }

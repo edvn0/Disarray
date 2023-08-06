@@ -14,6 +14,7 @@ namespace Disarray {
 		ImageFormat format { ImageFormat::SBGR };
 		std::uint32_t colour_count { 1 };
 		ImageFormat depth_format { ImageFormat::Depth };
+		SampleCount samples { SampleCount::ONE };
 		bool load_colour { false };
 		bool keep_colour { true };
 		bool load_depth { false };

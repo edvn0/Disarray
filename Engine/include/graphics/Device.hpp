@@ -9,9 +9,9 @@ namespace Disarray {
 
 	class Device {
 	public:
-		static Scope<Device> construct(Disarray::Window&);
-		virtual Disarray::PhysicalDevice& get_physical_device() = 0;
 		virtual ~Device() = default;
+		virtual Disarray::PhysicalDevice& get_physical_device() = 0;
+		static Scope<Device> construct(Disarray::Window&);
 	};
 
 } // namespace Disarray

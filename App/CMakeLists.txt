@@ -8,6 +8,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Vulkan REQUIRED)
 
+FetchContent_Declare(fmt
+        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+        GIT_TAG master
+)
+FetchContent_MakeAvailable(fmt)
+
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/argparse)
 
 set(APP_SOURCES
@@ -19,7 +25,8 @@ set(APP_SOURCES
 add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/src/Application.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ClientLayer.cpp)
 target_include_directories(${PROJECT_NAME} PRIVATE include)
-target_link_libraries(${PROJECT_NAME} PRIVATE Engine argparse::argparse)
+target_link_libraries(${PROJECT_NAME} PRIVATE Engine argparse::argparse thread-pool fmt::fmt)
+target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_FORCE_RADIANS)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness -Wno-unused-variable -Wno-sign-compare)
@@ -46,10 +53,12 @@ include("${CMAKE_SOURCE_DIR}/cmake/compile_shader.cmake")
 compile_shaders()
 
 include("${CMAKE_SOURCE_DIR}/cmake/copy_directory.cmake")
-copy_directory_to_binary(Assets "Models;Shaders;Textures")
+copy_directory_to_binary(Assets "Models;Shaders;Textures;Icons")
 
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")
     target_compile_definitions(${PROJECT_NAME} PRIVATE IS_DEBUG)
 endif ()
 
-add_dependencies(${PROJECT_NAME} shaders)
+if(NOT ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} STREQUAL "")
+  add_dependencies(${PROJECT_NAME} shaders)
+endif()

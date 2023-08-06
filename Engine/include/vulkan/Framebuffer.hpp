@@ -50,6 +50,7 @@ namespace Disarray::Vulkan {
 		Scope<Vulkan::Image> depth_attachment;
 
 		FramebufferProperties props;
+		SampleCount samples;
 	};
 
 } // namespace Disarray::Vulkan

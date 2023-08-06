@@ -25,10 +25,12 @@ namespace Disarray::Vulkan {
 
 		std::uint32_t image_count() const override { return static_cast<std::uint32_t>(swapchain_images.size()); }
 		Disarray::Extent get_extent() const override { return { extent.width, extent.height }; }
+		SampleCount get_samples() override { return samples; }
 
 		std::uint32_t get_current_frame() override { return current_frame; }
 		std::uint32_t advance_frame() override { return current_frame++; }
 		std::uint32_t get_image_index() override { return image_index; }
+		auto get_framebuffer() { return framebuffers[get_current_frame()]; }
 
 		VkCommandBuffer get_drawbuffer() { return command_buffers[get_current_frame()].buffer; }
 
@@ -53,7 +55,7 @@ namespace Disarray::Vulkan {
 	private:
 		void create_synchronisation_objects();
 		void recreate_swapchain(Disarray::Swapchain* old = nullptr, bool should_clean = true);
-		void recreate_framebuffer(bool should_clean);
+		void recreate_framebuffer();
 		void cleanup_swapchain();
 
 		bool swapchain_needs_recreation { false };
@@ -67,6 +69,8 @@ namespace Disarray::Vulkan {
 
 		std::vector<VkFramebuffer> framebuffers;
 		Ref<Vulkan::RenderPass> render_pass { nullptr };
+
+		SampleCount samples { SampleCount::ONE };
 
 		std::vector<VkImage> swapchain_images;
 		std::vector<VkImageView> swapchain_image_views;

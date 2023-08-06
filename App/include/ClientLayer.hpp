@@ -1,4 +1,5 @@
 #include <Disarray.hpp>
+#include <array>
 #include <vector>
 
 namespace Disarray::Client {
@@ -9,7 +10,7 @@ namespace Disarray::Client {
 		~AppLayer() override;
 
 		void interface() override;
-		void construct(App& app, Renderer& renderer) override;
+		void construct(App& app, Renderer& renderer, ThreadPool&) override;
 		void handle_swapchain_recreation(Renderer& renderer) override;
 		void update(float ts) override;
 		void update(float ts, Renderer& renderer) override;
@@ -22,6 +23,10 @@ namespace Disarray::Client {
 
 		Ref<Pipeline> pipeline;
 		Ref<Pipeline> geometry_pipeline;
+
+		bool viewport_panel_mouse_over { false };
+		bool viewport_panel_focused { false };
+		std::array<glm::vec2, 2> viewport_bounds {};
 
 		Ref<Mesh> viking_mesh;
 		Ref<Texture> viking_room;

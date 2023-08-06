@@ -27,9 +27,11 @@ namespace Disarray::Vulkan {
 		if (should_clean)
 			vkDestroyRenderPass(supply_cast<Vulkan::Device>(device), render_pass, nullptr);
 
+		const auto has_msaa = props.samples != SampleCount::ONE;
+
 		VkAttachmentDescription color_attachment {};
 		color_attachment.format = to_vulkan_format(props.image_format);
-		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		color_attachment.samples = to_vulkan_samples(props.samples);
 		color_attachment.loadOp = props.load_colour ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_CLEAR;
 		color_attachment.storeOp = props.keep_colour ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_NONE;
 		color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -37,13 +39,14 @@ namespace Disarray::Vulkan {
 		color_attachment.initialLayout = props.load_colour ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
 		color_attachment.finalLayout = props.keep_colour ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
 
-		if (props.should_present) {
+		// Disallow presenting with more than one sample!
+		if (props.should_present && !has_msaa) {
 			color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		}
 
 		VkAttachmentDescription depth_attachment {};
 		depth_attachment.format = to_vulkan_format(props.depth_format);
-		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depth_attachment.samples = to_vulkan_samples(props.samples);
 		depth_attachment.loadOp = props.load_depth ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_CLEAR;
 		depth_attachment.storeOp = props.keep_depth ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -59,11 +62,28 @@ namespace Disarray::Vulkan {
 		depth_attachment_ref.attachment = 1;
 		depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+		// MSAA
+		VkAttachmentDescription color_attachment_resolve {};
+		color_attachment_resolve.format = to_vulkan_format(props.image_format);
+		color_attachment_resolve.samples = VK_SAMPLE_COUNT_1_BIT;
+		color_attachment_resolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		color_attachment_resolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		color_attachment_resolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		color_attachment_resolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		color_attachment_resolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		color_attachment_resolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		VkAttachmentReference color_attachment_resolve_ref {};
+		color_attachment_resolve_ref.attachment = 2;
+		color_attachment_resolve_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		// end
+
 		VkSubpassDescription subpass {};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &color_attachment_ref;
 		subpass.pDepthStencilAttachment = props.has_depth ? &depth_attachment_ref : nullptr;
+		subpass.pResolveAttachments = has_msaa ? &color_attachment_resolve_ref : nullptr;
 
 		VkSubpassDependency dependency {};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -81,9 +101,10 @@ namespace Disarray::Vulkan {
 		std::vector<VkAttachmentDescription> attachments = { color_attachment };
 		if (props.has_depth)
 			attachments.push_back(depth_attachment);
+		if (has_msaa)
+			attachments.push_back(color_attachment_resolve);
 
-		VkRenderPassCreateInfo render_pass_info {};
-		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		auto render_pass_info = vk_structures<VkRenderPassCreateInfo> {}();
 		render_pass_info.attachmentCount = static_cast<std::uint32_t>(attachments.size());
 		render_pass_info.pAttachments = attachments.data();
 		render_pass_info.subpassCount = 1;

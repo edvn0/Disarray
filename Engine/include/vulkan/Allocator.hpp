@@ -4,10 +4,10 @@
 #include "core/Types.hpp"
 #include "util/BitCast.hpp"
 #include "vulkan/MemoryAllocator.hpp"
-#include "vulkan/vulkan_core.h"
 
 #include <cstring>
 #include <string>
+#include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {
 
@@ -46,6 +46,13 @@ namespace Disarray::Vulkan {
 		STRATEGY_FIRST_FIT_BIT = STRATEGY_MIN_TIME_BIT,
 		STRATEGY_MASK = STRATEGY_MIN_MEMORY_BIT | STRATEGY_MIN_TIME_BIT | STRATEGY_MIN_OFFSET_BIT,
 	};
+
+	inline constexpr Creation operator|(Creation left, Creation right)
+	{
+		return static_cast<Creation>(static_cast<std::uint32_t>(left) | static_cast<std::uint32_t>(right));
+	}
+
+	inline constexpr Creation& operator|=(Creation& a, Creation b) { return a = a | b; }
 
 	struct AllocationProperties {
 		Usage usage;

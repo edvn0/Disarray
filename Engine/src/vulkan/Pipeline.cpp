@@ -64,12 +64,12 @@ namespace Disarray::Vulkan {
 		, swapchain(sc)
 		, props(properties)
 	{
-		recreate(false);
+		recreate_pipeline(false);
 	}
 
 	void Pipeline::construct_layout()
 	{
-		std::vector<VkDynamicState> dynamic_states = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+		std::vector<VkDynamicState> dynamic_states = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_LINE_WIDTH };
 
 		VkPipelineDynamicStateCreateInfo dynamic_state {};
 		dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
@@ -154,7 +154,7 @@ namespace Disarray::Vulkan {
 		VkPipelineMultisampleStateCreateInfo multisampling {};
 		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 		multisampling.sampleShadingEnable = VK_FALSE;
-		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		multisampling.rasterizationSamples = to_vulkan_samples(props.samples);
 		multisampling.minSampleShading = 1.0f; // Optional
 		multisampling.pSampleMask = nullptr; // Optional
 		multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
@@ -184,8 +184,8 @@ namespace Disarray::Vulkan {
 
 		VkPipelineLayoutCreateInfo pipeline_layout_info {};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipeline_layout_info.setLayoutCount = 0; // Optional
-		pipeline_layout_info.pSetLayouts = nullptr; // Optional
+		pipeline_layout_info.setLayoutCount = props.descriptor_set_layout_count; // Optional
+		pipeline_layout_info.pSetLayouts = props.descriptor_set_layout; // Optional
 
 		pipeline_layout_info.pushConstantRangeCount = static_cast<std::uint32_t>(props.push_constant_layout.size()); // Optional
 		std::vector<VkPushConstantRange> result;
@@ -246,10 +246,12 @@ namespace Disarray::Vulkan {
 	std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo> Pipeline::retrieve_shader_stages(
 		Ref<Disarray::Shader> vertex, Ref<Disarray::Shader> fragment) const
 	{
-		return { vertex.as<Vulkan::Shader>()->supply(), fragment.as<Vulkan::Shader>()->supply() };
+		return { supply_cast<Vulkan::Shader>(*vertex), supply_cast<Vulkan::Shader>(*fragment) };
 	}
 
-	void Pipeline::recreate(bool should_clean)
+	void Pipeline::recreate(bool should_clean) { recreate_pipeline(should_clean); }
+
+	void Pipeline::recreate_pipeline(bool should_clean)
 	{
 		if (should_clean) {
 			vkDestroyPipelineLayout(supply_cast<Vulkan::Device>(device), layout, nullptr);

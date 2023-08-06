@@ -32,9 +32,15 @@ std::vector<const char*> get_required_extensions()
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
-	Disarray::Log::error("Validation", "Validation layer: " + std::string(pCallbackData->pMessage));
-
-	return VK_FALSE;
+	switch (messageSeverity) {
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+		Disarray::Log::debug("Validation", "Validation layer: " + std::string(pCallbackData->pMessage));
+		return VK_FALSE;
+	default:
+		Disarray::Log::error("Validation", "Validation layer: " + std::string(pCallbackData->pMessage));
+		return VK_FALSE;
+	}
 }
 
 void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT& create_info)
@@ -69,7 +75,7 @@ void destroy_debug_messenger_ext(VkInstance instance, VkDebugUtilsMessengerEXT d
 
 namespace Disarray::Vulkan {
 
-	Instance::Instance(std::vector<const char*>&& supported_layers)
+	Instance::Instance(const std::vector<const char*>& supported_layers)
 		: requested_layers(supported_layers)
 	{
 		if (Config::use_validation_layers && !check_validation_layer_support()) {
@@ -98,7 +104,7 @@ namespace Disarray::Vulkan {
 			create_info.ppEnabledLayerNames = requested_layers.data();
 
 			populate_debug_messenger_create_info(debug_create_info);
-			create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debug_create_info;
+			create_info.pNext = &debug_create_info;
 		} else {
 			create_info.enabledLayerCount = 0;
 		}

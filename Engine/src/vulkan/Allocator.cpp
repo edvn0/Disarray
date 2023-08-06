@@ -9,7 +9,6 @@
 #include "vulkan/Instance.hpp"
 #include "vulkan/PhysicalDevice.hpp"
 #include "vulkan/Verify.hpp"
-#include "vulkan/vulkan_core.h"
 
 namespace Disarray {
 	void initialise_allocator(Disarray::Device& dev, Disarray::Instance& inst)

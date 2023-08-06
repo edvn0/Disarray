@@ -2,7 +2,7 @@
 
 #include "core/Log.hpp"
 
-#ifdef IS_DEBUG
+#if defined(IS_DEBUG) && defined(DEBUG_ALLOCATIONS)
 #define VMA_DEBUG_LOG_FORMAT(fmt, ...)                                                                                                               \
 	do {                                                                                                                                             \
 		using namespace Disarray::Log;                                                                                                               \
