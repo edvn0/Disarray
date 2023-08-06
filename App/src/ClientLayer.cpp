@@ -1,16 +1,24 @@
 #include "ClientLayer.hpp"
 
+#include "glm/ext/matrix_transform.hpp"
+#include "panels/ExecutionStatisticsPanel.hpp"
+
 #include <Disarray.hpp>
 #include <array>
 
 namespace Disarray::Client {
+
+	template <class Position = glm::vec3> static constexpr auto axes(Renderer& renderer, const Position& position)
+	{
+		renderer.draw_planar_geometry(Geometry::Line, { .position = position, .to_position = position + glm::vec3 { 10.0, 0, 0 } });
+		renderer.draw_planar_geometry(Geometry::Line, { .position = position, .to_position = position + glm::vec3 { 0, -10.0, 0 } });
+		renderer.draw_planar_geometry(Geometry::Line, { .position = position, .to_position = position + glm::vec3 { 0, 0, -10.0 } });
+	}
+
 	AppLayer::AppLayer(Device& dev, Window& win, Swapchain& swap)
 		: device(dev)
 		, window(win)
-		, swapchain(swap)
-	{
-		Log::error("AppLayer", FormattingUtilities::pointer_to_string(window.native()));
-	};
+		, swapchain(swap) {};
 
 	AppLayer::~AppLayer() = default;
 
@@ -79,6 +87,9 @@ namespace Disarray::Client {
 		app.add_panel<StatisticsPanel>(app.get_statistics());
 		app.add_panel<B>();
 		app.add_panel<C>();
+		// TODO: Record stats does not work with recreation of query pools.
+		command_executor = CommandExecutor::construct(device, swapchain, { .count = 3, .is_primary = true, .record_stats = true });
+		app.add_panel<ExecutionStatisticsPanel>(*command_executor);
 
 		VertexLayout layout { {
 			{ ElementType::Float3, "position" },
@@ -101,6 +112,7 @@ namespace Disarray::Client {
 				.debug_name = "FirstFramebuffer" });
 
 		const auto& [vert, frag] = renderer.get_pipeline_cache().get_shader("main");
+		std::array<VkDescriptorSetLayout, 1> layouts { renderer.get_descriptor_set_layout() };
 		PipelineProperties props = {
 			.vertex_shader = vert,
 			.fragment_shader = frag,
@@ -108,14 +120,16 @@ namespace Disarray::Client {
 			.layout = layout,
 			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, std::size_t { 80 } } },
 			.extent = { extent.width, extent.height },
-			.samples = swapchain.get_samples(),
+			.samples = SampleCount::ONE,
+			.descriptor_set_layout = layouts.data(),
+			.descriptor_set_layout_count = renderer.get_descriptor_set_layout_count(),
 		};
 		pipeline = Pipeline::construct(device, swapchain, props);
 
-		// TODO: Record stats does not work with recreation of query pools.
-		command_executor = CommandExecutor::construct(device, swapchain, { .count = 3, .is_primary = true, .record_stats = false });
-
-		viking_mesh = Mesh::construct(device, swapchain, { .path = "Assets/Models/viking.mesh", .pipeline = pipeline });
+		auto viking_rotation = glm::rotate(glm::mat4 { 1.0f }, glm::radians(90.0f), glm::vec3(1, 0, 0))
+			* glm::rotate(glm::mat4 { 1.0f }, glm::radians(90.0f), glm::vec3(0, 1, 0));
+		viking_mesh
+			= Mesh::construct(device, swapchain, { .path = "Assets/Models/viking.mesh", .pipeline = pipeline, .initial_rotation = viking_rotation });
 #define IS_TESTING
 #ifdef IS_TESTING
 		{
@@ -205,6 +219,38 @@ namespace Disarray::Client {
 		ImGui::End();
 	}
 
+	struct Controller {
+		glm::vec3& pos;
+		glm::mat4& rot;
+
+		void update(float ts)
+		{
+			if (Input::button_pressed(KeyCode::A)) {
+				pos.x -= ts * 0.001f;
+			}
+
+			if (Input::button_pressed(KeyCode::D)) {
+				pos.x += ts * 0.001f;
+			}
+
+			if (Input::button_pressed(KeyCode::W)) {
+				pos.y -= ts * 0.001f;
+			}
+
+			if (Input::button_pressed(KeyCode::S)) {
+				pos.y += ts * 0.001f;
+			}
+
+			if (Input::button_pressed(KeyCode::Q)) {
+				rot = glm::rotate(rot, ts * glm::radians(1.f), glm::vec3 { 0, 0, 1 });
+			}
+
+			if (Input::button_pressed(KeyCode::E)) {
+				rot = glm::rotate(rot, ts * -glm::radians(1.f), glm::vec3 { 0, 0, 1 });
+			}
+		}
+	};
+
 	void AppLayer::handle_swapchain_recreation(Renderer& renderer)
 	{
 		pipeline->recreate(true);
@@ -222,34 +268,23 @@ namespace Disarray::Client {
 		command_executor->begin();
 		{
 			renderer.begin_pass(*command_executor, *framebuffer, true);
-			// const auto&& [mid_x, mid_y] = renderer.center_position();
-			renderer.draw_mesh(*command_executor, *viking_mesh);
+			static glm::vec3 pos { -1.f };
+			static glm::quat rotation = glm::angleAxis(glm::radians(45.f), glm::vec3 { 0, 1, 0 });
+			static glm::vec3 scale { 0.5f };
+			renderer.draw_mesh(*command_executor, *viking_mesh, { .position = pos, .scale = scale, .rotation = rotation });
 
 			renderer.end_pass(*command_executor);
 		}
 		{
 			renderer.begin_pass(*command_executor, *framebuffer);
-			// const auto&& [mid_x, mid_y] = renderer.center_position();
 			static glm::vec3 pos { 0, 0, 0 };
-			renderer.draw_planar_geometry(Geometry::Rectangle, { .position = pos, .dimensions = { { 1.f, 1.f, 1.f } } });
-			if (Input::button_pressed(KeyCode::A)) {
-				pos.x -= 0.001f;
-			}
-
-			if (Input::button_pressed(KeyCode::D)) {
-				pos.x += 0.001f;
-			}
-
-			if (Input::button_pressed(KeyCode::W)) {
-				pos.y -= 0.001f;
-			}
-
-			if (Input::button_pressed(KeyCode::S)) {
-				pos.y += 0.001f;
-			}
+			static glm::mat4 rot { 1.0f };
+			static Controller controller { pos, rot };
+			controller.update(ts);
+			renderer.draw_planar_geometry(Geometry::Rectangle, { .position = pos, .rotation = rot, .dimensions = { { 1.f, 1.f, 1.f } } });
 			// renderer.draw_text("Hello world!", 0, 0, 12.f);
 			// static glm::vec3 pos_circle {-0.5,0,0};
-			renderer.draw_planar_geometry(Geometry::Line, { .position = { -0.5, -0.5, 0 }, .to_position = { 0.5, 0.5, 0 } });
+			axes(renderer, glm::vec3 { 0, -0.1, 0 });
 			// renderer.draw_planar_geometry(Geometry::Circle, { .position = pos_circle, .dimensions = { { 1.f, 1.f, 1.f } } });
 
 			renderer.submit_batched_geometry(*command_executor);

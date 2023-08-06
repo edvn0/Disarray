@@ -69,7 +69,7 @@ namespace Disarray::Vulkan {
 					.samples = samples,
 					.debug_name = props.debug_name + "-ColorFramebuffer-" + std::to_string(++i),
 				}));
-			clear_values.emplace_back().color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+			clear_values.emplace_back().color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
 		}
 		if (props.has_depth) {
 			depth_attachment.reset(new Vulkan::Image(device, swapchain,

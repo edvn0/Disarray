@@ -85,7 +85,8 @@ namespace Disarray::Vulkan {
 			= { glm::vec4 { -0.5f, -0.5f, 0.0f, 1.0f }, { 0.5f, -0.5f, 0.0f, 1.0f }, { 0.5f, 0.5f, 0.0f, 1.0f }, { -0.5f, 0.5f, 0.0f, 1.0f } };
 		static constexpr glm::vec4 quad_normal = glm::vec4 { 0, 0, 1, 0 };
 
-		glm::mat4 transform = glm::scale(glm::mat4 { 1.0f }, *props.dimensions) * glm::translate(glm::mat4 { 1.0f }, props.position);
+		glm::mat4 transform
+			= glm::translate(glm::mat4 { 1.0f }, props.position) * glm::scale(glm::mat4 { 1.0f }, *props.dimensions) * glm::mat4_cast(props.rotation);
 
 		for (std::size_t i = 0; i < quad_vertex_count; i++) {
 			auto& vertex = emplace();
@@ -152,6 +153,8 @@ namespace Disarray::Vulkan {
 
 		vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(*ib), 0, VK_INDEX_TYPE_UINT32);
 
+		vkCmdSetLineWidth(command_buffer, pipeline->get_properties().line_width);
+
 		/*
 		 * if (pipeline->get_vulkan_pipeline_layout()) {
 			vkCmdBindDescriptorSets(
@@ -159,7 +162,7 @@ namespace Disarray::Vulkan {
 		}*/
 
 		const auto count = index_count;
-		vkCmdDrawIndexed(command_buffer, count, 1, 0, 0, 0);
+		vkCmdDrawIndexed(command_buffer, count, count / 2, 0, 0, 0);
 	}
 
 	template <> void RenderBatchFor<LineVertex, max_vertices, line_vertex_count>::create_new(const Disarray::GeometryProperties& props)

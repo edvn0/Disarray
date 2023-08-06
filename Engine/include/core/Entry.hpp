@@ -13,6 +13,7 @@ int main(int argc, char** argv)
 	program.add_argument("--width").help("Window width").default_value(1600u);
 	program.add_argument("--height").help("Window height").default_value(900u);
 	program.add_argument<std::string>("--name").help("Window name").default_value("Disarray");
+	program.add_argument("--fullscreen").help("Start in fullscreen").default_value(false).implicit_value(true);
 
 	try {
 		program.parse_args(argc, argv);
@@ -25,8 +26,10 @@ int main(int argc, char** argv)
 	auto width = program.get<std::uint32_t>("width");
 	auto height = program.get<std::uint32_t>("height");
 	auto name = program.get<std::string>("name");
-
-	const Disarray::ApplicationProperties properties { .width = width, .height = height, .name = std::string { name } };
+	auto is_fullscreen = program["--fullscreen"] == true;
+	const Disarray::ApplicationProperties properties {
+		.width = width, .height = height, .name = std::string { name }, .is_fullscreen = is_fullscreen
+	};
 
 	auto app = Disarray::create_application(properties);
 	app->run();

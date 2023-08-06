@@ -102,15 +102,17 @@ namespace Disarray::Vulkan {
 		void end_pass(Disarray::CommandExecutor&) override;
 
 		// IGraphics
-		void draw_mesh(Disarray::CommandExecutor&, Disarray::Mesh& mesh) override;
+		void draw_mesh(Disarray::CommandExecutor&, Disarray::Mesh&, const Disarray::GeometryProperties&) override;
 		void draw_planar_geometry(Disarray::Geometry, const Disarray::GeometryProperties&) override;
 		void submit_batched_geometry(Disarray::CommandExecutor&) override;
 		// End IGraphics
 
 		// IGraphicsResource
 		void expose_to_shaders(Disarray::Image&) override;
-		virtual VkDescriptorSet get_descriptor_set(std::uint32_t);
-		virtual VkDescriptorSet get_descriptor_set() { return get_descriptor_set(swapchain.get_current_frame()); };
+		VkDescriptorSet get_descriptor_set(std::uint32_t) override;
+		VkDescriptorSet get_descriptor_set() override { return get_descriptor_set(swapchain.get_current_frame()); };
+		VkDescriptorSetLayout get_descriptor_set_layout() override { return layout; }
+		std::uint32_t get_descriptor_set_layout_count() override { return 1; }
 		// End IGraphicsResource
 
 		void on_resize() override;

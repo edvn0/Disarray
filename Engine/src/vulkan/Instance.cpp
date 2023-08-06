@@ -32,9 +32,15 @@ std::vector<const char*> get_required_extensions()
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
-	Disarray::Log::error("Validation", "Validation layer: " + std::string(pCallbackData->pMessage));
-
-	return VK_FALSE;
+	switch (messageSeverity) {
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+		Disarray::Log::debug("Validation", "Validation layer: " + std::string(pCallbackData->pMessage));
+		return VK_FALSE;
+	default:
+		Disarray::Log::error("Validation", "Validation layer: " + std::string(pCallbackData->pMessage));
+		return VK_FALSE;
+	}
 }
 
 void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT& create_info)

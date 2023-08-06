@@ -22,7 +22,7 @@ layout(push_constant) uniform constants
 } PushConstants;
 
 void main() {
-    gl_Position = vec4(pos, 1.0);
+    gl_Position = UBO.view_projection * vec4(pos, 1.0);
     fragColor = colour;
     uvs = uv;
     outNormals = normals;

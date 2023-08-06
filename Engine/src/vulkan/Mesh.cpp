@@ -14,7 +14,7 @@ namespace Disarray::Vulkan {
 		: device(dev)
 		, props(properties)
 	{
-		ModelLoader loader { props.path };
+		ModelLoader loader { props.path, props.initial_rotation };
 		vertices = Disarray::VertexBuffer::construct(
 			device, swapchain, { .data = loader.get_vertices().data(), .size = loader.get_vertices_size(), .count = loader.get_vertices_count() });
 		indices = Disarray::IndexBuffer::construct(

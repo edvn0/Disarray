@@ -19,6 +19,8 @@ namespace Disarray::Vulkan {
 		Disarray::Framebuffer& get_framebuffer() override;
 		Disarray::RenderPass& get_render_pass() override;
 
+		const PipelineProperties& get_properties() const override { return props; }
+
 	private:
 		void construct_layout();
 		std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo> retrieve_shader_stages(

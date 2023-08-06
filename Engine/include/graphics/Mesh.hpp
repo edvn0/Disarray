@@ -9,12 +9,14 @@
 #include "graphics/VertexBuffer.hpp"
 
 #include <filesystem>
+#include <glm/glm.hpp>
 
 namespace Disarray {
 
 	struct MeshProperties {
 		std::string path;
 		Ref<Pipeline> pipeline;
+		glm::mat4 initial_rotation { 1.0f };
 	};
 
 	class Mesh : public ReferenceCountable {

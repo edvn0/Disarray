@@ -125,6 +125,8 @@ namespace Disarray {
 
 		virtual void recreate(bool should_clear) = 0;
 
+		virtual const PipelineProperties& get_properties() const = 0;
+
 		static Ref<Pipeline> construct(Disarray::Device&, Disarray::Swapchain&, const PipelineProperties&);
 	};
 

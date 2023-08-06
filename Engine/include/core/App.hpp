@@ -20,6 +20,7 @@ namespace Disarray {
 		std::uint32_t width { 0 };
 		std::uint32_t height { 0 };
 		std::string name {};
+		bool is_fullscreen { false };
 	};
 
 	/**

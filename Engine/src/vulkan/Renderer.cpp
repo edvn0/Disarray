@@ -49,7 +49,7 @@ namespace Disarray::Vulkan {
 		initialise_descriptors();
 
 		pipeline_cache = make_scope<PipelineCache>(device, swapchain, "Assets/Shaders");
-		auto samples = swapchain.get_samples();
+		auto samples = SampleCount::ONE;
 		geometry_framebuffer = Framebuffer::construct(device, swapchain, { .samples = samples, .debug_name = "RendererFramebuffer" });
 
 		const std::array<VkDescriptorSetLayout, 1> desc_layout { layout };
@@ -62,7 +62,7 @@ namespace Disarray::Vulkan {
 				{ ElementType::Float4, "colour" } },
 			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, std::size_t { 80 } } },
 			.extent = swapchain.get_extent(),
-			.samples = swapchain.get_samples(),
+			.samples = samples,
 			.descriptor_set_layout = desc_layout.data(),
 			.descriptor_set_layout_count = static_cast<std::uint32_t>(desc_layout.size()),
 		};
@@ -169,14 +169,18 @@ namespace Disarray::Vulkan {
 
 	void Renderer::end_pass(Disarray::CommandExecutor& executor) { vkCmdEndRenderPass(supply_cast<Vulkan::CommandExecutor>(executor)); }
 
-	void Renderer::draw_mesh(Disarray::CommandExecutor& executor, Disarray::Mesh& mesh)
+	void Renderer::draw_mesh(Disarray::CommandExecutor& executor, Disarray::Mesh& mesh, const GeometryProperties& properties)
 	{
 		auto command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 		const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh.get_pipeline());
 		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 
+		pc.object_transform = properties.to_transform();
 		vkCmdPushConstants(
 			command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &pc);
+
+		const std::array<VkDescriptorSet, 1> desc { get_descriptor_set() };
+		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, 1, desc.data(), 0, nullptr);
 
 		std::array<VkBuffer, 1> arr;
 		arr[0] = supply_cast<Vulkan::VertexBuffer>(mesh.get_vertices());
@@ -208,12 +212,6 @@ namespace Disarray::Vulkan {
 
 	void Renderer::begin_frame(UsageBadge<App>)
 	{
-		static glm::vec3 rotation { 90.f, 0.f, 0.f };
-		const auto rotate = glm::rotate(glm::mat4 { 1.0f }, glm::radians(rotation.z), glm::vec3 { 0.f, 0.f, 1.f })
-			* glm::rotate(glm::mat4 { 1.0f }, glm::radians(rotation.y), glm::vec3 { 0.f, 1.f, 0.f })
-			* glm::rotate(glm::mat4 { 1.0f }, glm::radians(rotation.x), glm::vec3 { 1.f, 0.f, 0.f });
-		pc = { .object_transform = rotate, .colour = glm::vec4 { 1, 1, 0, 1 } };
-		rotation += 0.1;
 		// TODO: Move to some kind of scene scope?
 		render_batch.reset();
 
@@ -222,8 +220,8 @@ namespace Disarray::Vulkan {
 		auto current = Clock::ms();
 		auto diff_seconds = (current - start_time) / 1000.0f;
 
-		uniform.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		uniform.proj = glm::perspective(glm::radians(45.0f), swapchain.get_extent().width / (float)swapchain.get_extent().height, 0.1f, 10.0f);
+		uniform.view = glm::lookAt(glm::vec3(0, 2, 2), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		uniform.proj = glm::perspective(glm::radians(72.0f), swapchain.get_extent().width / (float)swapchain.get_extent().height, 0.1f, 1000.0f);
 		uniform.view_projection = uniform.proj * uniform.view;
 
 		auto& current_uniform = frame_ubos[swapchain.get_current_frame()];

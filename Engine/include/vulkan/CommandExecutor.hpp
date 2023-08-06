@@ -16,16 +16,6 @@
 
 namespace Disarray::Vulkan {
 
-	struct PipelineStatistics {
-		uint64_t input_assembly_vertices { 0 };
-		uint64_t input_assembly_primitives { 0 };
-		uint64_t vertex_shader_invocations { 0 };
-		uint64_t clipping_invocations { 0 };
-		uint64_t clipping_primitives { 0 };
-		uint64_t fragment_shader_invocations { 0 };
-		uint64_t compute_shader_invocations { 0 };
-	};
-
 	class CommandExecutor : public Disarray::CommandExecutor, public PropertySupplier<VkCommandBuffer> {
 	public:
 		CommandExecutor(Disarray::Device&, Disarray::Swapchain&, const Disarray::CommandExecutorProperties&);
@@ -59,6 +49,19 @@ namespace Disarray::Vulkan {
 		}
 
 		void wait_indefinite();
+
+		float get_gpu_execution_time(uint32_t frame_index, uint32_t query_index = 0) const override
+		{
+			if (query_index == UINT32_MAX || query_index / 2 >= timestamp_next_available_query / 2)
+				return 0.0f;
+
+			return execution_gpu_times[frame_index][query_index / 2];
+		}
+
+		const PipelineStatistics& get_pipeline_statistics(uint32_t frame_index) const override
+		{
+			return pipeline_statistics_query_results[frame_index];
+		}
 
 	private:
 		void recreate_executor(bool should_clean = true);

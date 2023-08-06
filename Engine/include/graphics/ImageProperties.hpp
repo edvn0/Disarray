@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/Types.hpp"
+
 #include <cstddef>
 #include <cstdint>
 

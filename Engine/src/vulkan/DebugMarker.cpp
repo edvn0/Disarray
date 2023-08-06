@@ -2,6 +2,8 @@
 
 #include "core/Log.hpp"
 
+#include <glm/gtc/type_ptr.hpp>
+
 namespace Disarray::Vulkan {
 
 	bool active = false;
@@ -87,7 +89,7 @@ namespace Disarray::Vulkan {
 		if (active) {
 			VkDebugMarkerMarkerInfoEXT marker_info = {};
 			marker_info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
-			memcpy(marker_info.color, &color[0], sizeof(float) * 4);
+			std::memcpy(marker_info.color, glm::value_ptr(color), sizeof(float) * 4);
 			marker_info.pMarkerName = marker_name;
 			vkCmdDebugMarkerBegin(cmdbuffer, &marker_info);
 		}

@@ -43,7 +43,7 @@ namespace Disarray::Vulkan {
 		}
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		const auto& [width, height, name] = get_properties();
+		const auto& [width, height, name, is_fullscreen] = get_properties();
 
 		const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
@@ -57,23 +57,23 @@ namespace Disarray::Vulkan {
 		user_data.height = height;
 		user_data.mode = mode;
 
-#ifdef PREFER_FULLSCREEN
-		window = glfwCreateWindow(mode->width, mode->height, name.c_str(), glfwGetPrimaryMonitor(), nullptr);
-		user_data.fullscreen = true;
-#else
-		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-		window = glfwCreateWindow(width, height, name.c_str(), nullptr, nullptr);
-		user_data.fullscreen = false;
+		if (is_fullscreen) {
+			window = glfwCreateWindow(mode->width, mode->height, name.c_str(), glfwGetPrimaryMonitor(), nullptr);
+			user_data.fullscreen = true;
+		} else {
+			glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+			window = glfwCreateWindow(width, height, name.c_str(), nullptr, nullptr);
+			user_data.fullscreen = false;
 
-		glfwSetWindowPos(window, 100, 100);
+			glfwSetWindowPos(window, 100, 100);
 
-		int px;
-		int py;
-		glfwGetWindowPos(window, &px, &py);
-		user_data.pos_x = px;
-		user_data.pos_y = py;
-		glfwShowWindow(window);
-#endif
+			int px;
+			int py;
+			glfwGetWindowPos(window, &px, &py);
+			user_data.pos_x = px;
+			user_data.pos_y = py;
+			glfwShowWindow(window);
+		}
 
 		if (window == nullptr)
 			throw;

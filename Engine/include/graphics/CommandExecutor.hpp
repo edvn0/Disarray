@@ -8,6 +8,16 @@
 
 namespace Disarray {
 
+	struct PipelineStatistics {
+		uint64_t input_assembly_vertices { 0 };
+		uint64_t input_assembly_primitives { 0 };
+		uint64_t vertex_shader_invocations { 0 };
+		uint64_t clipping_invocations { 0 };
+		uint64_t clipping_primitives { 0 };
+		uint64_t fragment_shader_invocations { 0 };
+		uint64_t compute_shader_invocations { 0 };
+	};
+
 	struct CommandExecutorProperties {
 		std::optional<std::uint32_t> count { std::nullopt };
 		bool is_primary { true };
@@ -31,6 +41,9 @@ namespace Disarray {
 		virtual void begin() = 0;
 		virtual void end() = 0;
 		virtual void submit_and_end() = 0;
+
+		virtual float get_gpu_execution_time(uint32_t frame_index, uint32_t query_index = 0) const = 0;
+		virtual const PipelineStatistics& get_pipeline_statistics(uint32_t frame_index) const = 0;
 
 		virtual void recreate(bool should_clean) = 0;
 		virtual void force_recreation() = 0;

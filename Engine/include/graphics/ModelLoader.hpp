@@ -16,11 +16,18 @@ namespace Disarray {
 		{
 			return pos == other.pos && color == other.color && uvs == other.uvs && normals == other.normals;
 		}
+
+		void rotate_by(glm::mat4 rotation)
+		{
+			pos = glm::vec4(pos, 1.0f) * rotation;
+			uvs = glm::vec4(uvs, 1.0f, 1.0f) * rotation;
+			normals = glm::vec4(normals, 1.0f) * rotation;
+		}
 	};
 
 	class ModelLoader {
 	public:
-		explicit ModelLoader(const std::string&);
+		explicit ModelLoader(const std::string&, const glm::mat4& = glm::mat4 { 1.0f });
 
 		const auto& get_vertices() const { return vertices; }
 		const auto& get_indices() const { return indices; }

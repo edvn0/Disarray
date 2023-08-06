@@ -25,7 +25,7 @@ namespace Disarray {
 
 	App::App(const Disarray::ApplicationProperties& props)
 	{
-		window = Window::construct({ .width = props.width, .height = props.height, .name = props.name });
+		window = Window::construct({ .width = props.width, .height = props.height, .name = props.name, .is_fullscreen = props.is_fullscreen });
 		device = Device::construct(*window);
 
 		initialise_debug_applications(*device);

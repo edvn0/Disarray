@@ -209,7 +209,7 @@ namespace Disarray::Vulkan {
 		verify(vkWaitForFences(vk_device, 1, &fences[buffer_index()], VK_TRUE, UINT64_MAX));
 		verify(vkResetFences(vk_device, 1, &fences[buffer_index()]));
 
-		DebugMarker::begin_region(active, "Submit", { 0, 1, 0, 1 });
+		DebugMarker::begin_region(active, "Submit", { 0, 1, 1, 1 });
 		verify(vkQueueSubmit(graphics_queue, 1, &submit_info, fences[buffer_index()]));
 		DebugMarker::end_region(active);
 

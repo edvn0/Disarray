@@ -25,8 +25,9 @@ namespace std {
 
 namespace Disarray {
 
-	ModelLoader::ModelLoader(const std::string& path)
+	ModelLoader::ModelLoader(const std::string& path, const glm::mat4& initial_rotation)
 	{
+		const bool needs_rotate = initial_rotation != glm::mat4 { 1.0f };
 		tinyobj::attrib_t attrib;
 		std::vector<tinyobj::shape_t> shapes;
 		std::vector<tinyobj::material_t> materials;
@@ -60,6 +61,10 @@ namespace Disarray {
 				indices.push_back(unique_vertices[vertex]);
 			});
 		}
+
+		if (needs_rotate)
+			std::for_each(
+				std::execution::par, std::begin(vertices), std::end(vertices), [&rot = initial_rotation](auto& vertex) { vertex.rotate_by(rot); });
 	}
 
 } // namespace Disarray

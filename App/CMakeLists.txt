@@ -20,10 +20,18 @@ add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/src/Application.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ClientLayer.cpp)
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 target_link_libraries(${PROJECT_NAME} PRIVATE Engine argparse::argparse thread-pool)
+target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_FORCE_RADIANS)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness -Wno-unused-variable -Wno-sign-compare)
     target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_LINUX)
+
+    FetchContent_Declare(fmt
+            GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+            GIT_TAG master
+    )
+    FetchContent_MakeAvailable(fmt)
+    target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     find_package(TBB REQUIRED)
 
@@ -31,6 +39,12 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness -Wno-unused-variable -Wno-sign-compare)
     target_link_libraries(${PROJECT_NAME} PRIVATE tbb)
     target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_LINUX)
+    FetchContent_Declare(fmt
+            GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+            GIT_TAG master
+    )
+    FetchContent_MakeAvailable(fmt)
+    target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # VMA, STB ignores - /wd4244 /wd4100 /wd4189 /wd4127 /wd4324 /wd4201
     # [[noreturn]] - /wd4702
