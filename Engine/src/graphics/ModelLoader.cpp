@@ -40,7 +40,7 @@ namespace Disarray {
 		std::unordered_map<Vertex, uint32_t> unique_vertices {};
 
 		for (const auto& shape : shapes) {
-			std::ranges::for_each(std::begin(shape.mesh.indices), std::end(shape.mesh.indices), [&](const auto& index) {
+			std::for_each(std::begin(shape.mesh.indices), std::end(shape.mesh.indices), [&](const auto& index) {
 				Vertex vertex {};
 
 				vertex.pos = { attrib.vertices[3 * index.vertex_index + 0], attrib.vertices[3 * index.vertex_index + 1],

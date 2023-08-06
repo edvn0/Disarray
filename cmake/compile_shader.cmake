@@ -22,7 +22,7 @@ function(compile_shaders)
             COMMENT "Creating ${SHADER_BINARY_DIR}"
     )
 
-    if(NOT ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} STREQUAL "")
+    if(${Vulkan_glslangValidator_FOUND})
         foreach(source IN LISTS SHADERS)
             get_filename_component(FILENAME ${source} NAME)
             add_custom_command(

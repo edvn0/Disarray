@@ -207,7 +207,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan GPUOpen::Vulka
 target_precompile_headers(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/DisarrayPCH.hpp)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    find_package(TBB REQUIRED)
+
     target_compile_options(${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness -Wno-unused-variable)
+    target_link_libraries(${PROJECT_NAME} PRIVATE tbb)
     target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_LINUX)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     find_package(TBB REQUIRED)
