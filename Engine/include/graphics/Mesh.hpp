@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
 #include "graphics/Device.hpp"
@@ -20,7 +21,7 @@ namespace Disarray {
 	};
 
 	class Mesh : public ReferenceCountable {
-		DISARRAY_MAKE_REFERENCE_COUNTABLE(Mesh)
+		DISARRAY_OBJECT(Mesh)
 	public:
 		virtual Pipeline& get_pipeline() = 0;
 		virtual VertexBuffer& get_vertices() = 0;

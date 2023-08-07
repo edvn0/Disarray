@@ -18,6 +18,13 @@ namespace Disarray {
 
 	void Input::destruct() { window_data.reset(); }
 
+	glm::vec2 Input::mouse_position()
+	{
+		double xpos, ypos;
+		glfwGetCursorPos(window_data->window, &xpos, &ypos);
+		return { xpos, ypos };
+	}
+
 	bool Input::button_pressed(MouseCode code) { return glfwGetMouseButton(window_data->window, static_cast<int>(code)) == GLFW_PRESS; }
 
 	bool Input::button_pressed(KeyCode code) { return glfwGetKey(window_data->window, static_cast<int>(code)) == GLFW_PRESS; }

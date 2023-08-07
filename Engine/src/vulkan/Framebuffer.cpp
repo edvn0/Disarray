@@ -17,9 +17,8 @@
 
 namespace Disarray::Vulkan {
 
-	Framebuffer::Framebuffer(Disarray::Device& dev, Disarray::Swapchain& sc, const FramebufferProperties& properties)
+	Framebuffer::Framebuffer(Disarray::Device& dev, const FramebufferProperties& properties)
 		: device(dev)
-		, swapchain(sc)
 		, props(properties)
 	{
 		colour_count = props.colour_count;
@@ -60,9 +59,9 @@ namespace Disarray::Vulkan {
 		attachments.resize(total_colour_count);
 		auto i = 0;
 		for (auto& image : attachments) {
-			image.reset(new Vulkan::Image(device, swapchain,
+			image.reset(new Vulkan::Image(device,
 				ImageProperties {
-					.extent = swapchain.get_extent(),
+					.extent = props.extent,
 					.format = props.format,
 					.data = nullptr,
 					.should_present = props.should_present,
@@ -72,8 +71,8 @@ namespace Disarray::Vulkan {
 			clear_values.emplace_back().color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
 		}
 		if (props.has_depth) {
-			depth_attachment.reset(new Vulkan::Image(device, swapchain,
-				ImageProperties { .extent = swapchain.get_extent(),
+			depth_attachment.reset(new Vulkan::Image(device,
+				ImageProperties { .extent = props.extent,
 					.format = ImageFormat::Depth,
 					.samples = samples,
 					.debug_name = props.debug_name + "-DepthFramebuffer" }));
@@ -104,8 +103,8 @@ namespace Disarray::Vulkan {
 		framebuffer_info.renderPass = render_pass->supply();
 		framebuffer_info.attachmentCount = static_cast<std::uint32_t>(fb_attachments.size());
 		framebuffer_info.pAttachments = fb_attachments.data();
-		framebuffer_info.width = swapchain.get_extent().width;
-		framebuffer_info.height = swapchain.get_extent().height;
+		framebuffer_info.width = props.extent.width;
+		framebuffer_info.height = props.extent.height;
 		framebuffer_info.layers = 1;
 
 		verify(vkCreateFramebuffer(supply_cast<Vulkan::Device>(device), &framebuffer_info, nullptr, &framebuffer));

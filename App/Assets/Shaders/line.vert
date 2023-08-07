@@ -13,8 +13,9 @@ layout(set = 0, binding = 0) uniform Uniform {
 
 layout(push_constant) uniform constants
 {
-	mat4 object_transform;
-	vec4 colour;
+    mat4 object_transform;
+    vec4 colour;
+    uint max_identifiers;
 } PushConstants;
 
 void main() {

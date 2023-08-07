@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/CleanupAwaiter.hpp"
+#include "core/DisarrayObject.hpp"
 #include "core/Types.hpp"
 
 #include <cstddef>
@@ -28,7 +29,7 @@ namespace Disarray {
 	};
 
 	class CommandExecutor : public ReferenceCountable {
-		DISARRAY_MAKE_REFERENCE_COUNTABLE(CommandExecutor)
+		DISARRAY_OBJECT(CommandExecutor)
 	public:
 		template <class T>
 			requires(std::is_base_of_v<CommandExecutor, T>)
@@ -46,8 +47,7 @@ namespace Disarray {
 		virtual float get_gpu_execution_time(uint32_t frame_index, uint32_t query_index = 0) const = 0;
 		virtual const PipelineStatistics& get_pipeline_statistics(uint32_t frame_index) const = 0;
 
-		virtual void recreate(bool should_clean) = 0;
-		virtual void force_recreation() = 0;
+		virtual bool has_stats() const = 0;
 	};
 
 } // namespace Disarray

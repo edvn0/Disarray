@@ -1,11 +1,10 @@
 #pragma once
 
+#include "core/Concepts.hpp"
+
 #include <array>
-#include <concepts>
 
 namespace Disarray::Client {
-	template <typename T>
-	concept IsNumber = std::is_floating_point_v<T> || std::is_integral_v<T>;
 
 	template <IsNumber T, IsNumber Total, std::size_t N> class MovingAverage {
 	public:

@@ -51,9 +51,8 @@ namespace Disarray {
 		pipeline_cache.clear();
 	}
 
-	PipelineCache::PipelineCache(Disarray::Device& dev, Disarray::Swapchain& sc, const std::filesystem::path& base)
+	PipelineCache::PipelineCache(Disarray::Device& dev, const std::filesystem::path& base)
 		: device(dev)
-		, swapchain(sc)
 		, path(base)
 	{
 		const auto all_files = get_unique_files_recursively();
@@ -125,7 +124,7 @@ namespace Disarray {
 			.descriptor_set_layout_count = props.descriptor_set_layout_count,
 		};
 
-		auto pipeline = Pipeline::construct(device, swapchain, properties);
+		auto pipeline = Pipeline::construct(device, properties);
 		const auto& [pair, could] = pipeline_cache.try_emplace(props.pipeline_key, std::move(pipeline));
 		if (!could)
 			Log::error("PipelineCache - Put", "Could not insert pipeline.");

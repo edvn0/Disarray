@@ -9,12 +9,12 @@
 
 namespace Disarray::Vulkan {
 
-	Texture::Texture(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::TextureProperties& properties)
+	Texture::Texture(Disarray::Device& dev, const Disarray::TextureProperties& properties)
 		: device(dev)
 		, props(properties)
 	{
 		load_pixels();
-		image = make_scope<Vulkan::Image>(device, sc,
+		image = make_scope<Vulkan::Image>(device,
 			ImageProperties {
 				.extent = props.extent,
 				.format = props.format,
@@ -26,7 +26,7 @@ namespace Disarray::Vulkan {
 
 	Texture::~Texture() { Log::debug("Texture-Destructor", "Destroyed texture " + props.debug_name); }
 
-	void Texture::recreate_texture(bool should_clean) { image->recreate(should_clean); }
+	void Texture::recreate_texture(bool should_clean) { image->recreate(should_clean, props.extent); }
 
 	void Texture::load_pixels()
 	{

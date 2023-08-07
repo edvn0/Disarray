@@ -8,17 +8,13 @@
 
 namespace Disarray::Client {
 
-	template <class Position = glm::vec3> static constexpr auto axes(Renderer& renderer, const Position& position)
-	{
-		renderer.draw_planar_geometry(Geometry::Line, { .position = position, .to_position = position + glm::vec3 { 10.0, 0, 0 } });
-		renderer.draw_planar_geometry(Geometry::Line, { .position = position, .to_position = position + glm::vec3 { 0, -10.0, 0 } });
-		renderer.draw_planar_geometry(Geometry::Line, { .position = position, .to_position = position + glm::vec3 { 0, 0, -10.0 } });
-	}
-
 	AppLayer::AppLayer(Device& dev, Window& win, Swapchain& swap)
-		: device(dev)
-		, window(win)
-		, swapchain(swap) {};
+		: window(win)
+		, swapchain(swap)
+		, scene(dev, win, swap, "Default scene")
+	{
+		(void)window.native();
+	};
 
 	AppLayer::~AppLayer() = default;
 
@@ -84,73 +80,16 @@ namespace Disarray::Client {
 
 	void AppLayer::construct(App& app, Renderer& renderer, ThreadPool& pool)
 	{
+		scene.construct(app, renderer, pool);
+
 		app.add_panel<StatisticsPanel>(app.get_statistics());
 		app.add_panel<B>();
 		app.add_panel<C>();
-		// TODO: Record stats does not work with recreation of query pools.
-		command_executor = CommandExecutor::construct(device, swapchain, { .count = 3, .is_primary = true, .record_stats = true });
-		app.add_panel<ExecutionStatisticsPanel>(*command_executor);
-
-		VertexLayout layout { {
-			{ ElementType::Float3, "position" },
-			{ ElementType::Float2, "uv" },
-			{ ElementType::Float4, "colour" },
-			{ ElementType::Float3, "normals" },
-		} };
-
-		auto extent = swapchain.get_extent();
-
-		framebuffer = Framebuffer::construct(device, swapchain,
-			{ .format = Disarray::ImageFormat::SBGR,
-				.samples = SampleCount::ONE,
-				.load_colour = true,
-				.keep_colour = true,
-				.load_depth = true,
-				.keep_depth = true,
-				.has_depth = true,
-				.should_present = false,
-				.debug_name = "FirstFramebuffer" });
-
-		const auto& [vert, frag] = renderer.get_pipeline_cache().get_shader("main");
-		std::array<VkDescriptorSetLayout, 1> layouts { renderer.get_descriptor_set_layout() };
-		PipelineProperties props = {
-			.vertex_shader = vert,
-			.fragment_shader = frag,
-			.framebuffer = framebuffer,
-			.layout = layout,
-			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, std::size_t { 80 } } },
-			.extent = { extent.width, extent.height },
-			.samples = SampleCount::ONE,
-			.descriptor_set_layout = layouts.data(),
-			.descriptor_set_layout_count = renderer.get_descriptor_set_layout_count(),
-		};
-		pipeline = Pipeline::construct(device, swapchain, props);
-
-		auto viking_rotation = glm::rotate(glm::mat4 { 1.0f }, glm::radians(90.0f), glm::vec3(1, 0, 0))
-			* glm::rotate(glm::mat4 { 1.0f }, glm::radians(90.0f), glm::vec3(0, 1, 0));
-		viking_mesh
-			= Mesh::construct(device, swapchain, { .path = "Assets/Models/viking.mesh", .pipeline = pipeline, .initial_rotation = viking_rotation });
-#define IS_TESTING
-#ifdef IS_TESTING
-		{
-			std::array<std::uint32_t, 1> white_tex_data = { 1 };
-			DataBuffer pixels { white_tex_data.data(), sizeof(std::uint32_t) };
-			TextureProperties texture_properties { .extent = swapchain.get_extent(), .format = ImageFormat::SBGR, .debug_name = "white_tex" };
-			Ref<Texture> white_tex = Texture::construct(device, swapchain, texture_properties);
-			renderer.expose_to_shaders(*white_tex);
-
-			texture_properties.path = "Assets/Textures/viking_room.png";
-			texture_properties.debug_name = "viking";
-			viking_room = Texture::construct(device, swapchain, texture_properties);
-		};
-
-#endif
-#undef IS_TESTING
+		app.add_panel<ExecutionStatisticsPanel>(scene.get_command_executor());
 	};
 
 	void AppLayer::interface()
 	{
-		// ImGui + Dockspace Setup ------------------------------------------------------------------------------
 		ImGuiIO& io = ImGui::GetIO();
 		ImGuiStyle& style = ImGui::GetStyle();
 
@@ -199,13 +138,12 @@ namespace Disarray::Client {
 			// editor_camera.resize({ viewport_size.x, viewport_size.y });
 
 			// Render viewport image
-			auto& image = framebuffer->get_image();
+			auto& image = scene.get_framebuffer().get_image();
 			UI::image(image, { viewport_size.x, viewport_size.y });
 
 			auto window_size = ImGui::GetWindowSize();
 			ImVec2 min_bound = ImGui::GetWindowPos();
 
-			// NOTE(Peter): This currently just subtracts 0 because I removed the toolbar window, but I'll keep it in just in case
 			min_bound.x -= viewport_offset.x;
 			min_bound.y -= viewport_offset.y;
 
@@ -219,80 +157,16 @@ namespace Disarray::Client {
 		ImGui::End();
 	}
 
-	struct Controller {
-		glm::vec3& pos;
-		glm::mat4& rot;
+	void AppLayer::handle_swapchain_recreation(Renderer& renderer) { scene.recreate(swapchain.get_extent()); }
 
-		void update(float ts)
-		{
-			if (Input::button_pressed(KeyCode::A)) {
-				pos.x -= ts * 0.001f;
-			}
-
-			if (Input::button_pressed(KeyCode::D)) {
-				pos.x += ts * 0.001f;
-			}
-
-			if (Input::button_pressed(KeyCode::W)) {
-				pos.y -= ts * 0.001f;
-			}
-
-			if (Input::button_pressed(KeyCode::S)) {
-				pos.y += ts * 0.001f;
-			}
-
-			if (Input::button_pressed(KeyCode::Q)) {
-				rot = glm::rotate(rot, ts * glm::radians(1.f), glm::vec3 { 0, 0, 1 });
-			}
-
-			if (Input::button_pressed(KeyCode::E)) {
-				rot = glm::rotate(rot, ts * -glm::radians(1.f), glm::vec3 { 0, 0, 1 });
-			}
-		}
-	};
-
-	void AppLayer::handle_swapchain_recreation(Renderer& renderer)
-	{
-		pipeline->recreate(true);
-		viking_room->recreate(true);
-		framebuffer->recreate(true);
-		command_executor->recreate(true);
-	}
-
-	void AppLayer::update(float ts) {
-
-	};
+	void AppLayer::update(float ts) {};
 
 	void AppLayer::update(float ts, Renderer& renderer)
 	{
-		command_executor->begin();
-		{
-			renderer.begin_pass(*command_executor, *framebuffer, true);
-			static glm::vec3 pos { -1.f };
-			static glm::quat rotation = glm::angleAxis(glm::radians(45.f), glm::vec3 { 0, 1, 0 });
-			static glm::vec3 scale { 2.5f };
-			renderer.draw_mesh(*command_executor, *viking_mesh, { .position = pos, .scale = scale, .rotation = rotation });
-
-			renderer.end_pass(*command_executor);
-		}
-		{
-			renderer.begin_pass(*command_executor, *framebuffer);
-			static glm::vec3 pos { 0, 0, 0 };
-			static glm::mat4 rot { 1.0f };
-			static Controller controller { pos, rot };
-			controller.update(ts);
-			renderer.draw_planar_geometry(Geometry::Rectangle, { .position = pos, .rotation = rot, .dimensions = { { 1.f, 1.f, 1.f } } });
-			// renderer.draw_text("Hello world!", 0, 0, 12.f);
-			// static glm::vec3 pos_circle {-0.5,0,0};
-			axes(renderer, glm::vec3 { 0, -0.1, 0 });
-			// renderer.draw_planar_geometry(Geometry::Circle, { .position = pos_circle, .dimensions = { { 1.f, 1.f, 1.f } } });
-
-			renderer.submit_batched_geometry(*command_executor);
-			renderer.end_pass(*command_executor);
-		}
-		command_executor->submit_and_end();
+		scene.update(ts);
+		scene.render(ts, renderer);
 	}
 
-	void AppLayer::destruct() { command_executor.reset(); }
+	void AppLayer::destruct() { scene.destruct(); }
 
 } // namespace Disarray::Client

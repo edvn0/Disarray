@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
 #include "graphics/BufferProperties.hpp"
@@ -11,7 +12,7 @@ namespace Disarray {
 	class PhysicalDevice;
 
 	class UniformBuffer : public ReferenceCountable {
-		DISARRAY_MAKE_REFERENCE_COUNTABLE(UniformBuffer)
+		DISARRAY_OBJECT(UniformBuffer)
 	public:
 		static Ref<UniformBuffer> construct(Disarray::Device&, Disarray::Swapchain&, const Disarray::BufferProperties&);
 		virtual std::size_t size() = 0;

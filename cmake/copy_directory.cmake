@@ -8,11 +8,15 @@ function(copy_directory_to_binary BASE_FOLDER FOLDER_NAMES)
     message(STATUS "Creating ${TGT_BASE_DIR}")
     foreach (DIRECTORY IN LISTS FOLDER_NAMES)
         set (COPYABLE_FOLDER "${BASE_FOLDER}/${DIRECTORY}")
-        add_custom_command(TARGET ${TGT} POST_BUILD
+        add_custom_command(TARGET ${TGT} PRE_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_directory
                 ${CMAKE_CURRENT_SOURCE_DIR}/${COPYABLE_FOLDER} $<TARGET_FILE_DIR:${TGT}>/${COPYABLE_FOLDER}
                 OUTPUT ${COPYING_OUTPUT})
         set(TGT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${COPYABLE_FOLDER})
-        message(STATUS "Copying ${CMAKE_CURRENT_SOURCE_DIR}/${COPYABLE_FOLDER} to ${TGT_DIR}")
     endforeach ()
+
+    add_custom_command(TARGET ${TGT} PRE_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/imgui.ini $<TARGET_FILE_DIR:${TGT}>/imgui.ini
+            OUTPUT ${COPYING_OUTPUT})
 endfunction()

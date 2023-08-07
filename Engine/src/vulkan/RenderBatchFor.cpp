@@ -86,7 +86,7 @@ namespace Disarray::Vulkan {
 		static constexpr glm::vec4 quad_normal = glm::vec4 { 0, 0, 1, 0 };
 
 		glm::mat4 transform
-			= glm::translate(glm::mat4 { 1.0f }, props.position) * glm::scale(glm::mat4 { 1.0f }, *props.dimensions) * glm::mat4_cast(props.rotation);
+			= glm::translate(glm::mat4 { 1.0f }, props.position) * glm::mat4_cast(props.rotation) * glm::scale(glm::mat4 { 1.0f }, *props.dimensions);
 
 		for (std::size_t i = 0; i < quad_vertex_count; i++) {
 			auto& vertex = emplace();
@@ -94,6 +94,7 @@ namespace Disarray::Vulkan {
 			vertex.normals = transform * quad_normal;
 			vertex.uvs = texture_coordinates[i];
 			vertex.colour = { 1.0f, 0.5f, 0.5f, 1.0f };
+			vertex.identifier = *props.identifier;
 		}
 
 		submitted_indices += 6;
@@ -168,17 +169,19 @@ namespace Disarray::Vulkan {
 	template <> void RenderBatchFor<LineVertex, max_vertices, line_vertex_count>::create_new(const Disarray::GeometryProperties& props)
 	{
 		{
+
 			auto& vertex = emplace();
 			vertex.pos = props.position;
-			vertex.colour = { 0, 1, 0, 1 };
+			vertex.colour = props.colour;
 		}
 
 		{
 			auto& vertex = emplace();
 			vertex.pos = props.to_position;
-			vertex.colour = { 0, 1, 0, 1 };
+			vertex.colour = props.colour;
 		}
 
 		submitted_indices += 2;
 	}
+
 } // namespace Disarray::Vulkan

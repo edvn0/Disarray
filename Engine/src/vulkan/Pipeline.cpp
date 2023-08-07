@@ -34,6 +34,9 @@ namespace Disarray::Vulkan {
 			return VK_FORMAT_R16G16B16_SINT;
 		case ElementType::Int4:
 			return VK_FORMAT_R16G16B16A16_SINT;
+		case ElementType::Uint:
+			// SPECIAL CASE FOR IDENTIFIERS
+			return VK_FORMAT_R32_UINT;
 		case ElementType::Uint2:
 			return VK_FORMAT_R16G16_UINT;
 		case ElementType::Uint3:
@@ -59,9 +62,22 @@ namespace Disarray::Vulkan {
 		}
 	}
 
-	Pipeline::Pipeline(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::PipelineProperties& properties)
+	VkPrimitiveTopology vk_polygon_topology(PolygonMode mode)
+	{
+		switch (mode) {
+		case PolygonMode::Fill:
+			return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		case PolygonMode::Line:
+			return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+		case PolygonMode::Point:
+			return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+		default:
+			unreachable();
+		}
+	}
+
+	Pipeline::Pipeline(Disarray::Device& dev, const Disarray::PipelineProperties& properties)
 		: device(dev)
-		, swapchain(sc)
 		, props(properties)
 	{
 		recreate_pipeline(false);
@@ -102,7 +118,7 @@ namespace Disarray::Vulkan {
 
 		VkPipelineInputAssemblyStateCreateInfo input_assembly {};
 		input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		input_assembly.topology = vk_polygon_topology(props.polygon_mode);
 		input_assembly.primitiveRestartEnable = VK_FALSE;
 
 		VkViewport viewport {};
@@ -132,15 +148,15 @@ namespace Disarray::Vulkan {
 		rasterizer.polygonMode = vk_polygon_mode(props.polygon_mode);
 
 		rasterizer.lineWidth = props.line_width;
-		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizer.cullMode = VK_CULL_MODE_NONE;
+		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
 		rasterizer.depthBiasEnable = VK_FALSE;
 		rasterizer.depthBiasConstantFactor = 0.0f; // Optional
 		rasterizer.depthBiasClamp = 0.0f; // Optional
 		rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
 
-		VkPipelineDepthStencilStateCreateInfo depth_stencil_state_create_info { VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
+		auto depth_stencil_state_create_info = vk_structures<VkPipelineDepthStencilStateCreateInfo> {}();
 		depth_stencil_state_create_info.depthTestEnable = true;
 		depth_stencil_state_create_info.depthWriteEnable = true;
 		depth_stencil_state_create_info.depthCompareOp = VK_COMPARE_OP_LESS;
@@ -174,13 +190,13 @@ namespace Disarray::Vulkan {
 		VkPipelineColorBlendStateCreateInfo color_blending {};
 		color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 		color_blending.logicOpEnable = VK_TRUE;
-		color_blending.logicOp = VK_LOGIC_OP_COPY; // Optional
+		color_blending.logicOp = VK_LOGIC_OP_COPY;
 		color_blending.attachmentCount = 1;
 		color_blending.pAttachments = &color_blend_attachment;
-		color_blending.blendConstants[0] = 0.0f; // Optional
-		color_blending.blendConstants[1] = 0.0f; // Optional
-		color_blending.blendConstants[2] = 0.0f; // Optional
-		color_blending.blendConstants[3] = 0.0f; // Optional
+		color_blending.blendConstants[0] = 0.0f;
+		color_blending.blendConstants[1] = 0.0f;
+		color_blending.blendConstants[2] = 0.0f;
+		color_blending.blendConstants[3] = 0.0f;
 
 		VkPipelineLayoutCreateInfo pipeline_layout_info {};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -258,7 +274,7 @@ namespace Disarray::Vulkan {
 			vkDestroyPipeline(supply_cast<Vulkan::Device>(device), pipeline, nullptr);
 		}
 
-		props.extent = swapchain.get_extent();
+		// get the new extent somehow
 		construct_layout();
 	}
 

@@ -17,6 +17,7 @@ namespace Disarray::Vulkan {
 	struct PushConstant {
 		glm::mat4 object_transform { 1.0f };
 		glm::vec4 colour { 1.0f };
+		std::uint32_t max_identifiers {};
 	};
 
 	static constexpr auto max_vertices = 600;
@@ -29,7 +30,7 @@ namespace Disarray::Vulkan {
 	struct RenderBatchFor {
 		static constexpr auto vertex_count = VertexCount;
 
-		// We want for example to be able to write 100 quads, which requires 100 * vertex_count(Quad) = 6 vertices
+		// We want for example to be able to write 100 quads, which requires 100 * vertex_count(Quad) = 4 vertices
 		std::array<T, Vertices * VertexCount> vertices {};
 		Scope<Disarray::IndexBuffer> index_buffer { nullptr };
 		Scope<Disarray::VertexBuffer> vertex_buffer { nullptr };
@@ -63,6 +64,7 @@ namespace Disarray::Vulkan {
 		glm::vec2 uvs { 1.0f };
 		glm::vec2 normals { 1.0f };
 		glm::vec4 colour { 1.0f };
+		std::uint32_t identifier { 0 };
 	};
 	static constexpr auto quad_vertex_count = 4;
 
@@ -76,8 +78,13 @@ namespace Disarray::Vulkan {
 		RenderBatchFor<QuadVertex, Vertices, quad_vertex_count> quads;
 		RenderBatchFor<LineVertex, Vertices, line_vertex_count> lines;
 
+		// How many times have we submitted geometries?
+		// Used by shaders to determine scale of picking count
+		std::uint32_t submitted_geometries { 0 };
+
 		void reset()
 		{
+			submitted_geometries = 0;
 			quads.reset();
 			lines.reset();
 		}
@@ -109,21 +116,21 @@ namespace Disarray::Vulkan {
 
 		// IGraphicsResource
 		void expose_to_shaders(Disarray::Image&) override;
-		VkDescriptorSet get_descriptor_set(std::uint32_t) override;
+		VkDescriptorSet get_descriptor_set(std::uint32_t index) override { return descriptors[index].set; }
 		VkDescriptorSet get_descriptor_set() override { return get_descriptor_set(swapchain.get_current_frame()); };
-		VkDescriptorSetLayout get_descriptor_set_layout() override { return layout; }
-		std::uint32_t get_descriptor_set_layout_count() override { return 1; }
+		const std::vector<VkDescriptorSetLayout>& get_descriptor_set_layouts() override { return layouts; }
 		// End IGraphicsResource
 
 		void on_resize() override;
 		PipelineCache& get_pipeline_cache() override { return *pipeline_cache; }
 
-		void begin_frame(UsageBadge<App>) override;
+		void begin_frame(UsageBadge<App>, Camera&) override;
 		void end_frame(UsageBadge<App>) override;
 
 		void force_recreation() override;
 
 		auto* get_push_constant() const { return &pc; }
+		auto& get_editable_push_constant() { return pc; }
 
 	private:
 		Disarray::Device& device;
@@ -138,7 +145,7 @@ namespace Disarray::Vulkan {
 			VkDescriptorSet set;
 			void destroy(Disarray::Device& dev);
 		};
-		VkDescriptorSetLayout layout;
+		std::vector<VkDescriptorSetLayout> layouts;
 		VkDescriptorPool pool;
 		std::vector<FrameDescriptor> descriptors;
 		void initialise_descriptors();

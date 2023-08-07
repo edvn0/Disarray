@@ -59,7 +59,7 @@ namespace Disarray {
 		using PipelineCacheValueType = PipelineMap::value_type;
 
 	public:
-		PipelineCache(Disarray::Device& device, Disarray::Swapchain&, const std::filesystem::path&);
+		PipelineCache(Disarray::Device& device, const std::filesystem::path&);
 		~PipelineCache();
 
 		const Ref<Disarray::Pipeline>& get(const std::string&);
@@ -73,7 +73,6 @@ namespace Disarray {
 		std::set<std::filesystem::path> get_unique_files_recursively() const;
 
 		Disarray::Device& device;
-		Disarray::Swapchain& swapchain;
 		std::filesystem::path path { "Assets/Shaders" };
 
 		PipelineMap pipeline_cache {};

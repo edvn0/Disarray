@@ -10,7 +10,7 @@ namespace Disarray {
 	class Surface;
 
 	class PhysicalDevice : public ReferenceCountable {
-		DISARRAY_MAKE_REFERENCE_COUNTABLE(PhysicalDevice)
+		DISARRAY_OBJECT(PhysicalDevice)
 	public:
 		static Ref<Disarray::PhysicalDevice> construct(Disarray::Instance&, Disarray::Surface&);
 

@@ -13,3 +13,6 @@
 [submodule "App/ThirdParty/argparse"]
 	path = App/ThirdParty/argparse
 	url = https://github.com/edvn0/argparse
+[submodule "ThirdParty/entt"]
+	path = ThirdParty/entt
+	url = https://github.com/skypjack/entt.git

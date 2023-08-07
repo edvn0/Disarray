@@ -2,6 +2,7 @@
 
 #include "Forward.hpp"
 #include "core/Types.hpp"
+#include "core/UniquelyIdentifiable.hpp"
 #include "core/UsageBadge.hpp"
 #include "graphics/Mesh.hpp"
 #include "graphics/Pipeline.hpp"
@@ -13,6 +14,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <optional>
+#include <scene/Camera.hpp>
 
 using VkDescriptorSet = struct VkDescriptorSet_T*;
 using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;
@@ -33,10 +35,12 @@ namespace Disarray {
 	};
 
 	struct GeometryProperties {
-		glm::vec3 position {};
+		glm::vec3 position { 0.0f };
 		glm::vec3 scale { 1.0 };
-		glm::vec3 to_position {};
+		glm::vec3 to_position { 0.0f };
+		glm::vec4 colour { 1.0f };
 		glm::quat rotation { glm::identity<glm::quat>() };
+		std::optional<std::uint32_t> identifier { std::nullopt };
 		std::optional<glm::vec3> dimensions { std::nullopt };
 		std::optional<float> radius { std::nullopt };
 
@@ -72,11 +76,10 @@ namespace Disarray {
 		virtual ~IGraphicsResource() = default;
 
 		virtual void expose_to_shaders(Image&) = 0;
-		virtual void expose_to_shaders(Texture& tex) { expose_to_shaders(tex.get_image()); };
+		void expose_to_shaders(Texture& tex) { expose_to_shaders(tex.get_image()); };
 		virtual VkDescriptorSet get_descriptor_set(std::uint32_t) = 0;
 		virtual VkDescriptorSet get_descriptor_set() = 0;
-		virtual VkDescriptorSetLayout get_descriptor_set_layout() = 0;
-		virtual std::uint32_t get_descriptor_set_layout_count() = 0;
+		virtual const std::vector<VkDescriptorSetLayout>& get_descriptor_set_layouts() = 0;
 	};
 
 	class Renderer : public IGraphics, public IGraphicsResource, public ReferenceCountable {
@@ -89,7 +92,7 @@ namespace Disarray {
 		virtual void on_resize() = 0;
 		virtual PipelineCache& get_pipeline_cache() = 0;
 
-		virtual void begin_frame(UsageBadge<App>) = 0;
+		virtual void begin_frame(UsageBadge<App>, Camera& camera) = 0;
 		virtual void end_frame(UsageBadge<App>) = 0;
 
 		virtual void force_recreation() = 0;

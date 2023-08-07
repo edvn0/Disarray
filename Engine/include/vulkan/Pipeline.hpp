@@ -7,7 +7,7 @@ namespace Disarray::Vulkan {
 
 	class Pipeline : public Disarray::Pipeline, public PropertySupplier<VkPipeline> {
 	public:
-		Pipeline(Disarray::Device&, Disarray::Swapchain&, const PipelineProperties&);
+		Pipeline(Disarray::Device&, const PipelineProperties&);
 		~Pipeline() override;
 
 		void force_recreation() override { recreate(true); };
@@ -28,7 +28,6 @@ namespace Disarray::Vulkan {
 		void recreate_pipeline(bool should_clean);
 
 		Disarray::Device& device;
-		Disarray::Swapchain& swapchain;
 		PipelineProperties props;
 		VkPipeline pipeline;
 		VkPipelineLayout layout;

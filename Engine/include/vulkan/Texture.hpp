@@ -9,11 +9,15 @@ namespace Disarray::Vulkan {
 
 	class Texture : public Disarray::Texture {
 	public:
-		Texture(Device&, Swapchain&, const TextureProperties&);
+		Texture(Device&, const TextureProperties&);
 		~Texture() override;
 
 		void force_recreation() override { recreate_texture(); };
-		void recreate(bool should_clean) override { recreate_texture(should_clean); }
+		void recreate(bool should_clean, const Extent& extent) override
+		{
+			props.extent = extent;
+			recreate_texture(should_clean);
+		}
 		VkImageView get_view() { return image->get_view(); }
 
 		Image& get_image() override { return *image; }
