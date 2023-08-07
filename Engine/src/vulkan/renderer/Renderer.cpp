@@ -33,7 +33,7 @@ namespace Disarray::Vulkan {
 	{
 		frame_ubos.resize(swapchain.image_count());
 		for (auto& ubo : frame_ubos) {
-			ubo = UniformBuffer::construct(device, swapchain,
+			ubo = UniformBuffer::construct(device,
 				BufferProperties {
 					.size = sizeof(UBO),
 					.binding = 0,
@@ -73,8 +73,8 @@ namespace Disarray::Vulkan {
 			pipeline_cache->put(pipeline_properties);
 		}
 
-		render_batch.quads.construct(*this, device, swapchain);
-		render_batch.lines.construct(*this, device, swapchain);
+		render_batch.quads.construct(*this, device);
+		render_batch.lines.construct(*this, device);
 	}
 
 	Renderer::~Renderer()

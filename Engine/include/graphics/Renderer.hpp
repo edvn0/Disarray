@@ -69,6 +69,8 @@ namespace Disarray {
 		virtual void draw_planar_geometry(Geometry, const GeometryProperties&) = 0;
 		virtual void draw_mesh(Disarray::CommandExecutor&, Disarray::Mesh&, const GeometryProperties& = {}) = 0;
 		virtual void submit_batched_geometry(Disarray::CommandExecutor&) = 0;
+		virtual void on_batch_full(std::function<void(Renderer&)>&&) = 0;
+		virtual void flush_batch(Disarray::CommandExecutor&) = 0;
 	};
 
 	class IGraphicsResource {

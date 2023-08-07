@@ -40,4 +40,6 @@ namespace Disarray {
 		std::uint32_t get_identifier() const { return static_cast<std::uint32_t>(identifier); }
 	};
 
+	struct Child { };
+
 } // namespace Disarray

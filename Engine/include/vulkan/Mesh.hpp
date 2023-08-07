@@ -7,7 +7,7 @@ namespace Disarray::Vulkan {
 
 	class Mesh : public Disarray::Mesh {
 	public:
-		Mesh(Disarray::Device&, Disarray::Swapchain&, const MeshProperties&);
+		Mesh(Disarray::Device&, const MeshProperties&);
 		~Mesh() override;
 
 		Disarray::Pipeline& get_pipeline() override { return *props.pipeline; }

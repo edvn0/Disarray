@@ -11,9 +11,7 @@
 
 namespace Disarray::Vulkan {
 
-	template <>
-	void RenderBatchFor<QuadVertex, max_vertices, quad_vertex_count>::construct(
-		Renderer& renderer, Disarray::Device& dev, Disarray::Swapchain& swapchain)
+	template <> void RenderBatchFor<QuadVertex, max_objects, quad_vertex_count>::construct(Renderer& renderer, Disarray::Device& dev)
 	{
 		pipeline = cast_to<Vulkan::Pipeline>(renderer.get_pipeline_cache().get("quad"));
 		std::vector<std::uint32_t> quad_indices;
@@ -28,24 +26,25 @@ namespace Disarray::Vulkan {
 			quad_indices[i + 5] = 0 + offset;
 			offset += 4;
 		}
-		index_buffer = make_scope<Vulkan::IndexBuffer>(dev, swapchain,
+		index_buffer = make_scope<Vulkan::IndexBuffer>(dev,
 			BufferProperties {
 				.data = quad_indices.data(),
 				.size = quad_indices.size() * vertex_count,
 				.count = quad_indices.size(),
 			});
 
-		vertex_buffer
-			= make_scope<Vulkan::VertexBuffer>(dev, swapchain, BufferProperties { .size = vertices.size() * vertex_count, .count = vertices.size() });
+		vertex_buffer = make_scope<Vulkan::VertexBuffer>(dev, BufferProperties { .size = buffer_size(), .count = vertices.size() });
 	}
 
 	template <>
-	void RenderBatchFor<QuadVertex, max_vertices, quad_vertex_count>::submit(Renderer& renderer, Disarray::CommandExecutor& command_executor)
+	void RenderBatchFor<QuadVertex, max_objects, quad_vertex_count>::submit(Renderer& renderer, Disarray::CommandExecutor& command_executor)
 	{
 		if (submitted_indices == 0)
 			return;
 
 		prepare_data();
+
+		renderer.get_editable_push_constant().max_identifiers = submitted_objects;
 
 		auto command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
 
@@ -78,7 +77,7 @@ namespace Disarray::Vulkan {
 		vkCmdDrawIndexed(command_buffer, count, 1, 0, 0, 0);
 	}
 
-	template <> void RenderBatchFor<QuadVertex, max_vertices, quad_vertex_count>::create_new(const Disarray::GeometryProperties& props)
+	template <> void RenderBatchFor<QuadVertex, max_objects, quad_vertex_count>::create_new(const Disarray::GeometryProperties& props)
 	{
 		static constexpr std::array<glm::vec2, 4> texture_coordinates = { glm::vec2 { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 1.0f } };
 		static constexpr std::array<glm::vec4, 4> quad_positions
@@ -93,18 +92,17 @@ namespace Disarray::Vulkan {
 			vertex.pos = transform * quad_positions[i];
 			vertex.normals = transform * quad_normal;
 			vertex.uvs = texture_coordinates[i];
-			vertex.colour = { 1.0f, 0.5f, 0.5f, 1.0f };
+			vertex.colour = props.colour;
 			vertex.identifier = *props.identifier;
 		}
 
 		submitted_indices += 6;
+		submitted_objects++;
 	}
 
 	// LINES
 
-	template <>
-	void RenderBatchFor<LineVertex, max_vertices, line_vertex_count>::construct(
-		Renderer& renderer, Disarray::Device& dev, Disarray::Swapchain& swapchain)
+	template <> void RenderBatchFor<LineVertex, max_objects, line_vertex_count>::construct(Renderer& renderer, Disarray::Device& dev)
 	{
 		pipeline = cast_to<Vulkan::Pipeline>(renderer.get_pipeline_cache().get("line"));
 
@@ -117,24 +115,25 @@ namespace Disarray::Vulkan {
 			offset += vertex_count;
 		}
 
-		index_buffer = make_scope<Vulkan::IndexBuffer>(dev, swapchain,
+		index_buffer = make_scope<Vulkan::IndexBuffer>(dev,
 			BufferProperties {
 				.data = line_indices.data(),
 				.size = line_indices.size() * vertex_count,
 				.count = line_indices.size(),
 			});
 
-		vertex_buffer
-			= make_scope<Vulkan::VertexBuffer>(dev, swapchain, BufferProperties { .size = vertices.size() * vertex_count, .count = vertices.size() });
+		vertex_buffer = make_scope<Vulkan::VertexBuffer>(dev, BufferProperties { .size = vertices.size() * vertex_count, .count = vertices.size() });
 	}
 
 	template <>
-	void RenderBatchFor<LineVertex, max_vertices, line_vertex_count>::submit(Renderer& renderer, Disarray::CommandExecutor& command_executor)
+	void RenderBatchFor<LineVertex, max_objects, line_vertex_count>::submit(Renderer& renderer, Disarray::CommandExecutor& command_executor)
 	{
 		if (submitted_indices == 0)
 			return;
 
 		prepare_data();
+
+		renderer.get_editable_push_constant().max_identifiers = submitted_objects;
 
 		auto command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
 
@@ -166,7 +165,7 @@ namespace Disarray::Vulkan {
 		vkCmdDrawIndexed(command_buffer, count, count / 2, 0, 0, 0);
 	}
 
-	template <> void RenderBatchFor<LineVertex, max_vertices, line_vertex_count>::create_new(const Disarray::GeometryProperties& props)
+	template <> void RenderBatchFor<LineVertex, max_objects, line_vertex_count>::create_new(const Disarray::GeometryProperties& props)
 	{
 		{
 
@@ -182,6 +181,7 @@ namespace Disarray::Vulkan {
 		}
 
 		submitted_indices += 2;
+		submitted_objects++;
 	}
 
 } // namespace Disarray::Vulkan

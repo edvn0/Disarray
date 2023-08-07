@@ -6,9 +6,6 @@
 
 namespace Disarray {
 
-	Ref<Mesh> Mesh::construct(Disarray::Device& device, Disarray::Swapchain& swapchain, const Disarray::MeshProperties& props)
-	{
-		return make_ref<Vulkan::Mesh>(device, swapchain, props);
-	}
+	Ref<Mesh> Mesh::construct(Disarray::Device& device, const Disarray::MeshProperties& props) { return make_ref<Vulkan::Mesh>(device, props); }
 
 } // namespace Disarray

@@ -14,7 +14,7 @@ namespace Disarray {
 	class UniformBuffer : public ReferenceCountable {
 		DISARRAY_OBJECT(UniformBuffer)
 	public:
-		static Ref<UniformBuffer> construct(Disarray::Device&, Disarray::Swapchain&, const Disarray::BufferProperties&);
+		static Ref<UniformBuffer> construct(Disarray::Device&, const Disarray::BufferProperties&);
 		virtual std::size_t size() = 0;
 		virtual void set_data(const void*, std::uint32_t) = 0;
 

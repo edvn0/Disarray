@@ -31,12 +31,17 @@ namespace Disarray {
 		, registry(entt::basic_registry())
 	{
 		(void)window.native();
-		std::size_t rects { 10 };
-		auto j = 0;
-		for (std::size_t i = 0; i < rects; i++) {
-			auto rect = create(fmt::format("Rect{}", i));
-			auto& transform = rect.get_components<Transform>();
-			transform.position = { i % 3, i % 3, j++ };
+		int rects_x { 50 };
+		int rects_y { 50 };
+		auto parent = create("Grid");
+		for (auto i = -25; i < rects_x; i++) {
+			for (auto j = -25; j < rects_y; j++) {
+				auto rect = create(fmt::format("Rect{}", i));
+				parent.add_child(rect);
+				auto& transform = rect.get_components<Transform>();
+				transform.position = { static_cast<float>(i) / 50.0f, 0, static_cast<float>(j) / 50.f };
+				transform.scale;
+			}
 		}
 	}
 
@@ -44,6 +49,7 @@ namespace Disarray {
 	{
 		// TODO: Record stats does not work with recreation of query pools.
 		command_executor = CommandExecutor::construct(device, swapchain, { .count = 3, .is_primary = true, .record_stats = true });
+		renderer.on_batch_full([&exec = command_executor](Renderer& r) { r.flush_batch(*exec); });
 
 		VertexLayout layout { {
 			{ ElementType::Float3, "position" },
@@ -82,8 +88,7 @@ namespace Disarray {
 
 		auto viking_rotation = glm::rotate(glm::mat4 { 1.0f }, glm::radians(90.0f), glm::vec3(1, 0, 0))
 			* glm::rotate(glm::mat4 { 1.0f }, glm::radians(90.0f), glm::vec3(0, 1, 0));
-		viking_mesh
-			= Mesh::construct(device, swapchain, { .path = "Assets/Models/viking.mesh", .pipeline = pipeline, .initial_rotation = viking_rotation });
+		viking_mesh = Mesh::construct(device, { .path = "Assets/Models/viking.mesh", .pipeline = pipeline, .initial_rotation = viking_rotation });
 #define IS_TESTING
 #ifdef IS_TESTING
 		{
@@ -125,12 +130,18 @@ namespace Disarray {
 
 			auto rect_view = registry.view<const Transform, const ID>();
 			for (const auto [entity, transform, id] : rect_view.each()) {
-				auto ide = id.get_identifier();
 				renderer.draw_planar_geometry(Geometry::Rectangle,
-					{ .position = transform.position, .rotation = transform.rotation, .identifier = { ide }, .dimensions = { transform.scale } });
+					{ .position = transform.position,
+						.rotation = transform.rotation,
+						.identifier = { id.get_identifier() },
+						.dimensions = { transform.scale } });
 			}
+
+			// TODO: Implement
 			// renderer.draw_text("Hello world!", 0, 0, 12.f);
-			draw_axes(renderer, glm::vec3 { 0, -0.1, 0 });
+
+			// TODO: Temporary
+			// draw_axes(renderer, glm::vec3 { 0, -0.1, 0 });
 
 			renderer.submit_batched_geometry(*command_executor);
 			renderer.end_pass(*command_executor);

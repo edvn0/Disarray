@@ -10,15 +10,15 @@ namespace Disarray::Vulkan {
 
 	Mesh::~Mesh() = default;
 
-	Mesh::Mesh(Disarray::Device& dev, Disarray::Swapchain& swapchain, const Disarray::MeshProperties& properties)
+	Mesh::Mesh(Disarray::Device& dev, const Disarray::MeshProperties& properties)
 		: device(dev)
 		, props(properties)
 	{
 		ModelLoader loader { props.path, props.initial_rotation };
 		vertices = Disarray::VertexBuffer::construct(
-			device, swapchain, { .data = loader.get_vertices().data(), .size = loader.get_vertices_size(), .count = loader.get_vertices_count() });
+			device, { .data = loader.get_vertices().data(), .size = loader.get_vertices_size(), .count = loader.get_vertices_count() });
 		indices = Disarray::IndexBuffer::construct(
-			device, swapchain, { .data = loader.get_indices().data(), .size = loader.get_indices_size(), .count = loader.get_indices_count() });
+			device, { .data = loader.get_indices().data(), .size = loader.get_indices_size(), .count = loader.get_indices_count() });
 	}
 
 } // namespace Disarray::Vulkan

@@ -26,7 +26,6 @@ namespace Disarray::Vulkan {
 
 	template <std::size_t Vertices> void BatchRenderer<Vertices>::submit(Renderer& renderer, Disarray::CommandExecutor& command_executor)
 	{
-		renderer.get_editable_push_constant().max_identifiers = submitted_geometries;
 		quads.submit(renderer, command_executor);
 		lines.submit(renderer, command_executor);
 	}
@@ -54,9 +53,30 @@ namespace Disarray::Vulkan {
 		vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(mesh.get_indices().size()), 1, 0, 0, 0);
 	}
 
-	void Renderer::submit_batched_geometry(Disarray::CommandExecutor& executor) { render_batch.submit(*this, executor); }
+	void Renderer::submit_batched_geometry(Disarray::CommandExecutor& executor)
+	{
+		render_batch.submit(*this, executor);
+		render_batch.reset();
+	}
+
+	void Renderer::on_batch_full(std::function<void(Disarray::Renderer&)>&& func) { on_batch_full_func = func; }
+
+	void Renderer::flush_batch(Disarray::CommandExecutor& executor)
+	{
+		render_batch.submit(*this, executor);
+		render_batch.reset();
+	}
 
 	void Renderer::draw_planar_geometry(Geometry geometry, const GeometryProperties& properties)
+	{
+		add_geometry_to_batch(geometry, properties);
+
+		if (render_batch.is_full()) {
+			on_batch_full_func(*this);
+		}
+	}
+
+	void Renderer::add_geometry_to_batch(Disarray::Geometry geometry, const Disarray::GeometryProperties& properties)
 	{
 		switch (geometry) {
 		case Geometry::Circle:

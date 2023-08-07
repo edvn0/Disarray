@@ -17,4 +17,6 @@ namespace Disarray {
 	{
 	}
 
+	void Entity::add_child(Entity child_of_this) { }
+
 } // namespace Disarray

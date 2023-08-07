@@ -27,7 +27,7 @@ namespace Disarray {
 		virtual VertexBuffer& get_vertices() = 0;
 		virtual IndexBuffer& get_indices() = 0;
 
-		static Ref<Mesh> construct(Disarray::Device&, Disarray::Swapchain&, const MeshProperties& = {});
+		static Ref<Mesh> construct(Disarray::Device&, const MeshProperties& = {});
 	};
 
 } // namespace Disarray

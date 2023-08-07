@@ -30,6 +30,8 @@ namespace Disarray {
 			return registry.emplace<T>(identifier, std::forward<Args>(args)...);
 		}
 
+		void add_child(Entity);
+
 	private:
 		Scene& scene;
 		std::string name;

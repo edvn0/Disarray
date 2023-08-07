@@ -19,7 +19,7 @@ public:                                                                         
 
 	class BaseBuffer : public PropertySupplier<VkBuffer> {
 	protected:
-		BaseBuffer(Disarray::Device&, Disarray::Swapchain&, BufferType type, const Disarray::BufferProperties&);
+		BaseBuffer(Disarray::Device&, BufferType type, const Disarray::BufferProperties&);
 
 		virtual std::size_t size() { return count; }
 		virtual void set_data(const void*, std::uint32_t);
@@ -30,7 +30,7 @@ public:                                                                         
 		VkBuffer supply() const override { return buffer; }
 
 	private:
-		void create_with_valid_data(Disarray::Swapchain&);
+		void create_with_valid_data();
 		void create_with_empty_data();
 		VkBufferUsageFlags to_vulkan_usage(BufferType type);
 
