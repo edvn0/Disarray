@@ -7,10 +7,6 @@
 #include <cstdint>
 #include <type_traits>
 
-#define DISARRAY_MAKE_REFERENCE_COUNTABLE(x)                                                                                                         \
-public:                                                                                                                                              \
-	virtual ~x() override = default;
-
 namespace Disarray {
 
 	class ReferenceCountable {

@@ -26,12 +26,6 @@
 
 namespace Disarray::Vulkan {
 
-	template <std::size_t Vertices> void BatchRenderer<Vertices>::submit(Renderer& renderer, Disarray::CommandExecutor& command_executor)
-	{
-		quads.submit(renderer, command_executor);
-		lines.submit(renderer, command_executor);
-	}
-
 	Renderer::Renderer(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::RendererProperties& properties)
 		: device(dev)
 		, swapchain(sc)
@@ -50,15 +44,16 @@ namespace Disarray::Vulkan {
 
 		pipeline_cache = make_scope<PipelineCache>(device, swapchain, "Assets/Shaders");
 		auto samples = SampleCount::ONE;
-		geometry_framebuffer = Framebuffer::construct(device, swapchain, { .samples = samples, .debug_name = "RendererFramebuffer" });
+		geometry_framebuffer
+			= Framebuffer::construct(device, { .samples = samples, .extent = swapchain.get_extent(), .debug_name = "RendererFramebuffer" });
 
 		PipelineCacheCreationProperties pipeline_properties = {
 			.pipeline_key = "quad",
 			.shader_key = "quad",
 			.framebuffer = geometry_framebuffer,
 			.layout = { LayoutElement { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float2, "normals" },
-				{ ElementType::Float4, "colour" } },
-			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, std::size_t { 80 } } },
+				{ ElementType::Float4, "colour" }, { ElementType::Uint, "identifier" } },
+			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, sizeof(PushConstant) } },
 			.extent = swapchain.get_extent(),
 			.samples = samples,
 			.descriptor_set_layout = layouts.data(),
@@ -72,7 +67,8 @@ namespace Disarray::Vulkan {
 			// Line
 			pipeline_properties.pipeline_key = "line";
 			pipeline_properties.shader_key = "line";
-			pipeline_properties.line_width = 5.0f;
+			pipeline_properties.line_width = 8.0f;
+			pipeline_properties.polygon_mode = PolygonMode::Line;
 			pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" } };
 			pipeline_cache->put(pipeline_properties);
 		}
@@ -92,16 +88,6 @@ namespace Disarray::Vulkan {
 	}
 
 	void Renderer::on_resize() { extent = swapchain.get_extent(); }
-
-	void Renderer::expose_to_shaders(Disarray::Image& image)
-	{
-		const auto& descriptor_info = cast_to<Vulkan::Image>(image).get_descriptor_info();
-		// Check if we can just add it to the descriptor sets
-
-		// If not, reallocate
-		// Else, add it
-		// update descriptor sets?
-	}
 
 	void Renderer::begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& fb, bool explicit_clear)
 	{
@@ -175,47 +161,6 @@ namespace Disarray::Vulkan {
 
 	void Renderer::end_pass(Disarray::CommandExecutor& executor) { vkCmdEndRenderPass(supply_cast<Vulkan::CommandExecutor>(executor)); }
 
-	void Renderer::draw_mesh(Disarray::CommandExecutor& executor, Disarray::Mesh& mesh, const GeometryProperties& properties)
-	{
-		auto command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
-		const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh.get_pipeline());
-		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
-
-		pc.object_transform = properties.to_transform();
-		vkCmdPushConstants(
-			command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &pc);
-
-		const std::array<VkDescriptorSet, 1> desc { get_descriptor_set() };
-		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, 1, desc.data(), 0, nullptr);
-
-		std::array<VkBuffer, 1> arr;
-		arr[0] = supply_cast<Vulkan::VertexBuffer>(mesh.get_vertices());
-		VkDeviceSize offsets[] = { 0 };
-		vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets);
-
-		vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(mesh.get_indices()), 0, VK_INDEX_TYPE_UINT32);
-
-		vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(mesh.get_indices().size()), 1, 0, 0, 0);
-	}
-
-	void Renderer::submit_batched_geometry(Disarray::CommandExecutor& executor) { render_batch.submit(*this, executor); }
-
-	void Renderer::draw_planar_geometry(Geometry geometry, const GeometryProperties& properties)
-	{
-		switch (geometry) {
-		case Geometry::Circle:
-			break;
-		case Geometry::Triangle:
-			break;
-		case Geometry::Line:
-			render_batch.lines.create_new(properties);
-			break;
-		case Geometry::Rectangle:
-			render_batch.quads.create_new(properties);
-			break;
-		}
-	}
-
 	void Renderer::begin_frame(UsageBadge<App>, Camera& camera)
 	{
 		// TODO: Move to some kind of scene scope?
@@ -240,96 +185,6 @@ namespace Disarray::Vulkan {
 		on_resize();
 		// default_framebuffer->force_recreation();
 	}
-
-	void Renderer::initialise_descriptors()
-	{
-		auto vk_device = supply_cast<Vulkan::Device>(device);
-
-		TextureProperties texture_properties { .debug_name = "viking" };
-		texture_properties.path = "Assets/Textures/viking_room.png";
-		texture_properties.format = ImageFormat::SRGB;
-		auto viking_room = texture_cache.emplace_back(Texture::construct(device, swapchain, texture_properties));
-
-		std::array<VkDescriptorSetLayoutBinding, 2> bindings {};
-		{
-			auto binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
-			binding.descriptorCount = 1;
-			binding.binding = 0;
-			binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
-			bindings[0] = binding;
-		}
-		{
-			auto binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
-			binding.descriptorCount = 1;
-			binding.binding = 1;
-			binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-			bindings[1] = binding;
-		}
-
-		auto layout_create_info = vk_structures<VkDescriptorSetLayoutCreateInfo> {}();
-		layout_create_info.bindingCount = static_cast<std::uint32_t>(bindings.size());
-		layout_create_info.pBindings = bindings.data();
-
-		layouts.resize(1);
-		verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, layouts.data()));
-
-		auto frames = swapchain.image_count();
-
-		std::array<VkDescriptorPoolSize, 2> sizes;
-		sizes[0] = vk_structures<VkDescriptorPoolSize> {}(frames, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		sizes[1] = vk_structures<VkDescriptorPoolSize> {}(frames, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-
-		auto pool_create_info = vk_structures<VkDescriptorPoolCreateInfo> {}();
-		pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		pool_create_info.poolSizeCount = static_cast<std::uint32_t>(sizes.size());
-		pool_create_info.pPoolSizes = sizes.data();
-		pool_create_info.maxSets = static_cast<std::uint32_t>(frames * sizes.size());
-
-		verify(vkCreateDescriptorPool(vk_device, &pool_create_info, nullptr, &pool));
-
-		std::vector<VkDescriptorSetLayout> desc_layouts(swapchain.image_count(), layouts[0]);
-		VkDescriptorSetAllocateInfo alloc_info {};
-		alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		alloc_info.descriptorPool = pool;
-		alloc_info.descriptorSetCount = static_cast<uint32_t>(swapchain.image_count());
-		alloc_info.pSetLayouts = desc_layouts.data();
-
-		std::vector<VkDescriptorSet> sets(swapchain.image_count());
-		descriptors.resize(swapchain.image_count());
-		std::size_t i = 0;
-		vkAllocateDescriptorSets(vk_device, &alloc_info, sets.data());
-		for (auto& descriptor : descriptors) {
-			descriptor.set = sets[i];
-
-			VkDescriptorBufferInfo buffer_info {};
-			buffer_info.buffer = cast_to<Vulkan::UniformBuffer>(frame_ubos[i])->supply();
-			buffer_info.offset = 0;
-			buffer_info.range = sizeof(UBO);
-
-			auto write_sets = vk_structures<VkWriteDescriptorSet, 2> {}.multiple();
-			write_sets[0].dstSet = descriptors[i].set;
-			write_sets[0].dstBinding = 0;
-			write_sets[0].dstArrayElement = 0;
-			write_sets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			write_sets[0].descriptorCount = 1;
-			write_sets[0].pBufferInfo = &buffer_info;
-
-			VkDescriptorImageInfo image_info = cast_to<Vulkan::Image>(viking_room->get_image()).get_descriptor_info();
-			write_sets[1].dstSet = descriptors[i].set;
-			write_sets[1].dstBinding = 1;
-			write_sets[1].dstArrayElement = 0;
-			write_sets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			write_sets[1].descriptorCount = 1;
-			write_sets[1].pImageInfo = &image_info;
-
-			vkUpdateDescriptorSets(vk_device, static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
-			i++;
-		}
-	}
-
-	VkDescriptorSet Renderer::get_descriptor_set(std::uint32_t index) { return descriptors[index].set; }
 
 	void Renderer::FrameDescriptor::destroy(Disarray::Device& dev) { }
 

@@ -25,6 +25,9 @@ namespace Disarray {
 		std::uint32_t get_size() const { return width * height; }
 
 		float aspect_ratio() const { return static_cast<float>(width) / static_cast<float>(height); }
+
+		bool operator==(const Extent& other) const { return width == other.width && height == other.height; }
+		bool operator!=(const Extent& other) const { return width != other.width || height != other.height; }
 	};
 
 	enum class ImageFormat { SRGB, RGB, SBGR, BGR, Depth, DepthStencil };

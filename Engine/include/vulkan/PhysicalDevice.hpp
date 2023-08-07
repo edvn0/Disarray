@@ -13,6 +13,9 @@ namespace Disarray::Vulkan {
 		explicit PhysicalDevice(Disarray::Instance&, Disarray::Surface&);
 		~PhysicalDevice() override;
 
+		void recreate(bool, const Disarray::Extent&) override { }
+		void force_recreation() override { }
+
 		Disarray::QueueFamilyIndex& get_queue_family_indexes() override { return *queue_family_index; }
 
 		VkPhysicalDevice supply() const override { return physical_device; }

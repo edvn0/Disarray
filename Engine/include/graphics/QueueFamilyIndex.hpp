@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/DisarrayObject.hpp"
 #include "core/Types.hpp"
 
 #include <optional>
@@ -12,7 +13,7 @@ namespace Disarray {
 	class PhysicalDevice;
 
 	class QueueFamilyIndex : public ReferenceCountable {
-		DISARRAY_MAKE_REFERENCE_COUNTABLE(QueueFamilyIndex)
+		DISARRAY_OBJECT(QueueFamilyIndex)
 	public:
 		std::uint32_t get_graphics_family() const { return get_or_throw(graphics); };
 		std::uint32_t get_compute_family() const { return get_or_throw(compute); };

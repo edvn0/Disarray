@@ -40,9 +40,8 @@ namespace Disarray::Vulkan {
 		}
 	}
 
-	Image::Image(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::ImageProperties& properties)
+	Image::Image(Disarray::Device& dev, const Disarray::ImageProperties& properties)
 		: device(dev)
-		, swapchain(sc)
 		, props(properties)
 	{
 		recreate_image(false);
@@ -62,7 +61,11 @@ namespace Disarray::Vulkan {
 
 	Image::~Image() { destroy_resources(); }
 
-	void Image::recreate(bool should_clean) { recreate_image(should_clean); }
+	void Image::recreate(bool should_clean, const Extent& extent)
+	{
+		props.extent = extent;
+		recreate_image(should_clean);
+	}
 
 	void Image::recreate_image(bool should_clean)
 	{
@@ -150,8 +153,7 @@ namespace Disarray::Vulkan {
 		}
 
 		{
-			auto executor = construct_immediate(device, swapchain);
-			auto buffer = supply_cast<Vulkan::CommandExecutor>(*executor);
+			auto executor = construct_immediate(device);
 			VkImageSubresourceRange subresource_range = {};
 			subresource_range.aspectMask = aspect_mask;
 			subresource_range.baseMipLevel = 0;
@@ -170,7 +172,7 @@ namespace Disarray::Vulkan {
 			image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
 			vkCmdPipelineBarrier(
-				buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+				executor->supply(), VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
 
 			VkBufferImageCopy buffer_copy_region = {};
 			buffer_copy_region.imageSubresource.aspectMask = aspect_mask;
@@ -182,12 +184,12 @@ namespace Disarray::Vulkan {
 			buffer_copy_region.imageExtent.depth = 1;
 			buffer_copy_region.bufferOffset = 0;
 
-			set_image_layout(buffer, info.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
+			set_image_layout(executor->supply(), info.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
 
-			vkCmdCopyBufferToImage(buffer, staging, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &buffer_copy_region);
+			vkCmdCopyBufferToImage(executor->supply(), staging, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &buffer_copy_region);
 
 			auto layout = to_vulkan_layout(props.format);
-			set_image_layout(buffer, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout, subresource_range);
+			set_image_layout(executor->supply(), info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout, subresource_range);
 		}
 
 		staging_allocator.deallocate_buffer(staging_allocation, staging);

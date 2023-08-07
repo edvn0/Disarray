@@ -34,6 +34,9 @@ namespace Disarray::Vulkan {
 			return VK_FORMAT_R16G16B16_SINT;
 		case ElementType::Int4:
 			return VK_FORMAT_R16G16B16A16_SINT;
+		case ElementType::Uint:
+			// SPECIAL CASE FOR IDENTIFIERS
+			return VK_FORMAT_R32_UINT;
 		case ElementType::Uint2:
 			return VK_FORMAT_R16G16_UINT;
 		case ElementType::Uint3:
@@ -73,9 +76,8 @@ namespace Disarray::Vulkan {
 		}
 	}
 
-	Pipeline::Pipeline(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::PipelineProperties& properties)
+	Pipeline::Pipeline(Disarray::Device& dev, const Disarray::PipelineProperties& properties)
 		: device(dev)
-		, swapchain(sc)
 		, props(properties)
 	{
 		recreate_pipeline(false);
@@ -272,7 +274,7 @@ namespace Disarray::Vulkan {
 			vkDestroyPipeline(supply_cast<Vulkan::Device>(device), pipeline, nullptr);
 		}
 
-		props.extent = swapchain.get_extent();
+		// get the new extent somehow
 		construct_layout();
 	}
 

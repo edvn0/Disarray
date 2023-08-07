@@ -22,4 +22,5 @@ namespace Disarray {
 	class Texture;
 	class App;
 	class VertexBuffer;
+	class Scene;
 } // namespace Disarray

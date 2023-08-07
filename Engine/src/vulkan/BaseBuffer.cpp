@@ -40,7 +40,7 @@ namespace Disarray::Vulkan {
 		allocation = allocator.allocate_buffer(buffer, typed_create_info, { .usage = usage });
 
 		{
-			auto executor = construct_immediate(device, swapchain);
+			auto executor = construct_immediate(device);
 			VkBufferCopy copy_region = {};
 			copy_region.size = props.size;
 			vkCmdCopyBuffer(executor->supply(), staging_buffer, buffer, 1, &copy_region);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
 #include "graphics/Device.hpp"
@@ -18,7 +19,7 @@ namespace Disarray {
 	};
 
 	class Shader : public ReferenceCountable {
-		DISARRAY_MAKE_REFERENCE_COUNTABLE(Shader)
+		DISARRAY_OBJECT(Shader)
 	public:
 		virtual std::string_view path() const = 0;
 		virtual void destroy_module() = 0;

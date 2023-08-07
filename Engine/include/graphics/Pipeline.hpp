@@ -2,6 +2,7 @@
 
 #include "Forward.hpp"
 #include "PushConstantLayout.hpp"
+#include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
 #include "graphics/Framebuffer.hpp"
@@ -28,6 +29,7 @@ namespace Disarray {
 		Int2,
 		Int3,
 		Int4,
+		Uint,
 		Uint2,
 		Uint3,
 		Uint4,
@@ -44,6 +46,8 @@ namespace Disarray {
 			return sizeof(float) * 3;
 		case ElementType::Float4:
 			return sizeof(float) * 4;
+		case ElementType::Uint:
+			return sizeof(unsigned);
 		default:
 			throw std::runtime_error("Could not map to size.");
 		}
@@ -116,10 +120,8 @@ namespace Disarray {
 	};
 
 	class Pipeline : public ReferenceCountable {
-		DISARRAY_MAKE_REFERENCE_COUNTABLE(Pipeline)
+		DISARRAY_OBJECT(Pipeline)
 	public:
-		virtual void force_recreation() = 0;
-
 		virtual Disarray::RenderPass& get_render_pass() = 0;
 		virtual Disarray::Framebuffer& get_framebuffer() = 0;
 
@@ -127,7 +129,7 @@ namespace Disarray {
 
 		virtual const PipelineProperties& get_properties() const = 0;
 
-		static Ref<Pipeline> construct(Disarray::Device&, Disarray::Swapchain&, const PipelineProperties&);
+		static Ref<Pipeline> construct(Disarray::Device&, const PipelineProperties&);
 	};
 
 } // namespace Disarray

@@ -99,7 +99,7 @@ namespace Disarray::UI {
 		ImGui_ImplVulkan_Init(&init_info, supply_cast<Vulkan::RenderPass>(swapchain.get_render_pass()));
 
 		{
-			auto executor = Vulkan::construct_immediate(device, swapchain);
+			auto executor = Vulkan::construct_immediate(device);
 			ImGui_ImplVulkan_CreateFontsTexture(executor->supply());
 		}
 
@@ -107,7 +107,7 @@ namespace Disarray::UI {
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
 	}
 
-	void InterfaceLayer::handle_swapchain_recreation(Renderer&) { command_executor->recreate(true); }
+	void InterfaceLayer::handle_swapchain_recreation(Renderer&) { command_executor->recreate(true, {}); }
 
 	void InterfaceLayer::update(float ts) { }
 
