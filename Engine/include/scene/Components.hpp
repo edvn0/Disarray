@@ -3,6 +3,7 @@
 #include "core/Concepts.hpp"
 #include "core/UniquelyIdentifiable.hpp"
 
+#include <entt/entt.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -31,7 +32,7 @@ namespace Disarray {
 		{
 		}
 
-		const auto compute() const { return translate_matrix(position) * glm::mat4_cast(rotation) * scale_matrix(scale); }
+		auto compute() const { return translate_matrix(position) * glm::mat4_cast(rotation) * scale_matrix(scale); }
 	};
 
 	struct ID {
@@ -40,6 +41,9 @@ namespace Disarray {
 		std::uint32_t get_identifier() const { return static_cast<std::uint32_t>(identifier); }
 	};
 
-	struct Child { };
+	struct Inheritance {
+		entt::entity child {};
+		entt::entity parent {};
+	};
 
 } // namespace Disarray

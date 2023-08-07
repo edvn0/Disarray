@@ -8,6 +8,7 @@
 #include "core/Layer.hpp"
 #include "core/Log.hpp"
 #include "core/Panel.hpp"
+#include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
 #include "core/Window.hpp"
 #include "graphics/CommandExecutor.hpp"

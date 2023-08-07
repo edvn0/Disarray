@@ -122,7 +122,7 @@ namespace Disarray::Vulkan {
 				.count = line_indices.size(),
 			});
 
-		vertex_buffer = make_scope<Vulkan::VertexBuffer>(dev, BufferProperties { .size = vertices.size() * vertex_count, .count = vertices.size() });
+		vertex_buffer = make_scope<Vulkan::VertexBuffer>(dev, BufferProperties { .size = buffer_size(), .count = vertices.size() });
 	}
 
 	template <>

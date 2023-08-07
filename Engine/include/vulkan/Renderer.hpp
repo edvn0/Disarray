@@ -20,7 +20,7 @@ namespace Disarray::Vulkan {
 		std::uint32_t max_identifiers {};
 	};
 
-	static constexpr auto max_objects = 500;
+	static constexpr auto max_objects = 5;
 
 	// Forward declaration for the vulkan renderer!
 	class Renderer;
@@ -107,7 +107,7 @@ namespace Disarray::Vulkan {
 			lines.flush();
 		}
 
-		bool is_full() const
+		constexpr bool is_full() const
 		{
 			bool batch_would_be_full = false;
 			std::array<std::uint32_t, 2> batch_objects { quads.submitted_objects, lines.submitted_objects };

@@ -13,10 +13,15 @@
 
 template <class Position = glm::vec3> static constexpr auto draw_axes(auto& renderer, const Position& position)
 {
+	// X is red
 	renderer.draw_planar_geometry(Disarray::Geometry::Line,
 		Disarray::GeometryProperties { .position = position, .to_position = position + glm::vec3 { 10.0, 0, 0 }, .colour = { 1, 0, 0, 1 } });
+
+	// Y is green
 	renderer.draw_planar_geometry(Disarray::Geometry::Line,
 		Disarray::GeometryProperties { .position = position, .to_position = position + glm::vec3 { 0, -10.0, 0 }, .colour = { 0, 1, 0, 1 } });
+
+	// Z is blue
 	renderer.draw_planar_geometry(Disarray::Geometry::Line,
 		Disarray::GeometryProperties { .position = position, .to_position = position + glm::vec3 { 0, 0, -10.0 }, .colour = { 0, 0, 1, 1 } });
 }
@@ -31,16 +36,15 @@ namespace Disarray {
 		, registry(entt::basic_registry())
 	{
 		(void)window.native();
-		int rects_x { 50 };
-		int rects_y { 50 };
+		int rects_x { 6 };
+		int rects_y { 6 };
 		auto parent = create("Grid");
-		for (auto i = -25; i < rects_x; i++) {
-			for (auto j = -25; j < rects_y; j++) {
+		for (auto i = -3; i < rects_x + 1; i++) {
+			for (auto j = -3; j < rects_y + 1; j++) {
 				auto rect = create(fmt::format("Rect{}", i));
-				parent.add_child(rect);
+				parent.add_child(&rect);
 				auto& transform = rect.get_components<Transform>();
-				transform.position = { static_cast<float>(i) / 50.0f, 0, static_cast<float>(j) / 50.f };
-				transform.scale;
+				transform.position = { static_cast<float>(i), 0, static_cast<float>(j) };
 			}
 		}
 	}
@@ -141,7 +145,7 @@ namespace Disarray {
 			// renderer.draw_text("Hello world!", 0, 0, 12.f);
 
 			// TODO: Temporary
-			// draw_axes(renderer, glm::vec3 { 0, -0.1, 0 });
+			draw_axes(renderer, glm::vec3 { 0, 0, 0 });
 
 			renderer.submit_batched_geometry(*command_executor);
 			renderer.end_pass(*command_executor);
