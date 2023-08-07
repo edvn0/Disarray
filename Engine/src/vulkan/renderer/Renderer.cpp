@@ -42,7 +42,7 @@ namespace Disarray::Vulkan {
 
 		initialise_descriptors();
 
-		pipeline_cache = make_scope<PipelineCache>(device, swapchain, "Assets/Shaders");
+		pipeline_cache = make_scope<PipelineCache>(device, "Assets/Shaders");
 		auto samples = SampleCount::ONE;
 		geometry_framebuffer
 			= Framebuffer::construct(device, { .samples = samples, .extent = swapchain.get_extent(), .debug_name = "RendererFramebuffer" });

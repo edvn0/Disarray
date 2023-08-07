@@ -18,7 +18,6 @@ namespace Disarray::Client {
 		void destruct() override;
 
 	private:
-		Device& device;
 		Window& window;
 		Swapchain& swapchain;
 		Scene scene;

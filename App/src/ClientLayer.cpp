@@ -9,10 +9,11 @@
 namespace Disarray::Client {
 
 	AppLayer::AppLayer(Device& dev, Window& win, Swapchain& swap)
-		: device(dev)
-		, window(win)
+		: window(win)
 		, swapchain(swap)
-		, scene(dev, win, swap, "Default scene") {};
+		, scene(dev, win, swap, "Default scene") {
+  (void)window.native();
+};
 
 	AppLayer::~AppLayer() = default;
 

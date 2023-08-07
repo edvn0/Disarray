@@ -2,6 +2,7 @@
 
 #include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
+#include "graphics/CommandExecutor.hpp"
 #include "graphics/Mesh.hpp"
 #include "graphics/Texture.hpp"
 

@@ -51,9 +51,8 @@ namespace Disarray {
 		pipeline_cache.clear();
 	}
 
-	PipelineCache::PipelineCache(Disarray::Device& dev, Disarray::Swapchain& sc, const std::filesystem::path& base)
+	PipelineCache::PipelineCache(Disarray::Device& dev, const std::filesystem::path& base)
 		: device(dev)
-		, swapchain(sc)
 		, path(base)
 	{
 		const auto all_files = get_unique_files_recursively();
