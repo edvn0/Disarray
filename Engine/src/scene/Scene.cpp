@@ -30,7 +30,7 @@ namespace Disarray {
 		, scene_name(name)
 		, registry(entt::basic_registry())
 	{
-    (void)window.native();
+		(void)window.native();
 		std::size_t rects { 10 };
 		auto j = 0;
 		for (std::size_t i = 0; i < rects; i++) {
