@@ -11,14 +11,18 @@
 
 namespace Disarray {
 
-	template <> void RenderBatchFor<QuadVertex, max_objects, vertex_count<QuadVertex>>::construct(Disarray::Renderer& renderer, Disarray::Device& dev)
+	template <>
+	void RenderBatchFor<QuadVertex, max_objects, vertex_per_object_count<QuadVertex>, index_per_object_count<QuadVertex>>::construct(
+		Disarray::Renderer& renderer, Disarray::Device& dev)
 	{
+		reset();
+
 		const auto& quad_pipeline = renderer.get_pipeline_cache().get("quad");
 		pipeline = cast_to<Vulkan::Pipeline>(quad_pipeline);
 		std::vector<std::uint32_t> quad_indices;
-		quad_indices.resize(vertices.size() * 6);
+		quad_indices.resize(vertices.size() * index_per_object_count<QuadVertex>);
 		std::uint32_t offset = 0;
-		for (std::size_t i = 0; i < vertices.size() * 6; i += 6) {
+		for (std::size_t i = 0; i < vertices.size() * index_per_object_count<QuadVertex>; i += index_per_object_count<QuadVertex>) {
 			quad_indices[i + 0] = 0 + offset;
 			quad_indices[i + 1] = 1 + offset;
 			quad_indices[i + 2] = 2 + offset;
@@ -30,7 +34,7 @@ namespace Disarray {
 		index_buffer = make_scope<Vulkan::IndexBuffer>(dev,
 			BufferProperties {
 				.data = quad_indices.data(),
-				.size = quad_indices.size() * vertex_count<QuadVertex>,
+				.size = quad_indices.size() * index_per_object_count<QuadVertex>,
 				.count = quad_indices.size(),
 			});
 
@@ -38,7 +42,7 @@ namespace Disarray {
 	}
 
 	template <>
-	void RenderBatchFor<QuadVertex, max_objects, vertex_count<QuadVertex>>::submit(
+	void RenderBatchFor<QuadVertex, max_objects, vertex_per_object_count<QuadVertex>, index_per_object_count<QuadVertex>>::submit(
 		Disarray::Renderer& renderer, Disarray::CommandExecutor& command_executor)
 	{
 		if (submitted_indices == 0)
@@ -80,7 +84,8 @@ namespace Disarray {
 	}
 
 	template <>
-	void RenderBatchFor<QuadVertex, max_objects, vertex_count<QuadVertex>>::create_new(Geometry geom, const Disarray::GeometryProperties& props)
+	void RenderBatchFor<QuadVertex, max_objects, vertex_per_object_count<QuadVertex>, index_per_object_count<QuadVertex>>::create_new(
+		Geometry geom, const Disarray::GeometryProperties& props)
 	{
 		if (geom != Geometry::Rectangle)
 			return;
@@ -93,7 +98,7 @@ namespace Disarray {
 		glm::mat4 transform
 			= glm::translate(glm::mat4 { 1.0f }, props.position) * glm::mat4_cast(props.rotation) * glm::scale(glm::mat4 { 1.0f }, *props.dimensions);
 
-		for (std::size_t i = 0; i < vertex_count<QuadVertex>; i++) {
+		for (std::size_t i = 0; i < vertex_per_object_count<QuadVertex>; i++) {
 			auto& vertex = emplace();
 			vertex.pos = transform * quad_positions[i];
 			vertex.normals = transform * quad_normal;
@@ -108,23 +113,24 @@ namespace Disarray {
 
 	// LINES
 
-	template <> void RenderBatchFor<LineVertex, max_objects, vertex_count<LineVertex>>::construct(Disarray::Renderer& renderer, Disarray::Device& dev)
+	template <>
+	void RenderBatchFor<LineVertex, max_objects, vertex_per_object_count<LineVertex>, index_per_object_count<LineVertex>>::construct(
+		Disarray::Renderer& renderer, Disarray::Device& dev)
 	{
+		reset();
+
 		pipeline = cast_to<Vulkan::Pipeline>(renderer.get_pipeline_cache().get("line"));
 
 		std::vector<std::uint32_t> line_indices;
-		line_indices.resize(vertices.size() * vertex_count<LineVertex>);
-		std::uint32_t offset = 0;
-		for (std::size_t i = 0; i < vertices.size() * vertex_count<LineVertex>; i += vertex_count<LineVertex>) {
-			line_indices[i] = offset;
-			line_indices[i + 1] = offset + 1;
-			offset += vertex_count<LineVertex>;
+		line_indices.resize(vertices.size() * index_per_object_count<LineVertex>);
+		for (std::size_t i = 0; i < line_indices.size(); i++) {
+			line_indices[i] = static_cast<std::uint32_t>(i);
 		}
 
 		index_buffer = make_scope<Vulkan::IndexBuffer>(dev,
 			BufferProperties {
 				.data = line_indices.data(),
-				.size = line_indices.size() * vertex_count<LineVertex>,
+				.size = line_indices.size() * index_per_object_count<LineVertex>,
 				.count = line_indices.size(),
 			});
 
@@ -132,7 +138,7 @@ namespace Disarray {
 	}
 
 	template <>
-	void RenderBatchFor<LineVertex, max_objects, vertex_count<LineVertex>>::submit(
+	void RenderBatchFor<LineVertex, max_objects, vertex_per_object_count<LineVertex>, index_per_object_count<LineVertex>>::submit(
 		Disarray::Renderer& renderer, Disarray::CommandExecutor& command_executor)
 	{
 		if (submitted_indices == 0)
@@ -168,12 +174,12 @@ namespace Disarray {
 				command_buffer.get_buffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->get_vulkan_pipeline_layout(), 0, 1, &descriptor, 0, nullptr);
 		}*/
 
-		const auto count = index_count;
-		vkCmdDrawIndexed(command_buffer, count, count / 2, 0, 0, 0);
+		vkCmdDrawIndexed(command_buffer, index_count, 1, 0, 0, 0);
 	}
 
 	template <>
-	void RenderBatchFor<LineVertex, max_objects, vertex_count<LineVertex>>::create_new(Geometry geom, const Disarray::GeometryProperties& props)
+	void RenderBatchFor<LineVertex, max_objects, vertex_per_object_count<LineVertex>, index_per_object_count<LineVertex>>::create_new(
+		Geometry geom, const Disarray::GeometryProperties& props)
 	{
 		if (geom != Geometry::Line)
 			return;

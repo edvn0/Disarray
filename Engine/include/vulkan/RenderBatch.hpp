@@ -25,10 +25,11 @@ namespace Disarray {
 		}
 	} // namespace Detail
 
-	static constexpr auto max_objects = 500;
+	static constexpr auto max_objects = 200;
 
-	template <class T, std::size_t Objects = max_objects, std::size_t VertexCount = 0>
-		requires(std::is_default_constructible_v<T> && VertexCount != 0)
+	template <IsValidVertexType T, std::size_t Objects = max_objects, std::size_t VertexCount = vertex_per_object_count<T>,
+		std::size_t IndexCount = index_per_object_count<T>>
+		requires(std::is_default_constructible_v<T> && VertexCount != 0 && IndexCount != 0)
 	struct RenderBatchFor {
 		// We want for example to be able to write 100 quads, which requires 100 * vertex_count(Quad) = 4 vertices
 		std::array<T, Objects * VertexCount> vertices {};
@@ -64,7 +65,7 @@ namespace Disarray {
 	};
 
 	template <std::size_t Objects = max_objects, IsValidVertexType... T> struct BatchRenderer {
-		std::tuple<RenderBatchFor<T, Objects, vertex_count<T>>...> objects {};
+		std::tuple<RenderBatchFor<T, Objects, vertex_per_object_count<T>, index_per_object_count<T>>...> objects {};
 
 		// How many times have we submitted geometries?
 		// Used by shaders to determine scale of picking count

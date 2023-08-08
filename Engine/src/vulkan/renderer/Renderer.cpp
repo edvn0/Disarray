@@ -31,6 +31,7 @@ namespace Disarray::Vulkan {
 		, pipeline_cache(dev, "Assets/Shaders")
 		, texture_cache(dev, "Assets/Textures")
 		, props(properties)
+		, extent(swapchain.get_extent())
 	{
 		frame_ubos.resize(swapchain.image_count());
 		for (auto& ubo : frame_ubos) {
@@ -46,16 +47,16 @@ namespace Disarray::Vulkan {
 		auto samples = SampleCount::ONE;
 
 		FramebufferProperties geometry_props { .extent = swapchain.get_extent(),
-			.attachments = { { ImageFormat::SBGR }, { ImageFormat::Depth } },
+			.attachments = { { ImageFormat::SRGB }, { ImageFormat::Depth } },
 			.clear_colour_on_load = false,
 			.clear_depth_on_load = false,
 			.samples = samples,
 			.debug_name = "RendererFramebuffer" };
 		geometry_framebuffer = Framebuffer::construct(device, geometry_props);
 
-		auto quad_framebuffer = Framebuffer::construct(device,
+		quad_framebuffer = Framebuffer::construct(device,
 			{ .extent = swapchain.get_extent(),
-				.attachments = { { ImageFormat::SBGR },  { ImageFormat::Uint, false },{ ImageFormat::Depth }, },
+				.attachments = { { ImageFormat::SRGB },  { ImageFormat::Uint, false },{ ImageFormat::Depth }, },
 				.samples = samples,
 				.debug_name = "QuadFramebuffer" });
 
@@ -100,7 +101,14 @@ namespace Disarray::Vulkan {
 		descriptors.clear();
 	}
 
-	void Renderer::on_resize() { extent = swapchain.get_extent(); }
+	void Renderer::on_resize()
+	{
+		extent = swapchain.get_extent();
+		geometry_framebuffer->recreate(true, extent);
+		quad_framebuffer->recreate(true, extent);
+		texture_cache.force_recreate(extent);
+		pipeline_cache.force_recreate(extent);
+	}
 
 	void Renderer::begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& fb, bool explicit_clear)
 	{
@@ -191,11 +199,7 @@ namespace Disarray::Vulkan {
 
 	void Renderer::end_frame() { std::memset(&uniform, 0, sizeof(UBO)); }
 
-	void Renderer::force_recreation()
-	{
-		on_resize();
-		// default_framebuffer->force_recreation();
-	}
+	void Renderer::force_recreation() { on_resize(); }
 
 	void Renderer::FrameDescriptor::destroy(Disarray::Device& dev) { }
 

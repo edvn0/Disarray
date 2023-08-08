@@ -36,3 +36,6 @@ if (CMAKE_GENERATOR STREQUAL "Ninja")
             ${CMAKE_BINARY_DIR}/compile_commands.json ${CMAKE_SOURCE_DIR} OUTPUT OUT)
     message(STATUS "Copying ${CMAKE_BINARY_DIR}/compile_commands.json to ${CMAKE_SOURCE_DIR}")
 endif()
+
+# Set global property (all targets are impacted)
+set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")

@@ -157,11 +157,17 @@ namespace Disarray::Client {
 		ImGui::End();
 		ImGui::PopStyleVar();
 
-		ImGui::Begin("Identity");
-		auto& other_image = scene.get_image(1);
-		auto viewport_size = ImGui::GetContentRegionAvail();
-		UI::image(other_image, { viewport_size.x, viewport_size.y });
-		ImGui::End();
+		UI::scope("Quads"sv, [&s = scene]() {
+			auto& other_image = s.get_image(1);
+			auto viewport_size = ImGui::GetContentRegionAvail();
+			UI::image(other_image, { viewport_size.x, viewport_size.y });
+		});
+
+		UI::scope("Depth"sv, [&s = scene]() {
+			auto& other_image = s.get_image(2);
+			auto viewport_size = ImGui::GetContentRegionAvail();
+			UI::image(other_image, { viewport_size.x, viewport_size.y });
+		});
 
 		ImGui::End();
 	}

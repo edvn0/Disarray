@@ -30,7 +30,7 @@ namespace Disarray {
 		{
 			auto files = get_unique_files_recursively();
 			for (const auto& p : files) {
-				put(TextureCacheCreationProperties { .path = p.string() });
+				put(TextureCacheCreationProperties { .key = p.stem().string(), .path = p.string() });
 			}
 		}
 

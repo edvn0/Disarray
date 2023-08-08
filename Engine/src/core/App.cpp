@@ -56,7 +56,6 @@ namespace Disarray {
 		ThreadPool pool { 2 };
 
 		auto constructed_renderer = Renderer::construct(*device, *swapchain, {});
-		constructed_renderer->on_resize();
 
 		auto& l = add_layer<UI::InterfaceLayer>();
 		auto ui_layer = std::dynamic_pointer_cast<UI::InterfaceLayer>(l);

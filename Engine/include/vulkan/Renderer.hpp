@@ -59,10 +59,13 @@ namespace Disarray::Vulkan {
 
 		Disarray::Device& device;
 		Disarray::Swapchain& swapchain;
+
 		Disarray::PipelineCache pipeline_cache;
 		Disarray::TextureCache texture_cache;
-		Ref<Disarray::Framebuffer> geometry_framebuffer;
 		BatchRenderer<max_objects, QuadVertex, LineVertex> render_batch;
+
+		Ref<Disarray::Framebuffer> geometry_framebuffer;
+		Ref<Disarray::Framebuffer> quad_framebuffer;
 
 		std::function<void(Disarray::Renderer&)> on_batch_full_func = [](auto&) {};
 

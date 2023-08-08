@@ -22,7 +22,7 @@ namespace Disarray {
 	} // namespace CollectionOperations
 
 	struct StringHash {
-		using is_transparent = void; // enables heterogeneous lookup
+		using is_transparent = void;
 
 		std::size_t operator()(std::string_view sv) const
 		{
@@ -78,7 +78,8 @@ namespace Disarray {
 		{
 			std::unordered_set<std::filesystem::path> paths;
 			for (const auto& current : std::filesystem::recursive_directory_iterator { path }) {
-				if (!current.is_regular_file() || current.path().extension() != ".spv")
+				const auto has_correct_extension = extensions.contains(current.path().extension().string());
+				if (!current.is_regular_file() || !has_correct_extension)
 					continue;
 
 				paths.insert(current);

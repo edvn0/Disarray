@@ -37,8 +37,10 @@ namespace Disarray {
 		{
 			if (index == 0)
 				return framebuffer->get_image();
+			else if (index == 1)
+				return identity_framebuffer->get_image(1);
 			else
-				return identity_framebuffer->get_image();
+				return identity_framebuffer->get_depth_image();
 		}
 
 		const CommandExecutor& get_command_executor() const { return *command_executor; };

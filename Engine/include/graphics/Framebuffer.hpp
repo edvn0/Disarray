@@ -52,6 +52,7 @@ namespace Disarray {
 		DISARRAY_OBJECT(Framebuffer)
 	public:
 		virtual Disarray::Image& get_image(std::uint32_t index) = 0;
+		virtual Disarray::Image& get_depth_image() = 0;
 		Disarray::Image& get_image() { return get_image(0); };
 
 		virtual Disarray::RenderPass& get_render_pass() = 0;

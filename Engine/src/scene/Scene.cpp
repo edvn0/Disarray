@@ -63,23 +63,25 @@ namespace Disarray {
 				auto rect = create(fmt::format("Rect{}", i));
 				parent.add_child(&rect);
 				auto& transform = rect.get_components<Transform>();
-				transform.position = { static_cast<float>(i) + 0.5f, -1, static_cast<float>(j) + 0.5f };
+				transform.position = { 2 * static_cast<float>(i) + 0.5f, -1, 2 * static_cast<float>(j) + 0.5f };
 				transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
 				rect.add_component<Components::Geometry>(Geometry::Rectangle);
 				rect.add_component<Components::Texture>();
 			}
 		}
 
+#ifdef FLOOR
 		auto floor = create("Floor");
 		floor.add_component<Components::Geometry>();
 		floor.add_component<Components::Texture>(glm::vec4 { 0.2, 0.2, 0.8, 1.0f });
 		auto& floor_transform = floor.get_components<Transform>();
 		floor_transform.scale = { 100, 100, 1 };
 		floor_transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
+#endif
 
 		// TODO: Record stats does not work with recreation of query pools.
 		command_executor = CommandExecutor::construct(device, swapchain, { .count = 3, .is_primary = true, .record_stats = true });
-		renderer.on_batch_full([&exec = command_executor](Renderer& r) { r.flush_batch(*exec); });
+		renderer.on_batch_full([&exec = *command_executor](Renderer& r) { r.flush_batch(exec); });
 
 		VertexLayout layout { {
 			{ ElementType::Float3, "position" },
@@ -92,14 +94,14 @@ namespace Disarray {
 
 		framebuffer = Framebuffer::construct(device,
 			{ .extent = swapchain.get_extent(),
-				.attachments = { { Disarray::ImageFormat::SBGR }, { ImageFormat::Depth } },
+				.attachments = { { Disarray::ImageFormat::SRGB }, { ImageFormat::Depth } },
 				.clear_colour_on_load = false,
 				.clear_depth_on_load = false,
 				.debug_name = "FirstFramebuffer" });
 
 		identity_framebuffer = Framebuffer::construct(device,
 			{ .extent = swapchain.get_extent(),
-				.attachments = { { ImageFormat::SBGR },  { ImageFormat::Uint, false },{ ImageFormat::Depth }, },
+				.attachments = { { ImageFormat::SRGB },  { ImageFormat::Uint, false },{ ImageFormat::Depth }, },
 				.clear_colour_on_load = true,
 				.clear_depth_on_load = true,
 				.debug_name = "IdentityFramebuffer" });
@@ -213,20 +215,13 @@ namespace Disarray {
 				glm::vec4 pixel_data = image.read_pixel(pos);
 				Log::debug("Scene - PixelData", fmt::format("{}", pixel_data));
 			}
-
-			if (pressed.get_key_code() != KeyCode::K)
-				return false;
-			auto view = reg.view<Inheritance>();
-			for (const auto& [entity, inheritance] : view.each()) {
-				const auto& [children, parent] = inheritance;
-				Log::debug("Inheritance info", "parent: {}, children: {}", parent, fmt::join(children, ", "));
-			}
 			return true;
 		});
 	}
 
 	void Scene::recreate(const Extent& extent)
 	{
+		identity_framebuffer->recreate(true, extent);
 		framebuffer->recreate(true, extent);
 		command_executor->recreate(true, extent);
 	}

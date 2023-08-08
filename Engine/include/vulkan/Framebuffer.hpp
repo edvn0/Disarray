@@ -25,9 +25,10 @@ namespace Disarray::Vulkan {
 		}
 
 		VkFramebuffer supply() const override { return framebuffer; }
+		Image& get_image(std::uint32_t index) override { return *attachments.at(index); }
+		Disarray::Image& get_depth_image() override { return *depth_attachment; }
 
 		bool has_depth() override { return static_cast<bool>(depth_attachment); }
-		Image& get_image(std::uint32_t index) override { return *attachments.at(index); }
 		std::uint32_t get_colour_attachment_count() const override { return colour_count; }
 		Disarray::RenderPass& get_render_pass() override { return *render_pass; };
 		const auto& get_clear_values() const { return clear_values; }

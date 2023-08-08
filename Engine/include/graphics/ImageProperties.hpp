@@ -30,7 +30,7 @@ namespace Disarray {
 		bool operator!=(const Extent& other) const { return width != other.width || height != other.height; }
 	};
 
-	enum class ImageFormat { SRGB, RGB, SBGR, BGR, Depth, DepthStencil, Uint };
+	enum class ImageFormat { SRGB, RGB, SBGR, BGR, SRGB32, RGB32, Depth, DepthStencil, Uint };
 
 } // namespace Disarray
 

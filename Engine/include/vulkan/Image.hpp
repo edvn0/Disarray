@@ -27,6 +27,10 @@ namespace Disarray::Vulkan {
 			return VK_FORMAT_B8G8R8A8_SRGB;
 		case ImageFormat::BGR:
 			return VK_FORMAT_B8G8R8_SRGB;
+		case ImageFormat::SRGB32:
+			return VK_FORMAT_R32G32B32A32_SFLOAT;
+		case ImageFormat::RGB32:
+			return VK_FORMAT_R32G32B32_SFLOAT;
 		case ImageFormat::Uint:
 			return VK_FORMAT_R32_UINT;
 		case ImageFormat::Depth:
@@ -47,6 +51,10 @@ namespace Disarray::Vulkan {
 			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		case ImageFormat::RGB:
 			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		case ImageFormat::SRGB32:
+			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		case ImageFormat::RGB32:
+			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		case ImageFormat::SBGR:
 			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		case ImageFormat::BGR:
@@ -54,9 +62,9 @@ namespace Disarray::Vulkan {
 		case ImageFormat::Uint:
 			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		case ImageFormat::Depth:
-			return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 		case ImageFormat::DepthStencil:
-			return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 		default:
 			unreachable();
 		}
