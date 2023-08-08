@@ -50,21 +50,34 @@ namespace Disarray {
 		, registry(entt::basic_registry())
 	{
 		(void)window.native();
-		int rects_x { 6 };
-		int rects_y { 6 };
-		auto parent = create("Grid");
-		for (auto i = -3; i < rects_x + 1; i++) {
-			for (auto j = -3; j < rects_y + 1; j++) {
-				auto rect = create(fmt::format("Rect{}", i));
-				parent.add_child(&rect);
-				auto& transform = rect.get_components<Transform>();
-				transform.position = { static_cast<float>(i), 0, static_cast<float>(j) };
-			}
-		}
 	}
 
 	void Scene::construct(Disarray::App&, Disarray::Renderer& renderer, Disarray::ThreadPool&)
 	{
+		int rects_x { 2 };
+		int rects_y { 2 };
+		std::size_t loops { 0 };
+		auto parent = create("Grid");
+		for (auto j = -1; j < rects_y; j++) {
+			for (auto i = -1; i < rects_x; i++) {
+				auto rect = create(fmt::format("Rect{}", i));
+				parent.add_child(&rect);
+				auto& transform = rect.get_components<Transform>();
+				transform.position = { static_cast<float>(i) + 0.5f, -1, static_cast<float>(j) + 0.5f };
+				transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
+				rect.add_component<Components::Geometry>(Geometry::Rectangle);
+				rect.add_component<Components::Texture>();
+				loops++;
+			}
+		}
+
+		auto floor = create("Floor");
+		floor.add_component<Components::Geometry>();
+		floor.add_component<Components::Texture>(glm::vec4 { 0.2, 0.2, 0.8, 1.0f });
+		auto& floor_transform = floor.get_components<Transform>();
+		floor_transform.scale = { 100, 100, 1 };
+		floor_transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
+
 		// TODO: Record stats does not work with recreation of query pools.
 		command_executor = CommandExecutor::construct(device, swapchain, { .count = 3, .is_primary = true, .record_stats = true });
 		renderer.on_batch_full([&exec = command_executor](Renderer& r) { r.flush_batch(*exec); });
@@ -79,16 +92,18 @@ namespace Disarray {
 		auto extent = swapchain.get_extent();
 
 		framebuffer = Framebuffer::construct(device,
-			{ .format = Disarray::ImageFormat::SBGR,
-				.samples = SampleCount::ONE,
-				.extent = swapchain.get_extent(),
-				.load_colour = true,
-				.keep_colour = true,
-				.load_depth = true,
-				.keep_depth = true,
-				.has_depth = true,
-				.should_present = false,
+			{ .extent = swapchain.get_extent(),
+				.attachments = { { Disarray::ImageFormat::SBGR }, { ImageFormat::Depth } },
+				.clear_colour_on_load = false,
+				.clear_depth_on_load = false,
 				.debug_name = "FirstFramebuffer" });
+
+		identity_framebuffer = Framebuffer::construct(device,
+			{ .extent = swapchain.get_extent(),
+				.attachments = { { ImageFormat::SBGR },  { ImageFormat::Uint, false },{ ImageFormat::Depth }, },
+				.clear_colour_on_load = true,
+				.clear_depth_on_load = true,
+				.debug_name = "IdentityFramebuffer" });
 
 		const auto& [vert, frag] = renderer.get_pipeline_cache().get_shader("main");
 		PipelineProperties props = {
@@ -129,17 +144,13 @@ namespace Disarray {
 	void Scene::update(float ts)
 	{
 		static glm::vec3 viking_pos { 1.f };
-		static float viking_rot { 180.f };
-		const glm::quat viking_rotation = glm::angleAxis(glm::radians(viking_rot), glm::vec3 { 0, 1, 0 });
 		static glm::vec3 viking_scale { 2.5f };
-		viking_rot += 0.01 * ts;
-		viking_pos.x += 0.01 * ts;
-		viking_pos.z += 0.01 * ts;
+		viking_pos.x += 0.001 * ts;
+		viking_pos.z += 0.001 * ts;
 
 		auto mesh_view = registry.view<const Components::Mesh, Transform>();
 		for (auto [entity, _, transform] : mesh_view.each()) {
 			transform.position = viking_pos;
-			transform.rotation = viking_rotation;
 			transform.scale = viking_scale;
 		}
 	}
@@ -149,6 +160,7 @@ namespace Disarray {
 		command_executor->begin();
 		{
 			renderer.begin_pass(*command_executor, *framebuffer, true);
+
 			auto mesh_view = registry.view<const Components::Mesh, const Components::Pipeline, const Transform>();
 			for (const auto& [entity, mesh, pipeline, transform] : mesh_view.each()) {
 				renderer.draw_mesh(*command_executor, *mesh.mesh, *pipeline.pipeline, transform.compute());
@@ -159,10 +171,19 @@ namespace Disarray {
 		{
 			renderer.begin_pass(*command_executor, *framebuffer);
 
-			auto rect_view = registry.view<const Transform, const ID>();
-			for (const auto& [entity, transform, id] : rect_view.each()) {
-				renderer.draw_planar_geometry(Geometry::Rectangle,
+			// TODO: Temporary
+			draw_axes(renderer, glm::vec3 { 0, 0, 0 });
+			renderer.submit_batched_geometry(*command_executor);
+			renderer.end_pass(*command_executor);
+		}
+		{
+			renderer.begin_pass(*command_executor, *identity_framebuffer);
+
+			auto rect_view = registry.view<const Components::Texture, const Components::Geometry, const Transform, const ID>();
+			for (const auto& [entity, tex, geom, transform, id] : rect_view.each()) {
+				renderer.draw_planar_geometry(geom.geometry,
 					{ .position = transform.position,
+						.colour = tex.colour,
 						.rotation = transform.rotation,
 						.identifier = { id.get_identifier() },
 						.dimensions = { transform.scale } });
@@ -170,9 +191,6 @@ namespace Disarray {
 
 			// TODO: Implement
 			// renderer.draw_text("Hello world!", 0, 0, 12.f);
-
-			// TODO: Temporary
-			draw_axes(renderer, glm::vec3 { 0, 0, 0 });
 
 			renderer.submit_batched_geometry(*command_executor);
 			renderer.end_pass(*command_executor);
@@ -184,7 +202,18 @@ namespace Disarray {
 	{
 		EventDispatcher dispatcher(event);
 
-		dispatcher.dispatch<KeyPressedEvent>([&reg = registry](KeyPressedEvent& pressed) {
+		dispatcher.dispatch<KeyPressedEvent>([&max = vp_max, &min = vp_min, &reg = registry, &fb = identity_framebuffer](KeyPressedEvent& pressed) {
+			if (pressed.get_key_code() == KeyCode::L) {
+				const auto& image = fb->get_image(1);
+				auto pos = Input::mouse_position();
+				pos -= min;
+
+				pos.x /= (max.x - min.x);
+				pos.y /= max.y;
+				glm::vec4 pixel_data = image.read_pixel(pos);
+				Log::debug("Scene - PixelData", fmt::format("{}", pixel_data));
+			}
+
 			if (pressed.get_key_code() != KeyCode::K)
 				return false;
 			auto view = reg.view<Inheritance>();
@@ -201,8 +230,6 @@ namespace Disarray {
 		framebuffer->recreate(true, extent);
 		command_executor->recreate(true, extent);
 	}
-
-	Framebuffer& Scene::get_framebuffer() { return *framebuffer; }
 
 	void Scene::destruct() { command_executor.reset(); }
 

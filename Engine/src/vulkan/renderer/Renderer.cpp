@@ -44,8 +44,20 @@ namespace Disarray::Vulkan {
 
 		pipeline_cache = make_scope<PipelineCache>(device, "Assets/Shaders");
 		auto samples = SampleCount::ONE;
-		geometry_framebuffer
-			= Framebuffer::construct(device, { .samples = samples, .extent = swapchain.get_extent(), .debug_name = "RendererFramebuffer" });
+
+		FramebufferProperties geometry_props { .extent = swapchain.get_extent(),
+			.attachments = { { ImageFormat::SBGR }, { ImageFormat::Depth } },
+			.clear_colour_on_load = false,
+			.clear_depth_on_load = false,
+			.samples = samples,
+			.debug_name = "RendererFramebuffer" };
+		geometry_framebuffer = Framebuffer::construct(device, geometry_props);
+
+		auto quad_framebuffer = Framebuffer::construct(device,
+			{ .extent = swapchain.get_extent(),
+				.attachments = { { ImageFormat::SBGR },  { ImageFormat::Uint, false },{ ImageFormat::Depth }, },
+				.samples = samples,
+				.debug_name = "QuadFramebuffer" });
 
 		PipelineCacheCreationProperties pipeline_properties = {
 			.pipeline_key = "quad",
@@ -61,10 +73,12 @@ namespace Disarray::Vulkan {
 		};
 		{
 			// Quad
+			pipeline_properties.framebuffer = quad_framebuffer;
 			pipeline_cache->put(pipeline_properties);
 		}
 		{
 			// Line
+			pipeline_properties.framebuffer = geometry_framebuffer;
 			pipeline_properties.pipeline_key = "line";
 			pipeline_properties.shader_key = "line";
 			pipeline_properties.line_width = 8.0f;
@@ -102,9 +116,7 @@ namespace Disarray::Vulkan {
 		VkExtent2D extent_2_d { .width = extent.width, .height = extent.height };
 		render_pass_begin_info.renderArea.extent = extent_2_d;
 
-		std::array<VkClearValue, 2> clear_values {};
-		clear_values[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-		clear_values[1].depthStencil = { 1.0f, 0 };
+		auto clear_values = cast_to<Vulkan::Framebuffer>(fb).get_clear_values();
 
 		render_pass_begin_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
 		render_pass_begin_info.pClearValues = clear_values.data();

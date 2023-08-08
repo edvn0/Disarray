@@ -138,7 +138,7 @@ namespace Disarray::Client {
 			// editor_camera.resize({ viewport_size.x, viewport_size.y });
 
 			// Render viewport image
-			auto& image = scene.get_framebuffer().get_image();
+			auto& image = scene.get_image(0);
 			UI::image(image, { viewport_size.x, viewport_size.y });
 
 			auto window_size = ImGui::GetWindowSize();
@@ -150,9 +150,18 @@ namespace Disarray::Client {
 			ImVec2 max_bound = { min_bound.x + window_size.x, min_bound.y + window_size.y };
 			viewport_bounds[0] = { min_bound.x, min_bound.y };
 			viewport_bounds[1] = { max_bound.x, max_bound.y };
+
+			scene.set_viewport_bounds({ viewport_bounds[1].x - viewport->Pos.x, viewport_bounds[1].y - viewport->Pos.y },
+				{ viewport_bounds[0].x - viewport->Pos.x, viewport_bounds[0].y - viewport->Pos.y });
 		}
 		ImGui::End();
 		ImGui::PopStyleVar();
+
+		ImGui::Begin("Identity");
+		auto& other_image = scene.get_image(1);
+		auto viewport_size = ImGui::GetContentRegionAvail();
+		UI::image(other_image, { viewport_size.x, viewport_size.y });
+		ImGui::End();
 
 		ImGui::End();
 	}

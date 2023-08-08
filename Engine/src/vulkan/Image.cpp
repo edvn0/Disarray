@@ -2,6 +2,7 @@
 
 #include "vulkan/Image.hpp"
 
+#include "core/Ensure.hpp"
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/ImageProperties.hpp"
@@ -17,28 +18,6 @@ namespace Disarray::Vulkan {
 	static void set_image_layout(VkCommandBuffer command_buffer, VkImage image, VkImageLayout old_image_layout, VkImageLayout new_image_layout,
 		VkImageSubresourceRange subresource_range, VkPipelineStageFlags src_stage_mask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 		VkPipelineStageFlags dst_stage_mask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
-
-	static constexpr auto is_depth_format = [](auto format) { return format == ImageFormat::Depth || format == ImageFormat::DepthStencil; };
-
-	constexpr VkImageLayout to_vulkan_layout(ImageFormat format)
-	{
-		switch (format) {
-		case ImageFormat::SRGB:
-			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		case ImageFormat::RGB:
-			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		case ImageFormat::SBGR:
-			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		case ImageFormat::BGR:
-			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		case ImageFormat::Depth:
-			return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		case ImageFormat::DepthStencil:
-			return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		default:
-			unreachable();
-		}
-	}
 
 	Image::Image(Disarray::Device& dev, const Disarray::ImageProperties& properties)
 		: device(dev)
@@ -65,6 +44,61 @@ namespace Disarray::Vulkan {
 	{
 		props.extent = extent;
 		recreate_image(should_clean);
+	}
+
+	glm::vec4 Image::read_pixel(const glm::vec2& pos) const
+	{
+		glm::vec4 out { 1.0f };
+		VkBuffer pixel_data_buffer;
+		Allocator allocator { "ReadPixelData" };
+		VmaAllocation allocation;
+		{
+			auto immediate = construct_immediate(device);
+			VkImageAspectFlags aspect_mask = props.format == ImageFormat::Depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+			if (props.format == ImageFormat::DepthStencil)
+				aspect_mask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+
+			VkImageSubresourceRange subresource_range = {};
+			subresource_range.layerCount = 1;
+			subresource_range.aspectMask = aspect_mask;
+			subresource_range.baseMipLevel = 0;
+			subresource_range.levelCount = 1;
+			set_image_layout(immediate->supply(), info.image, descriptor_info.imageLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, subresource_range);
+
+			auto create_info = vk_structures<VkBufferCreateInfo>()();
+			VkDeviceSize size = props.data.is_valid() ? props.data.get_size() : props.extent.get_size() * sizeof(float);
+			create_info.size = size;
+			create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+			allocation = allocator.allocate_buffer(
+				pixel_data_buffer, create_info, { .usage = Usage::CPU_COPY, .creation = Creation::HOST_ACCESS_RANDOM_BIT });
+
+			VkBufferImageCopy buffer_copy_region = {};
+			buffer_copy_region.imageSubresource.aspectMask = aspect_mask;
+			buffer_copy_region.imageSubresource.mipLevel = 0;
+			buffer_copy_region.imageSubresource.baseArrayLayer = 0;
+			buffer_copy_region.imageSubresource.layerCount = 1;
+			buffer_copy_region.imageExtent.width = props.extent.width;
+			buffer_copy_region.imageExtent.height = props.extent.height;
+			buffer_copy_region.imageExtent.depth = 1;
+			buffer_copy_region.bufferOffset = 0;
+
+			vkCmdCopyImageToBuffer(immediate->supply(), info.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, pixel_data_buffer, 1, &buffer_copy_region);
+
+			auto* data = allocator.map_memory<std::byte>(allocation);
+
+			auto offset_y = static_cast<std::uint32_t>(pos.y * props.extent.height);
+			auto offset_x = static_cast<std::uint32_t>(pos.x * props.extent.width);
+			std::size_t offset = (offset_y * props.extent.width + offset_x) * sizeof(float);
+
+			ensure(data != nullptr);
+			out = { data[offset], data[offset + 1], data[offset + 2], data[offset + 3] };
+			allocator.unmap_memory(allocation);
+
+			set_image_layout(immediate->supply(), info.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, descriptor_info.imageLayout, subresource_range);
+		}
+		allocator.deallocate_buffer(allocation, pixel_data_buffer);
+		return out;
 	}
 
 	void Image::recreate_image(bool should_clean)

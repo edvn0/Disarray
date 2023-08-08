@@ -57,6 +57,7 @@ namespace Disarray::Vulkan {
 		void recreate_swapchain(Disarray::Swapchain* old = nullptr, bool should_clean = true);
 		void recreate_framebuffer();
 		void cleanup_swapchain();
+		void recreate_renderpass();
 
 		bool swapchain_needs_recreation { false };
 
@@ -68,7 +69,7 @@ namespace Disarray::Vulkan {
 		std::uint32_t image_index { 0 };
 
 		std::vector<VkFramebuffer> framebuffers;
-		Ref<Vulkan::RenderPass> render_pass { nullptr };
+		Ref<Disarray::RenderPass> render_pass { nullptr };
 
 		SampleCount samples { SampleCount::ONE };
 

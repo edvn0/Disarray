@@ -22,7 +22,7 @@ namespace Disarray {
 	{
 		double xpos, ypos;
 		glfwGetCursorPos(window_data->window, &xpos, &ypos);
-		return { xpos, ypos };
+		return glm::vec2 { xpos, ypos };
 	}
 
 	bool Input::button_pressed(MouseCode code) { return glfwGetMouseButton(window_data->window, static_cast<int>(code)) == GLFW_PRESS; }

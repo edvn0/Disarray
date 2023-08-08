@@ -14,6 +14,14 @@ namespace Disarray::Vulkan {
 		VkSubmitInfo operator()();
 	};
 
+	template <> struct vk_structures<VkPipelineColorBlendAttachmentState> {
+		VkPipelineColorBlendAttachmentState operator()();
+	};
+
+	template <> struct vk_structures<VkAttachmentDescription> {
+		VkAttachmentDescription operator()();
+	};
+
 	template <std::size_t Count> struct vk_structures<VkWriteDescriptorSet, Count> {
 		VkWriteDescriptorSet operator()()
 		{

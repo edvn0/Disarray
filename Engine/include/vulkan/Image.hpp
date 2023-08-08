@@ -27,10 +27,36 @@ namespace Disarray::Vulkan {
 			return VK_FORMAT_B8G8R8A8_SRGB;
 		case ImageFormat::BGR:
 			return VK_FORMAT_B8G8R8_SRGB;
+		case ImageFormat::Uint:
+			return VK_FORMAT_R32_UINT;
 		case ImageFormat::Depth:
 			return VK_FORMAT_D32_SFLOAT;
 		case ImageFormat::DepthStencil:
 			return VK_FORMAT_D32_SFLOAT_S8_UINT;
+		default:
+			unreachable();
+		}
+	}
+
+	static constexpr auto is_depth_format = [](ImageFormat format) { return format == ImageFormat::Depth || format == ImageFormat::DepthStencil; };
+
+	constexpr VkImageLayout to_vulkan_layout(ImageFormat format)
+	{
+		switch (format) {
+		case ImageFormat::SRGB:
+			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		case ImageFormat::RGB:
+			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		case ImageFormat::SBGR:
+			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		case ImageFormat::BGR:
+			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		case ImageFormat::Uint:
+			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		case ImageFormat::Depth:
+			return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		case ImageFormat::DepthStencil:
+			return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		default:
 			unreachable();
 		}
@@ -65,6 +91,8 @@ namespace Disarray::Vulkan {
 
 		void force_recreation() override { recreate(true, props.extent); };
 		void recreate(bool should_clean, const Extent&) override;
+
+		glm::vec4 read_pixel(const glm::vec2&) const override;
 
 		VkImage get_image() const { return info.image; }
 		VkImageView get_view() const { return descriptor_info.imageView; }

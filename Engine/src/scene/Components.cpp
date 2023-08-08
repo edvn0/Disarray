@@ -31,8 +31,14 @@ namespace Disarray {
 		{
 		}
 
-		Texture::Texture(Ref<Disarray::Texture> m)
+		Texture::Texture(Ref<Disarray::Texture> m, const glm::vec4& colour)
 			: texture(m)
+			, colour(colour)
+		{
+		}
+
+		Texture::Texture(const glm::vec4& colour)
+			: colour(colour)
 		{
 		}
 

@@ -6,6 +6,8 @@
 #include "core/ReferenceCounted.hpp"
 #include "graphics/ImageProperties.hpp"
 
+#include <glm/glm.hpp>
+
 namespace Disarray {
 
 	struct ImageProperties {
@@ -20,6 +22,7 @@ namespace Disarray {
 	class Image : public ReferenceCountable {
 		DISARRAY_OBJECT(Image)
 	public:
+		virtual glm::vec4 read_pixel(const glm::vec2&) const = 0;
 		static Ref<Image> construct(Disarray::Device&, const ImageProperties&);
 	};
 

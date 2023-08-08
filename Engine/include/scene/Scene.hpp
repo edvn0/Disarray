@@ -25,9 +25,22 @@ namespace Disarray {
 		void on_event(Disarray::Event&);
 		void recreate(const Extent& extent);
 
+		void set_viewport_bounds(const glm::vec2& max, const glm::vec2& min)
+		{
+			vp_max = max;
+			vp_min = min;
+		}
+
 		Entity create(std::string_view = "Unnamed");
 
-		Disarray::Framebuffer& get_framebuffer();
+		constexpr Disarray::Image& get_image(std::uint32_t index)
+		{
+			if (index == 0)
+				return framebuffer->get_image();
+			else
+				return identity_framebuffer->get_image();
+		}
+
 		const CommandExecutor& get_command_executor() const { return *command_executor; };
 
 		entt::registry& get_registry() { return registry; };
@@ -37,6 +50,9 @@ namespace Disarray {
 		Disarray::Window& window;
 		Disarray::Swapchain& swapchain;
 		std::string scene_name;
+
+		glm::vec2 vp_max { 1 };
+		glm::vec2 vp_min { 1 };
 
 		Ref<Disarray::Framebuffer> framebuffer;
 		Ref<Disarray::Framebuffer> identity_framebuffer;

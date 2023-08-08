@@ -11,6 +11,7 @@
 #include "graphics/Swapchain.hpp"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Config.hpp"
+#include "vulkan/DebugMarker.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/PhysicalDevice.hpp"
@@ -132,6 +133,60 @@ namespace Disarray::Vulkan {
 		verify(vkWaitForFences(supply_cast<Vulkan::Device>(device), 1, &in_flight_fences[current_frame], true, UINT64_MAX));
 	}
 
+	void Swapchain::recreate_renderpass()
+	{
+		// Render Pass
+		VkAttachmentDescription colorAttachmentDesc = {};
+		// Color attachment
+		colorAttachmentDesc.format = VK_FORMAT_B8G8R8A8_SRGB;
+		colorAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		VkAttachmentReference colorReference = {};
+		colorReference.attachment = 0;
+		colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference depthReference = {};
+		depthReference.attachment = 1;
+		depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpassDescription = {};
+		subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpassDescription.colorAttachmentCount = 1;
+		subpassDescription.pColorAttachments = &colorReference;
+		subpassDescription.inputAttachmentCount = 0;
+		subpassDescription.pInputAttachments = nullptr;
+		subpassDescription.preserveAttachmentCount = 0;
+		subpassDescription.pPreserveAttachments = nullptr;
+		subpassDescription.pResolveAttachments = nullptr;
+
+		VkSubpassDependency dependency = {};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcAccessMask = 0;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		VkRenderPassCreateInfo renderPassInfo = {};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		renderPassInfo.attachmentCount = 1;
+		renderPassInfo.pAttachments = &colorAttachmentDesc;
+		renderPassInfo.subpassCount = 1;
+		renderPassInfo.pSubpasses = &subpassDescription;
+		renderPassInfo.dependencyCount = 1;
+		renderPassInfo.pDependencies = &dependency;
+
+		render_pass = RenderPass::construct(device);
+		auto vk_render_pass = cast_to<Vulkan::RenderPass>(render_pass);
+		vk_render_pass->create_with(renderPassInfo);
+	}
+
 	void Swapchain::recreate_swapchain(Disarray::Swapchain* old, bool should_clean)
 	{
 		window.wait_for_minimisation();
@@ -143,15 +198,7 @@ namespace Disarray::Vulkan {
 			cleanup_swapchain();
 		}
 
-		render_pass = make_ref<Vulkan::RenderPass>(device,
-			RenderPassProperties {
-				.image_format = ImageFormat::SBGR,
-				.samples = samples,
-				.keep_depth = false,
-				.has_depth = false,
-				.should_present = true,
-				.debug_name { "Swapchain RenderPass" },
-			});
+		recreate_renderpass();
 
 		const auto& [capabilities, formats, present_modes, msaa]
 			= resolve_swapchain_support(supply_cast<Vulkan::PhysicalDevice>(device.get_physical_device()), window.get_surface());
@@ -282,7 +329,7 @@ namespace Disarray::Vulkan {
 
 			VkFramebufferCreateInfo fb_create_info {};
 			fb_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			fb_create_info.renderPass = render_pass->supply();
+			fb_create_info.renderPass = supply_cast<Vulkan::RenderPass>(*render_pass);
 			fb_create_info.attachmentCount = static_cast<std::uint32_t>(attachments.size());
 			fb_create_info.pAttachments = attachments.data();
 			fb_create_info.width = extent.width;

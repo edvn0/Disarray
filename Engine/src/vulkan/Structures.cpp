@@ -8,10 +8,14 @@ namespace Disarray::Vulkan {
 
 	VkSubmitInfo vk_structures<VkSubmitInfo>::operator()() { return { .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO, .pNext = nullptr }; }
 
+	VkPipelineColorBlendAttachmentState vk_structures<VkPipelineColorBlendAttachmentState>::operator()() { return {}; }
+
 	VkShaderModuleCreateInfo vk_structures<VkShaderModuleCreateInfo>::operator()()
 	{
 		return { .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, .pNext = nullptr };
 	}
+
+	VkAttachmentDescription vk_structures<VkAttachmentDescription>::operator()() { return {}; }
 
 	VkDescriptorPoolSize vk_structures<VkDescriptorPoolSize>::operator()(std::uint32_t count, VkDescriptorType type)
 	{

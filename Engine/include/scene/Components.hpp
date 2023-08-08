@@ -4,6 +4,7 @@
 #include "core/Concepts.hpp"
 #include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
+#include "graphics/Renderer.hpp"
 
 #include <entt/entt.hpp>
 #include <glm/glm.hpp>
@@ -42,7 +43,7 @@ namespace Disarray {
 	// They could be named something else (like XComponent), but I prefer this solution.
 	namespace Components {
 		struct Mesh {
-			Mesh() { }
+			Mesh() = default;
 			// Deserialisation constructor :)
 			explicit Mesh(Device&, std::string_view path);
 			explicit Mesh(Ref<Disarray::Mesh>);
@@ -50,17 +51,23 @@ namespace Disarray {
 		};
 
 		struct Pipeline {
-			Pipeline() { }
+			Pipeline() = default;
 			explicit Pipeline(Ref<Disarray::Pipeline>);
 			Ref<Disarray::Pipeline> pipeline { nullptr };
 		};
 
 		struct Texture {
-			Texture() { }
-			explicit Texture(Ref<Disarray::Texture>);
+			Texture() = default;
+			explicit Texture(Ref<Disarray::Texture>, const glm::vec4& = glm::vec4 { 1.0f });
+			explicit Texture(const glm::vec4&);
 			// Deserialisation constructor :)
 			explicit Texture(Device&, std::string_view path);
 			Ref<Disarray::Texture> texture { nullptr };
+			glm::vec4 colour { 1.0f };
+		};
+
+		struct Geometry {
+			Disarray::Geometry geometry { Disarray::Geometry::Rectangle };
 		};
 	} // namespace Components
 

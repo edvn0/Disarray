@@ -11,19 +11,40 @@
 
 namespace Disarray {
 
+	enum class FramebufferBlendMode { None = 0, OneZero, SrcAlphaOneMinusSrcAlpha, Additive, Zero_SrcColor };
+
+	struct FramebufferTextureSpecification {
+		explicit(false) FramebufferTextureSpecification(ImageFormat fmt, bool should_blend = true)
+			: format(fmt)
+			, blend(should_blend)
+		{
+		}
+
+		ImageFormat format;
+		bool blend { true };
+		FramebufferBlendMode blend_mode { FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha };
+	};
+
+	struct FramebufferAttachmentSpecification {
+		explicit(false) FramebufferAttachmentSpecification(const std::initializer_list<FramebufferTextureSpecification>& attachments)
+			: texture_attachments(attachments)
+		{
+		}
+
+		std::vector<FramebufferTextureSpecification> texture_attachments {};
+	};
+
 	struct FramebufferProperties {
-		ImageFormat format { ImageFormat::SBGR };
-		std::uint32_t colour_count { 1 };
-		ImageFormat depth_format { ImageFormat::Depth };
-		SampleCount samples { SampleCount::ONE };
 		Extent extent { 0, 0 };
-		bool load_colour { false };
-		bool keep_colour { true };
-		bool load_depth { false };
-		bool keep_depth { true };
-		bool has_depth { true };
+		FramebufferAttachmentSpecification attachments {};
+		glm::vec4 clear_colour { 0.0f, 0.0f, 0.0f, 1.0f };
+		float depth_clear_value { 0.0f };
+		bool clear_colour_on_load { true };
+		bool clear_depth_on_load { true };
+		bool should_blend { true };
+		FramebufferBlendMode blend_mode { FramebufferBlendMode::None };
 		bool should_present { false };
-		Ref<Disarray::RenderPass> optional_renderpass { nullptr };
+		SampleCount samples { SampleCount::ONE };
 		std::string debug_name { "UnknownFramebuffer" };
 	};
 
@@ -35,7 +56,9 @@ namespace Disarray {
 
 		virtual Disarray::RenderPass& get_render_pass() = 0;
 
-		virtual std::uint32_t get_colour_attachment_count() = 0;
+		virtual std::uint32_t get_colour_attachment_count() const = 0;
+		virtual FramebufferProperties& get_properties() = 0;
+		virtual const FramebufferProperties& get_properties() const = 0;
 		virtual bool has_depth() = 0;
 
 		static Ref<Framebuffer> construct(Disarray::Device&, const FramebufferProperties&);

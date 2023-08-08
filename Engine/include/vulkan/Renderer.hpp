@@ -20,7 +20,7 @@ namespace Disarray::Vulkan {
 		std::uint32_t max_identifiers {};
 	};
 
-	static constexpr auto max_objects = 5;
+	static constexpr auto max_objects = 500;
 
 	// Forward declaration for the vulkan renderer!
 	class Renderer;
