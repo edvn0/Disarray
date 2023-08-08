@@ -2,6 +2,7 @@
 
 #include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
+#include "core/events/Event.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Mesh.hpp"
 #include "graphics/Texture.hpp"
@@ -20,8 +21,8 @@ namespace Disarray {
 		void render(float, Disarray::Renderer&);
 		void construct(Disarray::App&, Disarray::Renderer&, Disarray::ThreadPool&);
 		void destruct();
+		void on_event(Disarray::Event&);
 		void recreate(const Extent& extent);
-		void handle_input(float);
 
 		Entity create(std::string_view = "Unnamed");
 

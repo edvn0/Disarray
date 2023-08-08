@@ -22,4 +22,6 @@ namespace Disarray {
 		ButtonRight = Button1,
 		ButtonMiddle = Button2
 	};
+
+	inline std::ostream& operator<<(std::ostream& out, MouseCode code) { return out << static_cast<int>(code); }
 } // namespace Disarray

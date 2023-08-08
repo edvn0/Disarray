@@ -161,6 +161,8 @@ namespace Disarray::Client {
 
 	void AppLayer::update(float ts) {};
 
+	void AppLayer::on_event(Event& event) { scene.on_event(event); }
+
 	void AppLayer::update(float ts, Renderer& renderer)
 	{
 		scene.update(ts);

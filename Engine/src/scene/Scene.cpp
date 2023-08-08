@@ -6,6 +6,8 @@
 #include "core/Formatters.hpp"
 #include "core/Input.hpp"
 #include "core/ThreadPool.hpp"
+#include "core/events/Event.hpp"
+#include "core/events/KeyEvent.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Renderer.hpp"
@@ -116,18 +118,23 @@ namespace Disarray {
 
 	Scene::~Scene() { registry.clear(); }
 
-	void Scene::handle_input(float ts)
-	{
-		if (Input::key_released(KeyCode::K)) {
-			auto view = registry.view<const Inheritance>();
-			for (const auto& [entity, inheritance] : view.each()) {
-				auto& [children, parent] = inheritance;
-				Log::debug("Inheritance info", fmt::format("parent: {}, children: {}", parent, fmt::join(children, ", ")));
-			}
-		}
-	}
+	void Scene::update(float ts) { }
 
-	void Scene::update(float ts) { handle_input(ts); }
+	void Scene::on_event(Event& event)
+	{
+		EventDispatcher dispatcher(event);
+
+		dispatcher.dispatch<KeyPressedEvent>([&reg = registry](KeyPressedEvent& pressed) {
+			if (pressed.get_key_code() != KeyCode::K)
+				return false;
+			auto view = reg.view<Inheritance>();
+			for (const auto& [entity, inheritance] : view.each()) {
+				const auto& [children, parent] = inheritance;
+				Log::debug("Inheritance info", "parent: {}, children: {}", parent, fmt::join(children, ", "));
+			}
+			return true;
+		});
+	}
 
 	void Scene::render(float ts, Renderer& renderer)
 	{

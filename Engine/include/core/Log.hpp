@@ -44,6 +44,15 @@ namespace Disarray {
 #endif
 		}
 
+		template <class... Args> inline void debug(const std::string& scope, fmt::format_string<Args...> fmt, Args&&... args)
+		{
+#ifdef IS_DEBUG
+			const auto message = fmt::format(fmt, std::forward<Args>(args)...);
+			std::string formatted = blue_begin + "[" + current_time() + " - Disarray::Engine - " + scope + "]: " + message + end;
+			Logging::Logger::logger().debug(formatted);
+#endif
+		}
+
 		inline void error(const std::string& scope, const std::string& message)
 		{
 			std::string formatted = red_begin + "[" + current_time() + " - Disarray::Engine - " + scope + "]: " + message + end;

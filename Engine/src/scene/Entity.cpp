@@ -8,19 +8,13 @@
 
 #include <fmt/format.h>
 
-auto fmt::formatter<entt::entity>::format(entt::entity c, format_context& ctx) const
+auto fmt::formatter<entt::entity>::format(entt::entity c, fmt::format_context& ctx) const -> decltype(ctx.out())
 {
 	auto as_uint = entt::to_integral(c);
 	return formatter<string_view>::format(fmt::format("{}", as_uint), ctx);
 }
 
-auto fmt::formatter<const entt::entity>::format(const entt::entity c, format_context& ctx) const
-{
-	auto as_uint = entt::to_integral(c);
-	return formatter<string_view>::format(fmt::format("{}", as_uint), ctx);
-}
-
-auto fmt::formatter<Disarray::Entity>::format(const Disarray::Entity& c, format_context& ctx) const
+auto fmt::formatter<Disarray::Entity>::format(const Disarray::Entity& c, fmt::format_context& ctx) const -> decltype(ctx.out())
 {
 	auto as_uint = entt::to_integral(c.get_identifier());
 	return formatter<string_view>::format(fmt::format("{}", as_uint), ctx);

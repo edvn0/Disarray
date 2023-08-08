@@ -6,6 +6,7 @@
 #include "core/CleanupAwaiter.hpp"
 #include "core/Clock.hpp"
 #include "core/DebugConfigurator.hpp"
+#include "core/Input.hpp"
 #include "core/Log.hpp"
 #include "core/ThreadPool.hpp"
 #include "core/Window.hpp"
@@ -14,13 +15,12 @@
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/Swapchain.hpp"
+#include "scene/Camera.hpp"
 #include "ui/InterfaceLayer.hpp"
 #include "ui/UI.hpp"
 #include "vulkan/CommandExecutor.hpp"
 
-#include <core/Input.hpp>
 #include <memory>
-#include <scene/Camera.hpp>
 
 namespace Disarray {
 
@@ -28,12 +28,23 @@ namespace Disarray {
 	{
 		window = Window::construct({ .width = props.width, .height = props.height, .name = props.name, .is_fullscreen = props.is_fullscreen });
 		device = Device::construct(*window);
+		window->register_event_handler(*this);
 
 		initialise_debug_applications(*device);
 		initialise_allocator(*device, window->get_instance());
 		swapchain = Swapchain::construct(*window, *device);
 
 		Input::construct({}, *window);
+	}
+
+	void App::on_event(Event& event)
+	{
+		for (const auto& layer : layers) {
+			if (event.handled)
+				return;
+
+			layer->on_event(event);
+		}
 	}
 
 	App::~App() { destroy_allocator(); }

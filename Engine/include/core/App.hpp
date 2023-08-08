@@ -2,6 +2,7 @@
 
 #include "core/Layer.hpp"
 #include "core/Types.hpp"
+#include "core/events/Event.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "ui/InterfaceLayer.hpp"
 
@@ -72,6 +73,8 @@ namespace Disarray {
 			auto interface_layer = std::dynamic_pointer_cast<UI::InterfaceLayer>(interface);
 			interface_layer->template add_panel<T>(std::forward<Args>(args)...);
 		}
+
+		void on_event(Event& event);
 
 		const auto& get_statistics() const { return statistics; }
 
