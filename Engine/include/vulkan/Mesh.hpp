@@ -13,6 +13,9 @@ namespace Disarray::Vulkan {
 		Disarray::Pipeline& get_pipeline() override { return *props.pipeline; }
 		Disarray::IndexBuffer& get_indices() override { return *indices; }
 		Disarray::VertexBuffer& get_vertices() override { return *vertices; }
+		const Disarray::Pipeline& get_pipeline() const override { return *props.pipeline; }
+		const Disarray::VertexBuffer& get_vertices() const override { return *vertices; }
+		const Disarray::IndexBuffer& get_indices() const override { return *indices; }
 
 	private:
 		Disarray::Device& device;

@@ -26,6 +26,9 @@ namespace Disarray {
 		virtual Pipeline& get_pipeline() = 0;
 		virtual VertexBuffer& get_vertices() = 0;
 		virtual IndexBuffer& get_indices() = 0;
+		virtual const Pipeline& get_pipeline() const = 0;
+		virtual const VertexBuffer& get_vertices() const = 0;
+		virtual const IndexBuffer& get_indices() const = 0;
 
 		static Ref<Mesh> construct(Disarray::Device&, const MeshProperties& = {});
 	};

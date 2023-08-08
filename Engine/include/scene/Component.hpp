@@ -10,7 +10,7 @@ namespace Disarray {
 	// Disallow empty structs, or structs that contain references instead of IRCs
 	namespace {
 		template <class T>
-		concept IsInAllowedComponents = AnyOf<T, Transform, ID, Inheritance>;
+		concept IsInAllowedComponents = AnyOf<T, Transform, ID, Inheritance, Components::Mesh, Components::Pipeline, Components::Texture>;
 	}
 
 	template <class T>

@@ -3,10 +3,12 @@
 #include "core/Types.hpp"
 
 namespace Disarray {
+	class App;
 	class CommandExecutor;
 	class Device;
+	class Entity;
+	class Framebuffer;
 	class Image;
-	class Window;
 	class IndexBuffer;
 	class Instance;
 	class Mesh;
@@ -15,12 +17,12 @@ namespace Disarray {
 	class QueueFamilyIndex;
 	class RenderPass;
 	class Renderer;
-	class Framebuffer;
+	class Scene;
+	class Scene;
 	class Shader;
 	class Surface;
 	class Swapchain;
 	class Texture;
-	class App;
 	class VertexBuffer;
-	class Scene;
+	class Window;
 } // namespace Disarray

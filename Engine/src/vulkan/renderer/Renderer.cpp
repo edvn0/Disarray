@@ -161,7 +161,7 @@ namespace Disarray::Vulkan {
 
 	void Renderer::end_pass(Disarray::CommandExecutor& executor) { vkCmdEndRenderPass(supply_cast<Vulkan::CommandExecutor>(executor)); }
 
-	void Renderer::begin_frame(UsageBadge<App>, Camera& camera)
+	void Renderer::begin_frame(Camera& camera)
 	{
 		// TODO: Move to some kind of scene scope?
 		render_batch.reset();
@@ -178,7 +178,7 @@ namespace Disarray::Vulkan {
 		}
 	}
 
-	void Renderer::end_frame(UsageBadge<Disarray::App>) { }
+	void Renderer::end_frame() { std::memset(&uniform, 0, sizeof(UBO)); }
 
 	void Renderer::force_recreation()
 	{

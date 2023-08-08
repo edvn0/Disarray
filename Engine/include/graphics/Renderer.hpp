@@ -67,7 +67,11 @@ namespace Disarray {
 		virtual ~IGraphics() = default;
 
 		virtual void draw_planar_geometry(Geometry, const GeometryProperties&) = 0;
-		virtual void draw_mesh(Disarray::CommandExecutor&, Disarray::Mesh&, const GeometryProperties& = {}) = 0;
+		virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const GeometryProperties& = {}) = 0;
+		virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const glm::mat4& transform = glm::identity<glm::mat4>()) = 0;
+		virtual void draw_mesh(
+			Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4& transform = glm::identity<glm::mat4>())
+			= 0;
 		virtual void submit_batched_geometry(Disarray::CommandExecutor&) = 0;
 		virtual void on_batch_full(std::function<void(Renderer&)>&&) = 0;
 		virtual void flush_batch(Disarray::CommandExecutor&) = 0;
@@ -84,6 +88,8 @@ namespace Disarray {
 		virtual const std::vector<VkDescriptorSetLayout>& get_descriptor_set_layouts() = 0;
 	};
 
+	class Layer;
+
 	class Renderer : public IGraphics, public IGraphicsResource, public ReferenceCountable {
 	public:
 		virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) = 0;
@@ -94,8 +100,8 @@ namespace Disarray {
 		virtual void on_resize() = 0;
 		virtual PipelineCache& get_pipeline_cache() = 0;
 
-		virtual void begin_frame(UsageBadge<App>, Camera& camera) = 0;
-		virtual void end_frame(UsageBadge<App>) = 0;
+		virtual void begin_frame(Camera& camera) = 0;
+		virtual void end_frame() = 0;
 
 		virtual void force_recreation() = 0;
 

@@ -88,6 +88,7 @@ namespace Disarray {
 			set_perspective_projection_matrix(vertical_fov, static_cast<float>(width), static_cast<float>(height), near_clip, far_clip);
 			viewport_width = width;
 			viewport_height = height;
+			update_camera_view();
 		}
 
 		const glm::mat4& get_view_matrix() const override { return view_matrix; }

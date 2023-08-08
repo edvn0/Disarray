@@ -61,9 +61,6 @@ namespace Disarray {
 		auto& l = add_layer<UI::InterfaceLayer>();
 		auto ui_layer = std::dynamic_pointer_cast<UI::InterfaceLayer>(l);
 
-		EditorCamera camera { 73.f, static_cast<float>(swapchain->get_extent().width), static_cast<float>(swapchain->get_extent().height), 0.1f,
-			1000.f, nullptr };
-
 		UI::DescriptorCache::initialise();
 
 		auto& renderer = *constructed_renderer;
@@ -76,32 +73,24 @@ namespace Disarray {
 		while (!window->should_close()) {
 			window->update();
 
-			if (!swapchain->prepare_frame()) {
-				renderer.force_recreation();
-				for (auto& layer : layers) {
-					layer->handle_swapchain_recreation(renderer);
-				}
+			if (!could_prepare_frame(renderer))
 				continue;
-			}
 
-			renderer.begin_frame({}, camera);
 			const auto needs_recreation = swapchain->needs_recreation();
 			float time_step = Clock::ms() - current_time;
-			camera.on_update(time_step);
-			if (needs_recreation)
-				camera.set_viewport_size(swapchain->get_extent());
+
 			for (auto& layer : layers) {
 				if (needs_recreation)
 					layer->handle_swapchain_recreation(renderer);
 				layer->update(time_step, renderer);
 			}
 			statistics.cpu_time = time_step;
+
 			ui_layer->begin();
 			for (auto& layer : layers) {
 				layer->interface();
 			}
 			ui_layer->end();
-			renderer.end_frame({});
 
 			auto begin_present_time = Clock::ns();
 			swapchain->reset_recreation_status();
@@ -121,6 +110,19 @@ namespace Disarray {
 		layers.clear();
 
 		on_detach();
+	}
+
+	bool App::could_prepare_frame(Renderer& renderer)
+	{
+		const auto could_prepare = swapchain->prepare_frame();
+		if (could_prepare)
+			return true;
+
+		renderer.force_recreation();
+		for (auto& layer : layers) {
+			layer->handle_swapchain_recreation(renderer);
+		}
+		return false;
 	}
 
 } // namespace Disarray

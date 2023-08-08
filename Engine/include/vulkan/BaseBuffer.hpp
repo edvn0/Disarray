@@ -14,14 +14,14 @@ namespace Disarray::Vulkan {
 public:                                                                                                                                              \
 	VkBuffer supply() const override { return BaseBuffer::supply(); }                                                                                \
 	void set_data(const void* data, std::uint32_t size) override { BaseBuffer::set_data(data, size); }                                               \
-	std::size_t size() override { return BaseBuffer::size(); }                                                                                       \
+	std::size_t size() const override { return BaseBuffer::size(); }                                                                                 \
 	~x() override { BaseBuffer::destroy_buffer(); }
 
 	class BaseBuffer : public PropertySupplier<VkBuffer> {
 	protected:
 		BaseBuffer(Disarray::Device&, BufferType type, const Disarray::BufferProperties&);
 
-		virtual std::size_t size() { return count; }
+		virtual std::size_t size() const { return count; }
 		virtual void set_data(const void*, std::uint32_t);
 		void destroy_buffer();
 

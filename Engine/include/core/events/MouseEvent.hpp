@@ -33,14 +33,17 @@ namespace Disarray {
 
 	class MouseScrolledEvent : public Event {
 	public:
+		EVENT_STATIC_CLASS_TYPE(MouseScrolled)
+		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
+
 		MouseScrolledEvent(float x, float y)
 			: x_offset(x)
 			, y_offset(y)
 		{
 		}
 
-		float get_x_offset() const { return x_offset; }
-		float get_y_offset() const { return y_offset; }
+		auto get_x_offset() const { return x_offset; }
+		auto get_y_offset() const { return y_offset; }
 
 		std::string to_string() const override
 		{
@@ -49,14 +52,13 @@ namespace Disarray {
 			return ss.str();
 		}
 
-		EVENT_STATIC_CLASS_TYPE(MouseScrolled)
-		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
 	private:
 		float x_offset, y_offset;
 	};
 
 	class MouseButtonEvent : public Event {
 	public:
+		virtual ~MouseButtonEvent() override = default;
 		MouseCode get_mouse_button() const { return button; }
 
 		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
@@ -71,6 +73,8 @@ namespace Disarray {
 
 	class MouseButtonPressedEvent : public MouseButtonEvent {
 	public:
+		MAKE_EVENT(MouseButtonPressedEvent, MouseButtonPressed)
+
 		MouseButtonPressedEvent(MouseCode button_code)
 			: MouseButtonEvent(button_code)
 		{
@@ -82,12 +86,12 @@ namespace Disarray {
 			ss << "MouseButtonPressedEvent: " << button;
 			return ss.str();
 		}
-
-		EVENT_STATIC_CLASS_TYPE(MouseButtonPressed)
 	};
 
 	class MouseButtonReleasedEvent : public MouseButtonEvent {
 	public:
+		MAKE_EVENT(MouseButtonReleasedEvent, MouseButtonReleased)
+
 		MouseButtonReleasedEvent(MouseCode button_code)
 			: MouseButtonEvent(button_code)
 		{
@@ -99,8 +103,6 @@ namespace Disarray {
 			ss << "MouseButtonReleasedEvent: " << button;
 			return ss.str();
 		}
-
-		EVENT_STATIC_CLASS_TYPE(MouseButtonReleased)
 	};
 
 } // namespace Disarray

@@ -14,7 +14,7 @@ namespace Disarray {
 		DISARRAY_OBJECT(IndexBuffer)
 	public:
 		static Ref<IndexBuffer> construct(Disarray::Device&, const Disarray::BufferProperties&);
-		virtual std::size_t size() = 0;
+		virtual std::size_t size() const = 0;
 		virtual void set_data(const void*, std::uint32_t) = 0;
 	};
 

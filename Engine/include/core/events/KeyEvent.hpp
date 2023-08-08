@@ -10,7 +10,7 @@ namespace Disarray {
 	class KeyEvent : public Event {
 	public:
 		virtual ~KeyEvent() override = default;
-		inline KeyCode get_key_code() const { return key_code; }
+		KeyCode get_key_code() const { return key_code; }
 
 		EVENT_CLASS_CATEGORY(EventCategoryKeyboard | EventCategoryInput)
 	protected:
@@ -24,13 +24,13 @@ namespace Disarray {
 
 	class KeyPressedEvent : public KeyEvent {
 	public:
+		MAKE_EVENT(KeyPressedEvent, KeyPressed)
+
 		KeyPressedEvent(KeyCode kc, int repeat)
 			: KeyEvent(kc)
 			, repeat_count(repeat)
 		{
 		}
-
-		int get_repeat_count() const { return repeat_count; }
 
 		std::string to_string() const override
 		{
@@ -39,13 +39,16 @@ namespace Disarray {
 			return ss.str();
 		}
 
-		MAKE_EVENT(KeyPressedEvent, KeyPressed)
+		auto get_repeat_count() const { return repeat_count; }
+
 	private:
 		int repeat_count;
 	};
 
 	class KeyReleasedEvent : public KeyEvent {
 	public:
+		MAKE_EVENT(KeyReleasedEvent, KeyReleased)
+
 		KeyReleasedEvent(KeyCode kc)
 			: KeyEvent(kc)
 		{
@@ -57,12 +60,12 @@ namespace Disarray {
 			ss << "KeyReleasedEvent: " << key_code;
 			return ss.str();
 		}
-
-		MAKE_EVENT(KeyReleasedEvent, KeyReleased)
 	};
 
 	class KeyTypedEvent : public KeyEvent {
 	public:
+		MAKE_EVENT(KeyTypedEvent, KeyTyped)
+
 		KeyTypedEvent(KeyCode keycode)
 			: KeyEvent(keycode)
 		{
@@ -74,7 +77,5 @@ namespace Disarray {
 			ss << "KeyTypedEvent: " << key_code;
 			return ss.str();
 		}
-
-		MAKE_EVENT(KeyTypedEvent, KeyTyped)
 	};
 } // namespace Disarray

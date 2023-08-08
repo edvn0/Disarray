@@ -141,7 +141,9 @@ namespace Disarray::Vulkan {
 		void end_pass(Disarray::CommandExecutor&) override;
 
 		// IGraphics
-		void draw_mesh(Disarray::CommandExecutor&, Disarray::Mesh&, const Disarray::GeometryProperties&) override;
+		void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::GeometryProperties&) override;
+		void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const glm::mat4& transform) override;
+		void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4& transform) override;
 		void draw_planar_geometry(Disarray::Geometry, const Disarray::GeometryProperties&) override;
 		void submit_batched_geometry(Disarray::CommandExecutor&) override;
 		void on_batch_full(std::function<void(Disarray::Renderer&)>&&) override;
@@ -158,8 +160,8 @@ namespace Disarray::Vulkan {
 		void on_resize() override;
 		PipelineCache& get_pipeline_cache() override { return *pipeline_cache; }
 
-		void begin_frame(UsageBadge<App>, Camera&) override;
-		void end_frame(UsageBadge<App>) override;
+		void begin_frame(Camera&) override;
+		void end_frame() override;
 
 		void force_recreation() override;
 

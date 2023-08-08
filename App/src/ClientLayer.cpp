@@ -159,14 +159,16 @@ namespace Disarray::Client {
 
 	void AppLayer::handle_swapchain_recreation(Renderer& renderer) { scene.recreate(swapchain.get_extent()); }
 
-	void AppLayer::update(float ts) {};
-
 	void AppLayer::on_event(Event& event) { scene.on_event(event); }
 
 	void AppLayer::update(float ts, Renderer& renderer)
 	{
 		scene.update(ts);
-		scene.render(ts, renderer);
+		camera.on_update(ts);
+
+		renderer.begin_frame(camera);
+		scene.render(renderer);
+		renderer.end_frame();
 	}
 
 	void AppLayer::destruct() { scene.destruct(); }

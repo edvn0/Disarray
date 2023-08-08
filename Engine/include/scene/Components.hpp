@@ -1,6 +1,8 @@
 #pragma once
 
+#include "Forward.hpp"
 #include "core/Concepts.hpp"
+#include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
 
 #include <entt/entt.hpp>
@@ -10,9 +12,6 @@
 #include <unordered_set>
 
 namespace Disarray {
-
-	class Entity;
-	class Scene;
 
 	namespace {
 		static const auto default_rotation = glm::angleAxis(0.f, glm::vec3 { 0.f, 0.f, 1.0f });
@@ -38,6 +37,32 @@ namespace Disarray {
 
 		auto compute() const { return translate_matrix(position) * glm::mat4_cast(rotation) * scale_matrix(scale); }
 	};
+
+	// These are components that share name with other classes in Disarray.
+	// They could be named something else (like XComponent), but I prefer this solution.
+	namespace Components {
+		struct Mesh {
+			Mesh() { }
+			// Deserialisation constructor :)
+			explicit Mesh(Device&, std::string_view path);
+			explicit Mesh(Ref<Disarray::Mesh>);
+			Ref<Disarray::Mesh> mesh { nullptr };
+		};
+
+		struct Pipeline {
+			Pipeline() { }
+			explicit Pipeline(Ref<Disarray::Pipeline>);
+			Ref<Disarray::Pipeline> pipeline { nullptr };
+		};
+
+		struct Texture {
+			Texture() { }
+			explicit Texture(Ref<Disarray::Texture>);
+			// Deserialisation constructor :)
+			explicit Texture(Device&, std::string_view path);
+			Ref<Disarray::Texture> texture { nullptr };
+		};
+	} // namespace Components
 
 	struct ID {
 		Identifier identifier {};

@@ -6,6 +6,7 @@
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Mesh.hpp"
 #include "graphics/Texture.hpp"
+#include "scene/Component.hpp"
 
 #include <entt/entt.hpp>
 
@@ -18,7 +19,7 @@ namespace Disarray {
 		Scene(Disarray::Device&, Disarray::Window&, Disarray::Swapchain&, std::string_view);
 		~Scene();
 		void update(float);
-		void render(float, Disarray::Renderer&);
+		void render(Disarray::Renderer&);
 		void construct(Disarray::App&, Disarray::Renderer&, Disarray::ThreadPool&);
 		void destruct();
 		void on_event(Disarray::Event&);
@@ -40,12 +41,6 @@ namespace Disarray {
 		Ref<Disarray::Framebuffer> framebuffer;
 		Ref<Disarray::Framebuffer> identity_framebuffer;
 		Ref<Disarray::CommandExecutor> command_executor;
-
-		Ref<Disarray::Pipeline> pipeline;
-		Ref<Disarray::Pipeline> geometry_pipeline;
-
-		Ref<Disarray::Mesh> viking_mesh;
-		Ref<Disarray::Texture> viking_room;
 
 		// Should contain some kind of container for entities :)
 		entt::registry registry;

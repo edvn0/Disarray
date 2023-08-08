@@ -30,13 +30,24 @@ namespace Disarray::Vulkan {
 		lines.submit(renderer, command_executor);
 	}
 
-	void Renderer::draw_mesh(Disarray::CommandExecutor& executor, Disarray::Mesh& mesh, const GeometryProperties& properties)
+	void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const GeometryProperties& properties)
+	{
+		draw_mesh(executor, mesh, properties.to_transform());
+	}
+
+	void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const glm::mat4& transform)
+	{
+		draw_mesh(executor, mesh, mesh.get_pipeline(), transform);
+	}
+
+	void Renderer::draw_mesh(
+		Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline, const glm::mat4& transform)
 	{
 		auto command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
-		const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh.get_pipeline());
+		const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
 		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 
-		pc.object_transform = properties.to_transform();
+		pc.object_transform = transform;
 		vkCmdPushConstants(
 			command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &pc);
 

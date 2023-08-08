@@ -31,6 +31,15 @@ template <class Position = glm::vec3> static constexpr auto draw_axes(auto& rend
 		Disarray::GeometryProperties { .position = position, .to_position = position + glm::vec3 { 0, 0, -10.0 }, .colour = { 0, 0, 1, 1 } });
 }
 
+static auto rotate_by(const glm::vec3& axis_radians)
+{
+	glm::mat4 identity = glm::identity<glm::mat4>();
+	glm::rotate(identity, axis_radians.x, glm::vec3 { 1, 0, 0 });
+	glm::rotate(identity, axis_radians.y, glm::vec3 { 0, 1, 0 });
+	glm::rotate(identity, axis_radians.z, glm::vec3 { 0, 0, 1 });
+	return identity;
+}
+
 namespace Disarray {
 
 	Scene::Scene(Device& dev, Window& win, Swapchain& sc, std::string_view name)
@@ -93,60 +102,57 @@ namespace Disarray {
 			.descriptor_set_layout = renderer.get_descriptor_set_layouts().data(),
 			.descriptor_set_layout_count = static_cast<std::uint32_t>(renderer.get_descriptor_set_layouts().size()),
 		};
-		pipeline = Pipeline::construct(device, props);
+		auto viking_rotation = rotate_by(glm::radians(glm::vec3 { 180, 180, 180 }));
 
-		auto viking_rotation = glm::rotate(glm::mat4 { 1.0f }, glm::radians(90.0f), glm::vec3(1, 0, 0))
-			* glm::rotate(glm::mat4 { 1.0f }, glm::radians(90.0f), glm::vec3(0, 1, 0));
-		viking_mesh = Mesh::construct(device, { .path = "Assets/Models/viking.mesh", .pipeline = pipeline, .initial_rotation = viking_rotation });
-#define IS_TESTING
-#ifdef IS_TESTING
+		auto v_mesh = create("Viking");
+		v_mesh.add_component<Components::Mesh>(Mesh::construct(device, { .path = "Assets/Models/viking.mesh", .initial_rotation = viking_rotation }));
+		v_mesh.add_component<Components::Pipeline>(Pipeline::construct(device, props));
+
+#define TEST_DESCRIPTOR_SETS
+#ifdef TEST_DESCRIPTOR_SETS
 		{
 			std::array<std::uint32_t, 1> white_tex_data = { 1 };
 			DataBuffer pixels { white_tex_data.data(), sizeof(std::uint32_t) };
-			TextureProperties texture_properties { .extent = swapchain.get_extent(), .format = ImageFormat::SBGR, .debug_name = "white_tex" };
-			Ref<Texture> white_tex = Texture::construct(device, texture_properties);
+			TextureProperties white_tex_props { .extent = swapchain.get_extent(), .format = ImageFormat::SBGR, .debug_name = "white_tex" };
+			Ref<Texture> white_tex = Texture::construct(device, white_tex_props);
 			renderer.expose_to_shaders(*white_tex);
-
-			texture_properties.path = "Assets/Textures/viking_room.png";
-			texture_properties.debug_name = "viking";
-			viking_room = Texture::construct(device, texture_properties);
-		};
-
+		}
 #endif
-#undef IS_TESTING
+
+		TextureProperties texture_properties { .extent = swapchain.get_extent(), .format = ImageFormat::SBGR, .debug_name = "viking" };
+		texture_properties.path = "Assets/Textures/viking_room.png";
+		v_mesh.add_component<Components::Texture>(Texture::construct(device, texture_properties));
 	}
 
 	Scene::~Scene() { registry.clear(); }
 
-	void Scene::update(float ts) { }
-
-	void Scene::on_event(Event& event)
+	void Scene::update(float ts)
 	{
-		EventDispatcher dispatcher(event);
+		static glm::vec3 viking_pos { 1.f };
+		static float viking_rot { 180.f };
+		const glm::quat viking_rotation = glm::angleAxis(glm::radians(viking_rot), glm::vec3 { 0, 1, 0 });
+		static glm::vec3 viking_scale { 2.5f };
+		viking_rot += 0.01 * ts;
+		viking_pos.x += 0.01 * ts;
+		viking_pos.z += 0.01 * ts;
 
-		dispatcher.dispatch<KeyPressedEvent>([&reg = registry](KeyPressedEvent& pressed) {
-			if (pressed.get_key_code() != KeyCode::K)
-				return false;
-			auto view = reg.view<Inheritance>();
-			for (const auto& [entity, inheritance] : view.each()) {
-				const auto& [children, parent] = inheritance;
-				Log::debug("Inheritance info", "parent: {}, children: {}", parent, fmt::join(children, ", "));
-			}
-			return true;
-		});
+		auto mesh_view = registry.view<const Components::Mesh, Transform>();
+		for (auto [entity, _, transform] : mesh_view.each()) {
+			transform.position = viking_pos;
+			transform.rotation = viking_rotation;
+			transform.scale = viking_scale;
+		}
 	}
 
-	void Scene::render(float ts, Renderer& renderer)
+	void Scene::render(Renderer& renderer)
 	{
 		command_executor->begin();
 		{
 			renderer.begin_pass(*command_executor, *framebuffer, true);
-			static glm::vec3 pos { -1.f };
-			static float rot { 180.f };
-			const glm::quat rotation = glm::angleAxis(glm::radians(rot), glm::vec3 { 0, 1, 0 });
-			static glm::vec3 scale { 2.5f };
-			rot += 0.01 * ts;
-			renderer.draw_mesh(*command_executor, *viking_mesh, { .position = pos, .scale = scale, .rotation = rotation });
+			auto mesh_view = registry.view<const Components::Mesh, const Components::Pipeline, const Transform>();
+			for (const auto& [entity, mesh, pipeline, transform] : mesh_view.each()) {
+				renderer.draw_mesh(*command_executor, *mesh.mesh, *pipeline.pipeline, transform.compute());
+			}
 
 			renderer.end_pass(*command_executor);
 		}
@@ -172,6 +178,22 @@ namespace Disarray {
 			renderer.end_pass(*command_executor);
 		}
 		command_executor->submit_and_end();
+	}
+
+	void Scene::on_event(Event& event)
+	{
+		EventDispatcher dispatcher(event);
+
+		dispatcher.dispatch<KeyPressedEvent>([&reg = registry](KeyPressedEvent& pressed) {
+			if (pressed.get_key_code() != KeyCode::K)
+				return false;
+			auto view = reg.view<Inheritance>();
+			for (const auto& [entity, inheritance] : view.each()) {
+				const auto& [children, parent] = inheritance;
+				Log::debug("Inheritance info", "parent: {}, children: {}", parent, fmt::join(children, ", "));
+			}
+			return true;
+		});
 	}
 
 	void Scene::recreate(const Extent& extent)
