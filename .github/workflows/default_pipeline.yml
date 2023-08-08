@@ -12,11 +12,22 @@ env:
   CC: gcc-12
   NINJA_STATUS: "[%f/%t] %c/s %e "
 
+permissions:
+  actions: "write"
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Early exit
+        if: contains(github.event.head_commit.message, 'wip')
+        run: |
+          gh run cancel ${{ github.run_id }}
+          gh run watch ${{ github.run_id }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: actions/checkout@v3
         with:
           submodules: "recursive"
