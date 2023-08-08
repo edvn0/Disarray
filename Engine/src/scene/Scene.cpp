@@ -204,7 +204,7 @@ namespace Disarray {
 	{
 		EventDispatcher dispatcher(event);
 
-		dispatcher.dispatch<KeyPressedEvent>([&max = vp_max, &min = vp_min, &reg = registry, &fb = identity_framebuffer](KeyPressedEvent& pressed) {
+		dispatcher.dispatch<KeyPressedEvent>([&max = vp_max, &min = vp_min, &fb = identity_framebuffer](KeyPressedEvent& pressed) {
 			if (pressed.get_key_code() == KeyCode::L) {
 				const auto& image = fb->get_image(1);
 				auto pos = Input::mouse_position();
