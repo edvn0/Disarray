@@ -9,6 +9,7 @@
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/Texture.hpp"
+#include "graphics/TextureCache.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -58,7 +59,6 @@ namespace Disarray {
 		auto to_transform() const
 		{
 			return glm::translate(glm::mat4 { 1.0f }, position) * glm::scale(glm::mat4 { 1.0f }, scale) * glm::mat4_cast(rotation);
-			;
 		}
 	};
 
@@ -98,7 +98,9 @@ namespace Disarray {
 		virtual void end_pass(Disarray::CommandExecutor&) = 0;
 
 		virtual void on_resize() = 0;
+
 		virtual PipelineCache& get_pipeline_cache() = 0;
+		virtual TextureCache& get_texture_cache() = 0;
 
 		virtual void begin_frame(Camera& camera) = 0;
 		virtual void end_frame() = 0;

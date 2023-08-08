@@ -17,15 +17,6 @@ using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;
 
 namespace Disarray {
 
-	namespace CollectionOperations {
-
-		template <typename Collection, typename Func> static inline void for_each(Collection& coll, Func&& func)
-		{
-			std::ranges::for_each(std::begin(coll), std::end(coll), std::forward<Func>(func));
-		}
-
-	} // namespace CollectionOperations
-
 	class Framebuffer;
 
 	struct PipelineCacheCreationProperties {
@@ -44,15 +35,6 @@ namespace Disarray {
 	};
 
 	class PipelineCache {
-		struct StringHash {
-			using is_transparent = void; // enables heterogeneous lookup
-
-			std::size_t operator()(std::string_view sv) const
-			{
-				std::hash<std::string_view> hasher;
-				return hasher(sv);
-			}
-		};
 
 		using ShaderPair = std::pair<Ref<Disarray::Shader>, Ref<Disarray::Shader>>;
 		using PipelineMap = std::unordered_map<std::string, Ref<Disarray::Pipeline>, StringHash, std::equal_to<>>;

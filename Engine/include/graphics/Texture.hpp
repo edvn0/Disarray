@@ -14,7 +14,6 @@ namespace Disarray {
 		Extent extent;
 		ImageFormat format;
 		std::string path {};
-		bool should_present { false };
 		std::string debug_name;
 	};
 

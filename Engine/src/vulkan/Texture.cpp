@@ -19,7 +19,6 @@ namespace Disarray::Vulkan {
 				.extent = props.extent,
 				.format = props.format,
 				.data = pixels,
-				.should_present = props.should_present,
 				.debug_name = props.debug_name,
 			});
 	}
