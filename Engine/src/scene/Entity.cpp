@@ -6,6 +6,26 @@
 #include "scene/Components.hpp"
 #include "util/FormattingUtilities.hpp"
 
+#include <fmt/format.h>
+
+auto fmt::formatter<entt::entity>::format(entt::entity c, format_context& ctx) const
+{
+	auto as_uint = entt::to_integral(c);
+	return formatter<string_view>::format(fmt::format("{}", as_uint), ctx);
+}
+
+auto fmt::formatter<const entt::entity>::format(const entt::entity c, format_context& ctx) const
+{
+	auto as_uint = entt::to_integral(c);
+	return formatter<string_view>::format(fmt::format("{}", as_uint), ctx);
+}
+
+auto fmt::formatter<Disarray::Entity>::format(const Disarray::Entity& c, format_context& ctx) const
+{
+	auto as_uint = entt::to_integral(c.get_identifier());
+	return formatter<string_view>::format(fmt::format("{}", as_uint), ctx);
+}
+
 namespace Disarray {
 
 	Entity::Entity(Scene& s, std::string_view n)
@@ -28,11 +48,8 @@ namespace Disarray {
 		}
 
 		auto& inheritance_info = get_components<Inheritance>();
-		inheritance_info.child = child.get_identifier();
+		inheritance_info.add_child(child);
 		inheritance_info.parent = get_identifier();
-		Log::debug("Entity",
-			fmt::format(
-				"Mapped parent: {} to child: {}", static_cast<std::uint32_t>(get_identifier()), static_cast<std::uint32_t>(child.get_identifier())));
 	}
 
 	void Entity::add_child(Entity* child_of_this)

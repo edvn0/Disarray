@@ -3,10 +3,13 @@
 #include "scene/Scene.hpp"
 
 #include "core/App.hpp"
+#include "core/Formatters.hpp"
+#include "core/Input.hpp"
 #include "core/ThreadPool.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Renderer.hpp"
+#include "scene/Components.hpp"
 #include "scene/Entity.hpp"
 
 #include <entt/entt.hpp>
@@ -113,7 +116,18 @@ namespace Disarray {
 
 	Scene::~Scene() { registry.clear(); }
 
-	void Scene::update(float) { }
+	void Scene::handle_input(float ts)
+	{
+		if (Input::key_released(KeyCode::K)) {
+			auto view = registry.view<const Inheritance>();
+			for (const auto& [entity, inheritance] : view.each()) {
+				auto& [children, parent] = inheritance;
+				Log::debug("Inheritance info", fmt::format("parent: {}, children: {}", parent, fmt::join(children, ", ")));
+			}
+		}
+	}
+
+	void Scene::update(float ts) { handle_input(ts); }
 
 	void Scene::render(float ts, Renderer& renderer)
 	{
@@ -133,7 +147,7 @@ namespace Disarray {
 			renderer.begin_pass(*command_executor, *framebuffer);
 
 			auto rect_view = registry.view<const Transform, const ID>();
-			for (const auto [entity, transform, id] : rect_view.each()) {
+			for (const auto& [entity, transform, id] : rect_view.each()) {
 				renderer.draw_planar_geometry(Geometry::Rectangle,
 					{ .position = transform.position,
 						.rotation = transform.rotation,

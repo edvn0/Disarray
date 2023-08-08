@@ -27,6 +27,10 @@ namespace Disarray {
 
 	bool Input::button_pressed(MouseCode code) { return glfwGetMouseButton(window_data->window, static_cast<int>(code)) == GLFW_PRESS; }
 
-	bool Input::button_pressed(KeyCode code) { return glfwGetKey(window_data->window, static_cast<int>(code)) == GLFW_PRESS; }
+	bool Input::key_pressed(KeyCode code) { return glfwGetKey(window_data->window, static_cast<int>(code)) == GLFW_PRESS; }
+
+	bool Input::button_released(MouseCode code) { return glfwGetMouseButton(window_data->window, static_cast<int>(code)) == GLFW_RELEASE; }
+
+	bool Input::key_released(KeyCode code) { return glfwGetKey(window_data->window, static_cast<int>(code)) == GLFW_RELEASE; }
 
 } // namespace Disarray

@@ -7,8 +7,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <unordered_set>
 
 namespace Disarray {
+
+	class Entity;
+	class Scene;
 
 	namespace {
 		static const auto default_rotation = glm::angleAxis(0.f, glm::vec3 { 0.f, 0.f, 1.0f });
@@ -42,8 +46,10 @@ namespace Disarray {
 	};
 
 	struct Inheritance {
-		entt::entity child {};
+		std::unordered_set<entt::entity> children {};
 		entt::entity parent {};
+
+		void add_child(Entity&);
 	};
 
 } // namespace Disarray

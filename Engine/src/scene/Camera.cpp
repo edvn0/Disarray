@@ -83,28 +83,28 @@ namespace Disarray {
 		const glm::vec2& mouse = Input::mouse_position();
 		const glm::vec2 delta = (mouse - initial_mouse_position) * 0.002f;
 
-		if (Input::button_pressed(MouseCode::Right) && !Input::button_pressed(KeyCode::LeftControl)) {
+		if (Input::button_pressed(MouseCode::Right) && !Input::key_pressed(KeyCode::LeftControl)) {
 			camera_mode = CameraMode::Flycam;
 			const float yaw_sign = get_up_direction().y < 0 ? -1.0f : 1.0f;
 
 			const float speed = get_camera_speed();
 
-			if (Input::button_pressed(KeyCode::Q)) {
+			if (Input::key_pressed(KeyCode::Q)) {
 				position_delta -= ts * speed * glm::vec3 { 0.f, yaw_sign, 0.f };
 			}
-			if (Input::button_pressed(KeyCode::E)) {
+			if (Input::key_pressed(KeyCode::E)) {
 				position_delta += ts * speed * glm::vec3 { 0.f, yaw_sign, 0.f };
 			}
-			if (Input::button_pressed(KeyCode::S)) {
+			if (Input::key_pressed(KeyCode::S)) {
 				position_delta -= ts * speed * direction;
 			}
-			if (Input::button_pressed(KeyCode::W)) {
+			if (Input::key_pressed(KeyCode::W)) {
 				position_delta += ts * speed * direction;
 			}
-			if (Input::button_pressed(KeyCode::A)) {
+			if (Input::key_pressed(KeyCode::A)) {
 				position_delta -= ts * speed * right_direction;
 			}
-			if (Input::button_pressed(KeyCode::D)) {
+			if (Input::key_pressed(KeyCode::D)) {
 				position_delta += ts * speed * right_direction;
 			}
 
@@ -123,7 +123,7 @@ namespace Disarray {
 			const float actual_distance = glm::distance(focal_point, position);
 			focal_point = position + get_forward_direction() * actual_distance;
 			distance = actual_distance;
-		} else if (Input::button_pressed(KeyCode::LeftControl)) {
+		} else if (Input::key_pressed(KeyCode::LeftControl)) {
 			camera_mode = CameraMode::Arcball;
 
 			if (Input::button_pressed(MouseCode::Middle)) {
@@ -149,9 +149,9 @@ namespace Disarray {
 	float EditorCamera::get_camera_speed() const
 	{
 		float speed = normal_speed;
-		if (Input::button_pressed(KeyCode::LeftControl))
+		if (Input::key_pressed(KeyCode::LeftControl))
 			speed /= 2 - glm::log(normal_speed);
-		if (Input::button_pressed(KeyCode::LeftShift))
+		if (Input::key_pressed(KeyCode::LeftShift))
 			speed *= 2 - glm::log(normal_speed);
 
 		return glm::clamp(speed, min_speed, max_speed);

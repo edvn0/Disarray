@@ -21,6 +21,7 @@ namespace Disarray {
 		void construct(Disarray::App&, Disarray::Renderer&, Disarray::ThreadPool&);
 		void destruct();
 		void recreate(const Extent& extent);
+		void handle_input(float);
 
 		Entity create(std::string_view = "Unnamed");
 

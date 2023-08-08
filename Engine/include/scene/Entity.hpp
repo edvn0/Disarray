@@ -4,6 +4,7 @@
 #include "scene/Scene.hpp"
 
 #include <entt/entt.hpp>
+#include <fmt/core.h>
 #include <string>
 #include <string_view>
 
@@ -42,3 +43,15 @@ namespace Disarray {
 	};
 
 } // namespace Disarray
+
+template <> struct fmt::formatter<entt::entity> : fmt::formatter<std::string_view> {
+	auto format(entt::entity entity, format_context& ctx) const;
+};
+
+template <> struct fmt::formatter<const entt::entity> : fmt::formatter<std::string_view> {
+	auto format(const entt::entity entity, format_context& ctx) const;
+};
+
+template <> struct fmt::formatter<Disarray::Entity> : fmt::formatter<std::string_view> {
+	auto format(const Disarray::Entity& entity, format_context& ctx) const;
+};
