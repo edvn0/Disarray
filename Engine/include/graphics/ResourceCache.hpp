@@ -21,17 +21,15 @@ namespace Disarray {
 
 	} // namespace CollectionOperations
 
-	namespace {
-		struct StringHash {
-			using is_transparent = void; // enables heterogeneous lookup
+	struct StringHash {
+		using is_transparent = void; // enables heterogeneous lookup
 
-			std::size_t operator()(std::string_view sv) const
-			{
-				std::hash<std::string_view> hasher;
-				return hasher(sv);
-			}
-		};
-	} // namespace
+		std::size_t operator()(std::string_view sv) const
+		{
+			std::hash<std::string_view> hasher;
+			return hasher(sv);
+		}
+	};
 
 	template <class T>
 	concept CacheableResource = requires(T t, bool should_clean, const Extent& extent) { t.recreate(should_clean, extent); }

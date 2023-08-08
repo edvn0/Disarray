@@ -28,9 +28,9 @@ namespace Disarray::Vulkan {
 	Renderer::Renderer(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::RendererProperties& properties)
 		: device(dev)
 		, swapchain(sc)
-		, props(properties)
 		, pipeline_cache(dev, "Assets/Shaders")
 		, texture_cache(dev, "Assets/Textures")
+		, props(properties)
 	{
 		frame_ubos.resize(swapchain.image_count());
 		for (auto& ubo : frame_ubos) {

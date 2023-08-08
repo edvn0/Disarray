@@ -57,7 +57,6 @@ namespace Disarray {
 	{
 		int rects_x { 2 };
 		int rects_y { 2 };
-		std::size_t loops { 0 };
 		auto parent = create("Grid");
 		for (auto j = -1; j < rects_y; j++) {
 			for (auto i = -1; i < rects_x; i++) {
@@ -68,7 +67,6 @@ namespace Disarray {
 				transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
 				rect.add_component<Components::Geometry>(Geometry::Rectangle);
 				rect.add_component<Components::Texture>();
-				loops++;
 			}
 		}
 

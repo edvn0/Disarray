@@ -33,7 +33,7 @@ namespace Disarray {
 
 		Entity create(std::string_view = "Unnamed");
 
-		constexpr Disarray::Image& get_image(std::uint32_t index)
+		Disarray::Image& get_image(std::uint32_t index)
 		{
 			if (index == 0)
 				return framebuffer->get_image();
