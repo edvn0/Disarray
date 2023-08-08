@@ -115,13 +115,15 @@ namespace Disarray {
 			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, std::size_t { 84 } } },
 			.extent = extent,
 			.samples = SampleCount::ONE,
+			.descriptor_set_layout = renderer.get_descriptor_set_layouts().data(),
+			.descriptor_set_layout_count = static_cast<std::uint32_t>(renderer.get_descriptor_set_layouts().size()),
 		};
 		auto viking_rotation = rotate_by(glm::radians(glm::vec3 { 180, 180, 180 }));
 
 		auto v_mesh = create("Viking");
 		v_mesh.add_component<Components::Mesh>(Mesh::construct(device, { .path = "Assets/Models/viking.mesh", .initial_rotation = viking_rotation }));
 		v_mesh.add_component<Components::Pipeline>(Pipeline::construct(device, props));
-		v_mesh.add_component<Components::Texture>(renderer.get_texture_cache().get_texture("viking_room"));
+		v_mesh.add_component<Components::Texture>(renderer.get_texture_cache().get("viking_room"));
 
 #define TEST_DESCRIPTOR_SETS
 #ifdef TEST_DESCRIPTOR_SETS

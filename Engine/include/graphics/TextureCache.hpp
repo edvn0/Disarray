@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Forward.hpp"
+#include "ResourceCache.hpp"
 #include "core/Types.hpp"
 #include "graphics/PushConstantLayout.hpp"
 #include "graphics/Shader.hpp"
@@ -15,37 +16,37 @@
 
 namespace Disarray {
 
-	struct TextureCacheCreationProperties : public TextureProperties { };
+	struct TextureCacheCreationProperties {
+		std::string key;
+		std::string debug_name;
+		std::filesystem::path path;
+		ImageFormat format;
+	};
 
-	class TextureCache {
-		struct StringHash {
-			using is_transparent = void; // enables heterogeneous lookup
-
-			std::size_t operator()(std::string_view sv) const
-			{
-				std::hash<std::string_view> hasher;
-				return hasher(sv);
-			}
-		};
-
-		using TextureMap = std::unordered_map<std::string, Ref<Disarray::Texture>, StringHash, std::equal_to<>>;
-		using TextureCacheValueType = TextureMap::value_type;
-
+	class TextureCache : public ResourceCache<Ref<Disarray::Texture>, TextureCacheCreationProperties, TextureCache, std::string, StringHash> {
 	public:
-		TextureCache(Disarray::Device& device, const std::filesystem::path&);
-		~TextureCache();
+		TextureCache(Disarray::Device& device, std::filesystem::path path)
+			: ResourceCache(device, path, { ".png", ".jpg" })
+		{
+			auto files = get_unique_files_recursively();
+			for (const auto& p : files) {
+				put(TextureCacheCreationProperties { .path = p.string() });
+			}
+		}
 
-		const Ref<Disarray::Texture>& get(const std::string&);
-		const Ref<Disarray::Texture>& put(const TextureCacheCreationProperties&);
+		void force_recreate_impl(const Extent& extent)
+		{
+			for_each_in_storage([&extent](auto& resource) {
+				auto& [k, v] = resource;
+				v->recreate(true, extent);
+			});
+		}
 
-		void force_recreation();
+		Ref<Disarray::Texture> create_from_impl(const TextureCacheCreationProperties& props)
+		{
+			return Texture::construct(get_device(), TextureProperties { .path = props.path.string() });
+		}
 
-	private:
-		std::set<std::filesystem::path> get_unique_files_recursively() const;
-
-		Disarray::Device& device;
-		std::filesystem::path path { "Assets/Shaders" };
-
-		TextureMap pipeline_cache {};
+		std::string create_key_impl(const TextureCacheCreationProperties& props) { return props.key; }
 	};
 } // namespace Disarray

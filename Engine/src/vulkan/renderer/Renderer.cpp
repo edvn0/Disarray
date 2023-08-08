@@ -18,7 +18,6 @@
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/UniformBuffer.hpp"
 #include "vulkan/VertexBuffer.hpp"
-#include "vulkan/vulkan_core.h"
 
 #include <array>
 #include <core/Clock.hpp>
@@ -30,6 +29,8 @@ namespace Disarray::Vulkan {
 		: device(dev)
 		, swapchain(sc)
 		, props(properties)
+		, pipeline_cache(dev, "Assets/Shaders")
+		, texture_cache(dev, "Assets/Textures")
 	{
 		frame_ubos.resize(swapchain.image_count());
 		for (auto& ubo : frame_ubos) {
@@ -42,7 +43,6 @@ namespace Disarray::Vulkan {
 
 		initialise_descriptors();
 
-		pipeline_cache = make_scope<PipelineCache>(device, "Assets/Shaders");
 		auto samples = SampleCount::ONE;
 
 		FramebufferProperties geometry_props { .extent = swapchain.get_extent(),
@@ -74,7 +74,7 @@ namespace Disarray::Vulkan {
 		{
 			// Quad
 			pipeline_properties.framebuffer = quad_framebuffer;
-			pipeline_cache->put(pipeline_properties);
+			pipeline_cache.put(pipeline_properties);
 		}
 		{
 			// Line
@@ -84,11 +84,10 @@ namespace Disarray::Vulkan {
 			pipeline_properties.line_width = 8.0f;
 			pipeline_properties.polygon_mode = PolygonMode::Line;
 			pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" } };
-			pipeline_cache->put(pipeline_properties);
+			pipeline_cache.put(pipeline_properties);
 		}
 
-		render_batch.quads.construct(*this, device);
-		render_batch.lines.construct(*this, device);
+		render_batch.construct(*this, device);
 	}
 
 	Renderer::~Renderer()

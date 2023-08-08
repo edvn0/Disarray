@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/Ensure.hpp"
+#include "core/Log.hpp"
 #include "graphics/Device.hpp"
 
 #include <algorithm>
@@ -31,29 +33,49 @@ namespace Disarray {
 		};
 	} // namespace
 
-	template <class Props, class ResourceProps> struct PropsToResourcePropsMapper {
-		ResourceProps operator()(const Props&) = delete;
-	};
+	template <class T>
+	concept CacheableResource = requires(T t, bool should_clean, const Extent& extent) { t.recreate(should_clean, extent); }
+		or requires(T t, bool should_clean, const Extent& extent) { (*t).recreate(should_clean, extent); };
 
-	template <class Resource, class Props, class ResourceProps, PropsToResourcePropsMapper<Props, ResourceProps> mapper, class Key = std::string,
-		class Hash = StringHash>
-	class ResourceCache {
-		using ResourceMap = std::unordered_map<Key, Ref<Resource>, Hash, std::equal_to<>>;
+	template <CacheableResource Resource, class Props, class Child, class Key = std::string, class Hash = StringHash> class ResourceCache {
+		using ResourceMap = std::unordered_map<Key, Resource, Hash, std::equal_to<>>;
 
 	public:
-		virtual ~ResourceCache() { storage.clear(); };
+		~ResourceCache() { storage.clear(); };
 
-		virtual void force_recreate();
+		const Resource& get(const Key& key) const { return storage[key]; }
+		Resource& get(const Key& key) { return storage[key]; }
 
-		virtual const Ref<Resource>& get(const Key&) const = 0;
+		const Resource& put(const Props& props)
+		{
+			auto resource = create_from(props);
+			const auto& [pair, could] = storage.try_emplace(create_key(props), std::move(resource));
+			if (!could)
+				Log::error("ResourceCache - Put", "Could not insert resource.");
+			return pair->second;
+		}
 
-		virtual const Ref<Resource>& put(const Key& key, const Props& props) { }
+		template <class Func> void for_each_in_storage(Func&& f) { CollectionOperations::for_each(storage, std::forward<Func>(f)); }
+
+		void force_recreate(const Extent& extent) { return static_cast<Child&>(*this).force_recreate_impl(extent); };
+		Resource create_from(const Props& props) { return static_cast<Child&>(*this).create_from_impl(props); }
+		Key create_key(const Props& props)
+		{
+			auto key = static_cast<Child&>(*this).create_key_impl(props);
+			ensure(!storage.contains(key), fmt::format("Storage already contains key: {}", key));
+			return key;
+		}
+
+		auto& get_device() { return device; }
 
 	protected:
-		ResourceCache(
-			Disarray::Device&, const std::filesystem::path&, const std::unordered_set<std::string>& extensions = { ".spv", ".png", ".jpg" });
+		ResourceCache(Disarray::Device& dev, const std::filesystem::path& p, const std::unordered_set<std::string>& exts = { ".spv", ".png", ".jpg" })
+			: device(dev)
+			, path(p)
+			, extensions(exts)
+		{
+		}
 
-	private:
 		std::unordered_set<std::filesystem::path> get_unique_files_recursively() const
 		{
 			std::unordered_set<std::filesystem::path> paths;
@@ -66,7 +88,11 @@ namespace Disarray {
 			return paths;
 		}
 
+	private:
+		Disarray::Device& device;
 		ResourceMap storage {};
+		std::filesystem::path path {};
+		std::unordered_set<std::string> extensions {};
 	};
 
 } // namespace Disarray

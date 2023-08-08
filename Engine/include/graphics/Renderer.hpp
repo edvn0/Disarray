@@ -62,6 +62,18 @@ namespace Disarray {
 		}
 	};
 
+	struct PushConstant {
+		glm::mat4 object_transform { 1.0f };
+		glm::vec4 colour { 1.0f };
+		std::uint32_t max_identifiers {};
+	};
+
+	struct UBO {
+		glm::mat4 view;
+		glm::mat4 proj;
+		glm::mat4 view_projection;
+	};
+
 	class IGraphics {
 	public:
 		virtual ~IGraphics() = default;
@@ -86,6 +98,8 @@ namespace Disarray {
 		virtual VkDescriptorSet get_descriptor_set(std::uint32_t) = 0;
 		virtual VkDescriptorSet get_descriptor_set() = 0;
 		virtual const std::vector<VkDescriptorSetLayout>& get_descriptor_set_layouts() = 0;
+		virtual const PushConstant* get_push_constant() const = 0;
+		virtual PushConstant& get_editable_push_constant() = 0;
 	};
 
 	class Layer;

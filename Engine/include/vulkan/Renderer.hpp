@@ -15,18 +15,6 @@
 
 namespace Disarray::Vulkan {
 
-	struct PushConstant {
-		glm::mat4 object_transform { 1.0f };
-		glm::vec4 colour { 1.0f };
-		std::uint32_t max_identifiers {};
-	};
-
-	struct UBO {
-		glm::mat4 view;
-		glm::mat4 proj;
-		glm::mat4 view_projection;
-	};
-
 	class Renderer : public Disarray::Renderer {
 	public:
 		Renderer(Device&, Swapchain&, const RendererProperties&);
@@ -55,25 +43,26 @@ namespace Disarray::Vulkan {
 		// End IGraphicsResource
 
 		void on_resize() override;
-		PipelineCache& get_pipeline_cache() override { return *pipeline_cache; }
+		PipelineCache& get_pipeline_cache() override { return pipeline_cache; }
+		TextureCache& get_texture_cache() override { return texture_cache; }
 
 		void begin_frame(Camera&) override;
 		void end_frame() override;
 
 		void force_recreation() override;
 
-		auto* get_push_constant() const { return &pc; }
-		auto& get_editable_push_constant() { return pc; }
+		const PushConstant* get_push_constant() const override { return &pc; }
+		PushConstant& get_editable_push_constant() override { return pc; }
 
 	private:
 		void add_geometry_to_batch(Geometry, const GeometryProperties&);
 
 		Disarray::Device& device;
 		Disarray::Swapchain& swapchain;
-		Scope<Disarray::PipelineCache> pipeline_cache;
-		std::vector<Ref<Disarray::Texture>> texture_cache;
+		Disarray::PipelineCache pipeline_cache;
+		Disarray::TextureCache texture_cache;
 		Ref<Disarray::Framebuffer> geometry_framebuffer;
-		BatchRenderer<max_objects> render_batch;
+		BatchRenderer<max_objects, QuadVertex, LineVertex> render_batch;
 
 		std::function<void(Disarray::Renderer&)> on_batch_full_func = [](auto&) {};
 

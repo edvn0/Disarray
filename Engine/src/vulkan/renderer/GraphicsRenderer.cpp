@@ -24,12 +24,6 @@
 
 namespace Disarray::Vulkan {
 
-	template <std::size_t Vertices> void BatchRenderer<Vertices>::submit(Renderer& renderer, Disarray::CommandExecutor& command_executor)
-	{
-		quads.submit(renderer, command_executor);
-		lines.submit(renderer, command_executor);
-	}
-
 	void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const GeometryProperties& properties)
 	{
 		draw_mesh(executor, mesh, properties.to_transform());
@@ -89,18 +83,7 @@ namespace Disarray::Vulkan {
 
 	void Renderer::add_geometry_to_batch(Disarray::Geometry geometry, const Disarray::GeometryProperties& properties)
 	{
-		switch (geometry) {
-		case Geometry::Circle:
-			break;
-		case Geometry::Triangle:
-			break;
-		case Geometry::Line:
-			render_batch.lines.create_new(properties);
-			break;
-		case Geometry::Rectangle:
-			render_batch.quads.create_new(properties);
-			break;
-		}
+		render_batch.create_new(geometry, properties);
 		render_batch.submitted_geometries++;
 	}
 

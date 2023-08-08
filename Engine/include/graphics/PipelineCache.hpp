@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Forward.hpp"
+#include "ResourceCache.hpp"
 #include "core/Types.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PushConstantLayout.hpp"
@@ -34,30 +35,45 @@ namespace Disarray {
 		std::uint32_t descriptor_set_layout_count { 0 };
 	};
 
-	class PipelineCache {
-
+	class PipelineCache : public ResourceCache<Ref<Disarray::Pipeline>, PipelineCacheCreationProperties, PipelineCache, std::string, StringHash> {
 		using ShaderPair = std::pair<Ref<Disarray::Shader>, Ref<Disarray::Shader>>;
-		using PipelineMap = std::unordered_map<std::string, Ref<Disarray::Pipeline>, StringHash, std::equal_to<>>;
-		using PipelineCacheValueType = PipelineMap::value_type;
 
 	public:
 		PipelineCache(Disarray::Device& device, const std::filesystem::path&);
 		~PipelineCache();
 
-		const Ref<Disarray::Pipeline>& get(const std::string&);
-		const Ref<Disarray::Pipeline>& put(const PipelineCacheCreationProperties&);
+		void force_recreate_impl(const Extent& extent)
+		{
+			for_each_in_storage([&extent](auto& resource) {
+				auto& [k, v] = resource;
+				v->recreate(true, extent);
+			});
+		}
 
+		Ref<Disarray::Pipeline> create_from_impl(const PipelineCacheCreationProperties& props)
+		{
+			const auto& [vert, frag] = shader_cache[props.shader_key];
+			PipelineProperties properties {
+				.vertex_shader = vert,
+				.fragment_shader = frag,
+				.framebuffer = props.framebuffer,
+				.layout = props.layout,
+				.push_constant_layout = props.push_constant_layout,
+				.extent = props.extent,
+				.polygon_mode = props.polygon_mode,
+				.line_width = props.line_width,
+				.samples = props.samples,
+				.descriptor_set_layout = props.descriptor_set_layout,
+				.descriptor_set_layout_count = props.descriptor_set_layout_count,
+			};
+
+			return Pipeline::construct(get_device(), properties);
+		}
+
+		std::string create_key_impl(const PipelineCacheCreationProperties& props) { return props.pipeline_key; }
 		const ShaderPair& get_shader(const std::string&);
 
-		void force_recreation();
-
 	private:
-		std::set<std::filesystem::path> get_unique_files_recursively() const;
-
-		Disarray::Device& device;
-		std::filesystem::path path { "Assets/Shaders" };
-
-		PipelineMap pipeline_cache {};
 		std::unordered_map<std::string, ShaderPair> shader_cache {};
 	};
 } // namespace Disarray
