@@ -8,7 +8,9 @@
 #include "graphics/Texture.hpp"
 #include "scene/Component.hpp"
 
+#include <concepts>
 #include <entt/entt.hpp>
+#include <type_traits>
 
 namespace Disarray {
 
@@ -46,6 +48,14 @@ namespace Disarray {
 		const CommandExecutor& get_command_executor() const { return *command_executor; };
 
 		entt::registry& get_registry() { return registry; };
+
+		template <class Func> constexpr void for_all_entities(Func&& func)
+		{
+			const auto view = get_registry().storage<entt::entity>().each();
+			for (const auto& [entity] : view) {
+				func(entity);
+			}
+		}
 
 	private:
 		Disarray::Device& device;

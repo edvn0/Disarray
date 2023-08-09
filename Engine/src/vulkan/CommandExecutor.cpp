@@ -65,7 +65,6 @@ namespace Disarray::Vulkan {
 		timestamp_query_pools.resize(image_count);
 		for (auto& timestamp_query_pool : timestamp_query_pools) {
 			verify(vkCreateQueryPool(vk_device, &query_pool_create_info, nullptr, &timestamp_query_pool));
-			Log::debug("CommandExecutor - Create Query Pool", "Constructed as " + FormattingUtilities::pointer_to_string(timestamp_query_pool));
 		}
 
 		timestamp_query_results.resize(image_count);
@@ -96,14 +95,18 @@ namespace Disarray::Vulkan {
 	{
 		if (props.owned_by_swapchain)
 			return;
+
 		const auto& vk_device = supply_cast<Vulkan::Device>(device);
 
 		vkDestroyCommandPool(vk_device, command_pool, nullptr);
-		if (props.record_stats)
+		if (props.record_stats) {
 			for (auto& pool : timestamp_query_pools) {
-				Log::error("CommandExecutor - Destroy Executor", "Destroying query pool: " + FormattingUtilities::pointer_to_string(pool));
 				vkDestroyQueryPool(vk_device, pool, nullptr);
 			}
+			for (auto& pool : pipeline_statistics_query_pools) {
+				vkDestroyQueryPool(vk_device, pool, nullptr);
+			}
+		}
 		for (auto& fence : fences)
 			vkDestroyFence(vk_device, fence, nullptr);
 	}

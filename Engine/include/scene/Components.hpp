@@ -17,9 +17,7 @@ namespace Disarray {
 	namespace {
 		static const auto default_rotation = glm::angleAxis(0.f, glm::vec3 { 0.f, 0.f, 1.0f });
 		static constexpr auto identity = glm::identity<glm::mat4>();
-
 		inline auto scale_matrix(const auto& vec) { return glm::scale(identity, vec); }
-
 		inline auto translate_matrix(const auto& vec) { return glm::translate(identity, vec); }
 	} // namespace
 
@@ -74,7 +72,11 @@ namespace Disarray {
 	struct ID {
 		Identifier identifier {};
 
-		std::uint32_t get_identifier() const { return static_cast<std::uint32_t>(identifier); }
+		template <std::integral T> T get_id() const { return static_cast<T>(identifier); }
+	};
+
+	struct Tag {
+		std::string name {};
 	};
 
 	struct Inheritance {

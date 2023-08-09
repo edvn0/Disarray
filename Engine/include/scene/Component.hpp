@@ -11,7 +11,7 @@ namespace Disarray {
 	namespace {
 		template <class T>
 		concept IsInAllowedComponents
-			= AnyOf<T, Transform, ID, Inheritance, Components::Mesh, Components::Pipeline, Components::Texture, Components::Geometry>;
+			= AnyOf<T, Tag, Transform, ID, Inheritance, Components::Mesh, Components::Pipeline, Components::Texture, Components::Geometry>;
 	}
 
 	template <class T>

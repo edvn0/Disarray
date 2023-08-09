@@ -55,18 +55,21 @@ namespace Disarray {
 
 	void Scene::construct(Disarray::App&, Disarray::Renderer& renderer, Disarray::ThreadPool&)
 	{
-		int rects_x { 2 };
-		int rects_y { 2 };
+		int rects_x { 10 };
+		int rects_y { 10 };
+		std::size_t loops { 0 };
 		auto parent = create("Grid");
-		for (auto j = -1; j < rects_y; j++) {
-			for (auto i = -1; i < rects_x; i++) {
-				auto rect = create(fmt::format("Rect{}", i));
+		for (auto j = -rects_y; j < rects_y; j++) {
+			for (auto i = -rects_x; i < rects_x; i++) {
+				auto rect = create(fmt::format("Rect{}-{}", i, j));
 				parent.add_child(&rect);
 				auto& transform = rect.get_components<Transform>();
 				transform.position = { 2 * static_cast<float>(i) + 0.5f, -1, 2 * static_cast<float>(j) + 0.5f };
 				transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
+				glm::vec4 colour {};
 				rect.add_component<Components::Geometry>(Geometry::Rectangle);
 				rect.add_component<Components::Texture>();
+				loops++;
 			}
 		}
 
@@ -94,14 +97,14 @@ namespace Disarray {
 
 		framebuffer = Framebuffer::construct(device,
 			{ .extent = swapchain.get_extent(),
-				.attachments = { { Disarray::ImageFormat::SRGB }, { ImageFormat::Depth } },
+				.attachments = { { Disarray::ImageFormat::SBGR }, { ImageFormat::Depth } },
 				.clear_colour_on_load = false,
 				.clear_depth_on_load = false,
 				.debug_name = "FirstFramebuffer" });
 
 		identity_framebuffer = Framebuffer::construct(device,
 			{ .extent = swapchain.get_extent(),
-				.attachments = { { ImageFormat::SRGB },  { ImageFormat::Uint, false },{ ImageFormat::Depth }, },
+				.attachments = { { ImageFormat::SBGR },  { ImageFormat::Uint, false },{ ImageFormat::Depth }, },
 				.clear_colour_on_load = true,
 				.clear_depth_on_load = true,
 				.debug_name = "IdentityFramebuffer" });
@@ -187,7 +190,7 @@ namespace Disarray {
 					{ .position = transform.position,
 						.colour = tex.colour,
 						.rotation = transform.rotation,
-						.identifier = { id.get_identifier() },
+						.identifier = { id.get_id<std::uint32_t>() },
 						.dimensions = { transform.scale } });
 			}
 
@@ -213,7 +216,7 @@ namespace Disarray {
 				pos.x /= (max.x - min.x);
 				pos.y /= max.y;
 				glm::vec4 pixel_data = image.read_pixel(pos);
-				Log::debug("Scene - PixelData", fmt::format("{}", pixel_data));
+				Log::debug("Scene - PixelData", "{}", pixel_data);
 			}
 			return true;
 		});
@@ -230,13 +233,8 @@ namespace Disarray {
 
 	Entity Scene::create(std::string_view name)
 	{
-		// TODO: ID will need some UUID, for now, lets just increase by one
-		static Identifier identifier { 0 };
-
 		auto handle = registry.create();
 		auto entity = Entity(*this, handle, name);
-		entity.add_component<Transform>();
-		entity.add_component<ID>(identifier++);
 		return entity;
 	}
 

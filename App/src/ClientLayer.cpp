@@ -2,6 +2,7 @@
 
 #include "glm/ext/matrix_transform.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
+#include "panels/ScenePanel.hpp"
 
 #include <Disarray.hpp>
 #include <array>
@@ -18,73 +19,12 @@ namespace Disarray::Client {
 
 	AppLayer::~AppLayer() = default;
 
-	class B : public Panel {
-	public:
-		B(Device& dev, Window& win, Swapchain& swap)
-			: device(dev)
-			, window(win)
-			, swapchain(swap)
-		{
-			device.get_physical_device();
-			window.get_framebuffer_scale();
-			swapchain.get_current_frame();
-			begin = Clock::ms();
-		};
-
-		void interface() override
-		{
-			ImGui::Begin("B Timestep");
-			auto ts = Clock::ms() - begin;
-			ImGui::TextColored({ 1.f, 1.f, 1.0f, 1.0f }, "Timestep (panel B) between panel draws: %Fms", ts);
-			ImGui::End();
-			begin = Clock::ms();
-		}
-
-	private:
-		float begin { 0.0f };
-
-		Device& device;
-		Window& window;
-		Swapchain& swapchain;
-	};
-
-	class C : public Panel {
-	public:
-		C(Device& dev, Window& win, Swapchain& swap)
-			: device(dev)
-			, window(win)
-			, swapchain(swap)
-		{
-			device.get_physical_device();
-			window.get_framebuffer_scale();
-			swapchain.get_current_frame();
-			begin = Clock::ms();
-		};
-
-		void interface() override
-		{
-			ImGui::Begin("C Timestep");
-			auto ts = Clock::ms() - begin;
-			ImGui::TextColored({ 1.f, 1.f, 1.0f, 1.0f }, "Timestep (panel C) between panel draws: %Fms", ts);
-			ImGui::End();
-			begin = Clock::ms();
-		}
-
-	private:
-		float begin { 0.0f };
-
-		Device& device;
-		Window& window;
-		Swapchain& swapchain;
-	};
-
 	void AppLayer::construct(App& app, Renderer& renderer, ThreadPool& pool)
 	{
 		scene.construct(app, renderer, pool);
 
 		app.add_panel<StatisticsPanel>(app.get_statistics());
-		app.add_panel<B>();
-		app.add_panel<C>();
+		app.add_panel<ScenePanel>(scene);
 		app.add_panel<ExecutionStatisticsPanel>(scene.get_command_executor());
 	};
 
@@ -157,11 +97,13 @@ namespace Disarray::Client {
 		ImGui::End();
 		ImGui::PopStyleVar();
 
+#ifdef UINT_IN_IMGUI
 		UI::scope("Quads"sv, [&s = scene]() {
 			auto& other_image = s.get_image(1);
 			auto viewport_size = ImGui::GetContentRegionAvail();
 			UI::image(other_image, { viewport_size.x, viewport_size.y });
 		});
+#endif
 
 		UI::scope("Depth"sv, [&s = scene]() {
 			auto& other_image = s.get_image(2);

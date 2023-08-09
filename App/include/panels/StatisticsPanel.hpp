@@ -17,7 +17,7 @@ namespace Disarray::Client {
 		StatisticsPanel(Device&, Window&, Swapchain&, const ApplicationStatistics& stats)
 			: statistics(stats) {};
 
-		void update(float ts, Renderer& renderer) override
+		void update(float ts, Renderer&) override
 		{
 			should_update_counter += ts;
 			if (should_update_counter > update_interval_ms) {

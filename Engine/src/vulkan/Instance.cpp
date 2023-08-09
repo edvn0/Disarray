@@ -35,10 +35,10 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverity
 	switch (messageSeverity) {
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-		Disarray::Log::debug("Validation", "Validation layer: " + std::string(pCallbackData->pMessage));
+		Disarray::Log::debug("Validation", "Validation layer: {}", std::string(pCallbackData->pMessage));
 		return VK_FALSE;
 	default:
-		Disarray::Log::error("Validation", "Validation layer: " + std::string(pCallbackData->pMessage));
+		Disarray::Log::error("Validation", "Validation layer: {}", std::string(pCallbackData->pMessage));
 		return VK_FALSE;
 	}
 }

@@ -45,8 +45,6 @@ static constexpr auto compare_on_filename = [](const std::filesystem::path& left
 
 namespace Disarray {
 
-	PipelineCache::~PipelineCache() { shader_cache.clear(); }
-
 	PipelineCache::PipelineCache(Disarray::Device& dev, const std::filesystem::path& base)
 		: ResourceCache(dev, base, { ".spv" })
 	{

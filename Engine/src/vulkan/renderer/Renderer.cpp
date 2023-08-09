@@ -47,7 +47,7 @@ namespace Disarray::Vulkan {
 		auto samples = SampleCount::ONE;
 
 		FramebufferProperties geometry_props { .extent = swapchain.get_extent(),
-			.attachments = { { ImageFormat::SRGB }, { ImageFormat::Depth } },
+			.attachments = { { ImageFormat::SBGR }, { ImageFormat::Depth } },
 			.clear_colour_on_load = false,
 			.clear_depth_on_load = false,
 			.samples = samples,
@@ -56,7 +56,7 @@ namespace Disarray::Vulkan {
 
 		quad_framebuffer = Framebuffer::construct(device,
 			{ .extent = swapchain.get_extent(),
-				.attachments = { { ImageFormat::SRGB },  { ImageFormat::Uint, false },{ ImageFormat::Depth }, },
+				.attachments = { { ImageFormat::SBGR },  { ImageFormat::Uint, false },{ ImageFormat::Depth }, },
 				.samples = samples,
 				.debug_name = "QuadFramebuffer" });
 

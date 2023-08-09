@@ -31,6 +31,7 @@ namespace Disarray::Vulkan {
 		void recreate(bool should_clean, const Extent&) override { return recreate_executor(should_clean); }
 
 		VkCommandBuffer supply() const override { return active; }
+		VkCommandBuffer get_buffer(std::uint32_t index) { return command_buffers[index]; }
 
 		auto buffer_index() -> std::uint32_t
 		{

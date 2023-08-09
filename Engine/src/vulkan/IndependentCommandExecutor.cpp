@@ -65,7 +65,7 @@ namespace Disarray::Vulkan {
 		for (auto& timestamp_query_pool : timestamp_query_pools) {
 			verify(vkCreateQueryPool(vk_device, &query_pool_create_info, nullptr, &timestamp_query_pool));
 			Log::debug(
-				"IndependentCommandExecutor - Create Query Pool", "Constructed as " + FormattingUtilities::pointer_to_string(timestamp_query_pool));
+				"IndependentCommandExecutor - Create Query Pool", "Constructed as {}", FormattingUtilities::pointer_to_string(timestamp_query_pool));
 		}
 
 		timestamp_query_results.resize(image_count);
@@ -99,7 +99,8 @@ namespace Disarray::Vulkan {
 		vkDestroyCommandPool(vk_device, command_pool, nullptr);
 		if (props.record_stats)
 			for (auto& pool : timestamp_query_pools) {
-				Log::error("IndependentCommandExecutor - Destroy Executor", "Destroying query pool: " + FormattingUtilities::pointer_to_string(pool));
+				Log::error(
+					"IndependentCommandExecutor - Destroy Executor", "Destroying query pool: {}", FormattingUtilities::pointer_to_string(pool));
 				vkDestroyQueryPool(vk_device, pool, nullptr);
 			}
 		for (auto& fence : fences)

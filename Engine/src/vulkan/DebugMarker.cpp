@@ -15,10 +15,8 @@ namespace Disarray::Vulkan {
 	PFN_vkCmdDebugMarkerEndEXT vkCmdDebugMarkerEnd = VK_NULL_HANDLE; // NOLINT
 	PFN_vkCmdDebugMarkerInsertEXT vkCmdDebugMarkerInsert = VK_NULL_HANDLE; // NOLINT
 
-	// Get function pointers for the debug report extensions from the device
 	void DebugMarker::setup(VkDevice device, VkPhysicalDevice physical_device)
 	{
-		// Check if the debug marker extension is present (which is the case if run from a graphics debugger)
 		uint32_t extension_count;
 		vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count, nullptr);
 		std::vector<VkExtensionProperties> extensions(extension_count);
@@ -31,7 +29,6 @@ namespace Disarray::Vulkan {
 		}
 
 		if (extension_present) {
-			// The debug marker extension is not part of the core, so function pointers need to be loaded manually
 			vkDebugMarkerSetObjectTag = (PFN_vkDebugMarkerSetObjectTagEXT)vkGetDeviceProcAddr(device, "vkDebugMarkerSetObjectTagEXT"); // NOLINT
 			vkDebugMarkerSetObjectName = (PFN_vkDebugMarkerSetObjectNameEXT)vkGetDeviceProcAddr(device,
 				"vkDebugMarkerSetObjectNameEXT"); // NOLINT
@@ -44,19 +41,15 @@ namespace Disarray::Vulkan {
 			// Set flag if at least one function pointer is present
 			active = (vkDebugMarkerSetObjectName != VK_NULL_HANDLE);
 
-			Log::error("DebugMarker", "Info: " + std::string { VK_EXT_DEBUG_MARKER_EXTENSION_NAME } + " was present, debug markers are enabled.");
+			Log::error("DebugMarker", "Info: {} was present, debug markers are enabled.", std::string { VK_EXT_DEBUG_MARKER_EXTENSION_NAME });
 		} else {
-			Log::error("DebugMarker", "Warning: " + std::string { VK_EXT_DEBUG_MARKER_EXTENSION_NAME } + " not present, debug markers are disabled.");
+			Log::error("DebugMarker", "Warning: {} not present, debug markers are disabled.", std::string { VK_EXT_DEBUG_MARKER_EXTENSION_NAME });
 			Log::error("DebugMarker", "Try running from inside a Vulkan graphics debugger (e.g. RenderDoc)");
 		}
 	}
 
-	// Sets the debug name of an object
-	// All Objects in Vulkan are represented by their 64-bit handles which are passed into this function
-	// along with the object type
 	void DebugMarker::set_object_name(VkDevice device, uint64_t object, VkDebugReportObjectTypeEXT object_type, const char* name)
 	{
-		// Check for valid function pointer (may not be present if not running in a debugging application)
 		if (active) {
 			VkDebugMarkerObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT };
 			name_info.objectType = object_type;
@@ -66,11 +59,9 @@ namespace Disarray::Vulkan {
 		}
 	}
 
-	// Set the tag for an object
 	void DebugMarker::set_object_tag(
 		VkDevice device, uint64_t object, VkDebugReportObjectTypeEXT object_tag, uint64_t name, size_t tag_size, const void* tag)
 	{
-		// Check for valid function pointer (may not be present if not running in a debugging application)
 		if (active) {
 			VkDebugMarkerObjectTagInfoEXT tag_info = { VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_TAG_INFO_EXT };
 			tag_info.objectType = object_tag;
@@ -82,10 +73,8 @@ namespace Disarray::Vulkan {
 		}
 	}
 
-	// Start a new debug marker region
 	void DebugMarker::begin_region(VkCommandBuffer cmdbuffer, const char* marker_name, glm::vec4 color)
 	{
-		// Check for valid function pointer (may not be present if not running in a debugging application)
 		if (active) {
 			VkDebugMarkerMarkerInfoEXT marker_info = {};
 			marker_info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
@@ -95,10 +84,8 @@ namespace Disarray::Vulkan {
 		}
 	}
 
-	// Insert a new debug marker into the command buffer
 	void DebugMarker::insert(VkCommandBuffer cmdbuffer, std::string marker_name, glm::vec4 color)
 	{
-		// Check for valid function pointer (may not be present if not running in a debugging application)
 		if (active) {
 			VkDebugMarkerMarkerInfoEXT marker_info = {};
 			marker_info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
@@ -108,10 +95,8 @@ namespace Disarray::Vulkan {
 		}
 	}
 
-	// End the current debug marker region
 	void DebugMarker::end_region(VkCommandBuffer buffer)
 	{
-		// Check for valid function (may not be present if not running in a debugging application)
 		if (active) {
 			vkCmdDebugMarkerEnd(buffer);
 		}

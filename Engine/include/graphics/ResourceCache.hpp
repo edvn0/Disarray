@@ -55,11 +55,11 @@ namespace Disarray {
 
 		template <class Func> void for_each_in_storage(Func&& f) { CollectionOperations::for_each(storage, std::forward<Func>(f)); }
 
-		void force_recreate(const Extent& extent) { return static_cast<Child&>(*this).force_recreate_impl(extent); };
-		Resource create_from(const Props& props) { return static_cast<Child&>(*this).create_from_impl(props); }
+		void force_recreate(const Extent& extent) { return get_child().force_recreate_impl(extent); };
+		Resource create_from(const Props& props) { return get_child().create_from_impl(props); }
 		Key create_key(const Props& props)
 		{
-			auto key = static_cast<Child&>(*this).create_key_impl(props);
+			auto key = get_child().create_key_impl(props);
 			ensure(!storage.contains(key), fmt::format("Storage already contains key: {}", key));
 			return key;
 		}
@@ -88,6 +88,8 @@ namespace Disarray {
 		}
 
 	private:
+		auto& get_child() { return static_cast<Child&>(*this); }
+
 		Disarray::Device& device;
 		ResourceMap storage {};
 		std::filesystem::path path {};

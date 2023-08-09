@@ -335,5 +335,4 @@ namespace Disarray::Vulkan {
 			verify(vkCreateFramebuffer(vk_device, &fb_create_info, nullptr, &fb));
 		}
 	}
-
 } // namespace Disarray::Vulkan

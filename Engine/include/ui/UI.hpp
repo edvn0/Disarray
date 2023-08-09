@@ -35,6 +35,9 @@ namespace Disarray::UI {
 
 	void scope(std::string_view name, UIFunction&& func = default_function);
 
+	void begin(std::string_view);
+	void end();
+
 	bool is_maximised(Window& window);
 
 } // namespace Disarray::UI

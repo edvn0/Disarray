@@ -40,7 +40,6 @@ namespace Disarray {
 
 	public:
 		PipelineCache(Disarray::Device& device, const std::filesystem::path&);
-		~PipelineCache();
 
 		void force_recreate_impl(const Extent& extent)
 		{

@@ -25,7 +25,7 @@ namespace Disarray {
 		}
 	} // namespace Detail
 
-	static constexpr auto max_objects = 200;
+	static constexpr auto max_objects = 190;
 
 	template <IsValidVertexType T, std::size_t Objects = max_objects, std::size_t VertexCount = vertex_per_object_count<T>,
 		std::size_t IndexCount = index_per_object_count<T>>

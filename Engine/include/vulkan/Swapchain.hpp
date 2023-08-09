@@ -13,10 +13,7 @@
 
 namespace Disarray::Vulkan {
 
-	struct PresentingSemaphores {
-		VkSemaphore& image_available;
-		VkSemaphore& render_finished;
-	};
+	class CommandExecutor;
 
 	class Swapchain : public Disarray::Swapchain, public PropertySupplier<VkSwapchainKHR> {
 	public:
@@ -36,11 +33,6 @@ namespace Disarray::Vulkan {
 
 		Disarray::RenderPass& get_render_pass() override;
 		VkFramebuffer get_current_framebuffer() { return framebuffers[get_current_frame()]; };
-
-		PresentingSemaphores get_presenting_semaphores()
-		{
-			return { image_available_semaphores[get_current_frame()], render_finished_semaphores[get_current_frame()] };
-		}
 
 		bool prepare_frame() override;
 		void present() override;

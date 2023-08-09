@@ -23,7 +23,7 @@ namespace Disarray::Vulkan {
 			});
 	}
 
-	Texture::~Texture() { Log::debug("Texture-Destructor", "Destroyed texture " + props.debug_name); }
+	Texture::~Texture() { Log::debug("Texture-Destructor", "Destroyed texture {}", props.debug_name); }
 
 	void Texture::recreate_texture(bool should_clean) { image->recreate(should_clean, props.extent); }
 

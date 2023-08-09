@@ -14,8 +14,9 @@ namespace Disarray::Vulkan {
 	Surface::Surface(Instance& inst, GLFWwindow* window)
 		: instance(inst)
 	{
+		using namespace std::string_view_literals;
 		verify(glfwCreateWindowSurface(*instance, window, nullptr, &surface));
-		Log::debug("Surface", "Surface created!");
+		Log::debug("Surface"sv, "Surface created!");
 	}
 
 	Surface::~Surface()

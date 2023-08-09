@@ -22,10 +22,16 @@ auto fmt::formatter<Disarray::Entity>::format(const Disarray::Entity& c, fmt::fo
 
 namespace Disarray {
 
+	// TODO: ID will need some UUID, for now, lets just increase by one
+	static Identifier global_identifier { 0 };
+
 	Entity::Entity(Scene& s, std::string_view n)
 		: scene(s)
 		, name(n)
 	{
+		add_component<Transform>();
+		add_component<ID>(global_identifier++);
+		add_component<Tag>(name);
 	}
 
 	Entity::Entity(Scene& s, entt::entity entity, std::string_view n)
@@ -33,6 +39,9 @@ namespace Disarray {
 		, name(n)
 		, identifier(entity)
 	{
+		add_component<Transform>();
+		add_component<ID>(global_identifier++);
+		add_component<Tag>(name);
 	}
 
 	void Entity::add_child(Entity& child)
