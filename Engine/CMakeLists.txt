@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.22)
 
 project(Engine CXX)
 
+FetchContent_Declare(fmt
+        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+        GIT_TAG master
+)
+FetchContent_MakeAvailable(fmt)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -17,12 +23,7 @@ add_library(${PROJECT_NAME} STATIC
         ${THIRD_PARTY}/imgui/backends/imgui_impl_glfw.cpp
         ${THIRD_PARTY}/imgui/backends/imgui_impl_vulkan.cpp
         ${ALL_SOURCES})
-
-FetchContent_Declare(fmt
-        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-        GIT_TAG master
-)
-FetchContent_MakeAvailable(fmt)
+add_library(Disarray::Engine ALIAS ${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/imgui)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator imgui tinyobjloader stb_image thread-pool EnTT::EnTT fmt::fmt)
@@ -55,3 +56,7 @@ endif ()
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")
     target_compile_definitions(${PROJECT_NAME} PRIVATE IS_DEBUG)
 endif ()
+
+if(DISARRAY_BUILD_TESTS)
+  add_subdirectory(tests)
+endif()
