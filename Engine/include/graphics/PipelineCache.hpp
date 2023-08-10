@@ -22,7 +22,8 @@ namespace Disarray {
 
 	struct PipelineCacheCreationProperties {
 		std::string pipeline_key;
-		std::string shader_key;
+		std::string vertex_shader_key;
+		std::string fragment_shader_key;
 		Ref<Framebuffer> framebuffer { nullptr };
 		Ref<RenderPass> render_pass { nullptr };
 		VertexLayout layout;
@@ -36,8 +37,6 @@ namespace Disarray {
 	};
 
 	class PipelineCache : public ResourceCache<Ref<Disarray::Pipeline>, PipelineCacheCreationProperties, PipelineCache, std::string, StringHash> {
-		using ShaderPair = std::pair<Ref<Disarray::Shader>, Ref<Disarray::Shader>>;
-
 	public:
 		PipelineCache(Disarray::Device& device, const std::filesystem::path&);
 
@@ -51,10 +50,9 @@ namespace Disarray {
 
 		Ref<Disarray::Pipeline> create_from_impl(const PipelineCacheCreationProperties& props)
 		{
-			const auto& [vert, frag] = shader_cache[props.shader_key];
 			PipelineProperties properties {
-				.vertex_shader = vert,
-				.fragment_shader = frag,
+				.vertex_shader = shader_cache[props.vertex_shader_key],
+				.fragment_shader = shader_cache[props.fragment_shader_key],
 				.framebuffer = props.framebuffer,
 				.layout = props.layout,
 				.push_constant_layout = props.push_constant_layout,
@@ -70,9 +68,9 @@ namespace Disarray {
 		}
 
 		std::string create_key_impl(const PipelineCacheCreationProperties& props) { return props.pipeline_key; }
-		const ShaderPair& get_shader(const std::string&);
+		const Ref<Shader>& get_shader(const std::string&);
 
 	private:
-		std::unordered_map<std::string, ShaderPair> shader_cache {};
+		std::unordered_map<std::string, Ref<Shader>> shader_cache {};
 	};
 } // namespace Disarray

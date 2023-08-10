@@ -137,7 +137,8 @@ namespace Disarray {
 				.debug_name = "IdentityFramebuffer",
 			});
 
-		const auto& [vert, frag] = renderer.get_pipeline_cache().get_shader("main");
+		const auto& vert = renderer.get_pipeline_cache().get_shader("main.vert");
+		const auto& frag = renderer.get_pipeline_cache().get_shader("main.frag");
 		PipelineProperties props = {
 			.vertex_shader = vert,
 			.fragment_shader = frag,

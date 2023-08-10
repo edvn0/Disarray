@@ -10,7 +10,7 @@
 
 namespace Disarray {
 
-	enum class ShaderType { Vertex, Fragment };
+	enum class ShaderType { Vertex, Fragment, Compute };
 
 	struct ShaderProperties {
 		std::filesystem::path path;
