@@ -38,7 +38,7 @@ if (CMAKE_GENERATOR STREQUAL "Ninja")
 endif()
 
 # Set global property (all targets are impacted)
-if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang" OR ${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
+if (DISARRAY_COMPILE_PROFILE AND (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang" OR ${CMAKE_CXX_COMPILER_ID} MATCHES "GNU"))
   set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "time -v")
   set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "time -v")
 endif()

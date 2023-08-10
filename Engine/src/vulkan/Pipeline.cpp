@@ -218,8 +218,6 @@ namespace Disarray::Vulkan {
 		multisampling.alphaToCoverageEnable = false; // Optional
 		multisampling.alphaToOneEnable = false; // Optional
 
-#define NEW
-#ifdef NEW
 		const auto& fb_props = props.framebuffer->get_properties();
 		const auto should_present = fb_props.should_present;
 		size_t color_attachment_count = should_present ? 1 : props.framebuffer->get_colour_attachment_count();
@@ -273,7 +271,6 @@ namespace Disarray::Vulkan {
 				}
 			}
 		}
-#endif
 
 		VkPipelineColorBlendStateCreateInfo color_blending {};
 		color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
