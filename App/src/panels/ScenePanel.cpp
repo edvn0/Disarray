@@ -1,5 +1,7 @@
 #include "panels/ScenePanel.hpp"
 
+#include "graphics/Pipeline.hpp"
+
 namespace Disarray::Client {
 
 	void ScenePanel::interface()
@@ -24,27 +26,26 @@ namespace Disarray::Client {
 			DepthCompareOperator::Always,
 		};
 
-		static constexpr auto convert = [](DepthCompareOperator op) -> std::string_view {
-			using namespace std::string_view_literals;
+		static constexpr const auto to_string = [](DepthCompareOperator op) -> std::string {
 			switch (op) {
 			case DepthCompareOperator::None:
-				return "DepthCompareOperator::None"sv;
+				return "DepthCompareOperator::None";
 			case DepthCompareOperator::Never:
-				return "DepthCompareOperator::Never"sv;
+				return "DepthCompareOperator::Never";
 			case DepthCompareOperator::NotEqual:
-				return "DepthCompareOperator::NotEqual"sv;
+				return "DepthCompareOperator::NotEqual";
 			case DepthCompareOperator::Less:
-				return "DepthCompareOperator::Less"sv;
+				return "DepthCompareOperator::Less";
 			case DepthCompareOperator::LessOrEqual:
-				return "DepthCompareOperator::LessOrEqual"sv;
+				return "DepthCompareOperator::LessOrEqual";
 			case DepthCompareOperator::Greater:
-				return "DepthCompareOperator::Greater"sv;
+				return "DepthCompareOperator::Greater";
 			case DepthCompareOperator::GreaterOrEqual:
-				return "DepthCompareOperator::GreaterOrEqual"sv;
+				return "DepthCompareOperator::GreaterOrEqual";
 			case DepthCompareOperator::Equal:
-				return "DepthCompareOperator::Equal"sv;
+				return "DepthCompareOperator::Equal";
 			case DepthCompareOperator::Always:
-				return "DepthCompareOperator::Always"sv;
+				return "DepthCompareOperator::Always";
 			default:
 				unreachable();
 			}
@@ -62,23 +63,9 @@ namespace Disarray::Client {
 
 		for (const auto [entity, pipe, mesh] : pipelines_and_meshes.each()) {
 			const auto preview_value = pipe.pipeline->get_properties().depth_comparison_operator;
-			std::uint32_t item_current_idx = get_index(operators, preview_value);
-			if (ImGui::BeginCombo("Compare operator", convert(preview_value).data())) {
-				for (std::uint32_t n = 0; n < operators.size(); n++) {
-					const bool is_selected = (item_current_idx == n);
-					if (ImGui::Selectable(convert(operators[n]).data(), is_selected))
-						item_current_idx = n;
-
-					// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-					if (is_selected) {
-						ImGui::SetItemDefaultFocus();
-					}
-				}
-				ImGui::EndCombo();
-			}
-
-			if (preview_value != operators[item_current_idx]) {
-				pipe.pipeline->get_properties().depth_comparison_operator = operators[item_current_idx];
+			auto [changed, new_or_old_value] = UI::combo_choice<DepthCompareOperator>("Compare operator", preview_value);
+			if (changed) {
+				pipe.pipeline->get_properties().depth_comparison_operator = new_or_old_value;
 				pipe.pipeline->recreate(true);
 			}
 		}

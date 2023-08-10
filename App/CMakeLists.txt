@@ -29,7 +29,7 @@ add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/src/Application.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/panels/ExecutionStatisticsPanel.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ClientLayer.cpp)
 target_include_directories(${PROJECT_NAME} PRIVATE include)
-target_link_libraries(${PROJECT_NAME} PRIVATE Engine argparse::argparse thread-pool EnTT::EnTT fmt::fmt)
+target_link_libraries(${PROJECT_NAME} PRIVATE Engine argparse::argparse magic_enum::magic_enum thread-pool EnTT::EnTT fmt::fmt)
 target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_FORCE_RADIANS)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

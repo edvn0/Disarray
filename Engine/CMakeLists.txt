@@ -8,6 +8,12 @@ FetchContent_Declare(fmt
 )
 FetchContent_MakeAvailable(fmt)
 
+FetchContent_Declare(magic_enum
+        GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
+        GIT_TAG master
+)
+FetchContent_MakeAvailable(magic_enum)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -26,7 +32,7 @@ add_library(${PROJECT_NAME} STATIC
 add_library(Disarray::Engine ALIAS ${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/imgui)
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator imgui tinyobjloader stb_image thread-pool EnTT::EnTT fmt::fmt)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator imgui magic_enum::magic_enum tinyobjloader stb_image thread-pool EnTT::EnTT fmt::fmt)
 target_precompile_headers(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/DisarrayPCH.hpp)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

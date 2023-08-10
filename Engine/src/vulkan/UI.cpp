@@ -83,6 +83,13 @@ namespace Disarray::UI {
 
 	void end() { ImGui::End(); }
 
+	bool begin_combo(std::string_view name, std::string_view data) { return ImGui::BeginCombo(name.data(), data.data()); }
+	void end_combo() { ImGui::EndCombo(); }
+
+	bool is_selectable(std::string_view name, const bool is_selected) { return ImGui::Selectable(name.data(), is_selected); }
+
+	void set_item_default_focus() { ImGui::SetItemDefaultFocus(); }
+
 	bool is_maximised(Window& window)
 	{
 		auto* glfw_window = static_cast<GLFWwindow*>(window.native());

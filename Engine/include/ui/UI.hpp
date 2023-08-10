@@ -8,6 +8,7 @@
 #include <array>
 #include <functional>
 #include <glm/glm.hpp>
+#include <magic_enum.hpp>
 
 namespace Disarray::UI {
 
@@ -37,6 +38,38 @@ namespace Disarray::UI {
 
 	void begin(std::string_view);
 	void end();
+
+	bool begin_combo(std::string_view name, std::string_view data);
+	void end_combo();
+	bool is_selectable(std::string_view name, const bool is_selected);
+	void set_item_default_focus();
+
+	template <typename T> std::pair<bool, T> combo_choice(std::string_view name, const T initial_value)
+	{
+		using namespace std::string_view_literals;
+		const auto values_for_t = magic_enum::enum_values<T>();
+		const auto preview_value = initial_value;
+		auto new_value = preview_value;
+		if (begin_combo(name.data(), magic_enum::enum_name(preview_value))) {
+			for (const auto& value : values_for_t) {
+				const bool is_selected = (value == preview_value);
+				if (is_selectable(magic_enum::enum_name(value), is_selected))
+					new_value = value;
+
+				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+				if (is_selected) {
+					set_item_default_focus();
+				}
+			}
+			end_combo();
+		}
+
+		if (preview_value != new_value) {
+			return { true, new_value };
+		} else {
+			return { false, preview_value };
+		}
+	}
 
 	bool is_maximised(Window& window);
 
