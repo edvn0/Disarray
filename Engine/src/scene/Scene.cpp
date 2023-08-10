@@ -17,21 +17,6 @@
 
 #include <entt/entt.hpp>
 
-template <class Position = glm::vec3> static constexpr auto draw_axes(auto& renderer, const Position& position)
-{
-	// X is red
-	renderer.draw_planar_geometry(Disarray::Geometry::Line,
-		Disarray::GeometryProperties { .position = position, .to_position = position + glm::vec3 { 10.0, 0, 0 }, .colour = { 1, 0, 0, 1 } });
-
-	// Y is green
-	renderer.draw_planar_geometry(Disarray::Geometry::Line,
-		Disarray::GeometryProperties { .position = position, .to_position = position + glm::vec3 { 0, -10.0, 0 }, .colour = { 0, 1, 0, 1 } });
-
-	// Z is blue
-	renderer.draw_planar_geometry(Disarray::Geometry::Line,
-		Disarray::GeometryProperties { .position = position, .to_position = position + glm::vec3 { 0, 0, -10.0 }, .colour = { 0, 0, 1, 1 } });
-}
-
 static auto rotate_by(const glm::vec3& axis_radians)
 {
 	glm::mat4 identity = glm::identity<glm::mat4>();
@@ -55,6 +40,7 @@ namespace Disarray {
 
 	void Scene::construct(Disarray::App&, Disarray::Renderer& renderer, Disarray::ThreadPool&)
 	{
+#ifdef FLOOR
 		int rects_x { 10 };
 		int rects_y { 10 };
 		std::size_t loops { 0 };
@@ -73,7 +59,6 @@ namespace Disarray {
 			}
 		}
 
-#ifdef FLOOR
 		auto floor = create("Floor");
 		floor.add_component<Components::Geometry>();
 		floor.add_component<Components::Texture>(glm::vec4 { 0.2, 0.2, 0.8, 1.0f });
@@ -81,33 +66,75 @@ namespace Disarray {
 		floor_transform.scale = { 100, 100, 1 };
 		floor_transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
 #endif
+		for (auto i = 0; i < 3; i++) {
+			auto rect = create(fmt::format("Rect{}", i));
+			auto& transform = rect.get_components<Transform>();
+			transform.position = { 2 * static_cast<float>(i) + 0.5f, -1, 0 };
+			transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
+			glm::vec4 colour { i / 3.f, 0.3, i / 3.f, 1.f };
+			rect.add_component<Components::Geometry>(Geometry::Rectangle);
+			rect.add_component<QuadGeometry>();
+			rect.add_component<Components::Texture>(colour);
+		}
 
-		// TODO: Record stats does not work with recreation of query pools.
+		auto unit_vectors = create("UnitVectors");
+		{
+			const glm::vec3 base_pos { 0, 0, 0 };
+			{
+				auto axis = create("XAxis");
+				auto& transform = axis.get_components<Transform>();
+				transform.position = base_pos;
+				axis.add_component<LineGeometry>(base_pos + glm::vec3 { 10.0, 0, 0 });
+				axis.add_component<Components::Texture>(glm::vec4 { 1, 0, 0, 1 });
+				unit_vectors.add_child(axis);
+			}
+			{
+				auto axis = create("YAxis");
+				auto& transform = axis.get_components<Transform>();
+				transform.position = base_pos;
+				axis.add_component<LineGeometry>(base_pos + glm::vec3 { 0, -10.0, 0 });
+				axis.add_component<Components::Texture>(glm::vec4 { 0, 1, 0, 1 });
+				unit_vectors.add_child(axis);
+			}
+			{
+				auto axis = create("ZAxis");
+				auto& transform = axis.get_components<Transform>();
+				transform.position = base_pos;
+				axis.add_component<LineGeometry>(base_pos + glm::vec3 { 0, 0, -10.0 });
+				axis.add_component<Components::Texture>(glm::vec4 { 0, 0, 1, 1 });
+				unit_vectors.add_child(axis);
+			}
+		}
+
 		command_executor = CommandExecutor::construct(device, swapchain, { .count = 3, .is_primary = true, .record_stats = true });
 		renderer.on_batch_full([&exec = *command_executor](Renderer& r) { r.flush_batch(exec); });
 
-		VertexLayout layout { {
+		VertexLayout layout {
 			{ ElementType::Float3, "position" },
 			{ ElementType::Float2, "uv" },
 			{ ElementType::Float4, "colour" },
 			{ ElementType::Float3, "normals" },
-		} };
+		};
 
 		auto extent = swapchain.get_extent();
 
 		framebuffer = Framebuffer::construct(device,
-			{ .extent = swapchain.get_extent(),
+			{
+				.extent = swapchain.get_extent(),
 				.attachments = { { Disarray::ImageFormat::SBGR }, { ImageFormat::Depth } },
 				.clear_colour_on_load = false,
 				.clear_depth_on_load = false,
-				.debug_name = "FirstFramebuffer" });
+				.debug_name = "FirstFramebuffer",
+			});
 
 		identity_framebuffer = Framebuffer::construct(device,
-			{ .extent = swapchain.get_extent(),
-				.attachments = { { ImageFormat::SBGR },  { ImageFormat::Uint, false },{ ImageFormat::Depth }, },
+			{
+				.extent = swapchain.get_extent(),
+				.attachments = { { ImageFormat::SBGR }, { ImageFormat::Uint, false }, { ImageFormat::Depth } },
 				.clear_colour_on_load = true,
 				.clear_depth_on_load = true,
-				.debug_name = "IdentityFramebuffer" });
+				.debug_name = "IdentityFramebuffer",
+			});
 
 		const auto& [vert, frag] = renderer.get_pipeline_cache().get_shader("main");
 		PipelineProperties props = {
@@ -118,13 +145,19 @@ namespace Disarray {
 			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, std::size_t { 84 } } },
 			.extent = extent,
 			.samples = SampleCount::ONE,
+			.depth_comparison_operator = DepthCompareOperator::GreaterOrEqual,
+			.cull_mode = CullMode::Back,
 			.descriptor_set_layout = renderer.get_descriptor_set_layouts().data(),
 			.descriptor_set_layout_count = static_cast<std::uint32_t>(renderer.get_descriptor_set_layouts().size()),
 		};
-		auto viking_rotation = rotate_by(glm::radians(glm::vec3 { 180, 180, 180 }));
+		auto viking_rotation = rotate_by(glm::radians(glm::vec3 { 0, 0, 90 }));
 
 		auto v_mesh = create("Viking");
-		v_mesh.add_component<Components::Mesh>(Mesh::construct(device, { .path = "Assets/Models/viking.mesh", .initial_rotation = viking_rotation }));
+		v_mesh.add_component<Components::Mesh>(Mesh::construct(device,
+			{
+				.path = "Assets/Models/viking.mesh",
+				.initial_rotation = viking_rotation,
+			}));
 		v_mesh.add_component<Components::Pipeline>(Pipeline::construct(device, props));
 		v_mesh.add_component<Components::Texture>(renderer.get_texture_cache().get("viking_room"));
 
@@ -146,19 +179,7 @@ namespace Disarray {
 
 	Scene::~Scene() { registry.clear(); }
 
-	void Scene::update(float ts)
-	{
-		static glm::vec3 viking_pos { 1.f };
-		static glm::vec3 viking_scale { 2.5f };
-		viking_pos.x += 0.001 * ts;
-		viking_pos.z += 0.001 * ts;
-
-		auto mesh_view = registry.view<const Components::Mesh, Transform>();
-		for (auto [entity, _, transform] : mesh_view.each()) {
-			transform.position = viking_pos;
-			transform.scale = viking_scale;
-		}
-	}
+	void Scene::update(float) { }
 
 	void Scene::render(Renderer& renderer)
 	{
@@ -176,28 +197,36 @@ namespace Disarray {
 		{
 			renderer.begin_pass(*command_executor, *framebuffer);
 
-			// TODO: Temporary
-			draw_axes(renderer, glm::vec3 { 0, 0, 0 });
-			renderer.submit_batched_geometry(*command_executor);
+			auto line_view = registry.view<const LineGeometry, const Components::Texture, const Transform>();
+			for (const auto& [entity, geom, tex, transform] : line_view.each()) {
+				renderer.draw_planar_geometry(Geometry::Line,
+					{
+						.position = transform.position,
+						.to_position = geom.to_position,
+						.colour = tex.colour,
+					});
+			}
+
 			renderer.end_pass(*command_executor);
 		}
 		{
 			renderer.begin_pass(*command_executor, *identity_framebuffer);
 
-			auto rect_view = registry.view<const Components::Texture, const Components::Geometry, const Transform, const ID>();
+			auto rect_view = registry.view<const Components::Texture, const QuadGeometry, const Transform, const ID>();
 			for (const auto& [entity, tex, geom, transform, id] : rect_view.each()) {
-				renderer.draw_planar_geometry(geom.geometry,
-					{ .position = transform.position,
+				renderer.draw_planar_geometry(Geometry::Rectangle,
+					{
+						.position = transform.position,
 						.colour = tex.colour,
 						.rotation = transform.rotation,
+						.dimensions = { transform.scale },
 						.identifier = { id.get_id<std::uint32_t>() },
-						.dimensions = { transform.scale } });
+					});
 			}
 
 			// TODO: Implement
 			// renderer.draw_text("Hello world!", 0, 0, 12.f);
 
-			renderer.submit_batched_geometry(*command_executor);
 			renderer.end_pass(*command_executor);
 		}
 		command_executor->submit_and_end();
@@ -233,8 +262,7 @@ namespace Disarray {
 
 	Entity Scene::create(std::string_view name)
 	{
-		auto handle = registry.create();
-		auto entity = Entity(*this, handle, name);
+		auto entity = Entity(*this, name);
 		return entity;
 	}
 

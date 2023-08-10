@@ -17,23 +17,7 @@ namespace Disarray::Client {
 
 		void update(float ts, Renderer&) override { }
 
-		void interface() override
-		{
-			UI::begin("Scene");
-			if (ImGui::BeginTable("StatisticsTable", 2)) {
-				scene.for_all_entities([&s = scene](const auto entity_id) mutable {
-					Entity entity { s, entity_id };
-					const auto& [tag, id] = entity.get_components<Tag, ID>();
-					ImGui::TableNextRow();
-					ImGui::TableNextColumn();
-					ImGui::Text("%s", tag.name.c_str());
-					ImGui::TableNextColumn();
-					ImGui::Text("%llu", id.identifier);
-				});
-				ImGui::EndTable();
-			}
-			UI::end();
-		}
+		void interface() override;
 
 	private:
 		Scene& scene;

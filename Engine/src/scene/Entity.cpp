@@ -28,6 +28,7 @@ namespace Disarray {
 	Entity::Entity(Scene& s, std::string_view n)
 		: scene(s)
 		, name(n)
+		, identifier(scene.get_registry().create())
 	{
 		add_component<Transform>();
 		add_component<ID>(global_identifier++);
@@ -39,9 +40,6 @@ namespace Disarray {
 		, name(n)
 		, identifier(entity)
 	{
-		add_component<Transform>();
-		add_component<ID>(global_identifier++);
-		add_component<Tag>(name);
 	}
 
 	void Entity::add_child(Entity& child)

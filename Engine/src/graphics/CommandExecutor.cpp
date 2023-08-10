@@ -12,4 +12,9 @@ namespace Disarray {
 		return make_ref<Vulkan::CommandExecutor>(device, swapchain, props);
 	}
 
+	Scope<CommandExecutor> IndependentCommandExecutor::construct(Disarray::Device& device, const Disarray::CommandExecutorProperties& props)
+	{
+		return make_scope<Vulkan::IndependentCommandExecutor>(device, props);
+	}
+
 } // namespace Disarray

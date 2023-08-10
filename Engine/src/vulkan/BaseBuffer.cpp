@@ -66,10 +66,7 @@ namespace Disarray::Vulkan {
 		allocation = allocator.allocate_buffer(buffer, vma_allocation_info, buffer_create_info, { .usage = usage, .creation = creation });
 	}
 
-	void BaseBuffer::set_data(const void* data, std::uint32_t size)
-	{
-		std::memcpy(vma_allocation_info.pMappedData, Disarray::bit_cast<const std::byte*>(data), size);
-	}
+	void BaseBuffer::set_data(const void* data, std::uint32_t size) { std::memcpy(vma_allocation_info.pMappedData, data, size); }
 
 	void BaseBuffer::destroy_buffer()
 	{

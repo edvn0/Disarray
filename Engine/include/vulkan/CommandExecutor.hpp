@@ -98,7 +98,7 @@ namespace Disarray::Vulkan {
 		std::vector<PipelineStatistics> pipeline_statistics_query_results;
 	};
 
-	class IndependentCommandExecutor : public Disarray::CommandExecutor, public PropertySupplier<VkCommandBuffer> {
+	class IndependentCommandExecutor : public Disarray::IndependentCommandExecutor, public PropertySupplier<VkCommandBuffer> {
 	public:
 		IndependentCommandExecutor(Disarray::Device&, const Disarray::CommandExecutorProperties&);
 		~IndependentCommandExecutor() override;

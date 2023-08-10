@@ -11,6 +11,7 @@
 #include "graphics/Texture.hpp"
 #include "graphics/TextureCache.hpp"
 
+#include <functional>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -41,17 +42,17 @@ namespace Disarray {
 		glm::vec3 to_position { 0.0f };
 		glm::vec4 colour { 1.0f };
 		glm::quat rotation { glm::identity<glm::quat>() };
+		glm::vec3 dimensions { 1.f };
 		std::optional<std::uint32_t> identifier { std::nullopt };
-		std::optional<glm::vec3> dimensions { std::nullopt };
 		std::optional<float> radius { std::nullopt };
 
 		template <Geometry T> bool valid()
 		{
 			if constexpr (T == Geometry::Circle) {
-				return radius.has_value() && !dimensions.has_value();
+				return radius.has_value();
 			}
 			if constexpr (T == Geometry::Triangle || T == Geometry::Rectangle) {
-				return dimensions.has_value() && !radius.has_value();
+				return !radius.has_value();
 			}
 			return false;
 		}

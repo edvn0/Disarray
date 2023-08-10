@@ -129,7 +129,7 @@ namespace Disarray::Vulkan {
 		image_create_info.extent.height = props.extent.height;
 		image_create_info.extent.depth = 1;
 		image_create_info.samples = to_vulkan_samples(props.samples);
-		image_create_info.mipLevels = 1;
+		image_create_info.mipLevels = props.mips;
 		image_create_info.arrayLayers = 1;
 		image_create_info.tiling = VK_IMAGE_TILING_OPTIMAL;
 		image_create_info.usage = usage;
@@ -147,7 +147,7 @@ namespace Disarray::Vulkan {
 		image_view_create_info.subresourceRange = {};
 		image_view_create_info.subresourceRange.aspectMask = aspect_mask;
 		image_view_create_info.subresourceRange.baseMipLevel = 0;
-		image_view_create_info.subresourceRange.levelCount = 1;
+		image_view_create_info.subresourceRange.levelCount = props.mips;
 		image_view_create_info.subresourceRange.baseArrayLayer = 0;
 		image_view_create_info.subresourceRange.layerCount = 1;
 		image_view_create_info.image = info.image;
@@ -166,7 +166,7 @@ namespace Disarray::Vulkan {
 		sampler_create_info.mipLodBias = 0.0f;
 		sampler_create_info.maxAnisotropy = 1.0f;
 		sampler_create_info.minLod = 0.0f;
-		sampler_create_info.maxLod = 100.0f;
+		sampler_create_info.maxLod = static_cast<float>(props.mips);
 		sampler_create_info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		verify(vkCreateSampler(supply_cast<Vulkan::Device>(device), &sampler_create_info, nullptr, &info.sampler));
 
@@ -191,7 +191,7 @@ namespace Disarray::Vulkan {
 			VkImageSubresourceRange subresource_range = {};
 			subresource_range.aspectMask = aspect_mask;
 			subresource_range.baseMipLevel = 0;
-			subresource_range.levelCount = 1;
+			subresource_range.levelCount = props.mips;
 			subresource_range.layerCount = 1;
 
 			VkImageMemoryBarrier image_memory_barrier {};
@@ -219,14 +219,16 @@ namespace Disarray::Vulkan {
 			buffer_copy_region.bufferOffset = 0;
 
 			set_image_layout(executor->supply(), info.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
-
 			vkCmdCopyBufferToImage(executor->supply(), staging, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &buffer_copy_region);
 
 			auto layout = to_vulkan_layout(props.format);
-			set_image_layout(executor->supply(), info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout, subresource_range);
+			if (is_depth_format(props.format))
+				set_image_layout(executor->supply(), info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout, subresource_range);
 		}
 
 		staging_allocator.deallocate_buffer(staging_allocation, staging);
+		if (!is_depth_format(props.format))
+			create_mips();
 	}
 
 	void Image::update_descriptor()
@@ -309,6 +311,72 @@ namespace Disarray::Vulkan {
 		}
 
 		vkCmdPipelineBarrier(command_buffer, src_stage_mask, dst_stage_mask, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+	}
+
+	void Image::create_mips()
+	{
+		VkImageMemoryBarrier barrier {};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.image = info.image;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+		barrier.subresourceRange.levelCount = 1;
+		int32_t mip_width = props.extent.width;
+		int32_t mip_height = props.extent.height;
+
+		auto command_buffer = construct_immediate(device);
+		for (std::uint32_t i = 1; i < props.mips; i++) {
+			barrier.subresourceRange.baseMipLevel = i - 1;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+			vkCmdPipelineBarrier(
+				command_buffer->supply(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+			VkImageBlit blit {};
+			blit.srcOffsets[0] = { 0, 0, 0 };
+			blit.srcOffsets[1] = { mip_width, mip_height, 1 };
+			blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			blit.srcSubresource.mipLevel = i - 1;
+			blit.srcSubresource.baseArrayLayer = 0;
+			blit.srcSubresource.layerCount = 1;
+			blit.dstOffsets[0] = { 0, 0, 0 };
+			blit.dstOffsets[1] = { mip_width > 1 ? mip_width / 2 : 1, mip_height > 1 ? mip_height / 2 : 1, 1 };
+			blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			blit.dstSubresource.mipLevel = i;
+			blit.dstSubresource.baseArrayLayer = 0;
+			blit.dstSubresource.layerCount = 1;
+
+			vkCmdBlitImage(command_buffer->supply(), info.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, info.image,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
+
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+			vkCmdPipelineBarrier(command_buffer->supply(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0,
+				nullptr, 1, &barrier);
+
+			if (mip_width > 1)
+				mip_width /= 2;
+			if (mip_height > 1)
+				mip_height /= 2;
+		}
+
+		barrier.subresourceRange.baseMipLevel = props.mips - 1;
+		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		vkCmdPipelineBarrier(
+			command_buffer->supply(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 	}
 
 } // namespace Disarray::Vulkan

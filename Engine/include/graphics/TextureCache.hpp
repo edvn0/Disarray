@@ -20,6 +20,7 @@ namespace Disarray {
 		std::string key;
 		std::string debug_name;
 		std::filesystem::path path;
+		std::uint32_t mips { 1 };
 		ImageFormat format;
 	};
 
@@ -30,7 +31,10 @@ namespace Disarray {
 		{
 			auto files = get_unique_files_recursively();
 			for (const auto& p : files) {
-				put(TextureCacheCreationProperties { .key = p.stem().string(), .path = p.string() });
+				put(TextureCacheCreationProperties {
+					.key = p.stem().string(),
+					.path = p.string(),
+				});
 			}
 		}
 
@@ -44,7 +48,10 @@ namespace Disarray {
 
 		Ref<Disarray::Texture> create_from_impl(const TextureCacheCreationProperties& props)
 		{
-			return Texture::construct(get_device(), TextureProperties { .path = props.path.string() });
+			return Texture::construct(get_device(),
+				TextureProperties {
+					.path = props.path.string(),
+				});
 		}
 
 		std::string create_key_impl(const TextureCacheCreationProperties& props) { return props.key; }

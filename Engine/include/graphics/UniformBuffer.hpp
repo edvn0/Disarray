@@ -20,9 +20,9 @@ namespace Disarray {
 
 		template <class T>
 			requires(sizeof(T) > 0)
-		void set_data(const void* data)
+		void set_data(T* data)
 		{
-			set_data(data, sizeof(T));
+			set_data(Disarray::bit_cast<const void*>(data), sizeof(T));
 		};
 	};
 

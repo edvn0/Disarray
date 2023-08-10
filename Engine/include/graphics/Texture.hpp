@@ -13,6 +13,7 @@ namespace Disarray {
 	struct TextureProperties {
 		Extent extent;
 		ImageFormat format;
+		std::uint32_t mips { 1 };
 		std::string path {};
 		std::string debug_name;
 	};

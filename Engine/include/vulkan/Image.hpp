@@ -115,6 +115,7 @@ namespace Disarray::Vulkan {
 		void recreate_image(bool should_clean);
 		void update_descriptor();
 		void destroy_resources();
+		void create_mips();
 
 		ImageInfo info {};
 		VkDescriptorImageInfo descriptor_info;

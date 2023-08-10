@@ -77,6 +77,11 @@ namespace Disarray {
 		std::unordered_set<std::filesystem::path> get_unique_files_recursively() const
 		{
 			std::unordered_set<std::filesystem::path> paths;
+			if (!std::filesystem::exists(path)) {
+				Log::error("ResourceCache - Load all files", "{}", "The path was not found.");
+				return paths;
+			}
+
 			for (const auto& current : std::filesystem::recursive_directory_iterator { path }) {
 				const auto has_correct_extension = extensions.contains(current.path().extension().string());
 				if (!current.is_regular_file() || !has_correct_extension)

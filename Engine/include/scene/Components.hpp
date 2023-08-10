@@ -69,6 +69,20 @@ namespace Disarray {
 		};
 	} // namespace Components
 
+	struct LineGeometry {
+		explicit LineGeometry(const glm::vec3& pos)
+			: to_position(pos)
+		{
+		}
+		LineGeometry() = default;
+		glm::vec3 to_position { 0.0f };
+		Disarray::Geometry geometry { Disarray::Geometry::Line };
+	};
+
+	struct QuadGeometry {
+		Disarray::Geometry geometry { Disarray::Geometry::Rectangle };
+	};
+
 	struct ID {
 		Identifier identifier {};
 

@@ -2,22 +2,25 @@
 
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/IndexBuffer.hpp"
+#include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
+#include "graphics/RenderBatch.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/UniformBuffer.hpp"
 #include "graphics/VertexBuffer.hpp"
-#include "vulkan/Pipeline.hpp"
-#include "vulkan/RenderBatch.hpp"
+#include "graphics/VertexTypes.hpp"
 
 #include <array>
 #include <glm/glm.hpp>
 
 namespace Disarray::Vulkan {
 
+	static constexpr auto max_batch_renderer_objects = 3;
+
 	class Renderer : public Disarray::Renderer {
 	public:
-		Renderer(Device&, Swapchain&, const RendererProperties&);
+		Renderer(Disarray::Device&, Disarray::Swapchain&, const RendererProperties&);
 		~Renderer() override;
 
 		void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) override;
@@ -31,7 +34,7 @@ namespace Disarray::Vulkan {
 		void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4& transform) override;
 		void draw_planar_geometry(Disarray::Geometry, const Disarray::GeometryProperties&) override;
 		void submit_batched_geometry(Disarray::CommandExecutor&) override;
-		void on_batch_full(std::function<void(Disarray::Renderer&)>&&) override;
+		void on_batch_full(std::function<void(Disarray::Renderer&)>&& func) override { on_batch_full_func = func; }
 		void flush_batch(Disarray::CommandExecutor&) override;
 		// End IGraphics
 
@@ -62,7 +65,8 @@ namespace Disarray::Vulkan {
 
 		Disarray::PipelineCache pipeline_cache;
 		Disarray::TextureCache texture_cache;
-		BatchRenderer<max_objects, QuadVertex, LineVertex> render_batch;
+
+		BatchRenderer<max_batch_renderer_objects> batch_renderer;
 
 		Ref<Disarray::Framebuffer> geometry_framebuffer;
 		Ref<Disarray::Framebuffer> quad_framebuffer;
