@@ -24,6 +24,7 @@ layout(push_constant) uniform constants
 
 void main() {
     gl_Position = UBO.view_projection * PushConstants.object_transform * vec4(pos, 1.0);
+    gl_PointSize = 1.0f;
     fragColor = PushConstants.colour;
     uvs = uv;
     outNormals = normals;

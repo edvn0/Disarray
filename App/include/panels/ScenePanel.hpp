@@ -16,8 +16,8 @@ namespace Disarray::Client {
 			};
 
 		void update(float ts, Renderer&) override { }
-
 		void interface() override;
+		void for_all_components(Entity& entity);
 
 	private:
 		Scene& scene;

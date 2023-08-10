@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Forward.hpp"
+#include "core/Concepts.hpp"
 #include "core/Window.hpp"
 #include "graphics/Image.hpp"
 #include "graphics/Texture.hpp"
@@ -44,12 +45,19 @@ namespace Disarray::UI {
 	bool is_selectable(std::string_view name, const bool is_selected);
 	void set_item_default_focus();
 
-	template <typename T> std::pair<bool, T> combo_choice(std::string name, const T initial_value)
+	/**
+	 * Create a enum dependent combo choice. Returns [true_if_changed, current_or_new_value].
+	 * @tparam T
+	 * @param name
+	 * @param initial_value reference to value
+	 * @return true if changed
+	 */
+	template <IsEnum T> bool combo_choice(std::string name, T& initial_value)
 	{
 		using namespace std::string_view_literals;
 
 		const auto values_for_t = magic_enum::enum_values<T>();
-		const auto preview_value = initial_value;
+		const auto& preview_value = initial_value;
 		auto new_value = preview_value;
 		if (begin_combo(name.c_str(), magic_enum::enum_name(preview_value))) {
 			for (const auto& value : values_for_t) {
@@ -65,11 +73,9 @@ namespace Disarray::UI {
 			end_combo();
 		}
 
-		if (preview_value != new_value) {
-			return { true, new_value };
-		} else {
-			return { false, preview_value };
-		}
+		const auto changed = new_value != preview_value;
+		initial_value = new_value;
+		return changed;
 	}
 
 	bool is_maximised(Window& window);

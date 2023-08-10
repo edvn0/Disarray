@@ -73,50 +73,43 @@ namespace Disarray::Client {
 				ImGui::TableNextColumn();
 				ImGui::Text("%s", tag.name.c_str());
 				ImGui::TableNextColumn();
-				ImGui::Text("%lu", id.identifier);
+				ImGui::Text("%u", id.get_id<std::uint32_t>());
 			}
 
 			ImGui::EndTable();
 		}
 
-		UI::begin("Entity");
 		std::vector<Entity> entities;
 		entities.reserve(selectable_entities.size());
 		for (const auto& handle : selectable_entities) {
 			entities.emplace_back(scene, handle);
 		}
 
+		UI::begin("Entity");
 		for (auto& entity : entities) {
 			if (!entity.has_component<Components::Pipeline>())
-				return;
-			draw_component<Components::Pipeline>(entity, "Pipeline", [](Components::Pipeline& pipeline) {
-				auto& [pipe] = pipeline;
-				bool any_changed = false;
-				{
-					const auto preview_value = pipe->get_properties().depth_comparison_operator;
-					auto [changed, new_or_old_value] = UI::combo_choice<DepthCompareOperator>("Compare operator", preview_value);
-					any_changed |= changed;
-					if (changed) {
-						pipe->get_properties().depth_comparison_operator = new_or_old_value;
-					}
-				}
-				{
-					const auto preview_value = pipe->get_properties().cull_mode;
-					auto [changed, new_or_old_value] = UI::combo_choice<CullMode>("Cull mode", preview_value);
-					any_changed |= changed;
-					if (changed) {
-						pipe->get_properties().cull_mode = new_or_old_value;
-					}
-				}
+				continue;
 
-				if (any_changed) {
-					pipe->recreate(true);
-				}
-			});
+			for_all_components(entity);
 		}
 		UI::end();
 
 		UI::end();
 	} // namespace Disarray::Client
+
+	void ScenePanel::for_all_components(Entity& entity)
+	{
+		draw_component<Components::Pipeline>(entity, "Pipeline", [](Components::Pipeline& pipeline) {
+			auto& [pipe] = pipeline;
+			auto& props = pipe->get_properties();
+			bool any_changed = false;
+			any_changed |= UI::combo_choice<DepthCompareOperator>("Compare operator", std::ref(props.depth_comparison_operator));
+			any_changed |= UI::combo_choice<CullMode>("Cull mode", std::ref(props.cull_mode));
+			any_changed |= UI::combo_choice<PolygonMode>("Polygon mode", std::ref(props.polygon_mode));
+			if (any_changed) {
+				pipe->recreate(true);
+			}
+		});
+	}
 
 } // namespace Disarray::Client
