@@ -44,13 +44,14 @@ namespace Disarray::UI {
 	bool is_selectable(std::string_view name, const bool is_selected);
 	void set_item_default_focus();
 
-	template <typename T> std::pair<bool, T> combo_choice(std::string_view name, const T initial_value)
+	template <typename T> std::pair<bool, T> combo_choice(std::string name, const T initial_value)
 	{
 		using namespace std::string_view_literals;
+
 		const auto values_for_t = magic_enum::enum_values<T>();
 		const auto preview_value = initial_value;
 		auto new_value = preview_value;
-		if (begin_combo(name.data(), magic_enum::enum_name(preview_value))) {
+		if (begin_combo(name.c_str(), magic_enum::enum_name(preview_value))) {
 			for (const auto& value : values_for_t) {
 				const bool is_selected = (value == preview_value);
 				if (is_selectable(magic_enum::enum_name(value), is_selected))

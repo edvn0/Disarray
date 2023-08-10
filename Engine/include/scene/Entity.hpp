@@ -30,6 +30,13 @@ namespace Disarray {
 			auto& registry = scene.get_registry();
 			return registry.emplace<T>(identifier, std::forward<Args>(args)...);
 		}
+		template <ValidComponent T> void remove_component()
+		{
+			if (!has_component<T>())
+				return;
+			auto& registry = scene.get_registry();
+			registry.erase<T>(identifier);
+		}
 
 		void add_child(Entity&);
 		void add_child(Entity* = nullptr);
