@@ -2,6 +2,7 @@
 
 #include "core/Layer.hpp"
 #include "core/Types.hpp"
+#include "core/events/Event.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "ui/InterfaceLayer.hpp"
 
@@ -27,7 +28,7 @@ namespace Disarray {
 	 * @brief Statistics for the app
 	 */
 	struct ApplicationStatistics {
-		/** @brief (ms) Time for rendering */
+		/** @brief (ms) Time for layer updates / rendering */
 		double cpu_time { 0 };
 
 		/** @brief (ms) Time for full frame */
@@ -73,6 +74,8 @@ namespace Disarray {
 			interface_layer->template add_panel<T>(std::forward<Args>(args)...);
 		}
 
+		void on_event(Event& event);
+
 		const auto& get_statistics() const { return statistics; }
 
 	private:
@@ -82,6 +85,7 @@ namespace Disarray {
 		Scope<Swapchain> swapchain { nullptr };
 		std::vector<std::shared_ptr<Layer>> layers {};
 		ApplicationStatistics statistics;
+		bool could_prepare_frame(Renderer& renderer);
 	};
 
 	extern std::unique_ptr<Disarray::App> create_application(const Disarray::ApplicationProperties&);

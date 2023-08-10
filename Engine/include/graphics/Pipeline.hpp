@@ -20,6 +20,20 @@ namespace Disarray {
 
 	enum class PolygonMode { Fill, Line, Point };
 
+	enum class DepthCompareOperator {
+		None = 0,
+		Never,
+		NotEqual,
+		Less,
+		LessOrEqual,
+		Greater,
+		GreaterOrEqual,
+		Equal,
+		Always,
+	};
+
+	enum class CullMode { Back, Front, None, Both };
+
 	enum class ElementType {
 		Float,
 		Double,
@@ -115,6 +129,10 @@ namespace Disarray {
 		PolygonMode polygon_mode { PolygonMode::Fill };
 		float line_width { 1.0f };
 		SampleCount samples { SampleCount::ONE };
+		DepthCompareOperator depth_comparison_operator { DepthCompareOperator::GreaterOrEqual };
+		CullMode cull_mode { CullMode::Front };
+		bool write_depth { true };
+		bool test_depth { true };
 		const VkDescriptorSetLayout* descriptor_set_layout { nullptr };
 		std::uint32_t descriptor_set_layout_count { 0 };
 	};

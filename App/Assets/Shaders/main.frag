@@ -11,6 +11,7 @@ layout(location = 0) out vec4 colour;
 void main() {
     colour = texture(textureSampler, uvs);
 
-    if (colour.a == 0.0)
+    if (colour.a == 0.0) {
         discard;
+    }
 }

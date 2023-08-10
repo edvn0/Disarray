@@ -45,15 +45,8 @@ static constexpr auto compare_on_filename = [](const std::filesystem::path& left
 
 namespace Disarray {
 
-	PipelineCache::~PipelineCache()
-	{
-		shader_cache.clear();
-		pipeline_cache.clear();
-	}
-
 	PipelineCache::PipelineCache(Disarray::Device& dev, const std::filesystem::path& base)
-		: device(dev)
-		, path(base)
+		: ResourceCache(dev, base, { ".spv" })
 	{
 		const auto all_files = get_unique_files_recursively();
 
@@ -76,8 +69,8 @@ namespace Disarray {
 				auto first_shader_type = is_vertex(current) ? ShaderType::Vertex : ShaderType::Fragment;
 				auto second_shader_type = is_vertex(other) ? ShaderType::Vertex : ShaderType::Fragment;
 
-				auto first_shader = Shader::construct(device, { .path = current, .type = first_shader_type });
-				auto second_shader = Shader::construct(device, { .path = other, .type = second_shader_type });
+				auto first_shader = Shader::construct(get_device(), { .path = current, .type = first_shader_type });
+				auto second_shader = Shader::construct(get_device(), { .path = other, .type = second_shader_type });
 
 				if (first_shader_type == ShaderType::Vertex && second_shader_type == ShaderType::Fragment) {
 					shader_cache.try_emplace(name, std::make_pair(first_shader, second_shader));
@@ -86,49 +79,6 @@ namespace Disarray {
 				}
 			}
 		}
-	}
-
-	std::set<std::filesystem::path> PipelineCache::get_unique_files_recursively() const
-	{
-		std::set<std::filesystem::path> paths;
-		for (const auto& current : std::filesystem::recursive_directory_iterator { path }) {
-			if (!current.is_regular_file() || current.path().extension() != ".spv")
-				continue;
-
-			paths.insert(current);
-		}
-		return paths;
-	}
-
-	void PipelineCache::force_recreation()
-	{
-		CollectionOperations::for_each(pipeline_cache, [](PipelineCacheValueType& pipeline) { pipeline.second->force_recreation(); });
-	}
-
-	const Ref<Disarray::Pipeline>& PipelineCache::get(const std::string& key) { return pipeline_cache[key]; }
-
-	const Ref<Disarray::Pipeline>& PipelineCache::put(const PipelineCacheCreationProperties& props)
-	{
-		const auto& [vert, frag] = shader_cache[props.shader_key];
-		PipelineProperties properties {
-			.vertex_shader = vert,
-			.fragment_shader = frag,
-			.framebuffer = props.framebuffer,
-			.layout = props.layout,
-			.push_constant_layout = props.push_constant_layout,
-			.extent = props.extent,
-			.polygon_mode = props.polygon_mode,
-			.line_width = props.line_width,
-			.samples = props.samples,
-			.descriptor_set_layout = props.descriptor_set_layout,
-			.descriptor_set_layout_count = props.descriptor_set_layout_count,
-		};
-
-		auto pipeline = Pipeline::construct(device, properties);
-		const auto& [pair, could] = pipeline_cache.try_emplace(props.pipeline_key, std::move(pipeline));
-		if (!could)
-			Log::error("PipelineCache - Put", "Could not insert pipeline.");
-		return pair->second;
 	}
 
 	const PipelineCache::ShaderPair& PipelineCache::get_shader(const std::string& key) { return shader_cache[key]; }

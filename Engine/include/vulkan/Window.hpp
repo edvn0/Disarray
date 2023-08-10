@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/Window.hpp"
+#include "core/events/Event.hpp"
 #include "vulkan/Instance.hpp"
 #include "vulkan/Surface.hpp"
 #include "vulkan/Swapchain.hpp"
@@ -13,11 +14,16 @@ struct GLFWvidmode;
 
 namespace Disarray::Vulkan {
 
+	using EventCallback = std::function<void(Disarray::Event&)>;
+
+	static constexpr auto default_event_callback = [](Disarray::Event&) mutable {};
+
 	struct UserData {
 		bool was_resized { false };
 		bool fullscreen { false };
 		std::uint32_t width { 0 };
 		std::uint32_t height { 0 };
+		EventCallback callback { default_event_callback };
 		int pos_x { 0 };
 		int pos_y { 0 };
 		const GLFWvidmode* mode { nullptr };
@@ -33,6 +39,8 @@ namespace Disarray::Vulkan {
 		void update() override;
 		Disarray::Surface& get_surface() override { return *surface; };
 		Disarray::Instance& get_instance() override { return *instance; };
+
+		void register_event_handler(App&) override;
 
 		void reset_resize_status() override;
 		bool was_resized() const override;

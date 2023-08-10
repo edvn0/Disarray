@@ -4,6 +4,7 @@
 #include "scene/Scene.hpp"
 
 #include <entt/entt.hpp>
+#include <fmt/core.h>
 #include <string>
 #include <string_view>
 
@@ -30,6 +31,11 @@ namespace Disarray {
 			return registry.emplace<T>(identifier, std::forward<Args>(args)...);
 		}
 
+		void add_child(Entity&);
+		void add_child(Entity* = nullptr);
+
+		const auto& get_identifier() const { return identifier; }
+
 	private:
 		Scene& scene;
 		std::string name;
@@ -37,3 +43,11 @@ namespace Disarray {
 	};
 
 } // namespace Disarray
+
+template <> struct fmt::formatter<entt::entity> : fmt::formatter<std::string_view> {
+	auto format(entt::entity entity, fmt::format_context& ctx) const -> decltype(ctx.out());
+};
+
+template <> struct fmt::formatter<Disarray::Entity> : fmt::formatter<std::string_view> {
+	auto format(const Disarray::Entity& entity, fmt::format_context& ctx) const -> decltype(ctx.out());
+};

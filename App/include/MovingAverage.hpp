@@ -8,6 +8,8 @@ namespace Disarray::Client {
 
 	template <IsNumber T, IsNumber Total, std::size_t N> class MovingAverage {
 	public:
+		MovingAverage() { samples.fill(T {}); }
+
 		MovingAverage& operator()(T sample)
 		{
 			total += sample;
@@ -27,7 +29,7 @@ namespace Disarray::Client {
 		double inverse() const { return std::min(num_samples, N) / total; }
 
 	private:
-		T samples[N];
+		std::array<T, N> samples {};
 		size_t num_samples { 0 };
 		Total total { 0 };
 	};

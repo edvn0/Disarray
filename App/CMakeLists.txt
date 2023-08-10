@@ -18,11 +18,13 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/argparse)
 
 set(APP_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Application.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/panels/ScenePanel.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ClientLayer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include/ClientLayer.hpp
         PARENT_SCOPE)
 
 add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/src/Application.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/panels/ScenePanel.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ClientLayer.cpp)
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 target_link_libraries(${PROJECT_NAME} PRIVATE Engine argparse::argparse thread-pool EnTT::EnTT fmt::fmt)

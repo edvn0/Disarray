@@ -13,9 +13,11 @@ namespace Disarray {
 #define ALLOW_SLOW_LOGGING
 #ifdef ALLOW_SLOW_LOGGING
 	void Logging::Logger::debug(const std::string& message) { std::cout << message << std::endl; }
+	void Logging::Logger::info(const std::string& message) { std::cout << message << std::endl; }
 	void Logging::Logger::error(const std::string& message) { std::cerr << message << std::endl; }
 #else
 	void Logging::Logger::debug(const std::string& message) { std::cout << message << "\n"; }
+	void Logging::Logger::info(const std::string& message) { std::cout << message << "\n"; }
 	void Logging::Logger::error(const std::string& message) { std::cerr << message << "\n"; }
 #endif
 

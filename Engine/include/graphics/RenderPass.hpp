@@ -9,16 +9,7 @@
 namespace Disarray {
 
 	struct RenderPassProperties {
-		ImageFormat image_format { ImageFormat::SBGR };
-		ImageFormat depth_format { ImageFormat::Depth };
-		SampleCount samples { SampleCount::ONE };
-		bool load_colour { false };
-		bool keep_colour { true };
-		bool load_depth { false };
-		bool keep_depth { true };
-		bool has_depth { true };
-		bool should_present { false };
-		std::string debug_name { "Unknown" };
+		std::string debug_name { "RenderPass" };
 	};
 
 	class Device;
@@ -26,7 +17,7 @@ namespace Disarray {
 	class RenderPass : public ReferenceCountable {
 		DISARRAY_OBJECT(RenderPass)
 	public:
-		static Ref<RenderPass> construct(Device&, const RenderPassProperties&);
+		static Ref<RenderPass> construct(Device&, const RenderPassProperties& = {});
 	};
 
 } // namespace Disarray

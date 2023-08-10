@@ -13,10 +13,7 @@
 
 namespace Disarray::Vulkan {
 
-	struct PresentingSemaphores {
-		VkSemaphore& image_available;
-		VkSemaphore& render_finished;
-	};
+	class CommandExecutor;
 
 	class Swapchain : public Disarray::Swapchain, public PropertySupplier<VkSwapchainKHR> {
 	public:
@@ -37,11 +34,6 @@ namespace Disarray::Vulkan {
 		Disarray::RenderPass& get_render_pass() override;
 		VkFramebuffer get_current_framebuffer() { return framebuffers[get_current_frame()]; };
 
-		PresentingSemaphores get_presenting_semaphores()
-		{
-			return { image_available_semaphores[get_current_frame()], render_finished_semaphores[get_current_frame()] };
-		}
-
 		bool prepare_frame() override;
 		void present() override;
 
@@ -57,6 +49,7 @@ namespace Disarray::Vulkan {
 		void recreate_swapchain(Disarray::Swapchain* old = nullptr, bool should_clean = true);
 		void recreate_framebuffer();
 		void cleanup_swapchain();
+		void recreate_renderpass();
 
 		bool swapchain_needs_recreation { false };
 
@@ -68,7 +61,7 @@ namespace Disarray::Vulkan {
 		std::uint32_t image_index { 0 };
 
 		std::vector<VkFramebuffer> framebuffers;
-		Ref<Vulkan::RenderPass> render_pass { nullptr };
+		Ref<Disarray::RenderPass> render_pass { nullptr };
 
 		SampleCount samples { SampleCount::ONE };
 

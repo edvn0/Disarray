@@ -5,6 +5,9 @@
 #include "GLFW/glfw3.h"
 #include "core/App.hpp"
 #include "core/Log.hpp"
+#include "core/events/ApplicationEvent.hpp"
+#include "core/events/KeyEvent.hpp"
+#include "core/events/MouseEvent.hpp"
 #include "vulkan/Swapchain.hpp"
 
 #include <graphics/ImageLoader.hpp>
@@ -12,28 +15,112 @@
 
 namespace Disarray::Vulkan {
 
-	inline void key_callback(GLFWwindow* handle, int key, int scancode, int action, int mods)
+	void Window::register_event_handler(Disarray::App& app)
 	{
-		if (action != GLFW_RELEASE)
-			return;
+		user_data.callback = [&app = app](Event& event) { app.on_event(event); };
 
-		if (key == GLFW_KEY_ESCAPE) {
-			glfwSetWindowShouldClose(handle, true);
-			return;
-		}
+		glfwSetFramebufferSizeCallback(window, [](GLFWwindow* win, int, int) {
+			auto& data = *static_cast<UserData*>(glfwGetWindowUserPointer(win));
+			data.was_resized = true;
+		});
 
-		auto& user_data = *static_cast<UserData*>(glfwGetWindowUserPointer(handle));
-		if (key == GLFW_KEY_F11) {
-			// if we are in fullscreen already, don't!
-			if (!user_data.fullscreen) {
-				glfwGetWindowPos(handle, &user_data.pos_x, &user_data.pos_y);
-				glfwSetWindowMonitor(handle, user_data.monitor, 0, 0, user_data.mode->width, user_data.mode->height, user_data.mode->refreshRate);
-			} else {
-				glfwSetWindowMonitor(handle, nullptr, user_data.pos_x, user_data.pos_y, user_data.width, user_data.height, 0);
+		glfwSetWindowSizeCallback(window, [](GLFWwindow* win, int new_width, int new_height) {
+			auto& data = *static_cast<UserData*>(glfwGetWindowUserPointer(win));
+
+			WindowResizeEvent event(static_cast<std::uint32_t>(new_width), static_cast<std::uint32_t>(new_height));
+			data.callback(event);
+			data.width = new_width;
+			data.height = new_height;
+		});
+
+		glfwSetWindowCloseCallback(window, [](GLFWwindow* win) {
+			auto& data = *static_cast<UserData*>(glfwGetWindowUserPointer(win));
+
+			WindowCloseEvent event;
+			data.callback(event);
+		});
+
+		glfwSetKeyCallback(window, [](GLFWwindow* win, int key, int, int action, int) {
+			auto& data = *static_cast<UserData*>(glfwGetWindowUserPointer(win));
+
+			if (key == GLFW_KEY_ESCAPE) {
+				glfwSetWindowShouldClose(win, true);
+				return;
 			}
-			user_data.fullscreen = !user_data.fullscreen;
-			return;
-		}
+
+			if (key == GLFW_KEY_F11 && action == GLFW_RELEASE) {
+				// if we are in fullscreen already, don't!
+				if (!data.fullscreen) {
+					glfwGetWindowPos(win, &data.pos_x, &data.pos_y);
+					glfwSetWindowMonitor(win, data.monitor, 0, 0, data.mode->width, data.mode->height, data.mode->refreshRate);
+				} else {
+					glfwSetWindowMonitor(win, nullptr, data.pos_x, data.pos_y, data.width, data.height, 0);
+				}
+				data.fullscreen = !data.fullscreen;
+				return;
+			}
+
+			switch (action) {
+			case GLFW_PRESS: {
+				KeyPressedEvent event(static_cast<KeyCode>(key), 0);
+				data.callback(event);
+				break;
+			}
+			case GLFW_RELEASE: {
+				KeyReleasedEvent event(static_cast<KeyCode>(key));
+				data.callback(event);
+				break;
+			}
+			case GLFW_REPEAT: {
+				KeyPressedEvent event(static_cast<KeyCode>(key), 1);
+				data.callback(event);
+				break;
+			}
+			}
+		});
+
+		glfwSetCharCallback(window, [](GLFWwindow* win, std::uint32_t codepoint) {
+			auto& data = *static_cast<UserData*>(glfwGetWindowUserPointer(win));
+
+			KeyTypedEvent event(static_cast<KeyCode>(codepoint));
+			data.callback(event);
+		});
+
+		glfwSetMouseButtonCallback(window, [](GLFWwindow* win, int button, int action, int) {
+			auto& data = *static_cast<UserData*>(glfwGetWindowUserPointer(win));
+
+			switch (action) {
+			case GLFW_PRESS: {
+				MouseButtonPressedEvent event(static_cast<MouseCode>(button));
+				data.callback(event);
+				break;
+			}
+			case GLFW_RELEASE: {
+				MouseButtonReleasedEvent event(static_cast<MouseCode>(button));
+				data.callback(event);
+				break;
+			}
+			}
+		});
+
+		glfwSetScrollCallback(window, [](GLFWwindow* win, double x_offset, double y_offset) {
+			auto& data = *static_cast<UserData*>(glfwGetWindowUserPointer(win));
+
+			MouseScrolledEvent event(static_cast<float>(x_offset), static_cast<float>(y_offset));
+			data.callback(event);
+		});
+
+		glfwSetCursorPosCallback(window, [](GLFWwindow* win, double x, double y) {
+			auto& data = *static_cast<UserData*>(glfwGetWindowUserPointer(win));
+			MouseMovedEvent event((float)x, (float)y);
+			data.callback(event);
+		});
+
+		glfwSetWindowIconifyCallback(window, [](GLFWwindow* win, int iconified) {
+			auto& data = *static_cast<UserData*>(glfwGetWindowUserPointer(win));
+			WindowMinimizeEvent event((bool)iconified);
+			data.callback(event);
+		});
 	}
 
 	Window::Window(const Disarray::WindowProperties& properties)
@@ -93,13 +180,6 @@ namespace Disarray::Vulkan {
 		surface = make_scope<Vulkan::Surface>(*instance, window);
 
 		glfwSetWindowUserPointer(window, &user_data);
-
-		glfwSetFramebufferSizeCallback(window, [](GLFWwindow* handle, int w, int h) {
-			auto& data = *static_cast<UserData*>(glfwGetWindowUserPointer(handle));
-			data.was_resized = true;
-		});
-
-		glfwSetKeyCallback(window, &key_callback);
 	}
 
 	Window::~Window()

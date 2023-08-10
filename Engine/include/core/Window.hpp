@@ -15,6 +15,8 @@ namespace Disarray {
 		bool is_fullscreen { false };
 	};
 
+	class App;
+
 	class Window {
 	public:
 		virtual ~Window() = default;
@@ -25,6 +27,8 @@ namespace Disarray {
 		virtual void update() = 0;
 		virtual Surface& get_surface() = 0;
 		virtual Instance& get_instance() = 0;
+
+		virtual void register_event_handler(App&) = 0;
 
 		virtual bool was_resized() const = 0;
 		virtual void reset_resize_status() = 0;

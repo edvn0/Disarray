@@ -30,7 +30,7 @@ namespace Disarray {
 		bool operator!=(const Extent& other) const { return width != other.width || height != other.height; }
 	};
 
-	enum class ImageFormat { SRGB, RGB, SBGR, BGR, Depth, DepthStencil };
+	enum class ImageFormat { SRGB, RGB, SBGR, BGR, SRGB32, RGB32, Depth, DepthStencil, Uint };
 
 } // namespace Disarray
 
@@ -75,6 +75,8 @@ template <> struct fmt::formatter<Disarray::ImageFormat> : fmt::formatter<std::s
 			return formatter<std::string_view>::format(fmt::format("[{}]", "BGR"), ctx);
 		case Disarray::ImageFormat::Depth:
 			return formatter<std::string_view>::format(fmt::format("[{}]", "Depth"), ctx);
+		case Disarray::ImageFormat::Uint:
+			return formatter<std::string_view>::format(fmt::format("[{}]", "Uint"), ctx);
 		case Disarray::ImageFormat::DepthStencil:
 			return formatter<std::string_view>::format(fmt::format("[{}]", "DepthStencil"), ctx);
 		}

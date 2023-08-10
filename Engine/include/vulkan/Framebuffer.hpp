@@ -24,27 +24,25 @@ namespace Disarray::Vulkan {
 			recreate_framebuffer(should_clean);
 		}
 
-		Disarray::RenderPass& get_render_pass() override { return *render_pass; };
-
+		VkFramebuffer supply() const override { return framebuffer; }
 		Image& get_image(std::uint32_t index) override { return *attachments.at(index); }
-
-		std::uint32_t get_colour_attachment_count() override { return colour_count; }
+		Disarray::Image& get_depth_image() override { return *depth_attachment; }
 
 		bool has_depth() override { return static_cast<bool>(depth_attachment); }
-
-		VkFramebuffer supply() const override { return framebuffer; }
-
+		std::uint32_t get_colour_attachment_count() const override { return colour_count; }
+		Disarray::RenderPass& get_render_pass() override { return *render_pass; };
 		const auto& get_clear_values() const { return clear_values; }
+
+		const FramebufferProperties& get_properties() const override { return props; }
+		FramebufferProperties& get_properties() override { return props; }
 
 	private:
 		void recreate_framebuffer(bool should_clean = true);
 
-		void create_attachments();
-
 		std::uint32_t colour_count {};
 
 		Disarray::Device& device;
-		Ref<Vulkan::RenderPass> render_pass { nullptr };
+		Ref<Disarray::RenderPass> render_pass { nullptr };
 		VkFramebuffer framebuffer {};
 		std::vector<VkClearValue> clear_values {};
 
@@ -52,7 +50,6 @@ namespace Disarray::Vulkan {
 		Scope<Vulkan::Image> depth_attachment;
 
 		FramebufferProperties props;
-		SampleCount samples;
 	};
 
 } // namespace Disarray::Vulkan

@@ -35,10 +35,10 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverity
 	switch (messageSeverity) {
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-		Disarray::Log::debug("Validation", "Validation layer: " + std::string(pCallbackData->pMessage));
+		Disarray::Log::debug("Validation", "Validation layer: {}", std::string(pCallbackData->pMessage));
 		return VK_FALSE;
 	default:
-		Disarray::Log::error("Validation", "Validation layer: " + std::string(pCallbackData->pMessage));
+		Disarray::Log::error("Validation", "Validation layer: {}", std::string(pCallbackData->pMessage));
 		return VK_FALSE;
 	}
 }
@@ -84,11 +84,11 @@ namespace Disarray::Vulkan {
 
 		VkApplicationInfo app_info {};
 		app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		app_info.pApplicationName = "Hello Triangle";
+		app_info.pApplicationName = "Disarray";
 		app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-		app_info.pEngineName = "No Engine";
+		app_info.pEngineName = "Disarray Engine";
 		app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-		app_info.apiVersion = VK_API_VERSION_1_0;
+		app_info.apiVersion = VK_API_VERSION_1_3;
 
 		VkInstanceCreateInfo create_info {};
 		create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;

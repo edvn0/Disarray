@@ -54,7 +54,7 @@ namespace Disarray {
 			increment_reference_count();
 		}
 
-		template <typename... Args>
+		template <typename... Args, std::enable_if_t<sizeof...(Args) == 0, bool> = false>
 		ReferenceCounted(Args&&... args)
 			requires(std::is_constructible_v<T, Args...>)
 			: instance(new T { std::forward<Args>(args)... })

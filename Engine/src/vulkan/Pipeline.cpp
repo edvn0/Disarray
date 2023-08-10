@@ -15,66 +15,110 @@
 
 namespace Disarray::Vulkan {
 
-	static constexpr VkFormat to_vulkan_format(ElementType type)
-	{
-		switch (type) {
-		case ElementType::Float:
-			return VK_FORMAT_R32_SFLOAT;
-		case ElementType::Float2:
-			return VK_FORMAT_R32G32_SFLOAT;
-		case ElementType::Float3:
-			return VK_FORMAT_R32G32B32_SFLOAT;
-		case ElementType::Float4:
-			return VK_FORMAT_R32G32B32A32_SFLOAT;
-		case ElementType::Double:
-			return VK_FORMAT_R64_SFLOAT;
-		case ElementType::Int2:
-			return VK_FORMAT_R16G16_SINT;
-		case ElementType::Int3:
-			return VK_FORMAT_R16G16B16_SINT;
-		case ElementType::Int4:
-			return VK_FORMAT_R16G16B16A16_SINT;
-		case ElementType::Uint:
-			// SPECIAL CASE FOR IDENTIFIERS
-			return VK_FORMAT_R32_UINT;
-		case ElementType::Uint2:
-			return VK_FORMAT_R16G16_UINT;
-		case ElementType::Uint3:
-			return VK_FORMAT_R16G16B16_UINT;
-		case ElementType::Uint4:
-			return VK_FORMAT_R16G16B16A16_UINT;
-		default:
-			unreachable();
-		}
-	}
+	namespace Detail {
 
-	VkPolygonMode vk_polygon_mode(PolygonMode mode)
-	{
-		switch (mode) {
-		case PolygonMode::Fill:
-			return VK_POLYGON_MODE_FILL;
-		case PolygonMode::Line:
-			return VK_POLYGON_MODE_LINE;
-		case PolygonMode::Point:
-			return VK_POLYGON_MODE_POINT;
-		default:
-			unreachable();
+		static constexpr VkFormat to_vulkan_format(ElementType type)
+		{
+			switch (type) {
+			case ElementType::Float:
+				return VK_FORMAT_R32_SFLOAT;
+			case ElementType::Float2:
+				return VK_FORMAT_R32G32_SFLOAT;
+			case ElementType::Float3:
+				return VK_FORMAT_R32G32B32_SFLOAT;
+			case ElementType::Float4:
+				return VK_FORMAT_R32G32B32A32_SFLOAT;
+			case ElementType::Double:
+				return VK_FORMAT_R64_SFLOAT;
+			case ElementType::Int2:
+				return VK_FORMAT_R16G16_SINT;
+			case ElementType::Int3:
+				return VK_FORMAT_R16G16B16_SINT;
+			case ElementType::Int4:
+				return VK_FORMAT_R16G16B16A16_SINT;
+			case ElementType::Uint:
+				// SPECIAL CASE FOR IDENTIFIERS
+				return VK_FORMAT_R32_UINT;
+			case ElementType::Uint2:
+				return VK_FORMAT_R16G16_UINT;
+			case ElementType::Uint3:
+				return VK_FORMAT_R16G16B16_UINT;
+			case ElementType::Uint4:
+				return VK_FORMAT_R16G16B16A16_UINT;
+			default:
+				unreachable();
+			}
 		}
-	}
 
-	VkPrimitiveTopology vk_polygon_topology(PolygonMode mode)
-	{
-		switch (mode) {
-		case PolygonMode::Fill:
-			return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		case PolygonMode::Line:
-			return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-		case PolygonMode::Point:
-			return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-		default:
-			unreachable();
+		static constexpr VkPolygonMode vk_polygon_mode(PolygonMode mode)
+		{
+			switch (mode) {
+			case PolygonMode::Fill:
+				return VK_POLYGON_MODE_FILL;
+			case PolygonMode::Line:
+				return VK_POLYGON_MODE_LINE;
+			case PolygonMode::Point:
+				return VK_POLYGON_MODE_POINT;
+			default:
+				unreachable();
+			}
 		}
-	}
+
+		static constexpr VkPrimitiveTopology vk_polygon_topology(PolygonMode mode)
+		{
+			switch (mode) {
+			case PolygonMode::Fill:
+				return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+			case PolygonMode::Line:
+				return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+			case PolygonMode::Point:
+				return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+			default:
+				unreachable();
+			}
+		}
+
+		static constexpr VkCompareOp to_vulkan_comparison(DepthCompareOperator op)
+		{
+			switch (op) {
+			case DepthCompareOperator::Never:
+				return VK_COMPARE_OP_NEVER;
+			case DepthCompareOperator::NotEqual:
+				return VK_COMPARE_OP_NOT_EQUAL;
+			case DepthCompareOperator::Less:
+				return VK_COMPARE_OP_LESS;
+			case DepthCompareOperator::LessOrEqual:
+				return VK_COMPARE_OP_LESS_OR_EQUAL;
+			case DepthCompareOperator::Greater:
+				return VK_COMPARE_OP_GREATER;
+			case DepthCompareOperator::GreaterOrEqual:
+				return VK_COMPARE_OP_GREATER_OR_EQUAL;
+			case DepthCompareOperator::Equal:
+				return VK_COMPARE_OP_EQUAL;
+			case DepthCompareOperator::Always:
+				return VK_COMPARE_OP_ALWAYS;
+			default:
+				unreachable();
+			}
+		}
+
+		static constexpr VkCullModeFlags to_vulkan_cull_mode(CullMode cull)
+		{
+			switch (cull) {
+			case CullMode::Back:
+				return VK_CULL_MODE_FRONT_BIT;
+			case CullMode::Front:
+				return VK_CULL_MODE_BACK_BIT;
+			case CullMode::Both:
+				return VK_CULL_MODE_FRONT_AND_BACK;
+			case CullMode::None:
+				return VK_CULL_MODE_NONE;
+			default:
+				unreachable();
+			}
+		}
+
+	} // namespace Detail
 
 	Pipeline::Pipeline(Disarray::Device& dev, const Disarray::PipelineProperties& properties)
 		: device(dev)
@@ -106,7 +150,7 @@ namespace Disarray::Vulkan {
 		for (const auto& attribute : props.layout.elements) {
 			auto& new_attribute = attribute_descriptions.emplace_back();
 			new_attribute.binding = 0;
-			new_attribute.format = to_vulkan_format(attribute.type);
+			new_attribute.format = Detail::to_vulkan_format(attribute.type);
 			new_attribute.offset = attribute.offset;
 			new_attribute.location = location++;
 		}
@@ -118,8 +162,8 @@ namespace Disarray::Vulkan {
 
 		VkPipelineInputAssemblyStateCreateInfo input_assembly {};
 		input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		input_assembly.topology = vk_polygon_topology(props.polygon_mode);
-		input_assembly.primitiveRestartEnable = VK_FALSE;
+		input_assembly.topology = Detail::vk_polygon_topology(props.polygon_mode);
+		input_assembly.primitiveRestartEnable = false;
 
 		VkViewport viewport {};
 		viewport.x = 0.0f;
@@ -143,56 +187,100 @@ namespace Disarray::Vulkan {
 
 		VkPipelineRasterizationStateCreateInfo rasterizer {};
 		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-		rasterizer.depthClampEnable = VK_FALSE;
-		rasterizer.rasterizerDiscardEnable = VK_FALSE;
-		rasterizer.polygonMode = vk_polygon_mode(props.polygon_mode);
-
+		rasterizer.depthClampEnable = false;
+		rasterizer.rasterizerDiscardEnable = false;
+		rasterizer.polygonMode = Detail::vk_polygon_mode(props.polygon_mode);
 		rasterizer.lineWidth = props.line_width;
-		rasterizer.cullMode = VK_CULL_MODE_NONE;
-		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-
-		rasterizer.depthBiasEnable = VK_FALSE;
+		rasterizer.cullMode = Detail::to_vulkan_cull_mode(props.cull_mode);
+		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizer.depthBiasEnable = false;
 		rasterizer.depthBiasConstantFactor = 0.0f; // Optional
 		rasterizer.depthBiasClamp = 0.0f; // Optional
 		rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
 
 		auto depth_stencil_state_create_info = vk_structures<VkPipelineDepthStencilStateCreateInfo> {}();
-		depth_stencil_state_create_info.depthTestEnable = true;
-		depth_stencil_state_create_info.depthWriteEnable = true;
-		depth_stencil_state_create_info.depthCompareOp = VK_COMPARE_OP_LESS;
-		depth_stencil_state_create_info.depthBoundsTestEnable = VK_FALSE;
+		depth_stencil_state_create_info.depthTestEnable = props.test_depth;
+		depth_stencil_state_create_info.depthWriteEnable = props.write_depth;
+		depth_stencil_state_create_info.depthCompareOp = Detail::to_vulkan_comparison(props.depth_comparison_operator);
+		depth_stencil_state_create_info.depthBoundsTestEnable = false;
 		depth_stencil_state_create_info.back.compareOp = VK_COMPARE_OP_ALWAYS;
 		depth_stencil_state_create_info.back.failOp = VK_STENCIL_OP_KEEP;
 		depth_stencil_state_create_info.back.passOp = VK_STENCIL_OP_KEEP;
 		depth_stencil_state_create_info.front = depth_stencil_state_create_info.back;
-		depth_stencil_state_create_info.stencilTestEnable = VK_FALSE;
+		depth_stencil_state_create_info.stencilTestEnable = false;
 
 		VkPipelineMultisampleStateCreateInfo multisampling {};
 		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		multisampling.sampleShadingEnable = VK_FALSE;
+		multisampling.sampleShadingEnable = false;
 		multisampling.rasterizationSamples = to_vulkan_samples(props.samples);
 		multisampling.minSampleShading = 1.0f; // Optional
 		multisampling.pSampleMask = nullptr; // Optional
-		multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
-		multisampling.alphaToOneEnable = VK_FALSE; // Optional
+		multisampling.alphaToCoverageEnable = false; // Optional
+		multisampling.alphaToOneEnable = false; // Optional
 
-		VkPipelineColorBlendAttachmentState color_blend_attachment {};
-		color_blend_attachment.colorWriteMask
+#define NEW
+#ifdef NEW
+		const auto& fb_props = props.framebuffer->get_properties();
+		const auto should_present = fb_props.should_present;
+		size_t color_attachment_count = should_present ? 1 : props.framebuffer->get_colour_attachment_count();
+		std::vector<VkPipelineColorBlendAttachmentState> blend_attachment_states(color_attachment_count);
+		static constexpr auto blend_all_factors
 			= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		color_blend_attachment.blendEnable = VK_TRUE;
-		color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-		color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-		color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+		if (should_present) {
+			blend_attachment_states[0].colorWriteMask = blend_all_factors;
+			blend_attachment_states[0].blendEnable = true;
+			blend_attachment_states[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+			blend_attachment_states[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			blend_attachment_states[0].colorBlendOp = VK_BLEND_OP_ADD;
+			blend_attachment_states[0].alphaBlendOp = VK_BLEND_OP_ADD;
+			blend_attachment_states[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+			blend_attachment_states[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		} else {
+			for (size_t i = 0; i < color_attachment_count; i++) {
+				if (!fb_props.should_blend)
+					break;
+
+				blend_attachment_states[i].colorWriteMask = 0xf;
+
+				const auto& attachment_spec = fb_props.attachments.texture_attachments[i];
+				FramebufferBlendMode blend_mode
+					= fb_props.blend_mode == FramebufferBlendMode::None ? attachment_spec.blend_mode : fb_props.blend_mode;
+
+				blend_attachment_states[i].blendEnable = attachment_spec.blend;
+				blend_attachment_states[i].colorBlendOp = VK_BLEND_OP_ADD;
+				blend_attachment_states[i].alphaBlendOp = VK_BLEND_OP_ADD;
+				blend_attachment_states[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+				blend_attachment_states[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+
+				switch (blend_mode) {
+				case FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha:
+					blend_attachment_states[i].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+					blend_attachment_states[i].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+					blend_attachment_states[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+					blend_attachment_states[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+					break;
+				case FramebufferBlendMode::OneZero:
+					blend_attachment_states[i].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+					blend_attachment_states[i].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+					break;
+				case FramebufferBlendMode::Zero_SrcColor:
+					blend_attachment_states[i].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+					blend_attachment_states[i].dstColorBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
+					break;
+
+				default:
+					unreachable();
+				}
+			}
+		}
+#endif
 
 		VkPipelineColorBlendStateCreateInfo color_blending {};
 		color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		color_blending.logicOpEnable = VK_TRUE;
+		color_blending.logicOpEnable = true;
 		color_blending.logicOp = VK_LOGIC_OP_COPY;
-		color_blending.attachmentCount = 1;
-		color_blending.pAttachments = &color_blend_attachment;
+		color_blending.attachmentCount = static_cast<std::uint32_t>(blend_attachment_states.size());
+		color_blending.pAttachments = blend_attachment_states.data();
 		color_blending.blendConstants[0] = 0.0f;
 		color_blending.blendConstants[1] = 0.0f;
 		color_blending.blendConstants[2] = 0.0f;

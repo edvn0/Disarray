@@ -28,10 +28,10 @@ namespace Disarray::Vulkan {
 	{
 		auto vk_device = supply_cast<Vulkan::Device>(device);
 
-		TextureProperties texture_properties { .debug_name = "viking" };
+		TextureCacheCreationProperties texture_properties { .debug_name = "viking" };
 		texture_properties.path = "Assets/Textures/viking_room.png";
 		texture_properties.format = ImageFormat::SRGB;
-		auto viking_room = texture_cache.emplace_back(Texture::construct(device, texture_properties));
+		auto viking_room = texture_cache.put(texture_properties);
 
 		std::array<VkDescriptorSetLayoutBinding, 2> bindings {};
 		{

@@ -19,12 +19,11 @@ namespace Disarray::Vulkan {
 				.extent = props.extent,
 				.format = props.format,
 				.data = pixels,
-				.should_present = props.should_present,
 				.debug_name = props.debug_name,
 			});
 	}
 
-	Texture::~Texture() { Log::debug("Texture-Destructor", "Destroyed texture " + props.debug_name); }
+	Texture::~Texture() { Log::debug("Texture-Destructor", "Destroyed texture {}", props.debug_name); }
 
 	void Texture::recreate_texture(bool should_clean) { image->recreate(should_clean, props.extent); }
 

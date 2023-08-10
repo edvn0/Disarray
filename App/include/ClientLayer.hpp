@@ -13,7 +13,7 @@ namespace Disarray::Client {
 
 		void construct(App& app, Renderer& renderer, ThreadPool&) override;
 		void handle_swapchain_recreation(Renderer& renderer) override;
-		void update(float ts) override;
+		void on_event(Event&) override;
 		void update(float ts, Renderer& renderer) override;
 		void destruct() override;
 
@@ -21,6 +21,9 @@ namespace Disarray::Client {
 		Window& window;
 		Swapchain& swapchain;
 		Scene scene;
+
+		EditorCamera camera { 60.f, static_cast<float>(swapchain.get_extent().width), static_cast<float>(swapchain.get_extent().height), 0.1f, 1000.f,
+			nullptr };
 
 		bool viewport_panel_mouse_over { false };
 		bool viewport_panel_focused { false };

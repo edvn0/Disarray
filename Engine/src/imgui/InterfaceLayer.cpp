@@ -9,14 +9,8 @@
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/DebugMarker.hpp"
 #include "vulkan/Device.hpp"
-#include "vulkan/Framebuffer.hpp"
+#include "vulkan/Instance.hpp"
 #include "vulkan/PhysicalDevice.hpp"
-#include "vulkan/RenderPass.hpp"
-#include "vulkan/Renderer.hpp"
-#include "vulkan/Structures.hpp"
-#include "vulkan/Swapchain.hpp"
-#include "vulkan/Verify.hpp"
-#include "vulkan/Window.hpp"
 
 #include <imgui.h>
 #include <vulkan/vulkan.h>
@@ -191,7 +185,7 @@ namespace Disarray::UI {
 			imgui_buffer.begin(cbi);
 
 			const auto& command_buffer = imgui_buffer.supply();
-			VkViewport viewport;
+			VkViewport viewport {};
 			viewport.x = 0.0f;
 			viewport.y = static_cast<float>(height);
 			viewport.height = static_cast<float>(height);
@@ -200,7 +194,7 @@ namespace Disarray::UI {
 			viewport.maxDepth = 1.0f;
 			vkCmdSetViewport(command_buffer, 0, 1, &viewport);
 
-			VkRect2D scissor;
+			VkRect2D scissor {};
 			scissor.extent.width = width;
 			scissor.extent.height = height;
 			scissor.offset.x = 0;

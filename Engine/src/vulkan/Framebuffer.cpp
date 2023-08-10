@@ -9,11 +9,15 @@
 #include "graphics/RenderPass.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/Texture.hpp"
+#include "vulkan/DebugMarker.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Image.hpp"
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/Texture.hpp"
+
+#include <core/Ensure.hpp>
+#include <vulkan/Allocator.hpp>
 
 namespace Disarray::Vulkan {
 
@@ -21,24 +25,25 @@ namespace Disarray::Vulkan {
 		: device(dev)
 		, props(properties)
 	{
-		colour_count = props.colour_count;
-		samples = props.samples;
-		render_pass = props.optional_renderpass ? cast_to<Vulkan::RenderPass>(props.optional_renderpass)
-												: make_ref<Vulkan::RenderPass>(device,
-													RenderPassProperties {
-														.image_format = props.format,
-														.depth_format = props.depth_format,
-														.samples = samples,
-														.load_colour = props.load_colour,
-														.keep_colour = props.keep_colour,
-														.load_depth = props.load_depth,
-														.keep_depth = props.keep_depth,
-														.has_depth = props.has_depth,
-														.should_present = props.should_present,
-														.debug_name = "FromFramebuffer-" + props.debug_name,
-													});
+		std::uint32_t attachment_index = 0;
+		for (auto& attachment_spec : props.attachments.texture_attachments) {
+			if (is_depth_format(attachment_spec.format)) {
+				ImageProperties spec;
+				spec.format = attachment_spec.format;
+				spec.extent = props.extent;
+				spec.debug_name = fmt::format("{0}-depth{1}", props.debug_name, attachment_index);
+				depth_attachment.reset(new Vulkan::Image(device, spec));
+			} else {
+				ImageProperties spec;
+				spec.format = attachment_spec.format;
+				spec.extent = props.extent;
+				spec.debug_name = fmt::format("{0}-color{1}", props.debug_name, attachment_index);
+				attachments.emplace_back(new Vulkan::Image(device, spec));
+			}
+			attachment_index++;
+		}
 
-		create_attachments();
+		colour_count = static_cast<std::uint32_t>(attachments.size());
 		recreate_framebuffer(false);
 	}
 
@@ -46,39 +51,12 @@ namespace Disarray::Vulkan {
 	{
 		vkDestroyFramebuffer(supply_cast<Vulkan::Device>(device), framebuffer, nullptr);
 		attachments.clear();
-		if (props.has_depth) {
+		if (depth_attachment) {
 			depth_attachment.reset();
 		}
 	}
 
 	void Framebuffer::force_recreation() { recreate_framebuffer(); }
-
-	void Framebuffer::create_attachments()
-	{
-		auto total_colour_count = colour_count + static_cast<int>(samples != SampleCount::ONE);
-		attachments.resize(total_colour_count);
-		auto i = 0;
-		for (auto& image : attachments) {
-			image.reset(new Vulkan::Image(device,
-				ImageProperties {
-					.extent = props.extent,
-					.format = props.format,
-					.data = nullptr,
-					.should_present = props.should_present,
-					.samples = samples,
-					.debug_name = props.debug_name + "-ColorFramebuffer-" + std::to_string(++i),
-				}));
-			clear_values.emplace_back().color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
-		}
-		if (props.has_depth) {
-			depth_attachment.reset(new Vulkan::Image(device,
-				ImageProperties { .extent = props.extent,
-					.format = ImageFormat::Depth,
-					.samples = samples,
-					.debug_name = props.debug_name + "-DepthFramebuffer" }));
-			clear_values.emplace_back().depthStencil = { 1.0f, 0 };
-		}
-	}
 
 	void Framebuffer::recreate_framebuffer(bool should_clean)
 	{
@@ -90,28 +68,144 @@ namespace Disarray::Vulkan {
 			depth_attachment->force_recreation();
 		}
 
-		create_attachments();
+		std::vector<VkAttachmentDescription> attachment_descriptions;
+		std::vector<VkAttachmentReference> color_attachment_references;
+		VkAttachmentReference depth_attachment_reference {};
 
-		std::vector<VkImageView> fb_attachments;
-		for (auto& img : attachments)
-			fb_attachments.push_back(img->get_view());
+		clear_values.resize(props.attachments.texture_attachments.size());
+		uint32_t attachment_index = 0;
+		for (const auto& attachment_spec : props.attachments.texture_attachments) {
+			const auto is_depth = is_depth_format(attachment_spec.format);
+			if (is_depth) {
+				depth_attachment->recreate(true, props.extent);
+				VkAttachmentDescription& attachment_description = attachment_descriptions.emplace_back();
+				attachment_description.flags = 0;
+				attachment_description.format = to_vulkan_format(attachment_spec.format);
+				attachment_description.samples = VK_SAMPLE_COUNT_1_BIT;
+				attachment_description.loadOp = props.clear_depth_on_load ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+				attachment_description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+				attachment_description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				attachment_description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+				attachment_description.initialLayout
+					= props.clear_depth_on_load ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+				attachment_description.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+				depth_attachment_reference = { .attachment = attachment_index, .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+				clear_values[attachment_index].depthStencil = { props.depth_clear_value, 0 };
 
-		if (props.has_depth)
-			fb_attachments.push_back(depth_attachment->get_view());
+				const auto depth_is_last_index = props.attachments.texture_attachments.size() - 1;
+				ensure(attachment_index == depth_is_last_index, "Depth image must always be last...");
+			} else {
+				auto& image = attachments[attachment_index];
+				image->recreate(true, props.extent);
 
-		auto framebuffer_info = vk_structures<VkFramebufferCreateInfo> {}();
-		framebuffer_info.renderPass = render_pass->supply();
-		framebuffer_info.attachmentCount = static_cast<std::uint32_t>(fb_attachments.size());
-		framebuffer_info.pAttachments = fb_attachments.data();
-		framebuffer_info.width = props.extent.width;
-		framebuffer_info.height = props.extent.height;
-		framebuffer_info.layers = 1;
+				VkAttachmentDescription& attachment_description = attachment_descriptions.emplace_back();
+				attachment_description.flags = 0;
+				attachment_description.format = to_vulkan_format(attachment_spec.format);
+				attachment_description.samples = VK_SAMPLE_COUNT_1_BIT;
+				attachment_description.loadOp = props.clear_colour_on_load ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+				attachment_description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+				attachment_description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				attachment_description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+				attachment_description.initialLayout
+					= props.clear_colour_on_load ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				attachment_description.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		verify(vkCreateFramebuffer(supply_cast<Vulkan::Device>(device), &framebuffer_info, nullptr, &framebuffer));
+				const auto& clear_color = props.clear_colour;
+				clear_values[attachment_index].color = { { clear_color.r, clear_color.g, clear_color.b, clear_color.a } };
+				color_attachment_references.emplace_back(VkAttachmentReference { attachment_index, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+				attachment_index++;
+			}
+		}
 
-		// Owned by someone else!
-		if (!props.optional_renderpass)
-			render_pass->force_recreation();
+		VkSubpassDescription subpass_description = {};
+		subpass_description.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass_description.colorAttachmentCount = uint32_t(color_attachment_references.size());
+		subpass_description.pColorAttachments = color_attachment_references.data();
+		if (depth_attachment)
+			subpass_description.pDepthStencilAttachment = &depth_attachment_reference;
+
+		std::vector<VkSubpassDependency> dependencies;
+		if (!attachments.empty()) {
+			{
+				VkSubpassDependency& dependency = dependencies.emplace_back();
+				dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+				dependency.dstSubpass = 0;
+				dependency.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+				dependency.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+				dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+				dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+				dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+			}
+			{
+				VkSubpassDependency& dependency = dependencies.emplace_back();
+				dependency.srcSubpass = 0;
+				dependency.dstSubpass = VK_SUBPASS_EXTERNAL;
+				dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+				dependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+				dependency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+				dependency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+				dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+			}
+		}
+
+		if (depth_attachment) {
+			{
+				VkSubpassDependency& dependency = dependencies.emplace_back();
+				dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+				dependency.dstSubpass = 0;
+				dependency.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+				dependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+				dependency.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+				dependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+				dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+			}
+
+			{
+				VkSubpassDependency& dependency = dependencies.emplace_back();
+				dependency.srcSubpass = 0;
+				dependency.dstSubpass = VK_SUBPASS_EXTERNAL;
+				dependency.srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+				dependency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+				dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+				dependency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+				dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+			}
+		}
+
+		auto render_pass_info = vk_structures<VkRenderPassCreateInfo>()();
+		render_pass_info.attachmentCount = static_cast<uint32_t>(attachment_descriptions.size());
+		render_pass_info.pAttachments = attachment_descriptions.data();
+		render_pass_info.subpassCount = 1;
+		render_pass_info.pSubpasses = &subpass_description;
+		render_pass_info.dependencyCount = static_cast<uint32_t>(dependencies.size());
+		render_pass_info.pDependencies = dependencies.data();
+
+		render_pass = RenderPass::construct(device);
+		auto vk_render_pass = cast_to<Vulkan::RenderPass>(render_pass);
+		vk_render_pass->create_with(render_pass_info);
+
+		std::vector<VkImageView> attachment_views;
+		for (auto& image : attachments) {
+			auto& view = attachment_views.emplace_back();
+			view = cast_to<Vulkan::Image>(*image).get_view();
+		}
+
+		if (depth_attachment) {
+			auto& depth_view = attachment_views.emplace_back();
+			depth_view = cast_to<Vulkan::Image>(*depth_attachment).get_view();
+		}
+
+		auto framebuffer_create_info = vk_structures<VkFramebufferCreateInfo>()();
+		framebuffer_create_info.renderPass = vk_render_pass->supply();
+		framebuffer_create_info.attachmentCount = static_cast<std::uint32_t>(attachment_views.size());
+		framebuffer_create_info.pAttachments = attachment_views.data();
+		framebuffer_create_info.width = props.extent.width;
+		framebuffer_create_info.height = props.extent.height;
+		framebuffer_create_info.layers = 1;
+
+		verify(vkCreateFramebuffer(supply_cast<Vulkan::Device>(device), &framebuffer_create_info, nullptr, &framebuffer));
+		DebugMarker::set_object_name(
+			supply_cast<Vulkan::Device>(device), framebuffer, VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT, props.debug_name.c_str());
 	}
 
 } // namespace Disarray::Vulkan

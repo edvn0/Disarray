@@ -7,12 +7,15 @@ namespace Disarray::Vulkan {
 
 	class Mesh : public Disarray::Mesh {
 	public:
-		Mesh(Disarray::Device&, Disarray::Swapchain&, const MeshProperties&);
+		Mesh(Disarray::Device&, const MeshProperties&);
 		~Mesh() override;
 
 		Disarray::Pipeline& get_pipeline() override { return *props.pipeline; }
 		Disarray::IndexBuffer& get_indices() override { return *indices; }
 		Disarray::VertexBuffer& get_vertices() override { return *vertices; }
+		const Disarray::Pipeline& get_pipeline() const override { return *props.pipeline; }
+		const Disarray::VertexBuffer& get_vertices() const override { return *vertices; }
+		const Disarray::IndexBuffer& get_indices() const override { return *indices; }
 
 	private:
 		Disarray::Device& device;

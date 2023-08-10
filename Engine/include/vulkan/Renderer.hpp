@@ -2,105 +2,25 @@
 
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/IndexBuffer.hpp"
+#include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
+#include "graphics/RenderBatch.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/UniformBuffer.hpp"
 #include "graphics/VertexBuffer.hpp"
-#include "vulkan/Pipeline.hpp"
+#include "graphics/VertexTypes.hpp"
 
 #include <array>
 #include <glm/glm.hpp>
 
 namespace Disarray::Vulkan {
 
-	struct PushConstant {
-		glm::mat4 object_transform { 1.0f };
-		glm::vec4 colour { 1.0f };
-		std::uint32_t max_identifiers {};
-	};
-
-	static constexpr auto max_vertices = 600;
-
-	// Forward declaration for the vulkan renderer!
-	class Renderer;
-
-	template <class T, std::size_t Vertices = max_vertices, std::size_t VertexCount = 0>
-		requires(std::is_default_constructible_v<T> && VertexCount != 0)
-	struct RenderBatchFor {
-		static constexpr auto vertex_count = VertexCount;
-
-		// We want for example to be able to write 100 quads, which requires 100 * vertex_count(Quad) = 4 vertices
-		std::array<T, Vertices * VertexCount> vertices {};
-		Scope<Disarray::IndexBuffer> index_buffer { nullptr };
-		Scope<Disarray::VertexBuffer> vertex_buffer { nullptr };
-
-		// From the pipeline cache!
-		Ref<Vulkan::Pipeline> pipeline { nullptr };
-
-		std::uint32_t submitted_ts { 0 };
-		std::uint32_t submitted_indices { 0 };
-
-		void construct(Renderer&, Disarray::Device&, Disarray::Swapchain&);
-		void submit(Renderer&, Disarray::CommandExecutor&);
-		void create_new(const GeometryProperties&);
-
-		void reset()
-		{
-			T default_construction;
-			vertices.fill(default_construction);
-			submitted_indices = 0;
-			submitted_ts = 0;
-		}
-
-	private:
-		void prepare_data() { vertex_buffer->set_data(vertices.data(), submitted_ts * sizeof(T)); }
-
-		T& emplace() { return vertices[submitted_ts++]; }
-	};
-
-	struct QuadVertex {
-		glm::vec3 pos { 1.0f };
-		glm::vec2 uvs { 1.0f };
-		glm::vec2 normals { 1.0f };
-		glm::vec4 colour { 1.0f };
-		std::uint32_t identifier { 0 };
-	};
-	static constexpr auto quad_vertex_count = 4;
-
-	struct LineVertex {
-		glm::vec3 pos { 1.0f };
-		glm::vec4 colour { 1.0f };
-	};
-	static constexpr auto line_vertex_count = 2;
-
-	template <std::size_t Vertices = max_vertices> struct BatchRenderer {
-		RenderBatchFor<QuadVertex, Vertices, quad_vertex_count> quads;
-		RenderBatchFor<LineVertex, Vertices, line_vertex_count> lines;
-
-		// How many times have we submitted geometries?
-		// Used by shaders to determine scale of picking count
-		std::uint32_t submitted_geometries { 0 };
-
-		void reset()
-		{
-			submitted_geometries = 0;
-			quads.reset();
-			lines.reset();
-		}
-
-		void submit(Renderer&, Disarray::CommandExecutor&);
-	};
-
-	struct UBO {
-		glm::mat4 view;
-		glm::mat4 proj;
-		glm::mat4 view_projection;
-	};
+	static constexpr auto max_batch_renderer_objects = 3;
 
 	class Renderer : public Disarray::Renderer {
 	public:
-		Renderer(Device&, Swapchain&, const RendererProperties&);
+		Renderer(Disarray::Device&, Disarray::Swapchain&, const RendererProperties&);
 		~Renderer() override;
 
 		void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) override;
@@ -109,9 +29,13 @@ namespace Disarray::Vulkan {
 		void end_pass(Disarray::CommandExecutor&) override;
 
 		// IGraphics
-		void draw_mesh(Disarray::CommandExecutor&, Disarray::Mesh&, const Disarray::GeometryProperties&) override;
+		void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::GeometryProperties&) override;
+		void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const glm::mat4& transform) override;
+		void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4& transform) override;
 		void draw_planar_geometry(Disarray::Geometry, const Disarray::GeometryProperties&) override;
 		void submit_batched_geometry(Disarray::CommandExecutor&) override;
+		void on_batch_full(std::function<void(Disarray::Renderer&)>&& func) override { on_batch_full_func = func; }
+		void flush_batch(Disarray::CommandExecutor&) override;
 		// End IGraphics
 
 		// IGraphicsResource
@@ -122,23 +46,32 @@ namespace Disarray::Vulkan {
 		// End IGraphicsResource
 
 		void on_resize() override;
-		PipelineCache& get_pipeline_cache() override { return *pipeline_cache; }
+		PipelineCache& get_pipeline_cache() override { return pipeline_cache; }
+		TextureCache& get_texture_cache() override { return texture_cache; }
 
-		void begin_frame(UsageBadge<App>, Camera&) override;
-		void end_frame(UsageBadge<App>) override;
+		void begin_frame(Camera&) override;
+		void end_frame() override;
 
 		void force_recreation() override;
 
-		auto* get_push_constant() const { return &pc; }
-		auto& get_editable_push_constant() { return pc; }
+		const PushConstant* get_push_constant() const override { return &pc; }
+		PushConstant& get_editable_push_constant() override { return pc; }
 
 	private:
+		void add_geometry_to_batch(Geometry, const GeometryProperties&);
+
 		Disarray::Device& device;
 		Disarray::Swapchain& swapchain;
-		Scope<Disarray::PipelineCache> pipeline_cache;
-		std::vector<Ref<Disarray::Texture>> texture_cache;
+
+		Disarray::PipelineCache pipeline_cache;
+		Disarray::TextureCache texture_cache;
+
+		BatchRenderer<max_batch_renderer_objects> batch_renderer;
+
 		Ref<Disarray::Framebuffer> geometry_framebuffer;
-		BatchRenderer<max_vertices> render_batch;
+		Ref<Disarray::Framebuffer> quad_framebuffer;
+
+		std::function<void(Disarray::Renderer&)> on_batch_full_func = [](auto&) {};
 
 		// TODO: FrameDescriptor::construct(device, props)....
 		struct FrameDescriptor {

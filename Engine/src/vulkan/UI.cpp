@@ -79,6 +79,10 @@ namespace Disarray::UI {
 		ImGui::End();
 	}
 
+	void begin(std::string_view name) { ImGui::Begin(name.data(), nullptr); }
+
+	void end() { ImGui::End(); }
+
 	bool is_maximised(Window& window)
 	{
 		auto* glfw_window = static_cast<GLFWwindow*>(window.native());

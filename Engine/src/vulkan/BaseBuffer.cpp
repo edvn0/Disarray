@@ -5,20 +5,20 @@
 
 namespace Disarray::Vulkan {
 
-	BaseBuffer::BaseBuffer(Disarray::Device& dev, Disarray::Swapchain& sc, BufferType t, const Disarray::BufferProperties& properties)
+	BaseBuffer::BaseBuffer(Disarray::Device& dev, BufferType t, const Disarray::BufferProperties& properties)
 		: device(dev)
 		, type(t)
 		, props(properties)
 		, count(properties.count)
 	{
 		if (props.data) {
-			create_with_valid_data(sc);
+			create_with_valid_data();
 		} else {
 			create_with_empty_data();
 		}
 	}
 
-	void BaseBuffer::create_with_valid_data(Disarray::Swapchain& swapchain)
+	void BaseBuffer::create_with_valid_data()
 	{
 		Allocator allocator { "VertexBuffer" };
 		// create staging buffer
@@ -66,10 +66,7 @@ namespace Disarray::Vulkan {
 		allocation = allocator.allocate_buffer(buffer, vma_allocation_info, buffer_create_info, { .usage = usage, .creation = creation });
 	}
 
-	void BaseBuffer::set_data(const void* data, std::uint32_t size)
-	{
-		std::memcpy(vma_allocation_info.pMappedData, Disarray::bit_cast<const std::byte*>(data), size);
-	}
+	void BaseBuffer::set_data(const void* data, std::uint32_t size) { std::memcpy(vma_allocation_info.pMappedData, data, size); }
 
 	void BaseBuffer::destroy_buffer()
 	{

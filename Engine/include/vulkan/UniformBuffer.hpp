@@ -11,7 +11,7 @@ namespace Disarray::Vulkan {
 	class UniformBuffer : public Disarray::UniformBuffer, public Vulkan::BaseBuffer {
 		MAKE_SUB_BUFFER(UniformBuffer)
 	public:
-		UniformBuffer(Disarray::Device&, Disarray::Swapchain&, const BufferProperties&);
+		UniformBuffer(Disarray::Device&, const BufferProperties&);
 	};
 
 } // namespace Disarray::Vulkan

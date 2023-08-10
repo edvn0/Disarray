@@ -31,6 +31,7 @@ namespace Disarray::Vulkan {
 		void recreate(bool should_clean, const Extent&) override { return recreate_executor(should_clean); }
 
 		VkCommandBuffer supply() const override { return active; }
+		VkCommandBuffer get_buffer(std::uint32_t index) { return command_buffers[index]; }
 
 		auto buffer_index() -> std::uint32_t
 		{
@@ -97,7 +98,7 @@ namespace Disarray::Vulkan {
 		std::vector<PipelineStatistics> pipeline_statistics_query_results;
 	};
 
-	class IndependentCommandExecutor : public Disarray::CommandExecutor, public PropertySupplier<VkCommandBuffer> {
+	class IndependentCommandExecutor : public Disarray::IndependentCommandExecutor, public PropertySupplier<VkCommandBuffer> {
 	public:
 		IndependentCommandExecutor(Disarray::Device&, const Disarray::CommandExecutorProperties&);
 		~IndependentCommandExecutor() override;
