@@ -29,7 +29,7 @@ namespace Disarray::Client {
 				ImGui::TableNextColumn();
 				ImGui::Text("%s", tag.name.c_str());
 				ImGui::TableNextColumn();
-				ImGui::Text("%llu", id.identifier);
+				ImGui::Text("%lu", id.identifier);
 			}
 
 			ImGui::EndTable();
