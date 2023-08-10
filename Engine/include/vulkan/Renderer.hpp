@@ -16,7 +16,7 @@
 
 namespace Disarray::Vulkan {
 
-	static constexpr auto max_batch_renderer_objects = 3;
+	static constexpr auto max_batch_renderer_objects = 1000;
 
 	class Renderer : public Disarray::Renderer {
 	public:

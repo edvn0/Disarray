@@ -30,7 +30,7 @@ namespace Disarray::Client {
 
 	private:
 		std::array<T, N> samples {};
-		size_t num_samples { 0 };
+		std::size_t num_samples { 0 };
 		Total total { 0 };
 	};
 } // namespace Disarray::Client

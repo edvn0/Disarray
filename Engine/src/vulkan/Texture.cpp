@@ -14,11 +14,16 @@ namespace Disarray::Vulkan {
 		, props(properties)
 	{
 		load_pixels();
+
+		if (!props.mips) {
+			props.mips = static_cast<std::uint32_t>(std::floor(std::log2(std::max(props.extent.width, props.extent.height)))) + 1;
+		}
 		image = make_scope<Vulkan::Image>(device,
 			ImageProperties {
 				.extent = props.extent,
 				.format = props.format,
 				.data = pixels,
+				.mips = *props.mips,
 				.debug_name = props.debug_name,
 			});
 	}
