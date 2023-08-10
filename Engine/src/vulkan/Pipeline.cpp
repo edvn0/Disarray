@@ -81,6 +81,7 @@ namespace Disarray::Vulkan {
 		static constexpr VkCompareOp to_vulkan_comparison(DepthCompareOperator op)
 		{
 			switch (op) {
+			case DepthCompareOperator::None:
 			case DepthCompareOperator::Never:
 				return VK_COMPARE_OP_NEVER;
 			case DepthCompareOperator::NotEqual:
