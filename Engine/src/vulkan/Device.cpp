@@ -31,11 +31,13 @@ namespace Disarray::Vulkan {
 		}
 
 		VkPhysicalDeviceFeatures features {};
+#ifdef DISARRAY_WINDOWS
 		features.wideLines = true;
 		features.logicOp = true;
 		features.pipelineStatisticsQuery = true;
 		features.fillModeNonSolid = true;
 		features.independentBlend = true;
+#endif
 
 		VkDeviceCreateInfo device_create_info {};
 		device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
