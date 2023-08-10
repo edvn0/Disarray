@@ -40,7 +40,6 @@ namespace Disarray {
 
 	void Scene::construct(Disarray::App&, Disarray::Renderer& renderer, Disarray::ThreadPool&)
 	{
-#ifdef FLOOR
 		int rects_x { 10 };
 		int rects_y { 10 };
 		std::size_t loops { 0 };
@@ -54,19 +53,23 @@ namespace Disarray {
 				transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
 				glm::vec4 colour {};
 				rect.add_component<Components::Geometry>(Geometry::Rectangle);
+				rect.add_component<QuadGeometry>();
 				rect.add_component<Components::Texture>();
 				loops++;
 			}
 		}
 
+#ifdef FLOOR
 		auto floor = create("Floor");
 		floor.add_component<Components::Geometry>();
 		floor.add_component<Components::Texture>(glm::vec4 { 0.2, 0.2, 0.8, 1.0f });
+		floor.add_component<QuadGeometry>();
 		auto& floor_transform = floor.get_components<Transform>();
 		floor_transform.scale = { 100, 100, 1 };
 		floor_transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
 #endif
-		for (auto i = 0; i < 3; i++) {
+
+		for (auto i = 0; i < 4; i++) {
 			auto rect = create(fmt::format("Rect{}", i));
 			auto& transform = rect.get_components<Transform>();
 			transform.position = { 2 * static_cast<float>(i) + 0.5f, -1, 0 };
