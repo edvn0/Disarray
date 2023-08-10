@@ -42,7 +42,6 @@ namespace Disarray {
 	{
 		int rects_x { 10 };
 		int rects_y { 10 };
-		std::size_t loops { 0 };
 		auto parent = create("Grid");
 		for (auto j = -rects_y; j < rects_y; j++) {
 			for (auto i = -rects_x; i < rects_x; i++) {
@@ -55,7 +54,6 @@ namespace Disarray {
 				rect.add_component<Components::Geometry>(Geometry::Rectangle);
 				rect.add_component<QuadGeometry>();
 				rect.add_component<Components::Texture>();
-				loops++;
 			}
 		}
 
