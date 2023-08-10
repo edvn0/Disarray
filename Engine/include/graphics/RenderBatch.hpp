@@ -49,8 +49,7 @@ namespace Disarray {
 
 		void reset()
 		{
-			T default_construction {};
-			vertices.fill(default_construction);
+			std::memset(vertices.data(), 0, vertices.size() * sizeof(T));
 			submitted_indices = 0;
 			submitted_vertices = 0;
 			submitted_objects = 0;

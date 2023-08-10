@@ -19,7 +19,7 @@ namespace Disarray {
 		virtual void on_event(Event&);
 		virtual void interface();
 		virtual void update(float ts);
-		virtual void update(float ts, Renderer&);
+		virtual void render(Renderer&);
 		virtual void destruct();
 		virtual bool is_interface_layer() const;
 	};

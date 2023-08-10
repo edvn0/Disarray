@@ -72,12 +72,37 @@ namespace Disarray::UI {
 		ImGui::Image(id, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
 	}
 
+	void image_button(Texture& tex, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
+	{
+		auto& vk_image = cast_to<Vulkan::Image>(tex.get_image());
+		image_button(vk_image, size, uvs);
+	}
+
+	void image(Texture& tex, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
+	{
+		auto& vk_image = cast_to<Vulkan::Image>(tex.get_image());
+		image(vk_image, size, uvs);
+	}
+
 	void scope(std::string_view name, UIFunction&& func)
 	{
 		ImGui::Begin(name.data(), nullptr);
 		func();
 		ImGui::End();
 	}
+
+	bool is_mouse_double_clicked(MouseCode code)
+	{
+		if (code == MouseCode::Left) {
+			return ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+		}
+		if (code == MouseCode::Right) {
+			return ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Right);
+		}
+		return false;
+	}
+
+	bool is_item_hovered() { return ImGui::IsItemHovered(); }
 
 	void begin(std::string_view name) { ImGui::Begin(name.data(), nullptr); }
 
@@ -94,6 +119,27 @@ namespace Disarray::UI {
 	{
 		auto* glfw_window = static_cast<GLFWwindow*>(window.native());
 		return static_cast<bool>(glfwGetWindowAttrib(glfw_window, GLFW_MAXIMIZED));
+	}
+
+	bool shader_drop_button(Device& device, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader)
+	{
+		ImGui::Button(button_name.c_str());
+		if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", ".spv")) {
+			// We know that it is a spv file :)
+			auto shader_path = *dropped;
+			const auto ext = shader_path.replace_extension();
+			if (ext.extension() == shader_type_extension(shader_type)) {
+				auto shader = Shader::construct(device,
+					ShaderProperties {
+						.path = *dropped,
+						.type = ShaderType::Vertex,
+					});
+				out_shader = shader;
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	void DescriptorCache::initialise() { cache.reserve(100); }

@@ -1,6 +1,7 @@
 #include "ClientLayer.hpp"
 
 #include "glm/ext/matrix_transform.hpp"
+#include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
 #include "panels/ScenePanel.hpp"
 
@@ -23,9 +24,15 @@ namespace Disarray::Client {
 	{
 		scene.construct(app, renderer, pool);
 
-		app.add_panel<StatisticsPanel>(app.get_statistics());
-		app.add_panel<ScenePanel>(scene);
-		app.add_panel<ExecutionStatisticsPanel>(scene.get_command_executor());
+		auto stats_panel = app.add_panel<StatisticsPanel>(app.get_statistics());
+		auto content_panel = app.add_panel<DirectoryContentPanel>("Assets");
+		auto scene_panel = app.add_panel<ScenePanel>(scene);
+		auto execution_stats_panel = app.add_panel<ExecutionStatisticsPanel>(scene.get_command_executor());
+
+		stats_panel->construct(app, renderer, pool);
+		content_panel->construct(app, renderer, pool);
+		scene_panel->construct(app, renderer, pool);
+		execution_stats_panel->construct(app, renderer, pool);
 	};
 
 	void AppLayer::interface()
@@ -118,11 +125,14 @@ namespace Disarray::Client {
 
 	void AppLayer::on_event(Event& event) { scene.on_event(event); }
 
-	void AppLayer::update(float ts, Renderer& renderer)
+	void AppLayer::update(float ts)
 	{
 		scene.update(ts);
 		camera.on_update(ts);
+	}
 
+	void AppLayer::render(Disarray::Renderer& renderer)
+	{
 		renderer.begin_frame(camera);
 		scene.render(renderer);
 		renderer.end_frame();

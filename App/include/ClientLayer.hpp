@@ -14,7 +14,8 @@ namespace Disarray::Client {
 		void construct(App& app, Renderer& renderer, ThreadPool&) override;
 		void handle_swapchain_recreation(Renderer& renderer) override;
 		void on_event(Event&) override;
-		void update(float ts, Renderer& renderer) override;
+		void update(float ts) override;
+		void render(Renderer&);
 		void destruct() override;
 
 	private:

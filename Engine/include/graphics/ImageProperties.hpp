@@ -40,19 +40,19 @@ template <> struct fmt::formatter<Disarray::SampleCount> : fmt::formatter<std::s
 		switch (samples) {
 
 		case Disarray::SampleCount::ONE:
-			return formatter<std::string_view>::format(fmt::format("[{}]", 1), ctx);
+			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 1), ctx);
 		case Disarray::SampleCount::TWO:
-			return formatter<std::string_view>::format(fmt::format("[{}]", 2), ctx);
+			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 2), ctx);
 		case Disarray::SampleCount::FOUR:
-			return formatter<std::string_view>::format(fmt::format("[{}]", 4), ctx);
+			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 4), ctx);
 		case Disarray::SampleCount::EIGHT:
-			return formatter<std::string_view>::format(fmt::format("[{}]", 8), ctx);
+			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 8), ctx);
 		case Disarray::SampleCount::SIXTEEN:
-			return formatter<std::string_view>::format(fmt::format("[{}]", 16), ctx);
+			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 16), ctx);
 		case Disarray::SampleCount::THIRTY_TWO:
-			return formatter<std::string_view>::format(fmt::format("[{}]", 32), ctx);
+			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 32), ctx);
 		case Disarray::SampleCount::SIXTY_FOUR:
-			return formatter<std::string_view>::format(fmt::format("[{}]", 64), ctx);
+			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 64), ctx);
 		default:
 			Disarray::unreachable();
 		}

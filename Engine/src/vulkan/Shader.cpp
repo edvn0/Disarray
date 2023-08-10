@@ -21,6 +21,8 @@ namespace Disarray::Vulkan {
 				return VK_SHADER_STAGE_VERTEX_BIT;
 			case ShaderType::Fragment:
 				return VK_SHADER_STAGE_FRAGMENT_BIT;
+			case ShaderType::Compute:
+				return VK_SHADER_STAGE_COMPUTE_BIT;
 			default:
 				throw std::runtime_error("Could not map to Vulkan stage");
 			}

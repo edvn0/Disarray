@@ -2,10 +2,10 @@
 
 #include "core/UniquelyIdentifiable.hpp"
 #include "graphics/Image.hpp"
-#include "vulkan/MemoryAllocator.hpp"
-#include "vulkan/vulkan_core.h"
 
 #include <vulkan/vulkan.h>
+
+using VmaAllocation = struct VmaAllocation_T*;
 
 namespace Disarray::Vulkan {
 

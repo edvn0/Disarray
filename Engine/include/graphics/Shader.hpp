@@ -11,17 +11,30 @@
 namespace Disarray {
 
 	enum class ShaderType { Vertex, Fragment, Compute };
+	static constexpr auto shader_type_extension(ShaderType shader_type)
+	{
+		switch (shader_type) {
+		case ShaderType::Vertex:
+			return ".vert";
+		case ShaderType::Fragment:
+			return ".frag";
+		case ShaderType::Compute:
+			return ".comp";
+		default:
+			unreachable();
+		}
+	}
 
 	struct ShaderProperties {
 		std::filesystem::path path;
 		ShaderType type { ShaderType::Vertex };
-		std::string_view entry_point = "main";
+		std::string entry_point = "main";
 	};
 
 	class Shader : public ReferenceCountable {
 		DISARRAY_OBJECT(Shader)
 	public:
-		virtual std::string_view path() const = 0;
+		virtual const std::string& path() const = 0;
 		virtual void destroy_module() = 0;
 
 		static Ref<Disarray::Shader> construct(Disarray::Device& device, const ShaderProperties&);

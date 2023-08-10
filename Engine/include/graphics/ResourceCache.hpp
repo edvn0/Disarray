@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/Ensure.hpp"
+#include "core/Hashes.hpp"
 #include "core/Log.hpp"
 #include "graphics/Device.hpp"
 
@@ -20,16 +21,6 @@ namespace Disarray {
 		}
 
 	} // namespace CollectionOperations
-
-	struct StringHash {
-		using is_transparent = void;
-
-		std::size_t operator()(std::string_view sv) const
-		{
-			std::hash<std::string_view> hasher;
-			return hasher(sv);
-		}
-	};
 
 	template <class T>
 	concept CacheableResource = requires(T t, bool should_clean, const Extent& extent) { t.recreate(should_clean, extent); }

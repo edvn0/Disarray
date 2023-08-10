@@ -1,5 +1,6 @@
 #include "panels/ScenePanel.hpp"
 
+#include "core/Formatters.hpp"
 #include "graphics/Pipeline.hpp"
 
 namespace Disarray::Client {
@@ -46,10 +47,6 @@ namespace Disarray::Client {
 	void ScenePanel::interface()
 	{
 		auto& registry = scene.get_registry();
-		static bool debug_log_window_open { true };
-		static bool window_open { true };
-		ImGui::ShowDebugLogWindow(&debug_log_window_open);
-		ImGui::ShowDemoWindow(&window_open);
 
 		UI::begin("Scene");
 		std::unordered_set<entt::entity> selectable_entities;
@@ -99,13 +96,15 @@ namespace Disarray::Client {
 
 	void ScenePanel::for_all_components(Entity& entity)
 	{
-		draw_component<Components::Pipeline>(entity, "Pipeline", [](Components::Pipeline& pipeline) {
+		draw_component<Components::Pipeline>(entity, "Pipeline", [this](Components::Pipeline& pipeline) {
 			auto& [pipe] = pipeline;
 			auto& props = pipe->get_properties();
 			bool any_changed = false;
 			any_changed |= UI::combo_choice<DepthCompareOperator>("Compare operator", std::ref(props.depth_comparison_operator));
 			any_changed |= UI::combo_choice<CullMode>("Cull mode", std::ref(props.cull_mode));
 			any_changed |= UI::combo_choice<PolygonMode>("Polygon mode", std::ref(props.polygon_mode));
+			any_changed |= UI::shader_drop_button(device, "Vertex Shader", ShaderType::Vertex, std::ref(props.vertex_shader));
+			any_changed |= UI::shader_drop_button(device, "Fragment Shader", ShaderType::Fragment, std::ref(props.fragment_shader));
 			if (any_changed) {
 				pipe->recreate(true);
 			}

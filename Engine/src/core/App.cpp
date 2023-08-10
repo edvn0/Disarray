@@ -81,7 +81,8 @@ namespace Disarray {
 			for (auto& layer : layers) {
 				if (needs_recreation)
 					layer->handle_swapchain_recreation(renderer);
-				layer->update(time_step, renderer);
+				layer->update(time_step);
+				layer->render(renderer);
 			}
 			statistics.cpu_time = time_step;
 

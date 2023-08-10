@@ -103,12 +103,10 @@ namespace Disarray::UI {
 
 	void InterfaceLayer::handle_swapchain_recreation(Renderer&) { command_executor->recreate(true, {}); }
 
-	void InterfaceLayer::update(float ts) { }
-
-	void InterfaceLayer::update(float ts, Renderer& renderer)
+	void InterfaceLayer::update(float ts)
 	{
 		for (auto& panel : panels) {
-			panel->update(ts, renderer);
+			panel->update(ts);
 		}
 	}
 
@@ -231,6 +229,13 @@ namespace Disarray::UI {
 		if (const ImGuiIO& io = ImGui::GetIO(); io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
 			ImGui::UpdatePlatformWindows();
 			ImGui::RenderPlatformWindowsDefault();
+		}
+	}
+
+	void InterfaceLayer::render(Renderer& renderer)
+	{
+		for (auto& panel : panels) {
+			panel->render(renderer);
 		}
 	}
 } // namespace Disarray::UI

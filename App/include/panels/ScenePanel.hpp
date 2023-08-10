@@ -10,17 +10,20 @@ namespace Disarray::Client {
 
 	class ScenePanel : public Disarray::Panel {
 	public:
-		ScenePanel(Disarray::Device&, Disarray::Window&, Disarray::Swapchain&, Disarray::Scene& s)
-			: scene(s) {
+		ScenePanel(Disarray::Device& dev, Disarray::Window&, Disarray::Swapchain&, Disarray::Scene& s)
+			: device(dev)
+			, scene(s) {
 
 			};
 
-		void update(float ts, Renderer&) override { }
 		void interface() override;
 		void for_all_components(Entity& entity);
 
 	private:
+		bool shader_drop_button(const std::string& button_name, ShaderType type, Ref<Shader>& shader);
+
 		Scene& scene;
+		Device& device;
 	};
 
 } // namespace Disarray::Client

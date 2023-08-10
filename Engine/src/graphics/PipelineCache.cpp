@@ -23,6 +23,7 @@ namespace Disarray {
 
 		for (const auto& shader_path : as_vector) {
 			auto name = shader_path.filename();
+			const auto filename_without_spv = name.replace_extension().string();
 			if (shader_cache.contains(name.string()))
 				break;
 
@@ -45,8 +46,7 @@ namespace Disarray {
 				continue;
 			}
 
-			const auto filename_without_spv = name.replace_extension();
-			shader_cache.try_emplace(filename_without_spv.string(), std::move(shader));
+			shader_cache.try_emplace(filename_without_spv, std::move(shader));
 		}
 	}
 
