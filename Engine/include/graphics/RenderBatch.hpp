@@ -49,7 +49,7 @@ namespace Disarray {
 
 		void reset()
 		{
-			std::memset(vertices.data(), 0, vertices.size() * sizeof(T));
+			vertices.fill({});
 			submitted_indices = 0;
 			submitted_vertices = 0;
 			submitted_objects = 0;

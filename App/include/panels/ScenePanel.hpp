@@ -22,8 +22,8 @@ namespace Disarray::Client {
 	private:
 		bool shader_drop_button(const std::string& button_name, ShaderType type, Ref<Shader>& shader);
 
-		Scene& scene;
 		Device& device;
+		Scene& scene;
 	};
 
 } // namespace Disarray::Client
