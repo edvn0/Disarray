@@ -17,4 +17,7 @@ namespace Disarray {
 	template <class T>
 	concept ValidComponent = (IsInAllowedComponents<T> && std::is_default_constructible_v<T> && std::is_copy_constructible_v<T>);
 
+	template <class T>
+	concept DeletableComponent = ValidComponent<T> && (!std::is_same_v<T, ID> && !std::is_same_v<T, Tag>);
+
 } // namespace Disarray

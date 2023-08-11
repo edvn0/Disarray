@@ -9,13 +9,13 @@
 namespace Disarray {
 
 	enum class SampleCount {
-		ONE = 0x00000001,
-		TWO = 0x00000002,
-		FOUR = 0x00000004,
-		EIGHT = 0x00000008,
-		SIXTEEN = 0x00000010,
-		THIRTY_TWO = 0x00000020,
-		SIXTY_FOUR = 0x00000040,
+		One = 0x00000001,
+		Two = 0x00000002,
+		Four = 0x00000004,
+		Eight = 0x00000008,
+		Sixteen = 0x00000010,
+		ThirtyTwo = 0x00000020,
+		SixtyFour = 0x00000040,
 	};
 
 	template <class T> struct IExtent {
@@ -41,19 +41,19 @@ template <> struct fmt::formatter<Disarray::SampleCount> : fmt::formatter<std::s
 	{
 		switch (samples) {
 
-		case Disarray::SampleCount::ONE:
+		case Disarray::SampleCount::One:
 			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 1), ctx);
-		case Disarray::SampleCount::TWO:
+		case Disarray::SampleCount::Two:
 			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 2), ctx);
-		case Disarray::SampleCount::FOUR:
+		case Disarray::SampleCount::Four:
 			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 4), ctx);
-		case Disarray::SampleCount::EIGHT:
+		case Disarray::SampleCount::Eight:
 			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 8), ctx);
-		case Disarray::SampleCount::SIXTEEN:
+		case Disarray::SampleCount::Sixteen:
 			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 16), ctx);
-		case Disarray::SampleCount::THIRTY_TWO:
+		case Disarray::SampleCount::ThirtyTwo:
 			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 32), ctx);
-		case Disarray::SampleCount::SIXTY_FOUR:
+		case Disarray::SampleCount::SixtyFour:
 			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 64), ctx);
 		default:
 			Disarray::unreachable();

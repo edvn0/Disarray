@@ -7,12 +7,11 @@
 #include "graphics/QueueFamilyIndex.hpp"
 #include "graphics/Surface.hpp"
 #include "vulkan/ExtensionSupport.hpp"
+#include "vulkan/Image.hpp"
 #include "vulkan/Instance.hpp"
 #include "vulkan/QueueFamilyIndex.hpp"
 #include "vulkan/SwapchainUtilities.hpp"
 #include "vulkan/vulkan_core.h"
-
-#include <vulkan/Image.hpp>
 
 namespace Disarray::Vulkan {
 
@@ -20,19 +19,19 @@ namespace Disarray::Vulkan {
 	{
 		switch (samples) {
 		case VK_SAMPLE_COUNT_1_BIT:
-			return SampleCount::ONE;
+			return SampleCount::One;
 		case VK_SAMPLE_COUNT_2_BIT:
-			return SampleCount::TWO;
+			return SampleCount::Two;
 		case VK_SAMPLE_COUNT_4_BIT:
-			return SampleCount::FOUR;
+			return SampleCount::Four;
 		case VK_SAMPLE_COUNT_8_BIT:
-			return SampleCount::EIGHT;
+			return SampleCount::Eight;
 		case VK_SAMPLE_COUNT_16_BIT:
-			return SampleCount::SIXTEEN;
+			return SampleCount::Sixteen;
 		case VK_SAMPLE_COUNT_32_BIT:
-			return SampleCount::THIRTY_TWO;
+			return SampleCount::ThirtyTwo;
 		case VK_SAMPLE_COUNT_64_BIT:
-			return SampleCount::SIXTY_FOUR;
+			return SampleCount::SixtyFour;
 		default:
 			unreachable();
 		}

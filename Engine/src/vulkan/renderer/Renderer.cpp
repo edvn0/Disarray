@@ -45,20 +45,16 @@ namespace Disarray::Vulkan {
 
 		initialise_descriptors();
 
-		auto samples = SampleCount::ONE;
-
 		FramebufferProperties geometry_props { .extent = swapchain.get_extent(),
 			.attachments = { { ImageFormat::SBGR }, { ImageFormat::Depth } },
 			.clear_colour_on_load = false,
 			.clear_depth_on_load = false,
-			.samples = samples,
 			.debug_name = "RendererFramebuffer" };
 		geometry_framebuffer = Framebuffer::construct(device, geometry_props);
 
 		quad_framebuffer = Framebuffer::construct(device,
 			{ .extent = swapchain.get_extent(),
 				.attachments = { { ImageFormat::SBGR },  { ImageFormat::Uint, false },{ ImageFormat::Depth }, },
-				.samples = samples,
 				.debug_name = "QuadFramebuffer" });
 
 		PipelineCacheCreationProperties pipeline_properties = {
@@ -70,7 +66,6 @@ namespace Disarray::Vulkan {
 				{ ElementType::Float4, "colour" }, { ElementType::Uint, "identifier" } },
 			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, sizeof(PushConstant) } },
 			.extent = swapchain.get_extent(),
-			.samples = samples,
 			.descriptor_set_layout = layouts.data(),
 			.descriptor_set_layout_count = static_cast<std::uint32_t>(layouts.size()),
 		};

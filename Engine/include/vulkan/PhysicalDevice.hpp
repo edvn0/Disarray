@@ -27,7 +27,7 @@ namespace Disarray::Vulkan {
 		VkPhysicalDevice physical_device;
 		Ref<Disarray::QueueFamilyIndex> queue_family_index;
 		VkPhysicalDeviceProperties device_properties;
-		SampleCount samples { SampleCount::ONE };
+		SampleCount samples { SampleCount::One };
 	};
 
 } // namespace Disarray::Vulkan

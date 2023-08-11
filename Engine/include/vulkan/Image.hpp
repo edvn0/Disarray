@@ -73,19 +73,19 @@ namespace Disarray::Vulkan {
 	constexpr VkSampleCountFlagBits to_vulkan_samples(SampleCount format)
 	{
 		switch (format) {
-		case SampleCount::ONE:
+		case SampleCount::One:
 			return VK_SAMPLE_COUNT_1_BIT;
-		case SampleCount::TWO:
+		case SampleCount::Two:
 			return VK_SAMPLE_COUNT_2_BIT;
-		case SampleCount::FOUR:
+		case SampleCount::Four:
 			return VK_SAMPLE_COUNT_4_BIT;
-		case SampleCount::EIGHT:
+		case SampleCount::Eight:
 			return VK_SAMPLE_COUNT_8_BIT;
-		case SampleCount::SIXTEEN:
+		case SampleCount::Sixteen:
 			return VK_SAMPLE_COUNT_16_BIT;
-		case SampleCount::THIRTY_TWO:
+		case SampleCount::ThirtyTwo:
 			return VK_SAMPLE_COUNT_32_BIT;
-		case SampleCount::SIXTY_FOUR:
+		case SampleCount::SixtyFour:
 			return VK_SAMPLE_COUNT_64_BIT;
 		default:
 			unreachable();

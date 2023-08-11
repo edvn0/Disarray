@@ -63,7 +63,7 @@ namespace Disarray::Vulkan {
 		std::vector<VkFramebuffer> framebuffers;
 		Ref<Disarray::RenderPass> render_pass { nullptr };
 
-		SampleCount samples { SampleCount::ONE };
+		SampleCount samples { SampleCount::One };
 
 		std::vector<VkImage> swapchain_images;
 		std::vector<VkImageView> swapchain_image_views;

@@ -6,8 +6,10 @@
 #include "scene/Entity.hpp"
 
 #include <filesystem>
+#include <magic_enum.hpp>
+#include <nlohmann/json.hpp>
+#include <sstream>
 #include <tuple>
-#include <yaml-cpp/yaml.h>
 
 namespace Disarray {
 
@@ -32,26 +34,26 @@ namespace Disarray {
 
 	template <ValidComponent T, class Child> struct ComponentSerialiser {
 		static constexpr SerialiserType serialiser_type = SerialiserType::Faulty;
-		void serialise(const T& component, YAML::Emitter& yaml_node) { static_cast<Child&>(*this).serialise_impl(component, yaml_node); };
+
+		bool can_serialise(const Entity& entity) { return entity.has_component<T>(); }
+
+		void serialise(const T& component, nlohmann::json& object_for_the_component)
+		{
+			static_cast<Child&>(*this).serialise_impl(component, object_for_the_component);
+		};
 	};
 
 	struct PipelineSerialiser : public ComponentSerialiser<Components::Pipeline, PipelineSerialiser> {
 		static constexpr SerialiserType serialiser_type = SerialiserType::Pipeline;
-		void serialise_impl(const Components::Pipeline& pipeline, YAML::Emitter& out)
-		{
-			using namespace YAML;
-			out << Key << "name";
-			out << Value << "Pipeline";
-			out << BeginMap;
-			out << Key << "line_width";
-			out << Value << pipeline.pipeline->get_properties().line_width;
-			out << EndMap;
-		}
+		void serialise_impl(const Components::Pipeline& pipeline, nlohmann::json&);
 	};
 
 	namespace {
+
 		template <class... Serialisers> struct Serialiser {
-			Serialiser(const Scene& s, const std::filesystem::path& output = "Assets/Scene")
+			using json = nlohmann::json;
+
+			explicit Serialiser(Scene& s, const std::filesystem::path& output = "Assets/Scene")
 				: scene(s)
 				, path(output)
 			{
@@ -61,44 +63,51 @@ namespace Disarray {
 
 			void serialise()
 			{
-				using namespace YAML;
-				Emitter out;
-				out.SetIndent(2);
-				out << BeginMap;
-				out << Key << "name";
-				out << Value << "Scene";
-				out << Key << "components";
-				out << Value << BeginSeq;
+				json root;
+				root["name"] = "Scene";
 
 				const auto& registry = scene.get_registry();
-				const auto view = registry.view<const Components::Pipeline>();
 
-				auto pipeline_serialisers = filter<SerialiserType::Pipeline>();
-				for (const auto [entity, pipeline] : view.each()) {
-					static_for(pipeline_serialisers, [&out, &pipeline](std::size_t, auto& serialiser) { serialiser.serialise(pipeline, out); });
+				const auto view = registry.view<const ID, const Tag>();
+				auto entities = json::array();
+				for (const auto [handle, id, tag] : view.each()) {
+					json entity_object;
+					Entity entity { scene, handle };
+					entity_object["tag"] = tag.name;
+					entity_object["identifier"] = id.identifier;
+
+					auto components = json::array();
+					serialise_component<Components::Pipeline>(entity, components);
+
+					entity_object["components"] = components;
+					entities.push_back(entity_object);
 				}
 
-				out << Value << EndSeq;
-				out << EndMap;
-
-				Log::debug("Scene Serialiser", "\n{}", out.c_str());
+				root["entities"] = entities;
+				std::stringstream stream;
+				stream << std::setw(4) << root;
+				Log::debug("Scene Serialiser", "\n{}", stream.str());
 			}
 
-			template <SerialiserType T> auto filter()
+			template <class T> void serialise_component(Entity& entity, json& components)
 			{
-				return std::apply(
-					[](auto... ts) {
-						return std::tuple_cat(std::conditional_t<(decltype(ts)::serialiser_type == T), std::tuple<decltype(ts)>, std::tuple<>> {}...);
-					},
-					serialisers);
+				static_for(serialisers, [&entity, &components](auto, auto& serialiser) {
+					if (serialiser.can_serialise(entity)) {
+						json object;
+						auto& component = entity.get_components<T>();
+						serialiser.serialise(component, object);
+						ensure(object.contains("component_name"), "Component name is missing.");
+						components.push_back(object);
+					}
+				});
 			}
 
 		private:
-			const Scene& scene;
+			Scene& scene;
 			std::filesystem::path path;
 		};
 	} // namespace
 
-	using SceneSerialiser = Serialiser<PipelineSerialiser, PipelineSerialiser>;
+	using SceneSerialiser = Serialiser<PipelineSerialiser>;
 
 } // namespace Disarray

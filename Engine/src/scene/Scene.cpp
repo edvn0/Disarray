@@ -147,7 +147,6 @@ namespace Disarray {
 			.layout = layout,
 			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, std::size_t { 84 } } },
 			.extent = extent,
-			.samples = SampleCount::ONE,
 			.depth_comparison_operator = DepthCompareOperator::GreaterOrEqual,
 			.cull_mode = CullMode::Back,
 			.descriptor_set_layout = renderer.get_descriptor_set_layouts().data(),

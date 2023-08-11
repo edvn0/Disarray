@@ -44,7 +44,7 @@ namespace Disarray {
 		bool should_blend { true };
 		FramebufferBlendMode blend_mode { FramebufferBlendMode::None };
 		bool should_present { false };
-		SampleCount samples { SampleCount::ONE };
+		SampleCount samples { SampleCount::One };
 		std::string debug_name { "UnknownFramebuffer" };
 	};
 

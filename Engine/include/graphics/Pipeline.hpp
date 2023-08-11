@@ -128,7 +128,7 @@ namespace Disarray {
 		Extent extent { 0, 0 };
 		PolygonMode polygon_mode { PolygonMode::Fill };
 		float line_width { 1.0f };
-		SampleCount samples { SampleCount::ONE };
+		SampleCount samples { SampleCount::One };
 		DepthCompareOperator depth_comparison_operator { DepthCompareOperator::GreaterOrEqual };
 		CullMode cull_mode { CullMode::Front };
 		bool write_depth { true };
