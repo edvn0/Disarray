@@ -1,6 +1,7 @@
 #include "DisarrayPCH.hpp"
 
 // clang-format off
+#include "graphics/Pipeline.hpp"
 #include "vulkan/Renderer.hpp"
 // clang-format on
 
@@ -52,6 +53,10 @@ namespace Disarray::Vulkan {
 		arr[0] = supply_cast<Vulkan::VertexBuffer>(mesh.get_vertices());
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets);
+
+		if (pipeline.get_properties().polygon_mode == PolygonMode::Line) {
+			vkCmdSetLineWidth(command_buffer, pipeline.get_properties().line_width);
+		}
 
 		vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(mesh.get_indices()), 0, VK_INDEX_TYPE_UINT32);
 

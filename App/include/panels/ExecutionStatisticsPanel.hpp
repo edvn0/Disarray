@@ -23,7 +23,7 @@ namespace Disarray::Client {
 
 			};
 
-		void update(float ts, Renderer& renderer) override;
+		void update(float ts) override;
 
 		void interface() override;
 

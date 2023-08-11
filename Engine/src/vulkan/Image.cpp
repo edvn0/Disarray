@@ -221,20 +221,32 @@ namespace Disarray::Vulkan {
 			set_image_layout(executor->supply(), info.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
 			vkCmdCopyBufferToImage(executor->supply(), staging, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &buffer_copy_region);
 
-			auto layout = to_vulkan_layout(props.format);
+			auto image_layout = to_vulkan_layout(props.format);
 			if (is_depth_format(props.format))
-				set_image_layout(executor->supply(), info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout, subresource_range);
+				set_image_layout(executor->supply(), info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, image_layout, subresource_range);
 		}
 
 		staging_allocator.deallocate_buffer(staging_allocation, staging);
 		if (!is_depth_format(props.format))
 			create_mips();
+
+		std::array<VkDescriptorSetLayoutBinding, 1> bindings {};
+		auto& image = bindings[0];
+		image.binding = 0;
+		image.descriptorCount = 1;
+		image.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		image.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		auto layout_create_info = vk_structures<VkDescriptorSetLayoutCreateInfo>()();
+		layout_create_info.bindingCount = 1;
+		layout_create_info.pBindings = bindings.data();
+
+		vkCreateDescriptorSetLayout(supply_cast<Vulkan::Device>(device), &layout_create_info, nullptr, &layout);
 	}
 
 	void Image::update_descriptor()
 	{
 		descriptor_info.imageLayout = to_vulkan_layout(props.format);
-
 		descriptor_info.imageView = info.view;
 		descriptor_info.sampler = info.sampler;
 	}

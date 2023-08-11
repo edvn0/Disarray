@@ -63,7 +63,8 @@ namespace Disarray::Vulkan {
 
 		PipelineCacheCreationProperties pipeline_properties = {
 			.pipeline_key = "quad",
-			.shader_key = "quad",
+			.vertex_shader_key = "quad.vert",
+			.fragment_shader_key = "quad.frag",
 			.framebuffer = geometry_framebuffer,
 			.layout = { LayoutElement { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float2, "normals" },
 				{ ElementType::Float4, "colour" }, { ElementType::Uint, "identifier" } },
@@ -82,7 +83,8 @@ namespace Disarray::Vulkan {
 			// Line
 			pipeline_properties.framebuffer = geometry_framebuffer;
 			pipeline_properties.pipeline_key = "line";
-			pipeline_properties.shader_key = "line";
+			pipeline_properties.vertex_shader_key = "line.vert";
+			pipeline_properties.fragment_shader_key = "line.frag";
 			pipeline_properties.line_width = 8.0f;
 			pipeline_properties.polygon_mode = PolygonMode::Line;
 			pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" } };

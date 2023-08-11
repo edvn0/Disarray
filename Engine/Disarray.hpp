@@ -28,6 +28,7 @@
 #include "ui/UI.hpp"
 #include "util/FormattingUtilities.hpp"
 
+#include <fmt/format.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>

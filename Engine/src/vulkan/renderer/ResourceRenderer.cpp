@@ -87,7 +87,7 @@ namespace Disarray::Vulkan {
 			descriptor.set = sets[i];
 
 			VkDescriptorBufferInfo buffer_info {};
-			buffer_info.buffer = cast_to<Vulkan::UniformBuffer>(frame_ubos[i])->supply();
+			buffer_info.buffer = supply_cast<Vulkan::UniformBuffer>(*frame_ubos[i]);
 			buffer_info.offset = 0;
 			buffer_info.range = sizeof(UBO);
 

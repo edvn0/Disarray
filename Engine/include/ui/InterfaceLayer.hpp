@@ -3,6 +3,7 @@
 #include "Forward.hpp"
 #include "core/Layer.hpp"
 #include "core/Panel.hpp"
+#include "core/UsageBadge.hpp"
 #include "graphics/CommandExecutor.hpp"
 
 #include <vector>
@@ -15,24 +16,28 @@ namespace Disarray::UI {
 		~InterfaceLayer() override;
 
 		void construct(App&, Renderer&, ThreadPool&) override;
-		void handle_swapchain_recreation(Renderer&) override;
-
+		void handle_swapchain_recreation(Swapchain&) override;
+		void on_event(Event&) override;
 		void interface() override;
-
 		void update(float ts) override;
-		void update(float ts, Renderer&) override;
-
 		void destruct() override;
-
+		void render(Renderer&) override;
 		bool is_interface_layer() const override { return true; }
 
 		template <typename T, typename... Args>
 			requires(std::is_base_of_v<Panel, T>
 				&& requires(Disarray::Device& dev, Disarray::Window& win, Disarray::Swapchain& swap,
 					Args&&... args) { T(dev, win, swap, std::forward<Args>(args)...); })
-		void add_panel(Args&&... args)
+		auto& add_panel(Args&&... args)
 		{
-			panels.emplace_back(std::shared_ptr<T> { new T { device, window, swapchain, std::forward<Args>(args)... } });
+			return panels.emplace_back(std::shared_ptr<T> { new T { device, window, swapchain, std::forward<Args>(args)... } });
+		}
+
+		void construct_panels(UsageBadge<App>, App& app, Renderer& renderer, ThreadPool& thread_pool)
+		{
+			for (auto& panel : panels) {
+				panel->construct(app, renderer, thread_pool);
+			}
 		}
 
 		void begin();

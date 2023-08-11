@@ -1,6 +1,7 @@
 #include "ClientLayer.hpp"
 
 #include "glm/ext/matrix_transform.hpp"
+#include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
 #include "panels/ScenePanel.hpp"
 
@@ -9,26 +10,30 @@
 
 namespace Disarray::Client {
 
-	AppLayer::AppLayer(Device& dev, Window& win, Swapchain& swap)
-		: window(win)
-		, swapchain(swap)
-		, scene(dev, win, swap, "Default scene")
+	ClientLayer::ClientLayer(Device& dev, Window& win, Swapchain& swapchain)
+		: scene(dev, win, swapchain, "Default scene")
+		, camera(60.f, static_cast<float>(swapchain.get_extent().width), static_cast<float>(swapchain.get_extent().height), 0.1f, 1000.f, nullptr)
 	{
-		(void)window.native();
-	};
+	}
 
-	AppLayer::~AppLayer() = default;
+	ClientLayer::~ClientLayer() = default;
 
-	void AppLayer::construct(App& app, Renderer& renderer, ThreadPool& pool)
+	void ClientLayer::construct(App& app, Renderer& renderer, ThreadPool& pool)
 	{
 		scene.construct(app, renderer, pool);
 
-		app.add_panel<StatisticsPanel>(app.get_statistics());
-		app.add_panel<ScenePanel>(scene);
-		app.add_panel<ExecutionStatisticsPanel>(scene.get_command_executor());
+		auto stats_panel = app.add_panel<StatisticsPanel>(app.get_statistics());
+		auto content_panel = app.add_panel<DirectoryContentPanel>("Assets");
+		auto scene_panel = app.add_panel<ScenePanel>(scene);
+		auto execution_stats_panel = app.add_panel<ExecutionStatisticsPanel>(scene.get_command_executor());
+
+		stats_panel->construct(app, renderer, pool);
+		content_panel->construct(app, renderer, pool);
+		scene_panel->construct(app, renderer, pool);
+		execution_stats_panel->construct(app, renderer, pool);
 	};
 
-	void AppLayer::interface()
+	void ClientLayer::interface()
 	{
 		ImGuiIO& io = ImGui::GetIO();
 		ImGuiStyle& style = ImGui::GetStyle();
@@ -46,9 +51,7 @@ namespace Disarray::Client {
 		window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
 		window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
-		bool is_maximized = UI::is_maximised(window);
-
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, is_maximized ? ImVec2(6.0f, 6.0f) : ImVec2(1.0f, 1.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f, 6.0f));
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 3.0f);
 		ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4 { 0.0f, 0.0f, 0.0f, 0.0f });
 		ImGui::Begin("Dockspace", nullptr, window_flags);
@@ -57,14 +60,10 @@ namespace Disarray::Client {
 
 		ImGui::PopStyleVar(2);
 
-		// Dockspace
 		float min_win_size_x = style.WindowMinSize.x;
 		style.WindowMinSize.x = 370.0f;
 		ImGui::DockSpace(ImGui::GetID("Dockspace"));
 		style.WindowMinSize.x = min_win_size_x;
-
-		// Editor Panel ------------------------------------------------------------------------------
-		// ImGui::ShowDemoWindow();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 		ImGui::Begin("Viewport");
@@ -74,10 +73,8 @@ namespace Disarray::Client {
 
 			auto viewport_offset = ImGui::GetCursorPos(); // includes tab bar
 			auto viewport_size = ImGui::GetContentRegionAvail();
-			// client_scene->resize({ viewport_size.x, viewport_size.y });
-			// editor_camera.resize({ viewport_size.x, viewport_size.y });
+			// camera.set_viewport_size<FloatExtent>({ viewport_size.x, viewport_size.y });
 
-			// Render viewport image
 			auto& image = scene.get_image(0);
 			UI::image(image, { viewport_size.x, viewport_size.y });
 
@@ -97,37 +94,32 @@ namespace Disarray::Client {
 		ImGui::End();
 		ImGui::PopStyleVar();
 
-#ifdef UINT_IN_IMGUI
-		UI::scope("Quads"sv, [&s = scene]() {
-			auto& other_image = s.get_image(1);
+		auto& depth_image = scene.get_image(2);
+		UI::scope("Depth"sv, [&depth_image]() {
 			auto viewport_size = ImGui::GetContentRegionAvail();
-			UI::image(other_image, { viewport_size.x, viewport_size.y });
-		});
-#endif
-
-		UI::scope("Depth"sv, [&s = scene]() {
-			auto& other_image = s.get_image(2);
-			auto viewport_size = ImGui::GetContentRegionAvail();
-			UI::image(other_image, { viewport_size.x, viewport_size.y });
+			UI::image(depth_image, { viewport_size.x, viewport_size.y });
 		});
 
 		ImGui::End();
 	}
 
-	void AppLayer::handle_swapchain_recreation(Renderer& renderer) { scene.recreate(swapchain.get_extent()); }
+	void ClientLayer::handle_swapchain_recreation(Swapchain& swapchain) { scene.recreate(swapchain.get_extent()); }
 
-	void AppLayer::on_event(Event& event) { scene.on_event(event); }
+	void ClientLayer::on_event(Event& event) { scene.on_event(event); }
 
-	void AppLayer::update(float ts, Renderer& renderer)
+	void ClientLayer::update(float ts)
 	{
 		scene.update(ts);
 		camera.on_update(ts);
+	}
 
+	void ClientLayer::render(Disarray::Renderer& renderer)
+	{
 		renderer.begin_frame(camera);
 		scene.render(renderer);
 		renderer.end_frame();
 	}
 
-	void AppLayer::destruct() { scene.destruct(); }
+	void ClientLayer::destruct() { scene.destruct(); }
 
 } // namespace Disarray::Client

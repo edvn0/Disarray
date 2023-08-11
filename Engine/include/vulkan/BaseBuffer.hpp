@@ -21,7 +21,14 @@ public:                                                                         
 	protected:
 		BaseBuffer(Disarray::Device&, BufferType type, const Disarray::BufferProperties&);
 
-		virtual std::size_t size() const { return count; }
+		virtual std::size_t size() const
+		{
+			if (type == BufferType::Uniform)
+				return props.size;
+			else
+				return count;
+		}
+
 		virtual void set_data(const void*, std::uint32_t);
 		void destroy_buffer();
 

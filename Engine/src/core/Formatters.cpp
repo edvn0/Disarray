@@ -21,3 +21,8 @@ auto fmt::formatter<glm::quat>::format(glm::quat vec, format_context& ctx) -> de
 {
 	return formatter<std::string_view>::format(fmt::format("[w={}, x={}, y={}, z={}]", vec.w, vec.x, vec.y, vec.z), ctx);
 }
+
+auto fmt::formatter<std::filesystem::path>::format(std::filesystem::path path, format_context& ctx) -> decltype(ctx.out())
+{
+	return formatter<std::string_view>::format(fmt::format("[Path={}]", path.string()), ctx);
+}

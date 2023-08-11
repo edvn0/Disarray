@@ -23,8 +23,7 @@ namespace Disarray {
 	{
 		reset();
 
-		const auto& quad_pipeline = renderer.get_pipeline_cache().get("quad");
-		pipeline = cast_to<Vulkan::Pipeline>(quad_pipeline);
+		pipeline = renderer.get_pipeline_cache().get("quad");
 		std::vector<std::uint32_t> quad_indices;
 		quad_indices.resize(vertices.size() * index_per_object_count<QuadVertex>);
 		std::uint32_t offset = 0;
@@ -92,14 +91,14 @@ namespace Disarray {
 		const auto& ib = index_buffer;
 		// const auto& descriptor = descriptor_sets[renderer.get_current_frame()];
 		const auto index_count = submitted_indices;
-		const auto& vk_pipeline = cast_to<Vulkan::Pipeline>(pipeline);
+		const auto& vk_pipeline = cast_to<Vulkan::Pipeline>(*pipeline);
 
-		const std::array<VkDescriptorSet, 1> desc { renderer.get_descriptor_set() };
-		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline->get_layout(), 0, 1, desc.data(), 0, nullptr);
+		// const std::array<VkDescriptorSet, 1> desc { renderer.get_descriptor_set() };
+		// vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.get_layout(), 0, 1, desc.data(), 0, nullptr);
 
-		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline->supply());
+		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.supply());
 
-		vkCmdPushConstants(command_buffer, vk_pipeline->get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+		vkCmdPushConstants(command_buffer, vk_pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
 			sizeof(PushConstant), renderer.get_push_constant());
 
 		const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vb) };
@@ -123,7 +122,7 @@ namespace Disarray {
 	{
 		reset();
 
-		pipeline = cast_to<Vulkan::Pipeline>(renderer.get_pipeline_cache().get("line"));
+		pipeline = renderer.get_pipeline_cache().get("line");
 
 		std::vector<std::uint32_t> line_indices;
 		line_indices.resize(Objects * IndexCount);
@@ -181,11 +180,11 @@ namespace Disarray {
 		const auto& vb = vertex_buffer;
 		const auto& ib = index_buffer;
 		const auto index_count = submitted_indices;
-		const auto& vk_pipeline = cast_to<Vulkan::Pipeline>(pipeline);
+		const auto& vk_pipeline = cast_to<Vulkan::Pipeline>(*pipeline);
 
-		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline->supply());
+		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.supply());
 
-		vkCmdPushConstants(command_buffer, vk_pipeline->get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+		vkCmdPushConstants(command_buffer, vk_pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
 			sizeof(PushConstant), renderer.get_push_constant());
 
 		const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vb) };
@@ -194,7 +193,7 @@ namespace Disarray {
 
 		vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(*ib), 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdSetLineWidth(command_buffer, vk_pipeline->get_properties().line_width);
+		vkCmdSetLineWidth(command_buffer, vk_pipeline.get_properties().line_width);
 
 		vkCmdDrawIndexed(command_buffer, index_count, 1, 0, 0, 0);
 	}

@@ -19,6 +19,12 @@ namespace Disarray {
 		static bool key_pressed(KeyCode code);
 		static bool button_released(MouseCode code);
 		static bool key_released(KeyCode code);
+
+		template <KeyCode... Codes> static bool all() { return (key_pressed(Codes) && ...); }
+		template <KeyCode... Codes> static bool any() { return (key_pressed(Codes) || ...); }
+		template <MouseCode... Codes> static bool all() { return (button_pressed(Codes) && ...); }
+		template <MouseCode... Codes> static bool any() { return (button_pressed(Codes) || ...); }
+
 		static glm::vec2 mouse_position();
 
 		static void destruct();

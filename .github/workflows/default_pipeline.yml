@@ -61,6 +61,7 @@ jobs:
       - name: Configure CMake
         run: cmake
           -B build
+          -D DISARRAY_BUILD_TESTS=ON
           -D CMAKE_CXX_COMPILER=${{env.CXX}}
           -D CMAKE_C_COMPILER=${{env.CC}}
           -D CMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
@@ -71,4 +72,4 @@ jobs:
 
       - name: Test
         working-directory: build
-        run: ctest -C ${{env.BUILD_TYPE}}
+        run: ctest -C ${{env.BUILD_TYPE}} --output_on_failure

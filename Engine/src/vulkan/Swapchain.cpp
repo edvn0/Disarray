@@ -179,8 +179,8 @@ namespace Disarray::Vulkan {
 		renderPassInfo.pDependencies = &dependency;
 
 		render_pass = RenderPass::construct(device);
-		auto vk_render_pass = cast_to<Vulkan::RenderPass>(render_pass);
-		vk_render_pass->create_with(renderPassInfo);
+		auto& vk_render_pass = cast_to<Vulkan::RenderPass>(*render_pass);
+		vk_render_pass.create_with(renderPassInfo);
 	}
 
 	void Swapchain::recreate_swapchain(Disarray::Swapchain* old, bool should_clean)

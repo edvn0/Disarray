@@ -181,22 +181,22 @@ namespace Disarray::Vulkan {
 		render_pass_info.pDependencies = dependencies.data();
 
 		render_pass = RenderPass::construct(device);
-		auto vk_render_pass = cast_to<Vulkan::RenderPass>(render_pass);
-		vk_render_pass->create_with(render_pass_info);
+		auto& vk_render_pass = cast_to<Vulkan::RenderPass>(*render_pass);
+		vk_render_pass.create_with(render_pass_info);
 
 		std::vector<VkImageView> attachment_views;
 		for (auto& image : attachments) {
 			auto& view = attachment_views.emplace_back();
-			view = cast_to<Vulkan::Image>(*image).get_view();
+			view = cast_to<Vulkan::Image>(*image).get_descriptor_info().imageView;
 		}
 
 		if (depth_attachment) {
 			auto& depth_view = attachment_views.emplace_back();
-			depth_view = cast_to<Vulkan::Image>(*depth_attachment).get_view();
+			depth_view = cast_to<Vulkan::Image>(*depth_attachment).get_descriptor_info().imageView;
 		}
 
 		auto framebuffer_create_info = vk_structures<VkFramebufferCreateInfo>()();
-		framebuffer_create_info.renderPass = vk_render_pass->supply();
+		framebuffer_create_info.renderPass = vk_render_pass.supply();
 		framebuffer_create_info.attachmentCount = static_cast<std::uint32_t>(attachment_views.size());
 		framebuffer_create_info.pAttachments = attachment_views.data();
 		framebuffer_create_info.width = props.extent.width;

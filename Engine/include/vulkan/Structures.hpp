@@ -6,12 +6,21 @@
 namespace Disarray::Vulkan {
 
 	template <class T, std::size_t Count = 1> struct vk_structures {
-		T operator()() = delete;
-		std::array<T, Count> multiple() { throw std::runtime_error("Not implemented!"); }
+		constexpr T operator()();
+		constexpr std::array<T, Count> multiple()
+		{
+			std::array<T, Count> arr {};
+			arr.fill(operator()());
+			return arr;
+		}
 	};
 
 	template <> struct vk_structures<VkSubmitInfo> {
 		VkSubmitInfo operator()();
+	};
+
+	template <> struct vk_structures<VkDescriptorSetAllocateInfo> {
+		VkDescriptorSetAllocateInfo operator()();
 	};
 
 	template <> struct vk_structures<VkPipelineColorBlendAttachmentState> {

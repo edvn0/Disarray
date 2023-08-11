@@ -49,8 +49,7 @@ namespace Disarray {
 
 		void reset()
 		{
-			T default_construction {};
-			vertices.fill(default_construction);
+			vertices.fill({});
 			submitted_indices = 0;
 			submitted_vertices = 0;
 			submitted_objects = 0;

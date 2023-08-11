@@ -9,17 +9,18 @@ namespace Disarray {
 
 	class Renderer;
 	class App;
+	class Swapchain;
 
 	class Layer {
 	public:
 		virtual ~Layer() = default;
 
 		virtual void construct(App&, Renderer&, ThreadPool&);
-		virtual void handle_swapchain_recreation(Renderer&);
+		virtual void handle_swapchain_recreation(Swapchain&);
 		virtual void on_event(Event&);
 		virtual void interface();
 		virtual void update(float ts);
-		virtual void update(float ts, Renderer&);
+		virtual void render(Renderer&);
 		virtual void destruct();
 		virtual bool is_interface_layer() const;
 	};

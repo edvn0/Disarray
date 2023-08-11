@@ -20,6 +20,7 @@ namespace Disarray::Vulkan {
 		Disarray::RenderPass& get_render_pass() override;
 
 		const PipelineProperties& get_properties() const override { return props; }
+		PipelineProperties& get_properties() override { return props; }
 
 	private:
 		void construct_layout();

@@ -18,17 +18,19 @@ namespace Disarray {
 		SIXTY_FOUR = 0x00000040,
 	};
 
-	struct Extent {
-		std::uint32_t width {};
-		std::uint32_t height {};
+	template <class T> struct IExtent {
+		T width {};
+		T height {};
 
-		std::uint32_t get_size() const { return width * height; }
-
+		T get_size() const { return width * height; }
 		float aspect_ratio() const { return static_cast<float>(width) / static_cast<float>(height); }
 
-		bool operator==(const Extent& other) const { return width == other.width && height == other.height; }
-		bool operator!=(const Extent& other) const { return width != other.width || height != other.height; }
+		bool operator==(const IExtent<T>& other) const { return width == other.width && height == other.height; }
+		bool operator!=(const IExtent<T>& other) const { return width != other.width || height != other.height; }
 	};
+
+	struct Extent : public IExtent<std::uint32_t> { };
+	struct FloatExtent : public IExtent<float> { };
 
 	enum class ImageFormat { SRGB, RGB, SBGR, BGR, SRGB32, RGB32, Depth, DepthStencil, Uint };
 
@@ -40,19 +42,19 @@ template <> struct fmt::formatter<Disarray::SampleCount> : fmt::formatter<std::s
 		switch (samples) {
 
 		case Disarray::SampleCount::ONE:
-			return formatter<std::string_view>::format(fmt::format("[{}]", 1), ctx);
+			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 1), ctx);
 		case Disarray::SampleCount::TWO:
-			return formatter<std::string_view>::format(fmt::format("[{}]", 2), ctx);
+			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 2), ctx);
 		case Disarray::SampleCount::FOUR:
-			return formatter<std::string_view>::format(fmt::format("[{}]", 4), ctx);
+			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 4), ctx);
 		case Disarray::SampleCount::EIGHT:
-			return formatter<std::string_view>::format(fmt::format("[{}]", 8), ctx);
+			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 8), ctx);
 		case Disarray::SampleCount::SIXTEEN:
-			return formatter<std::string_view>::format(fmt::format("[{}]", 16), ctx);
+			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 16), ctx);
 		case Disarray::SampleCount::THIRTY_TWO:
-			return formatter<std::string_view>::format(fmt::format("[{}]", 32), ctx);
+			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 32), ctx);
 		case Disarray::SampleCount::SIXTY_FOUR:
-			return formatter<std::string_view>::format(fmt::format("[{}]", 64), ctx);
+			return fmt::formatter<std::string_view>::format(fmt::format("[{}]", 64), ctx);
 		default:
 			Disarray::unreachable();
 		}

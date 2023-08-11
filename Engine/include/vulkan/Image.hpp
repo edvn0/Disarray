@@ -2,10 +2,10 @@
 
 #include "core/UniquelyIdentifiable.hpp"
 #include "graphics/Image.hpp"
-#include "vulkan/MemoryAllocator.hpp"
-#include "vulkan/vulkan_core.h"
 
 #include <vulkan/vulkan.h>
+
+using VmaAllocation = struct VmaAllocation_T*;
 
 namespace Disarray::Vulkan {
 
@@ -103,11 +103,9 @@ namespace Disarray::Vulkan {
 		glm::vec4 read_pixel(const glm::vec2&) const override;
 
 		VkImage get_image() const { return info.image; }
-		VkImageView get_view() const { return descriptor_info.imageView; }
-		VkSampler get_sampler() const { return descriptor_info.sampler; }
-		VkImageLayout get_layout() const { return descriptor_info.imageLayout; }
+		const VkDescriptorSetLayout& get_layout() const { return layout; }
 
-		const auto& get_descriptor_info() const { return descriptor_info; }
+		const VkDescriptorImageInfo& get_descriptor_info() const { return descriptor_info; }
 
 		Identifier hash_impl() { return bit_cast<std::uint64_t>(descriptor_info.imageView) ^ bit_cast<std::uint64_t>(descriptor_info.sampler); };
 
@@ -119,8 +117,9 @@ namespace Disarray::Vulkan {
 
 		ImageInfo info {};
 		VkDescriptorImageInfo descriptor_info;
+		VkDescriptorSetLayout layout;
 
-		Device& device;
+		Disarray::Device& device;
 		ImageProperties props;
 	};
 

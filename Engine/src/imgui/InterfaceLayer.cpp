@@ -101,14 +101,19 @@ namespace Disarray::UI {
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
 	}
 
-	void InterfaceLayer::handle_swapchain_recreation(Renderer&) { command_executor->recreate(true, {}); }
+	void InterfaceLayer::handle_swapchain_recreation(Swapchain&) { command_executor->recreate(true, {}); }
 
-	void InterfaceLayer::update(float ts) { }
-
-	void InterfaceLayer::update(float ts, Renderer& renderer)
+	void InterfaceLayer::on_event(Event& event)
 	{
 		for (auto& panel : panels) {
-			panel->update(ts, renderer);
+			panel->on_event(event);
+		}
+	}
+
+	void InterfaceLayer::update(float ts)
+	{
+		for (auto& panel : panels) {
+			panel->update(ts);
 		}
 	}
 
@@ -231,6 +236,13 @@ namespace Disarray::UI {
 		if (const ImGuiIO& io = ImGui::GetIO(); io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
 			ImGui::UpdatePlatformWindows();
 			ImGui::RenderPlatformWindowsDefault();
+		}
+	}
+
+	void InterfaceLayer::render(Renderer& renderer)
+	{
+		for (auto& panel : panels) {
+			panel->render(renderer);
 		}
 	}
 } // namespace Disarray::UI

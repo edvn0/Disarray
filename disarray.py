@@ -1,3 +1,5 @@
+from typing import List
+
 from pathlib import Path
 import os
 from argparse import Action, ArgumentParser, Namespace
@@ -13,6 +15,7 @@ current_source_dir = os.path.dirname(os.path.realpath(__file__))
 class Target(enum.Enum):
     AllBuild = "ALL_BUILD"
     App = "App"
+    DisarrayTests = "DisarrayTests"
     Format = "clang-format-Disarray"
 
 
@@ -108,8 +111,10 @@ def generate_cmake(
         f"-D CMAKE_BUILD_TYPE={build_mode.value}",
     ]
 
+    if build_tests:
+        compile_definitions.append("-D DISARRAY_BUILD_TESTS=ON")
+
     builds_args = [f"-B {build_folder}", f"-S {current_source_dir}"]
-    print(compiler)
     if compiler.find("MSVC") != -1:
         builds_args += "-A x64"
 
@@ -123,16 +128,26 @@ def generate_cmake(
         exit(out.returncode)
 
 
-def build_cmake(build_folder: str, target: Target, parallel_jobs: int):
+def build_cmake(build_folder: str, target: List[Target] | Target | None = None, parallel_jobs: int = 12):
+    targets: List[Target] = []
+    if target is not None:
+        if isinstance(target, list):
+            targets = target
+        else:
+            targets = [target]
+
+    targets_str = list(map(lambda x: x.value, targets))
     cmake_args = [
         "cmake",
         "--build",
         build_folder,
-        "--target",
-        target.value,
         "--parallel",
         f"{parallel_jobs}",
     ]
+
+    cmake_args.append("--target")
+    for target in targets_str:
+        cmake_args.append(target)
 
     out = subprocess.run(args=cmake_args, shell=is_windows)
     if out.returncode != 0:
@@ -140,21 +155,17 @@ def build_cmake(build_folder: str, target: Target, parallel_jobs: int):
         exit(out.returncode)
 
 
-def run_tests(build_folder: str, parallel_jobs: int):
-    targets: list[Target] = [
-    ]
-    for target in targets:
-        build_cmake(build_folder, target, parallel_jobs)
-
+def run_tests(build_folder: str, build_mode: BuildMode, parallel_jobs: int):
     ctest_args = [
         "ctest",
-        "-j10",
+        f"-j{parallel_jobs}",
         "-C",
-        "Debug",
+        build_mode.value,
         "--test-dir",
         build_folder,
         "--output-on-failure",
     ]
+
 
     out = subprocess.run(args=ctest_args, shell=is_windows)
     if out.returncode != 0:
@@ -207,11 +218,11 @@ def main(args: Namespace):
     if args.inplace_format:
         build_cmake(build_folder, Target.Format, args.parallel)
 
-    build_cmake(build_folder, target, args.parallel)
+    build_cmake(build_folder, [target, Target.DisarrayTests], args.parallel)
     should_run_tests = (build_mode == BuildMode.Debug or build_mode ==
                         BuildMode.RelWithDebInfo)
     if args.build_tests and should_run_tests:
-        run_tests(build_folder, args.parallel)
+        run_tests(build_folder, build_mode, args.parallel)
 
     has_build_type_inside_build_folder = any(
         [
@@ -260,7 +271,7 @@ if __name__ == "__main__":
         help="Which build type should we use?",
         type=BuildMode,
         action=EnumAction,
-        default=BuildMode.Debug,
+        default=BuildMode.RelWithDebInfo,
     )
     parser.add_argument("-j", "--parallel", help="Parallel build jobs",
                         type=int, choices=range(1, 17), default=12)

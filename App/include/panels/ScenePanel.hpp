@@ -10,16 +10,19 @@ namespace Disarray::Client {
 
 	class ScenePanel : public Disarray::Panel {
 	public:
-		ScenePanel(Disarray::Device&, Disarray::Window&, Disarray::Swapchain&, Disarray::Scene& s)
-			: scene(s) {
+		ScenePanel(Disarray::Device& dev, Disarray::Window&, Disarray::Swapchain&, Disarray::Scene& s)
+			: device(dev)
+			, scene(s) {
 
 			};
 
-		void update(float ts, Renderer&) override { }
-
+		void update(float) override;
 		void interface() override;
+		void for_all_components(Entity& entity);
+		void on_event(Event&) override;
 
 	private:
+		Device& device;
 		Scene& scene;
 	};
 

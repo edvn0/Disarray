@@ -1,8 +1,8 @@
 #pragma once
 
-namespace Disarray {
+#include "graphics/ImageProperties.hpp"
 
-	struct Extent;
+namespace Disarray {
 
 #define DISARRAY_OBJECT(x)                                                                                                                           \
 public:                                                                                                                                              \

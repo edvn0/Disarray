@@ -40,11 +40,11 @@ namespace Disarray {
 
 	void Scene::construct(Disarray::App&, Disarray::Renderer& renderer, Disarray::ThreadPool&)
 	{
-		int rects_x { 10 };
-		int rects_y { 10 };
+		int rects_x { 2 };
+		int rects_y { 2 };
 		auto parent = create("Grid");
-		for (auto j = -rects_y; j < rects_y; j++) {
-			for (auto i = -rects_x; i < rects_x; i++) {
+		for (auto j = -rects_y / 2; j < rects_y / 2; j++) {
+			for (auto i = -rects_x / 2; i < rects_x / 2; i++) {
 				auto rect = create(fmt::format("Rect{}-{}", i, j));
 				parent.add_child(&rect);
 				auto& transform = rect.get_components<Transform>();
@@ -137,7 +137,8 @@ namespace Disarray {
 				.debug_name = "IdentityFramebuffer",
 			});
 
-		const auto& [vert, frag] = renderer.get_pipeline_cache().get_shader("main");
+		const auto& vert = renderer.get_pipeline_cache().get_shader("main.vert");
+		const auto& frag = renderer.get_pipeline_cache().get_shader("main.frag");
 		PipelineProperties props = {
 			.vertex_shader = vert,
 			.fragment_shader = frag,

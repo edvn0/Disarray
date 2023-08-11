@@ -20,24 +20,6 @@ namespace Disarray {
 
 	template <class To, class From>
 		requires(std::is_base_of_v<From, To>)
-	Ref<To> polymorphic_cast(const Ref<From>& object)
-	{
-		if constexpr (std::is_same_v<Ref<From>, std::shared_ptr<From>>) {
-			return std::dynamic_pointer_cast<To>(object);
-		} else {
-			return object.template as<To>();
-		}
-	}
-
-	template <class To, class From>
-		requires(std::is_base_of_v<From, To>)
-	Ref<To> polymorphic_cast(Ref<From>&& object)
-	{
-		return Ref<To> { std::move(object) };
-	}
-
-	template <class To, class From>
-		requires(std::is_base_of_v<From, To>)
 	decltype(auto) polymorphic_cast(const From& object)
 	{
 #ifdef IS_DEBUG

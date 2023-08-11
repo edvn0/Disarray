@@ -59,7 +59,7 @@ namespace Disarray {
 			requires(std::is_base_of_v<Panel, T>
 				&& requires(Disarray::Device& dev, Disarray::Window& win, Disarray::Swapchain& swap,
 					Args&&... args) { T(dev, win, swap, std::forward<Args>(args)...); })
-		void add_panel(Args&&... args)
+		auto& add_panel(Args&&... args)
 		{
 			std::shared_ptr<Layer> interface {
 				nullptr
@@ -71,7 +71,7 @@ namespace Disarray {
 				}
 
 			auto interface_layer = std::dynamic_pointer_cast<UI::InterfaceLayer>(interface);
-			interface_layer->template add_panel<T>(std::forward<Args>(args)...);
+			return interface_layer->template add_panel<T>(std::forward<Args>(args)...);
 		}
 
 		void on_event(Event& event);

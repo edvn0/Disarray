@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <ostream>
+#include <string>
 
 namespace Disarray {
 	enum class MouseCode {
@@ -23,5 +25,5 @@ namespace Disarray {
 		ButtonMiddle = Button2
 	};
 
-	inline std::ostream& operator<<(std::ostream& out, MouseCode code) { return out << static_cast<int>(code); }
+	inline std::ostream& operator<<(std::ostream& out, MouseCode code) { return out << std::to_string(static_cast<int>(code)); }
 } // namespace Disarray
