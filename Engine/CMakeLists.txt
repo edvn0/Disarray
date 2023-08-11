@@ -192,11 +192,11 @@ set(ENGINE_SOURCES
         src/vulkan/Image.cpp
         src/imgui/InterfaceLayer.cpp)
 
-if (DISARRAY_OS STREQUAL "Windows")
-    list(APPEND ENGINE_SOURCES src/windows/UI.cpp)
-elseif (DISARRAY_OS STREQUAL "Linux")
-    list(APPEND ENGINE_SOURCES src/linux/UI.cpp)
-endif ()
+if(DISARRAY_OS STREQUAL "Windows")
+        list(APPEND ENGINE_SOURCES src/windows/UI.cpp)
+elseif(DISARRAY_OS STREQUAL "Linux")
+        list(APPEND ENGINE_SOURCES src/linux/UI.cpp)
+endif()
 
 add_library(${PROJECT_NAME} STATIC
         ${THIRD_PARTY}/imgui/backends/imgui_impl_glfw.cpp
@@ -210,7 +210,6 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/in
 
 default_compile_flags()
 
-if (DISARRAY_BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(tests)
-endif ()
+if(DISARRAY_BUILD_TESTS)
+        add_subdirectory(tests)
+endif()
