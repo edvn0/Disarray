@@ -229,6 +229,7 @@
             "renderpass",
             "repr",
             "Serialiser",
+            "Serialisers",
             "spirv",
             "SSBO",
             "Subpass",

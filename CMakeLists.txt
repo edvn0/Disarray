@@ -27,8 +27,8 @@ add_subdirectory(Engine)
 add_subdirectory(ThirdParty)
 add_subdirectory(App)
 
-if(CMAKE_GENERATOR STREQUAL "Ninja")
-    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if(${CMAKE_GENERATOR} STREQUAL "Ninja")
+    option(CMAKE_EXPORT_COMPILE_COMMANDS ON)
     add_custom_command(COMMAND ${CMAKE_COMMAND} -E copy
         ${CMAKE_BINARY_DIR}/compile_commands.json ${CMAKE_SOURCE_DIR} OUTPUT OUT)
     message(STATUS "Copying ${CMAKE_BINARY_DIR}/compile_commands.json to ${CMAKE_SOURCE_DIR}")
