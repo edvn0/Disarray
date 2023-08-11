@@ -22,6 +22,7 @@ namespace Disarray {
 		DISARRAY_OBJECT(Texture)
 	public:
 		virtual Image& get_image() = 0;
+		virtual const Image& get_image() const = 0;
 
 		static Ref<Texture> construct(Device&, const TextureProperties&);
 	};

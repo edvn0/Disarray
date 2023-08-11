@@ -33,6 +33,8 @@ namespace Disarray {
 			vp_min = min;
 		}
 
+		FloatExtent get_viewport_bounds() const { return { vp_max.x - vp_min.x, vp_max.y - vp_min.y }; }
+
 		Entity create(std::string_view = "Unnamed");
 
 		Disarray::Image& get_image(std::uint32_t index)

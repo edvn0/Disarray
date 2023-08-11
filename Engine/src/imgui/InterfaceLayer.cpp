@@ -101,7 +101,14 @@ namespace Disarray::UI {
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
 	}
 
-	void InterfaceLayer::handle_swapchain_recreation(Renderer&) { command_executor->recreate(true, {}); }
+	void InterfaceLayer::handle_swapchain_recreation(Swapchain&) { command_executor->recreate(true, {}); }
+
+	void InterfaceLayer::on_event(Event& event)
+	{
+		for (auto& panel : panels) {
+			panel->on_event(event);
+		}
+	}
 
 	void InterfaceLayer::update(float ts)
 	{

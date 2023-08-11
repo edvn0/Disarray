@@ -71,6 +71,7 @@ namespace Disarray {
 		void start(const std::function<void(const FileInformation&)>& activation_function);
 		void stop();
 		void loop_until();
+		void update();
 
 		std::vector<std::function<void(const FileInformation&)>> activations;
 		std::filesystem::path root;

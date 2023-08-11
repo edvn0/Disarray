@@ -10,7 +10,7 @@ class ClientApp : public Disarray::App {
 public:
 	using Disarray::App::App;
 
-	void on_attach() override { add_layer<Disarray::Client::AppLayer>(); }
+	void on_attach() override { add_layer<Disarray::Client::ClientLayer>(); }
 	void on_detach() override { }
 };
 

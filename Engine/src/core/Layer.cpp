@@ -3,7 +3,7 @@
 namespace Disarray {
 
 	void Layer::construct(App&, Renderer&, ThreadPool&) { }
-	void Layer::handle_swapchain_recreation(Renderer&) { }
+	void Layer::handle_swapchain_recreation(Swapchain&) { }
 	void Layer::on_event(Event&) { }
 	void Layer::interface() { }
 	void Layer::update(float) { }

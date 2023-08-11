@@ -16,12 +16,12 @@ namespace Disarray::Client {
 
 			};
 
+		void update(float) override;
 		void interface() override;
 		void for_all_components(Entity& entity);
+		void on_event(Event&) override;
 
 	private:
-		bool shader_drop_button(const std::string& button_name, ShaderType type, Ref<Shader>& shader);
-
 		Device& device;
 		Scene& scene;
 	};

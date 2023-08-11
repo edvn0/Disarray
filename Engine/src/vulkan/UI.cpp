@@ -38,6 +38,8 @@ namespace Disarray::UI {
 		return Disarray::bit_cast<ImageIdentifier>(added);
 	}
 
+	static ImageIdentifier add_image(VkDescriptorImageInfo info) { return add_image(info.sampler, info.imageView, info.imageLayout); }
+
 	void image_button(Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
 	{
 		auto& vk_image = cast_to<Vulkan::Image>(image);
@@ -46,7 +48,7 @@ namespace Disarray::UI {
 		auto& cache = get_cache();
 		ImageIdentifier id;
 		if (!get_cache().contains(hash)) {
-			id = add_image(vk_image.get_sampler(), vk_image.get_view(), vk_image.get_layout());
+			id = add_image(vk_image.get_descriptor_info());
 			cache.try_emplace(hash, std::make_unique<ImageIdentifier>(id));
 		} else {
 			id = *get_cache()[hash];
@@ -63,7 +65,7 @@ namespace Disarray::UI {
 		auto& cache = get_cache();
 		ImageIdentifier id;
 		if (!get_cache().contains(hash)) {
-			id = add_image(vk_image.get_sampler(), vk_image.get_view(), vk_image.get_layout());
+			id = add_image(vk_image.get_descriptor_info());
 			cache.try_emplace(hash, std::make_unique<ImageIdentifier>(id));
 		} else {
 			id = *cache[hash];

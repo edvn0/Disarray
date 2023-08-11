@@ -80,7 +80,7 @@ namespace Disarray {
 
 			for (auto& layer : layers) {
 				if (needs_recreation)
-					layer->handle_swapchain_recreation(renderer);
+					layer->handle_swapchain_recreation(*swapchain);
 				layer->update(time_step);
 				layer->render(renderer);
 			}
@@ -120,7 +120,7 @@ namespace Disarray {
 
 		renderer.force_recreation();
 		for (auto& layer : layers) {
-			layer->handle_swapchain_recreation(renderer);
+			layer->handle_swapchain_recreation(*swapchain);
 		}
 		return false;
 	}

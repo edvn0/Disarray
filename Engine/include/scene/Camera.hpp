@@ -85,10 +85,33 @@ namespace Disarray {
 			const auto& [width, height] = extent;
 			if (viewport_width == width && viewport_height == height)
 				return;
+			aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
 			set_perspective_projection_matrix(vertical_fov, static_cast<float>(width), static_cast<float>(height), near_clip, far_clip);
 			viewport_width = width;
 			viewport_height = height;
-			update_camera_view();
+			// update_camera_view();
+		}
+
+		void set_viewport_size(const FloatExtent& extent)
+		{
+			const auto& [width, height] = extent;
+			if (viewport_width == width && viewport_height == height)
+				return;
+			aspect_ratio = width / height;
+			set_perspective_projection_matrix(vertical_fov, width, height, near_clip, far_clip);
+			viewport_width = static_cast<std::uint32_t>(width);
+			viewport_height = static_cast<std::uint32_t>(height);
+			// update_camera_view();
+		}
+
+		template <class Ex>
+			requires(std::is_same_v<Ex, Extent> || std::is_same_v<Ex, FloatExtent>)
+		void set_viewport_size(const Ex& ex)
+		{
+			if constexpr (std::is_same_v<Ex, Extent>)
+				set_viewport_size(Extent { ex.width, ex.height });
+			else if constexpr (std::is_same_v<Ex, FloatExtent>)
+				set_viewport_size(FloatExtent { ex.width, ex.height });
 		}
 
 		const glm::mat4& get_view_matrix() const override { return view_matrix; }

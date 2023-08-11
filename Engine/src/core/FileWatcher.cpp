@@ -56,19 +56,51 @@ namespace Disarray {
 		while (running) {
 			std::this_thread::sleep_for(delay);
 
-			auto path_iterator = paths.begin();
-			while (path_iterator != paths.end()) {
-				if (!std::filesystem::exists(path_iterator->first)) {
-					path_iterator->second.status = FileStatus::Deleted;
-					const auto& current = path_iterator->second;
+			update();
+		}
+	}
+
+	void FileWatcher::update()
+	{
+
+		auto path_iterator = paths.begin();
+		while (path_iterator != paths.end()) {
+			if (!std::filesystem::exists(path_iterator->first)) {
+				path_iterator->second.status = FileStatus::Deleted;
+				const auto& current = path_iterator->second;
+				for_each(current, activations);
+				path_iterator = paths.erase(path_iterator);
+			} else {
+				path_iterator++;
+			}
+		}
+
+		for (auto& file : std::filesystem::recursive_directory_iterator(root)) {
+			auto current_file_last_write_time = std::filesystem::last_write_time(file);
+			const auto view = file.path().string();
+
+			if (!paths.contains(view)) {
+				const auto type_if_not_directory = std::filesystem::is_directory(file) ? FileType::DIRECTORY : to_filetype(file.path().extension());
+
+				paths[file.path().string()] = FileInformation {
+					.type = type_if_not_directory, .path = view, .last_modified = current_file_last_write_time, .status = FileStatus::Created
+				};
+
+				const auto& current = paths[file.path().string()];
+				for_each(current, activations);
+			} else {
+				auto& current = paths[file.path().string()];
+
+				if (current.last_modified != current_file_last_write_time) {
+					current.last_modified = current_file_last_write_time;
+					current.status = FileStatus::Modified;
 					for_each(current, activations);
-					path_iterator = paths.erase(path_iterator);
-				} else {
-					path_iterator++;
 				}
 			}
+		}
 
-			for (auto& file : std::filesystem::recursive_directory_iterator(root)) {
+		for (auto& additional : additional_paths) {
+			for (auto& file : std::filesystem::directory_iterator { root / additional }) {
 				auto current_file_last_write_time = std::filesystem::last_write_time(file);
 				const auto view = file.path().string();
 
@@ -89,33 +121,6 @@ namespace Disarray {
 						current.last_modified = current_file_last_write_time;
 						current.status = FileStatus::Modified;
 						for_each(current, activations);
-					}
-				}
-			}
-
-			for (auto& additional : additional_paths) {
-				for (auto& file : std::filesystem::directory_iterator { root / additional }) {
-					auto current_file_last_write_time = std::filesystem::last_write_time(file);
-					const auto view = file.path().string();
-
-					if (!paths.contains(view)) {
-						const auto type_if_not_directory
-							= std::filesystem::is_directory(file) ? FileType::DIRECTORY : to_filetype(file.path().extension());
-
-						paths[file.path().string()] = FileInformation {
-							.type = type_if_not_directory, .path = view, .last_modified = current_file_last_write_time, .status = FileStatus::Created
-						};
-
-						const auto& current = paths[file.path().string()];
-						for_each(current, activations);
-					} else {
-						auto& current = paths[file.path().string()];
-
-						if (current.last_modified != current_file_last_write_time) {
-							current.last_modified = current_file_last_write_time;
-							current.status = FileStatus::Modified;
-							for_each(current, activations);
-						}
 					}
 				}
 			}

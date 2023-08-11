@@ -21,7 +21,7 @@ function(default_compile_flags)
     elseif (DISARRAY_COMPILER STREQUAL "MSVC")
         # VMA, STB ignores - /wd4244 /wd4100 /wd4189 /wd4127 /wd4324 /wd4201
         # [[noreturn]] - /wd4702
-        target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /wd4244 /wd4100 /wd4189 /wd4127 /wd4324 /wd4201 /wd4702)
+        target_compile_options(${PROJECT_NAME} PRIVATE /MP /W4 /WX /wd4244 /wd4100 /wd4189 /wd4127 /wd4324 /wd4201 /wd4702)
         target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_WINDOWS)
     endif ()
 

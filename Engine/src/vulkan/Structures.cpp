@@ -7,6 +7,10 @@
 namespace Disarray::Vulkan {
 
 	VkSubmitInfo vk_structures<VkSubmitInfo>::operator()() { return { .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO, .pNext = nullptr }; }
+	VkDescriptorSetAllocateInfo vk_structures<VkDescriptorSetAllocateInfo>::operator()()
+	{
+		return { .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, .pNext = nullptr };
+	}
 
 	VkPipelineColorBlendAttachmentState vk_structures<VkPipelineColorBlendAttachmentState>::operator()() { return {}; }
 

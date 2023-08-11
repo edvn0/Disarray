@@ -18,9 +18,10 @@ namespace Disarray::Vulkan {
 			props.extent = extent;
 			recreate_texture(should_clean);
 		}
-		VkImageView get_view() { return image->get_view(); }
+		VkImageView get_view() { return image->get_descriptor_info().imageView; }
 
 		Image& get_image() override { return *image; }
+		const Image& get_image() const override { return *image; }
 
 	private:
 		void recreate_texture(bool should_clean = true);

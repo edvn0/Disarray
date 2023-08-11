@@ -94,6 +94,8 @@ namespace Disarray::Client {
 		UI::end();
 	} // namespace Disarray::Client
 
+	void Disarray::Client::ScenePanel::update(float) { }
+
 	void ScenePanel::for_all_components(Entity& entity)
 	{
 		draw_component<Components::Pipeline>(entity, "Pipeline", [this](Components::Pipeline& pipeline) {
@@ -110,5 +112,7 @@ namespace Disarray::Client {
 			}
 		});
 	}
+
+	void Disarray::Client::ScenePanel::on_event(Event& event) { }
 
 } // namespace Disarray::Client

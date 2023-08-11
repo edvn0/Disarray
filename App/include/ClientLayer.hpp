@@ -4,27 +4,24 @@
 
 namespace Disarray::Client {
 
-	class AppLayer : public Layer {
+	class ClientLayer : public Layer {
 	public:
-		AppLayer(Device&, Window&, Swapchain&);
-		~AppLayer() override;
+		ClientLayer(Device&, Window&, Swapchain&);
+		~ClientLayer() override;
 
 		void interface() override;
 
-		void construct(App& app, Renderer& renderer, ThreadPool&) override;
-		void handle_swapchain_recreation(Renderer& renderer) override;
+		void construct(App&, Renderer&, ThreadPool&) override;
+		void handle_swapchain_recreation(Swapchain&) override;
 		void on_event(Event&) override;
-		void update(float ts) override;
+		void update(float) override;
 		void render(Renderer&) override;
 		void destruct() override;
 
 	private:
-		Window& window;
-		Swapchain& swapchain;
 		Scene scene;
 
-		EditorCamera camera { 60.f, static_cast<float>(swapchain.get_extent().width), static_cast<float>(swapchain.get_extent().height), 0.1f, 1000.f,
-			nullptr };
+		EditorCamera camera;
 
 		bool viewport_panel_mouse_over { false };
 		bool viewport_panel_focused { false };

@@ -18,17 +18,19 @@ namespace Disarray {
 		SIXTY_FOUR = 0x00000040,
 	};
 
-	struct Extent {
-		std::uint32_t width {};
-		std::uint32_t height {};
+	template <class T> struct IExtent {
+		T width {};
+		T height {};
 
-		std::uint32_t get_size() const { return width * height; }
-
+		T get_size() const { return width * height; }
 		float aspect_ratio() const { return static_cast<float>(width) / static_cast<float>(height); }
 
-		bool operator==(const Extent& other) const { return width == other.width && height == other.height; }
-		bool operator!=(const Extent& other) const { return width != other.width || height != other.height; }
+		bool operator==(const IExtent<T>& other) const { return width == other.width && height == other.height; }
+		bool operator!=(const IExtent<T>& other) const { return width != other.width || height != other.height; }
 	};
+
+	struct Extent : public IExtent<std::uint32_t> { };
+	struct FloatExtent : public IExtent<float> { };
 
 	enum class ImageFormat { SRGB, RGB, SBGR, BGR, SRGB32, RGB32, Depth, DepthStencil, Uint };
 

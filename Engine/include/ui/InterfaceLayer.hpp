@@ -16,7 +16,8 @@ namespace Disarray::UI {
 		~InterfaceLayer() override;
 
 		void construct(App&, Renderer&, ThreadPool&) override;
-		void handle_swapchain_recreation(Renderer&) override;
+		void handle_swapchain_recreation(Swapchain&) override;
+		void on_event(Event&) override;
 		void interface() override;
 		void update(float ts) override;
 		void destruct() override;
