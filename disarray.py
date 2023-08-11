@@ -1,4 +1,5 @@
 from typing import List
+
 from pathlib import Path
 import os
 from argparse import Action, ArgumentParser, Namespace
@@ -165,7 +166,6 @@ def run_tests(build_folder: str, build_mode: BuildMode, parallel_jobs: int):
         "--output-on-failure",
     ]
 
-    print(ctest_args)
 
     out = subprocess.run(args=ctest_args, shell=is_windows)
     if out.returncode != 0:

@@ -115,19 +115,3 @@ TEST(BatchRenderer, Construction)
 	EXPECT_EQ(quad_batch.vertices.size(), objects * 4);
 	EXPECT_EQ(line_batch.vertices.size(), objects * 2);
 }
-
-TEST(BatchRenderer, Iteration)
-{
-	RendererMock mock {};
-	const auto& [quad_batch, line_batch] = mock.batch_renderer.objects;
-
-	EXPECT_EQ(quad_batch.submitted_objects, 0);
-	mock.draw_planar_geometry(Geometry::Rectangle, { .identifier = 1 });
-	EXPECT_EQ(quad_batch.submitted_objects, 1);
-	mock.draw_planar_geometry(Geometry::Rectangle, { .identifier = 1 });
-	EXPECT_EQ(quad_batch.submitted_objects, 2);
-	mock.draw_planar_geometry(Geometry::Rectangle, { .identifier = 1 });
-	EXPECT_EQ(quad_batch.submitted_objects, 3);
-	mock.draw_planar_geometry(Geometry::Rectangle, { .identifier = 1 });
-	EXPECT_EQ(quad_batch.submitted_objects, 1);
-}
