@@ -43,7 +43,6 @@ namespace Disarray::Vulkan {
 		, props(properties)
 	{
 		auto source = read_file(props.path);
-		shader_path = props.path.string();
 
 		auto type = to_stage(props.type);
 

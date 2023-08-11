@@ -14,7 +14,8 @@ namespace Disarray::Vulkan {
 
 		void destroy_module() override;
 
-		const std::string& path() const override { return shader_path; }
+		const ShaderProperties& get_properties() const override { return props; }
+		ShaderProperties& get_properties() override { return props; }
 
 	private:
 		std::string read_file(const std::filesystem::path&);
@@ -23,7 +24,6 @@ namespace Disarray::Vulkan {
 
 		Disarray::Device& device;
 		ShaderProperties props;
-		std::string shader_path;
 
 		VkPipelineShaderStageCreateInfo stage;
 		VkShaderModule shader_module;

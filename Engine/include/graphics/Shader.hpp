@@ -34,8 +34,9 @@ namespace Disarray {
 	class Shader : public ReferenceCountable {
 		DISARRAY_OBJECT(Shader)
 	public:
-		virtual const std::string& path() const = 0;
 		virtual void destroy_module() = 0;
+		virtual const ShaderProperties& get_properties() const = 0;
+		virtual ShaderProperties& get_properties() = 0;
 
 		static Ref<Disarray::Shader> construct(Disarray::Device& device, const ShaderProperties&);
 	};

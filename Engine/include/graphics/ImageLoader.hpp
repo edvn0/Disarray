@@ -9,7 +9,7 @@ namespace Disarray {
 
 	class ImageLoader {
 	public:
-		explicit ImageLoader(const std::string&, DataBuffer&);
+		explicit ImageLoader(const std::filesystem::path&, DataBuffer&);
 		~ImageLoader();
 
 		const auto& get_extent() const { return extent; }

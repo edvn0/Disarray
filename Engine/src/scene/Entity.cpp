@@ -23,16 +23,16 @@ auto fmt::formatter<Disarray::Entity>::format(const Disarray::Entity& c, fmt::fo
 namespace Disarray {
 
 	// TODO: ID will need some UUID, for now, lets just increase by one
-	static Identifier global_identifier { 0 };
+	static Identifier global_identifier { 1 };
 
 	Entity::Entity(Scene& s, std::string_view n)
 		: scene(s)
 		, name(n)
 		, identifier(scene.get_registry().create())
 	{
-		add_component<Transform>();
-		add_component<ID>(global_identifier++);
-		add_component<Tag>(name);
+		add_component<Components::Transform>();
+		add_component<Components::ID>(global_identifier++);
+		add_component<Components::Tag>(name);
 	}
 
 	Entity::Entity(Scene& s, entt::entity entity, std::string_view n)
@@ -44,13 +44,17 @@ namespace Disarray {
 
 	void Entity::add_child(Entity& child)
 	{
-		if (!has_component<Inheritance>()) {
-			add_component<Inheritance>();
+		if (!has_component<Components::Inheritance>()) {
+			add_component<Components::Inheritance>();
 		}
 
-		auto& inheritance_info = get_components<Inheritance>();
+		auto& inheritance_info = get_components<Components::Inheritance>();
 		inheritance_info.add_child(child);
-		inheritance_info.parent = get_identifier();
+
+		if (!child.has_component<Components::Inheritance>()) {
+			auto& child_inheritance = child.add_component<Components::Inheritance>();
+			child_inheritance.parent = get_components<Components::ID>().identifier;
+		}
 	}
 
 	void Entity::add_child(Entity* child_of_this)

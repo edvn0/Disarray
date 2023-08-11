@@ -62,6 +62,7 @@ set(ENGINE_SOURCES
         include/scene/Components.hpp
         include/scene/Entity.hpp
         include/scene/Serialiser.hpp
+        include/scene/ComponentSerialisers.hpp
         include/scene/Deserialiser.hpp
         include/scene/Scene.hpp
         include/core/ThreadPool.hpp
@@ -84,6 +85,7 @@ set(ENGINE_SOURCES
         include/core/Clock.hpp
         include/core/KeyCode.hpp
         include/core/Log.hpp
+        include/core/Tuple.hpp
         include/core/Platform.hpp
         include/core/CleanupAwaiter.hpp
         include/core/PointerDefinition.hpp
@@ -157,7 +159,7 @@ set(ENGINE_SOURCES
         src/scene/Entity.cpp
         src/scene/Scene.cpp
         src/scene/Camera.cpp
-        src/scene/Serialiser.cpp
+        src/scene/ComponentSerialisers.cpp
         src/scene/Deserialiser.cpp
         src/core/DataBuffer.cpp
         src/core/Layer.cpp

@@ -51,6 +51,7 @@ namespace Disarray {
 
 		entt::registry& get_registry() { return registry; };
 		const entt::registry& get_registry() const { return registry; };
+		const std::string& get_name() const { return scene_name; };
 
 		template <class Func> constexpr void for_all_entities(Func&& func)
 		{

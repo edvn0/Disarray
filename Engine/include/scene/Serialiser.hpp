@@ -1,12 +1,10 @@
 #pragma once
 
 #include "core/Log.hpp"
-#include "scene/Component.hpp"
-#include "scene/Components.hpp"
-#include "scene/Entity.hpp"
+#include "core/Tuple.hpp"
+#include "scene/ComponentSerialisers.hpp"
 
 #include <filesystem>
-#include <magic_enum.hpp>
 #include <nlohmann/json.hpp>
 #include <sstream>
 #include <tuple>
@@ -15,89 +13,105 @@ namespace Disarray {
 
 	class Scene;
 
-	enum class SerialiserType {
-		Faulty,
-		Pipeline,
-	};
-
 	namespace {
-		template <class Tup, class Func, std::size_t... Is> constexpr void static_for_impl(Tup&& t, Func&& f, std::index_sequence<Is...>)
-		{
-			(f(std::integral_constant<std::size_t, Is> {}, std::get<Is>(t)), ...);
-		}
 
-		template <class... T, class Func> constexpr void static_for(std::tuple<T...>& t, Func&& f)
-		{
-			static_for_impl(t, std::forward<Func>(f), std::make_index_sequence<sizeof...(T)> {});
-		}
-	} // namespace
-
-	template <ValidComponent T, class Child> struct ComponentSerialiser {
-		static constexpr SerialiserType serialiser_type = SerialiserType::Faulty;
-
-		bool can_serialise(const Entity& entity) { return entity.has_component<T>(); }
-
-		void serialise(const T& component, nlohmann::json& object_for_the_component)
-		{
-			static_cast<Child&>(*this).serialise_impl(component, object_for_the_component);
+		class CouldNotSerialiseException : public std::runtime_error {
+		public:
+			explicit CouldNotSerialiseException(const std::string& message)
+				: runtime_error(message)
+			{
+			}
+			~CouldNotSerialiseException() noexcept override = default;
 		};
-	};
-
-	struct PipelineSerialiser : public ComponentSerialiser<Components::Pipeline, PipelineSerialiser> {
-		static constexpr SerialiserType serialiser_type = SerialiserType::Pipeline;
-		void serialise_impl(const Components::Pipeline& pipeline, nlohmann::json&);
-	};
-
-	namespace {
 
 		template <class... Serialisers> struct Serialiser {
 			using json = nlohmann::json;
 
-			explicit Serialiser(Scene& s, const std::filesystem::path& output = "Assets/Scene")
+			explicit Serialiser(Scene& s, const std::filesystem::path& output_path = "Assets/Scene")
 				: scene(s)
-				, path(output)
+				, path(output_path)
 			{
-				serialise();
+				json out;
+				try {
+					out = serialise();
+				} catch (const CouldNotSerialiseException& exc) {
+					Log::error("Scene Serialiser", "Could not serialise scene. Message: {}", exc.what());
+					return;
+				}
+
+				if (out.empty()) {
+					Log::info("Scene Serialiser", "Serialised output was empty...?");
+					return;
+				}
+
+				namespace ch = std::chrono;
+				auto time = Log::current_time(false);
+				std::replace(time.begin(), time.end(), ':', '-');
+				std::replace(time.begin(), time.end(), ' ', '-');
+				auto name = scene.get_name();
+				std::replace(name.begin(), name.end(), ' ', '_');
+				std::replace(name.begin(), name.end(), '+', '_');
+
+				auto scene_name = fmt::format("{}-{}.json", name, time);
+				std::ofstream output { path / scene_name };
+				if (!output) {
+					Log::error("Scene Serialiser", "Could not open {} for writing.", path);
+				}
+
+				output << std::setw(2) << out;
+				Log::info("Scene Serialiser", "Successfully serialised scene!");
 			};
+
 			std::tuple<Serialisers...> serialisers {};
 
-			void serialise()
+			json serialise()
 			{
 				json root;
 				root["name"] = "Scene";
 
 				const auto& registry = scene.get_registry();
 
-				const auto view = registry.view<const ID, const Tag>();
-				auto entities = json::array();
+				const auto view = registry.view<const Components::ID, const Components::Tag>();
+				json entities;
 				for (const auto [handle, id, tag] : view.each()) {
-					json entity_object;
 					Entity entity { scene, handle };
-					entity_object["tag"] = tag.name;
-					entity_object["identifier"] = id.identifier;
+					auto key = fmt::format("{}__disarray__{}", tag.name, id.identifier);
 
-					auto components = json::array();
+					json entity_object;
+
+					json components;
 					serialise_component<Components::Pipeline>(entity, components);
-
+					serialise_component<Components::Texture>(entity, components);
+					serialise_component<Components::Mesh>(entity, components);
+					serialise_component<Components::Transform>(entity, components);
+					serialise_component<Components::LineGeometry>(entity, components);
+					serialise_component<Components::QuadGeometry>(entity, components);
+					serialise_component<Components::Inheritance>(entity, components);
 					entity_object["components"] = components;
-					entities.push_back(entity_object);
+
+					entities[key] = entity_object;
 				}
 
 				root["entities"] = entities;
-				std::stringstream stream;
-				stream << std::setw(4) << root;
-				Log::debug("Scene Serialiser", "\n{}", stream.str());
+
+				return root;
 			}
 
 			template <class T> void serialise_component(Entity& entity, json& components)
 			{
-				static_for(serialisers, [&entity, &components](auto, auto& serialiser) {
+				static constexpr auto type = serialiser_type_for<T>;
+				auto result = std::apply(
+					[](auto... ts) {
+						return std::tuple_cat(std::conditional_t<(decltype(ts)::type == type), std::tuple<decltype(ts)>, std::tuple<>> {}...);
+					},
+					serialisers);
+				Tuple::static_for(result, [&entity, &components](auto, auto& serialiser) {
 					if (serialiser.can_serialise(entity)) {
 						json object;
 						auto& component = entity.get_components<T>();
+						auto key = serialiser.get_component_name();
 						serialiser.serialise(component, object);
-						ensure(object.contains("component_name"), "Component name is missing.");
-						components.push_back(object);
+						components[key] = object;
 					}
 				});
 			}
@@ -108,6 +122,7 @@ namespace Disarray {
 		};
 	} // namespace
 
-	using SceneSerialiser = Serialiser<PipelineSerialiser>;
+	using SceneSerialiser = Serialiser<PipelineSerialiser, TextureSerialiser, MeshSerialiser, TransformSerialiser, InheritanceSerialiser,
+		LineGeometrySerialiser, QuadGeometrySerialiser>;
 
 } // namespace Disarray

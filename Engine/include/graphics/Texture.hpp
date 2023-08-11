@@ -14,7 +14,7 @@ namespace Disarray {
 		Extent extent;
 		ImageFormat format;
 		std::optional<std::uint32_t> mips { std::nullopt };
-		std::string path {};
+		std::filesystem::path path {};
 		std::string debug_name;
 	};
 
@@ -23,6 +23,9 @@ namespace Disarray {
 	public:
 		virtual Image& get_image() = 0;
 		virtual const Image& get_image() const = 0;
+
+		virtual const TextureProperties& get_properties() const = 0;
+		virtual TextureProperties& get_properties() = 0;
 
 		static Ref<Texture> construct(Device&, const TextureProperties&);
 	};

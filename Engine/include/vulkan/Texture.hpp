@@ -23,6 +23,9 @@ namespace Disarray::Vulkan {
 		Image& get_image() override { return *image; }
 		const Image& get_image() const override { return *image; }
 
+		const TextureProperties& get_properties() const override { return props; }
+		TextureProperties& get_properties() override { return props; }
+
 	private:
 		void recreate_texture(bool should_clean = true);
 		void load_pixels();

@@ -25,7 +25,7 @@ namespace std {
 
 namespace Disarray {
 
-	ModelLoader::ModelLoader(const std::string& path, const glm::mat4& initial_rotation)
+	ModelLoader::ModelLoader(const std::filesystem::path& path, const glm::mat4& initial_rotation)
 	{
 		const bool needs_rotate = initial_rotation != glm::mat4 { 1.0f };
 		tinyobj::attrib_t attrib;
@@ -33,8 +33,8 @@ namespace Disarray {
 		std::vector<tinyobj::material_t> materials;
 		std::string warn;
 
-		if (std::string err; !tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.c_str())) {
-			throw std::runtime_error(warn + err);
+		if (std::string err; !tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.string().c_str())) {
+			throw std::runtime_error(fmt::format("\n{}\n{}", warn, err));
 		}
 
 		std::unordered_map<Vertex, uint32_t> unique_vertices {};
