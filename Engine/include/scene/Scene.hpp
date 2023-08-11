@@ -50,6 +50,7 @@ namespace Disarray {
 		const CommandExecutor& get_command_executor() const { return *command_executor; };
 
 		entt::registry& get_registry() { return registry; };
+		const entt::registry& get_registry() const { return registry; };
 
 		template <class Func> constexpr void for_all_entities(Func&& func)
 		{

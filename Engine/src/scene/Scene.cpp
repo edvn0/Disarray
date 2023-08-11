@@ -14,6 +14,7 @@
 #include "graphics/Texture.hpp"
 #include "scene/Components.hpp"
 #include "scene/Entity.hpp"
+#include "scene/Serialiser.hpp"
 
 #include <entt/entt.hpp>
 
@@ -172,6 +173,8 @@ namespace Disarray {
 			Ref<Texture> white_tex = Texture::construct(device, white_tex_props);
 			renderer.expose_to_shaders(*white_tex);
 		}
+
+		SceneSerialiser scene_serialiser(*this);
 #endif
 
 		TextureProperties texture_properties { .extent = swapchain.get_extent(), .format = ImageFormat::SBGR, .debug_name = "viking" };
