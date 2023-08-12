@@ -73,7 +73,7 @@ jobs:
 
       - name: Build 3PP Dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
-        run: cmake --build build --config ${{env.BUILD_TYPE}} --target ApprovalTests fmt gtest imgui glfw
+        run: cmake --build build --config ${{env.BUILD_TYPE}} --target ApprovalTests fmt imgui glfw gtest gtest_main gmock gmock_main
 
       - name: Build
         run: cmake --build build --config ${{env.BUILD_TYPE}}
