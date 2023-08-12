@@ -14,7 +14,7 @@ namespace Disarray {
 	struct FloatExtent;
 	struct Extent;
 
-	template <IsEnum Enum> inline constexpr decltype(auto) to_enum_value(const auto& object, std::string_view key)
+	template <class Enum> inline decltype(auto) to_enum_value(const auto& object, std::string_view key)
 	{
 		std::string value;
 		if (!object.contains(key)) {

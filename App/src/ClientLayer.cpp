@@ -4,6 +4,7 @@
 #include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
 #include "panels/ScenePanel.hpp"
+#include "panels/StatisticsPanel.hpp"
 
 #include <Disarray.hpp>
 #include <array>

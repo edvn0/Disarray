@@ -20,7 +20,7 @@ namespace Disarray {
 	};
 
 	enum class SerialiserType : std::uint8_t { Faulty, Pipeline, Texture, Mesh, Transform, LineGeometry, QuadGeometry, Inheritance };
-	template <class T> constexpr SerialiserType serialiser_type_for = SerialiserType::Faulty;
+	template <class T> inline constexpr SerialiserType serialiser_type_for = SerialiserType::Faulty;
 
 	template <ValidComponent T, class Child> struct ComponentSerialiser {
 		bool can_serialise(const Entity& entity) { return entity.has_component<T>(); }
@@ -52,7 +52,7 @@ namespace Disarray {
 		static constexpr SerialiserType type = SerialiserType::ComponentType;                                                                        \
 		void serialise_impl(const Components::ComponentType&, nlohmann::json&);                                                                      \
 	};                                                                                                                                               \
-	template <> constexpr SerialiserType serialiser_type_for<Components::ComponentType> = SerialiserType::ComponentType;
+	template <> inline constexpr SerialiserType serialiser_type_for<Components::ComponentType> = SerialiserType::ComponentType;
 
 #define MAKE_DESERIALISER(Name, ComponentType)                                                                                                       \
 	struct Name : public ComponentDeserialiser<Components::ComponentType, Name> {                                                                    \
