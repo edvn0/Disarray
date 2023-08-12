@@ -69,7 +69,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: dependencies_${{env.BUILD_TYPE}}
-          key: ${{ runner.os }}_dependencies_${{env.BUILD_TYPE}}
+          key: ${{ runner.os }}_dependencies_${{env.CXX}}_${{env.CC}}_${{env.BUILD_TYPE}}
 
       - name: Build 3PP Dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
