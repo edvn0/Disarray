@@ -106,6 +106,10 @@ def generate_cmake(
             f"-D CMAKE_C_COMPILER={os.environ['CMAKE_C_COMPILER']}",
         ]
 
+    from shutil import which
+    if which("ccache") is not None:
+        extra_compile_definitions.append(f"-D CMAKE_CXX_COMPILER_LAUNCHER={which('ccache')}")
+
     compile_definitions = [
         f"-G {generator_string}",
         f"-D CMAKE_BUILD_TYPE={build_mode.value}",
