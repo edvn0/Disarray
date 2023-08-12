@@ -35,7 +35,7 @@ namespace Disarray::Vulkan {
 #ifdef HAS_MSAA
 		samples = cast_to<Vulkan::PhysicalDevice>(dev.get_physical_device()).get_sample_count();
 #else
-		samples = SampleCount::ONE;
+		samples = SampleCount::One;
 #endif
 		recreate_swapchain(old, false);
 		swapchain_needs_recreation = false;

@@ -1,0 +1,549 @@
+{
+	"entities": {
+		"15__disarray__Grid": {
+			"components": {
+				"Inheritance": {
+					"children": [
+						16,
+						17,
+						18,
+						19
+					]
+				},
+				"Transform": {
+					"position": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"rotation": [
+						"q",
+						1.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"scale": [
+						1.0,
+						1.0,
+						1.0
+					]
+				}
+			}
+		},
+		"16__disarray__Rect-1--1": {
+			"components": {
+				"Inheritance": {
+					"parent": 15
+				},
+				"QuadGeometry": {
+					"geometry": "Rectangle"
+				},
+				"Texture": {
+					"colour": [
+						1.0,
+						1.0,
+						1.0,
+						1.0
+					]
+				},
+				"Transform": {
+					"position": [
+						-1.5,
+						-1.0,
+						-1.5
+					],
+					"rotation": [
+						"q",
+						0.7071067690849304,
+						0.7071067690849304,
+						0.0,
+						0.0
+					],
+					"scale": [
+						1.0,
+						1.0,
+						1.0
+					]
+				}
+			}
+		},
+		"17__disarray__Rect0--1": {
+			"components": {
+				"Inheritance": {
+					"parent": 15
+				},
+				"QuadGeometry": {
+					"geometry": "Rectangle"
+				},
+				"Texture": {
+					"colour": [
+						1.0,
+						1.0,
+						1.0,
+						1.0
+					]
+				},
+				"Transform": {
+					"position": [
+						0.5,
+						-1.0,
+						-1.5
+					],
+					"rotation": [
+						"q",
+						0.7071067690849304,
+						0.7071067690849304,
+						0.0,
+						0.0
+					],
+					"scale": [
+						1.0,
+						1.0,
+						1.0
+					]
+				}
+			}
+		},
+		"18__disarray__Rect-1-0": {
+			"components": {
+				"Inheritance": {
+					"parent": 15
+				},
+				"QuadGeometry": {
+					"geometry": "Rectangle"
+				},
+				"Texture": {
+					"colour": [
+						1.0,
+						1.0,
+						1.0,
+						1.0
+					]
+				},
+				"Transform": {
+					"position": [
+						-1.5,
+						-1.0,
+						0.5
+					],
+					"rotation": [
+						"q",
+						0.7071067690849304,
+						0.7071067690849304,
+						0.0,
+						0.0
+					],
+					"scale": [
+						1.0,
+						1.0,
+						1.0
+					]
+				}
+			}
+		},
+		"19__disarray__Rect0-0": {
+			"components": {
+				"Inheritance": {
+					"parent": 15
+				},
+				"QuadGeometry": {
+					"geometry": "Rectangle"
+				},
+				"Texture": {
+					"colour": [
+						1.0,
+						1.0,
+						1.0,
+						1.0
+					]
+				},
+				"Transform": {
+					"position": [
+						0.5,
+						-1.0,
+						0.5
+					],
+					"rotation": [
+						"q",
+						0.7071067690849304,
+						0.7071067690849304,
+						0.0,
+						0.0
+					],
+					"scale": [
+						1.0,
+						1.0,
+						1.0
+					]
+				}
+			}
+		},
+		"20__disarray__Rect0": {
+			"components": {
+				"QuadGeometry": {
+					"geometry": "Rectangle"
+				},
+				"Texture": {
+					"colour": [
+						0.0,
+						0.30000001192092896,
+						0.0,
+						1.0
+					]
+				},
+				"Transform": {
+					"position": [
+						0.5,
+						-1.0,
+						0.0
+					],
+					"rotation": [
+						"q",
+						0.7071067690849304,
+						0.7071067690849304,
+						0.0,
+						0.0
+					],
+					"scale": [
+						1.0,
+						1.0,
+						1.0
+					]
+				}
+			}
+		},
+		"21__disarray__Rect1": {
+			"components": {
+				"QuadGeometry": {
+					"geometry": "Rectangle"
+				},
+				"Texture": {
+					"colour": [
+						0.3333333432674408,
+						0.30000001192092896,
+						0.3333333432674408,
+						1.0
+					]
+				},
+				"Transform": {
+					"position": [
+						2.5,
+						-1.0,
+						0.0
+					],
+					"rotation": [
+						"q",
+						0.7071067690849304,
+						0.7071067690849304,
+						0.0,
+						0.0
+					],
+					"scale": [
+						1.0,
+						1.0,
+						1.0
+					]
+				}
+			}
+		},
+		"22__disarray__Rect2": {
+			"components": {
+				"QuadGeometry": {
+					"geometry": "Rectangle"
+				},
+				"Texture": {
+					"colour": [
+						0.6666666865348816,
+						0.30000001192092896,
+						0.6666666865348816,
+						1.0
+					]
+				},
+				"Transform": {
+					"position": [
+						4.5,
+						-1.0,
+						0.0
+					],
+					"rotation": [
+						"q",
+						0.7071067690849304,
+						0.7071067690849304,
+						0.0,
+						0.0
+					],
+					"scale": [
+						1.0,
+						1.0,
+						1.0
+					]
+				}
+			}
+		},
+		"23__disarray__Rect3": {
+			"components": {
+				"QuadGeometry": {
+					"geometry": "Rectangle"
+				},
+				"Texture": {
+					"colour": [
+						1.0,
+						0.30000001192092896,
+						1.0,
+						1.0
+					]
+				},
+				"Transform": {
+					"position": [
+						6.5,
+						-1.0,
+						0.0
+					],
+					"rotation": [
+						"q",
+						0.7071067690849304,
+						0.7071067690849304,
+						0.0,
+						0.0
+					],
+					"scale": [
+						1.0,
+						1.0,
+						1.0
+					]
+				}
+			}
+		},
+		"24__disarray__UnitVectors": {
+			"components": {
+				"Inheritance": {
+					"children": [
+						25,
+						26,
+						27
+					]
+				},
+				"Transform": {
+					"position": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"rotation": [
+						"q",
+						1.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"scale": [
+						1.0,
+						1.0,
+						1.0
+					]
+				}
+			}
+		},
+		"25__disarray__XAxis": {
+			"components": {
+				"Inheritance": {
+					"parent": 24
+				},
+				"LineGeometry": {
+					"geometry": "Line",
+					"to_position": [
+						10.0,
+						0.0,
+						0.0
+					]
+				},
+				"Texture": {
+					"colour": [
+						1.0,
+						0.0,
+						0.0,
+						1.0
+					]
+				},
+				"Transform": {
+					"position": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"rotation": [
+						"q",
+						1.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"scale": [
+						1.0,
+						1.0,
+						1.0
+					]
+				}
+			}
+		},
+		"26__disarray__YAxis": {
+			"components": {
+				"Inheritance": {
+					"parent": 24
+				},
+				"LineGeometry": {
+					"geometry": "Line",
+					"to_position": [
+						0.0,
+						-10.0,
+						0.0
+					]
+				},
+				"Texture": {
+					"colour": [
+						0.0,
+						1.0,
+						0.0,
+						1.0
+					]
+				},
+				"Transform": {
+					"position": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"rotation": [
+						"q",
+						1.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"scale": [
+						1.0,
+						1.0,
+						1.0
+					]
+				}
+			}
+		},
+		"27__disarray__ZAxis": {
+			"components": {
+				"Inheritance": {
+					"parent": 24
+				},
+				"LineGeometry": {
+					"geometry": "Line",
+					"to_position": [
+						0.0,
+						0.0,
+						-10.0
+					]
+				},
+				"Texture": {
+					"colour": [
+						0.0,
+						0.0,
+						1.0,
+						1.0
+					]
+				},
+				"Transform": {
+					"position": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"rotation": [
+						"q",
+						1.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"scale": [
+						1.0,
+						1.0,
+						1.0
+					]
+				}
+			}
+		},
+		"28__disarray__Viking": {
+			"components": {
+				"Mesh": {
+					"properties": {
+						"initial_rotation": [
+							[
+								1.0,
+								0.0,
+								0.0,
+								0.0
+							],
+							[
+								0.0,
+								1.0,
+								0.0,
+								0.0
+							],
+							[
+								0.0,
+								0.0,
+								1.0,
+								0.0
+							],
+							[
+								0.0,
+								0.0,
+								0.0,
+								1.0
+							]
+						],
+						"path": "Assets\\Models\\viking.mesh",
+						"pipeline": false
+					}
+				},
+				"Texture": {
+					"colour": [
+						1.0,
+						1.0,
+						1.0,
+						1.0
+					],
+					"properties": {
+						"debug_name": "",
+						"extent": {
+							"height": 1024,
+							"width": 1024
+						},
+						"format": "SRGB",
+						"mips": 11,
+						"path": "Assets\\Textures\\viking_room.png"
+					}
+				},
+				"Transform": {
+					"position": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"rotation": [
+						"q",
+						1.0,
+						0.0,
+						0.0,
+						0.0
+					],
+					"scale": [
+						1.0,
+						1.0,
+						1.0
+					]
+				}
+			}
+		}
+	},
+	"name": "Scene"
+}

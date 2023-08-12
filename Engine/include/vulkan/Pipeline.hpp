@@ -7,7 +7,7 @@ namespace Disarray::Vulkan {
 
 	class Pipeline : public Disarray::Pipeline, public PropertySupplier<VkPipeline> {
 	public:
-		Pipeline(Disarray::Device&, const PipelineProperties&);
+		Pipeline(const Disarray::Device&, const PipelineProperties&);
 		~Pipeline() override;
 
 		void force_recreation() override { recreate(true); };
@@ -28,7 +28,7 @@ namespace Disarray::Vulkan {
 			Ref<Disarray::Shader> vertex, Ref<Disarray::Shader> fragment) const;
 		void recreate_pipeline(bool should_clean);
 
-		Disarray::Device& device;
+		const Disarray::Device& device;
 		PipelineProperties props;
 		VkPipeline pipeline;
 		VkPipelineLayout layout;

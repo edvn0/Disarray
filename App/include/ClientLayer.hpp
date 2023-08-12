@@ -19,7 +19,8 @@ namespace Disarray::Client {
 		void destruct() override;
 
 	private:
-		Scene scene;
+		Scope<Scene> scene;
+		Device& device;
 
 		EditorCamera camera;
 

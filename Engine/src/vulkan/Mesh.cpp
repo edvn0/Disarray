@@ -10,7 +10,7 @@ namespace Disarray::Vulkan {
 
 	Mesh::~Mesh() = default;
 
-	Mesh::Mesh(Disarray::Device& dev, const Disarray::MeshProperties& properties)
+	Mesh::Mesh(const Disarray::Device& dev, const Disarray::MeshProperties& properties)
 		: device(dev)
 		, props(properties)
 	{

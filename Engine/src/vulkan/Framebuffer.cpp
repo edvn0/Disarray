@@ -21,7 +21,7 @@
 
 namespace Disarray::Vulkan {
 
-	Framebuffer::Framebuffer(Disarray::Device& dev, const FramebufferProperties& properties)
+	Framebuffer::Framebuffer(const Disarray::Device& dev, const FramebufferProperties& properties)
 		: device(dev)
 		, props(properties)
 	{

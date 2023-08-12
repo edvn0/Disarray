@@ -13,7 +13,7 @@ namespace Disarray::Vulkan {
 
 	class Framebuffer : public Disarray::Framebuffer, public PropertySupplier<VkFramebuffer> {
 	public:
-		Framebuffer(Disarray::Device&, const FramebufferProperties&);
+		Framebuffer(const Disarray::Device&, const FramebufferProperties&);
 		~Framebuffer() override;
 
 		void force_recreation() override;
@@ -39,13 +39,12 @@ namespace Disarray::Vulkan {
 	private:
 		void recreate_framebuffer(bool should_clean = true);
 
-		std::uint32_t colour_count {};
-
-		Disarray::Device& device;
+		const Disarray::Device& device;
 		Ref<Disarray::RenderPass> render_pass { nullptr };
 		VkFramebuffer framebuffer {};
 		std::vector<VkClearValue> clear_values {};
 
+		std::uint32_t colour_count {};
 		std::vector<Scope<Vulkan::Image>> attachments;
 		Scope<Vulkan::Image> depth_attachment;
 

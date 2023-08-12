@@ -13,7 +13,9 @@
 #include "graphics/Renderer.hpp"
 #include "graphics/Texture.hpp"
 #include "scene/Components.hpp"
+#include "scene/Deserialiser.hpp"
 #include "scene/Entity.hpp"
+#include "scene/Serialiser.hpp"
 
 #include <entt/entt.hpp>
 
@@ -28,31 +30,30 @@ static auto rotate_by(const glm::vec3& axis_radians)
 
 namespace Disarray {
 
-	Scene::Scene(Device& dev, Window& win, Swapchain& sc, std::string_view name)
+	Scene::Scene(const Device& dev, std::string_view name)
 		: device(dev)
-		, window(win)
-		, swapchain(sc)
 		, scene_name(name)
 		, registry(entt::basic_registry())
 	{
-		(void)window.native();
 	}
 
-	void Scene::construct(Disarray::App&, Disarray::Renderer& renderer, Disarray::ThreadPool&)
+	void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray::ThreadPool&)
 	{
+		extent = app.get_swapchain().get_extent();
+		command_executor = CommandExecutor::construct(device, app.get_swapchain(), { .count = 3, .is_primary = true, .record_stats = true });
+
 		int rects_x { 2 };
 		int rects_y { 2 };
 		auto parent = create("Grid");
 		for (auto j = -rects_y / 2; j < rects_y / 2; j++) {
 			for (auto i = -rects_x / 2; i < rects_x / 2; i++) {
 				auto rect = create(fmt::format("Rect{}-{}", i, j));
-				parent.add_child(&rect);
-				auto& transform = rect.get_components<Transform>();
+				parent.add_child(rect);
+				auto& transform = rect.get_components<Components::Transform>();
 				transform.position = { 2 * static_cast<float>(i) + 0.5f, -1, 2 * static_cast<float>(j) + 0.5f };
 				transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
 				glm::vec4 colour {};
-				rect.add_component<Components::Geometry>(Geometry::Rectangle);
-				rect.add_component<QuadGeometry>();
+				rect.add_component<Components::QuadGeometry>();
 				rect.add_component<Components::Texture>();
 			}
 		}
@@ -69,12 +70,11 @@ namespace Disarray {
 
 		for (auto i = 0; i < 4; i++) {
 			auto rect = create(fmt::format("Rect{}", i));
-			auto& transform = rect.get_components<Transform>();
+			auto& transform = rect.get_components<Components::Transform>();
 			transform.position = { 2 * static_cast<float>(i) + 0.5f, -1, 0 };
 			transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
 			glm::vec4 colour { i / 3.f, 0.3, i / 3.f, 1.f };
-			rect.add_component<Components::Geometry>(Geometry::Rectangle);
-			rect.add_component<QuadGeometry>();
+			rect.add_component<Components::QuadGeometry>();
 			rect.add_component<Components::Texture>(colour);
 		}
 
@@ -83,31 +83,30 @@ namespace Disarray {
 			const glm::vec3 base_pos { 0, 0, 0 };
 			{
 				auto axis = create("XAxis");
-				auto& transform = axis.get_components<Transform>();
+				auto& transform = axis.get_components<Components::Transform>();
 				transform.position = base_pos;
-				axis.add_component<LineGeometry>(base_pos + glm::vec3 { 10.0, 0, 0 });
+				axis.add_component<Components::LineGeometry>(base_pos + glm::vec3 { 10.0, 0, 0 });
 				axis.add_component<Components::Texture>(glm::vec4 { 1, 0, 0, 1 });
 				unit_vectors.add_child(axis);
 			}
 			{
 				auto axis = create("YAxis");
-				auto& transform = axis.get_components<Transform>();
+				auto& transform = axis.get_components<Components::Transform>();
 				transform.position = base_pos;
-				axis.add_component<LineGeometry>(base_pos + glm::vec3 { 0, -10.0, 0 });
+				axis.add_component<Components::LineGeometry>(base_pos + glm::vec3 { 0, -10.0, 0 });
 				axis.add_component<Components::Texture>(glm::vec4 { 0, 1, 0, 1 });
 				unit_vectors.add_child(axis);
 			}
 			{
 				auto axis = create("ZAxis");
-				auto& transform = axis.get_components<Transform>();
+				auto& transform = axis.get_components<Components::Transform>();
 				transform.position = base_pos;
-				axis.add_component<LineGeometry>(base_pos + glm::vec3 { 0, 0, -10.0 });
+				axis.add_component<Components::LineGeometry>(base_pos + glm::vec3 { 0, 0, -10.0 });
 				axis.add_component<Components::Texture>(glm::vec4 { 0, 0, 1, 1 });
 				unit_vectors.add_child(axis);
 			}
 		}
 
-		command_executor = CommandExecutor::construct(device, swapchain, { .count = 3, .is_primary = true, .record_stats = true });
 		renderer.on_batch_full([&exec = *command_executor](Renderer& r) { r.flush_batch(exec); });
 
 		VertexLayout layout {
@@ -117,11 +116,9 @@ namespace Disarray {
 			{ ElementType::Float3, "normals" },
 		};
 
-		auto extent = swapchain.get_extent();
-
 		framebuffer = Framebuffer::construct(device,
 			{
-				.extent = swapchain.get_extent(),
+				.extent = extent,
 				.attachments = { { Disarray::ImageFormat::SBGR }, { ImageFormat::Depth } },
 				.clear_colour_on_load = false,
 				.clear_depth_on_load = false,
@@ -130,7 +127,7 @@ namespace Disarray {
 
 		identity_framebuffer = Framebuffer::construct(device,
 			{
-				.extent = swapchain.get_extent(),
+				.extent = extent,
 				.attachments = { { ImageFormat::SBGR }, { ImageFormat::Uint, false }, { ImageFormat::Depth } },
 				.clear_colour_on_load = true,
 				.clear_depth_on_load = true,
@@ -144,9 +141,8 @@ namespace Disarray {
 			.fragment_shader = frag,
 			.framebuffer = framebuffer,
 			.layout = layout,
-			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, std::size_t { 84 } } },
+			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, std::size_t { 84 }, }, },
 			.extent = extent,
-			.samples = SampleCount::ONE,
 			.depth_comparison_operator = DepthCompareOperator::GreaterOrEqual,
 			.cull_mode = CullMode::Back,
 			.descriptor_set_layout = renderer.get_descriptor_set_layouts().data(),
@@ -163,23 +159,36 @@ namespace Disarray {
 		v_mesh.add_component<Components::Pipeline>(Pipeline::construct(device, props));
 		v_mesh.add_component<Components::Texture>(renderer.get_texture_cache().get("viking_room"));
 
+		TextureProperties texture_properties {
+			.extent = extent,
+			.format = ImageFormat::SBGR,
+			.debug_name = "viking",
+		};
+		texture_properties.path = "Assets/Textures/viking_room.png";
+		v_mesh.add_component<Components::Texture>(Texture::construct(device, texture_properties));
+
 #define TEST_DESCRIPTOR_SETS
 #ifdef TEST_DESCRIPTOR_SETS
 		{
 			std::array<std::uint32_t, 1> white_tex_data = { 1 };
 			DataBuffer pixels { white_tex_data.data(), sizeof(std::uint32_t) };
-			TextureProperties white_tex_props { .extent = swapchain.get_extent(), .format = ImageFormat::SBGR, .debug_name = "white_tex" };
+			TextureProperties white_tex_props {
+				.extent = extent,
+				.format = ImageFormat::SBGR,
+				.debug_name = "white_tex",
+			};
 			Ref<Texture> white_tex = Texture::construct(device, white_tex_props);
 			renderer.expose_to_shaders(*white_tex);
 		}
-#endif
 
-		TextureProperties texture_properties { .extent = swapchain.get_extent(), .format = ImageFormat::SBGR, .debug_name = "viking" };
-		texture_properties.path = "Assets/Textures/viking_room.png";
-		v_mesh.add_component<Components::Texture>(Texture::construct(device, texture_properties));
+#endif
 	}
 
-	Scene::~Scene() { registry.clear(); }
+	Scene::~Scene()
+	{
+		SceneSerialiser scene_serialiser(*this);
+		registry.clear();
+	}
 
 	void Scene::update(float) { }
 
@@ -189,7 +198,7 @@ namespace Disarray {
 		{
 			renderer.begin_pass(*command_executor, *framebuffer, true);
 
-			auto mesh_view = registry.view<const Components::Mesh, const Components::Pipeline, const Transform>();
+			auto mesh_view = registry.view<const Components::Mesh, const Components::Pipeline, const Components::Transform>();
 			for (const auto& [entity, mesh, pipeline, transform] : mesh_view.each()) {
 				renderer.draw_mesh(*command_executor, *mesh.mesh, *pipeline.pipeline, transform.compute());
 			}
@@ -199,7 +208,7 @@ namespace Disarray {
 		{
 			renderer.begin_pass(*command_executor, *framebuffer);
 
-			auto line_view = registry.view<const LineGeometry, const Components::Texture, const Transform>();
+			auto line_view = registry.view<const Components::LineGeometry, const Components::Texture, const Components::Transform>();
 			for (const auto& [entity, geom, tex, transform] : line_view.each()) {
 				renderer.draw_planar_geometry(Geometry::Line,
 					{
@@ -214,7 +223,8 @@ namespace Disarray {
 		{
 			renderer.begin_pass(*command_executor, *identity_framebuffer);
 
-			auto rect_view = registry.view<const Components::Texture, const QuadGeometry, const Transform, const ID>();
+			auto rect_view
+				= registry.view<const Components::Texture, const Components::QuadGeometry, const Components::Transform, const Components::ID>();
 			for (const auto& [entity, tex, geom, transform, id] : rect_view.each()) {
 				renderer.draw_planar_geometry(Geometry::Rectangle,
 					{
@@ -253,8 +263,10 @@ namespace Disarray {
 		});
 	}
 
-	void Scene::recreate(const Extent& extent)
+	void Scene::recreate(const Extent& new_ex)
 	{
+		extent = new_ex;
+
 		identity_framebuffer->recreate(true, extent);
 		framebuffer->recreate(true, extent);
 		command_executor->recreate(true, extent);
@@ -266,6 +278,13 @@ namespace Disarray {
 	{
 		auto entity = Entity(*this, name);
 		return entity;
+	}
+
+	Scope<Scene> Scene::deserialise(const Device& device, std::string_view name, const std::filesystem::path& filename)
+	{
+		Scope<Scene> created = make_scope<Scene>(device, name);
+		SceneDeserialiser deserialiser { *created, device, filename };
+		return created;
 	}
 
 } // namespace Disarray

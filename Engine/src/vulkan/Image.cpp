@@ -19,12 +19,14 @@ namespace Disarray::Vulkan {
 		VkImageSubresourceRange subresource_range, VkPipelineStageFlags src_stage_mask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 		VkPipelineStageFlags dst_stage_mask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
-	Image::Image(Disarray::Device& dev, const Disarray::ImageProperties& properties)
+	Image::Image(const Disarray::Device& dev, const Disarray::ImageProperties& properties)
 		: device(dev)
 		, props(properties)
 	{
 		recreate_image(false);
 	}
+
+	Image::~Image() { destroy_resources(); }
 
 	void Image::destroy_resources()
 	{
@@ -37,8 +39,6 @@ namespace Disarray::Vulkan {
 		info.image = nullptr;
 		update_descriptor();
 	}
-
-	Image::~Image() { destroy_resources(); }
 
 	void Image::recreate(bool should_clean, const Extent& extent)
 	{

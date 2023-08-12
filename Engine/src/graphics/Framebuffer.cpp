@@ -9,7 +9,7 @@
 
 namespace Disarray {
 
-	Ref<Framebuffer> Framebuffer::construct(Disarray::Device& device, const Disarray::FramebufferProperties& props)
+	Ref<Framebuffer> Framebuffer::construct(const Disarray::Device& device, const Disarray::FramebufferProperties& props)
 	{
 		ensure(props.extent != Extent { 0, 0 });
 		return make_ref<Vulkan::Framebuffer>(device, props);

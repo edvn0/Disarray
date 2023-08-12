@@ -44,7 +44,7 @@ namespace Disarray {
 		bool should_blend { true };
 		FramebufferBlendMode blend_mode { FramebufferBlendMode::None };
 		bool should_present { false };
-		SampleCount samples { SampleCount::ONE };
+		SampleCount samples { SampleCount::One };
 		std::string debug_name { "UnknownFramebuffer" };
 	};
 
@@ -62,7 +62,7 @@ namespace Disarray {
 		virtual const FramebufferProperties& get_properties() const = 0;
 		virtual bool has_depth() = 0;
 
-		static Ref<Framebuffer> construct(Disarray::Device&, const FramebufferProperties&);
+		static Ref<Framebuffer> construct(const Disarray::Device&, const FramebufferProperties&);
 	};
 
 } // namespace Disarray

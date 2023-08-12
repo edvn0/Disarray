@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/Tuple.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Device.hpp"
 #include "graphics/IndexBuffer.hpp"
@@ -12,18 +13,6 @@
 #include <array>
 
 namespace Disarray {
-
-	namespace Detail {
-		template <class Tup, class Func, std::size_t... Is> constexpr void static_for_impl(Tup&& t, Func&& f, std::index_sequence<Is...>)
-		{
-			(f(std::integral_constant<std::size_t, Is> {}, std::get<Is>(t)), ...);
-		}
-
-		template <class... T, class Func> constexpr void static_for(std::tuple<T...>& t, Func&& f)
-		{
-			static_for_impl(t, std::forward<Func>(f), std::make_index_sequence<sizeof...(T)> {});
-		}
-	} // namespace Detail
 
 	template <IsValidVertexType T, std::size_t Objects = 1,
 		typename Child = std::enable_if<vertex_per_object_count<T> != 0 && index_per_object_count<T> != 0>>
@@ -115,18 +104,18 @@ namespace Disarray {
 		constexpr void reset()
 		{
 			submitted_geometries = 0;
-			Detail::static_for(objects, [](std::size_t index, auto& batch) { batch.reset(); });
+			Tuple::static_for(objects, [](std::size_t index, auto& batch) { batch.reset(); });
 		}
 
 		constexpr void construct(Disarray::Renderer& renderer, Disarray::Device& device)
 		{
-			Detail::static_for(objects, [&renderer, &device](std::size_t index, auto& batch) { batch.construct(renderer, device); });
+			Tuple::static_for(objects, [&renderer, &device](std::size_t index, auto& batch) { batch.construct(renderer, device); });
 		}
 
 		bool would_be_full()
 		{
 			bool batch_would_be_full = false;
-			Detail::static_for(objects, [&batch_would_be_full](std::size_t index, auto& batch) {
+			Tuple::static_for(objects, [&batch_would_be_full](std::size_t index, auto& batch) {
 				const auto more_than_max = batch.submitted_objects + 1 >= Objects;
 				batch_would_be_full |= more_than_max;
 			});
@@ -136,7 +125,7 @@ namespace Disarray {
 		bool is_full()
 		{
 			bool batch_would_be_full = false;
-			Detail::static_for(objects, [&batch_would_be_full](std::size_t index, auto& batch) {
+			Tuple::static_for(objects, [&batch_would_be_full](std::size_t index, auto& batch) {
 				const auto more_than_max = batch.submitted_objects >= Objects;
 				batch_would_be_full |= more_than_max;
 			});
@@ -146,7 +135,7 @@ namespace Disarray {
 		bool should_submit()
 		{
 			bool should_submit_batch = false;
-			Detail::static_for(objects, [&should_submit_batch](std::size_t index, auto& batch) {
+			Tuple::static_for(objects, [&should_submit_batch](std::size_t index, auto& batch) {
 				const auto predicate = batch.submitted_objects > 0 && batch.submitted_objects < Objects;
 				should_submit_batch |= predicate;
 			});
@@ -156,17 +145,17 @@ namespace Disarray {
 		void flush(Renderer& renderer, CommandExecutor& executor)
 		{
 			submitted_geometries = 0;
-			Detail::static_for(objects, [&ren = renderer, &ce = executor](std::size_t index, auto& batch) mutable { batch.flush(ren, ce); });
+			Tuple::static_for(objects, [&ren = renderer, &ce = executor](std::size_t index, auto& batch) mutable { batch.flush(ren, ce); });
 		}
 
 		constexpr void create_new(Geometry geometry, const GeometryProperties& properties)
 		{
-			Detail::static_for(objects, [geometry, &properties](std::size_t index, auto& batch) { batch.create_new(geometry, properties); });
+			Tuple::static_for(objects, [geometry, &properties](std::size_t index, auto& batch) { batch.create_new(geometry, properties); });
 		}
 
 		constexpr void submit(Disarray::Renderer& renderer, Disarray::CommandExecutor& command_executor)
 		{
-			Detail::static_for(objects, [&renderer, &command_executor](std::size_t index, auto& batch) { batch.submit(renderer, command_executor); });
+			Tuple::static_for(objects, [&renderer, &command_executor](std::size_t index, auto& batch) { batch.submit(renderer, command_executor); });
 		}
 	};
 

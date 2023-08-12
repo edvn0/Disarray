@@ -26,7 +26,8 @@ namespace Disarray {
 
 	class ModelLoader {
 	public:
-		explicit ModelLoader(const std::string&, const glm::mat4& = glm::mat4 { 1.0f });
+		explicit ModelLoader(const std::filesystem::path&, const glm::mat4& = glm::mat4 { 1.0f });
+		~ModelLoader() = default;
 
 		const auto& get_vertices() const { return vertices; }
 		const auto& get_indices() const { return indices; }

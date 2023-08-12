@@ -16,7 +16,7 @@ namespace Disarray {
 		DataBuffer data;
 		std::uint32_t mips { static_cast<std::uint32_t>(std::floor(std::log2(std::max(extent.width, extent.height)))) + 1 };
 		bool should_present { false };
-		SampleCount samples { SampleCount::ONE };
+		SampleCount samples { SampleCount::One };
 		std::string debug_name;
 	};
 

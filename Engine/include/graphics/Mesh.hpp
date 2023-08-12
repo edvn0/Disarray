@@ -15,22 +15,23 @@
 namespace Disarray {
 
 	struct MeshProperties {
-		std::string path;
-		Ref<Pipeline> pipeline;
+		std::filesystem::path path {};
+		Ref<Pipeline> pipeline { nullptr };
 		glm::mat4 initial_rotation { 1.0f };
 	};
 
 	class Mesh : public ReferenceCountable {
 		DISARRAY_OBJECT(Mesh)
 	public:
-		virtual Pipeline& get_pipeline() = 0;
 		virtual VertexBuffer& get_vertices() = 0;
 		virtual IndexBuffer& get_indices() = 0;
-		virtual const Pipeline& get_pipeline() const = 0;
 		virtual const VertexBuffer& get_vertices() const = 0;
 		virtual const IndexBuffer& get_indices() const = 0;
 
-		static Ref<Mesh> construct(Disarray::Device&, const MeshProperties& = {});
+		virtual const MeshProperties& get_properties() const = 0;
+		virtual MeshProperties& get_properties() = 0;
+
+		static Ref<Mesh> construct(const Disarray::Device&, const MeshProperties& = {});
 	};
 
 } // namespace Disarray

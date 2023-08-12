@@ -51,7 +51,7 @@ namespace Disarray::Client {
 		UI::begin("Scene");
 		std::unordered_set<entt::entity> selectable_entities;
 		if (ImGui::BeginTable("Entities", 2)) {
-			const auto inheritance_view = registry.view<const ID, const Tag, const Inheritance>();
+			const auto inheritance_view = registry.view<const Components::ID, const Components::Tag, const Components::Inheritance>();
 			for (const auto& [entity, id, tag, inheritance] : inheritance_view.each()) {
 				selectable_entities.insert(entity);
 				ImGui::TableNextRow();
@@ -59,11 +59,16 @@ namespace Disarray::Client {
 				ImGui::Text("%s", tag.name.c_str());
 				ImGui::TableNextColumn();
 				const auto& children = inheritance.children;
-				auto text = fmt::format("{} - Children: [{}]", id.identifier, fmt::join(children, ", "));
+				std::string text;
+				if (!children.empty()) {
+					text = fmt::format("{} - Children: [{}]", id.identifier, fmt::join(children, ", "));
+				} else {
+					text = fmt::format("{}", id.identifier);
+				}
 				ImGui::Text("%s", text.c_str());
 			}
 
-			const auto view = registry.view<const ID, const Tag>(entt::exclude<Inheritance>);
+			const auto view = registry.view<const Components::ID, const Components::Tag>(entt::exclude<Components::Inheritance>);
 			for (const auto& [entity, id, tag] : view.each()) {
 				selectable_entities.insert(entity);
 				ImGui::TableNextRow();

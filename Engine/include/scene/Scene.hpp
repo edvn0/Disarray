@@ -18,7 +18,7 @@ namespace Disarray {
 
 	class Scene {
 	public:
-		Scene(Disarray::Device&, Disarray::Window&, Disarray::Swapchain&, std::string_view);
+		Scene(const Disarray::Device&, std::string_view);
 		~Scene();
 		void update(float);
 		void render(Disarray::Renderer&);
@@ -50,6 +50,8 @@ namespace Disarray {
 		const CommandExecutor& get_command_executor() const { return *command_executor; };
 
 		entt::registry& get_registry() { return registry; };
+		const entt::registry& get_registry() const { return registry; };
+		const std::string& get_name() const { return scene_name; };
 
 		template <class Func> constexpr void for_all_entities(Func&& func)
 		{
@@ -59,12 +61,13 @@ namespace Disarray {
 			}
 		}
 
+		static Scope<Scene> deserialise(const Device&, std::string_view, const std::filesystem::path&);
+
 	private:
-		Disarray::Device& device;
-		Disarray::Window& window;
-		Disarray::Swapchain& swapchain;
+		const Disarray::Device& device;
 		std::string scene_name;
 
+		Extent extent;
 		glm::vec2 vp_max { 1 };
 		glm::vec2 vp_min { 1 };
 

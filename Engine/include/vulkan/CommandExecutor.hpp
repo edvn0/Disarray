@@ -19,6 +19,7 @@ namespace Disarray::Vulkan {
 	class CommandExecutor : public Disarray::CommandExecutor, public PropertySupplier<VkCommandBuffer> {
 	public:
 		CommandExecutor(Disarray::Device&, Disarray::Swapchain&, const Disarray::CommandExecutorProperties&);
+		CommandExecutor(const Disarray::Device&, const Disarray::Swapchain&, const Disarray::CommandExecutorProperties&);
 		~CommandExecutor() override;
 
 		void begin() override;
@@ -73,9 +74,9 @@ namespace Disarray::Vulkan {
 		void destroy_executor();
 		void create_base_structures();
 
-		Disarray::Device& device;
-		Disarray::Swapchain& swapchain;
-		Disarray::QueueFamilyIndex& indexes;
+		const Disarray::Device& device;
+		const Disarray::Swapchain& swapchain;
+		const Disarray::QueueFamilyIndex& indexes;
 		CommandExecutorProperties props;
 		bool is_frame_dependent_executor { false };
 
@@ -100,7 +101,7 @@ namespace Disarray::Vulkan {
 
 	class IndependentCommandExecutor : public Disarray::IndependentCommandExecutor, public PropertySupplier<VkCommandBuffer> {
 	public:
-		IndependentCommandExecutor(Disarray::Device&, const Disarray::CommandExecutorProperties&);
+		IndependentCommandExecutor(const Disarray::Device&, const Disarray::CommandExecutorProperties&);
 		~IndependentCommandExecutor() override;
 
 		void begin() override;
@@ -149,8 +150,8 @@ namespace Disarray::Vulkan {
 		void destroy_executor();
 		void create_base_structures();
 
-		Disarray::Device& device;
-		Disarray::QueueFamilyIndex& indexes;
+		const Disarray::Device& device;
+		const Disarray::QueueFamilyIndex& indexes;
 		CommandExecutorProperties props;
 		bool is_frame_dependent_executor { false };
 
@@ -184,7 +185,7 @@ namespace Disarray::Vulkan {
 
 	constexpr auto deleter = [](Vulkan::IndependentCommandExecutor* l) { submit_and_delete_executor(l); };
 	using ImmediateExecutor = std::unique_ptr<Vulkan::IndependentCommandExecutor, decltype(deleter)>;
-	inline ImmediateExecutor construct_immediate(Disarray::Device& device)
+	inline ImmediateExecutor construct_immediate(const Disarray::Device& device)
 	{
 		static constexpr Disarray::CommandExecutorProperties props { .count = 1, .owned_by_swapchain = false };
 		ImmediateExecutor executor { new IndependentCommandExecutor { device, props } };

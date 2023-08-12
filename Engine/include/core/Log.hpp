@@ -37,7 +37,7 @@ namespace Disarray {
 
 		static constexpr std::string_view default_format = "{}[{} - {}] {}{}";
 
-		inline std::string current_time() { return fmt::format("{:%F %T}", std::chrono::system_clock::now()); }
+		std::string current_time(bool include_ms = true);
 
 		template <class... Args> inline void debug(std::string_view scope, fmt::format_string<Args...> fmt, Args&&... args)
 		{

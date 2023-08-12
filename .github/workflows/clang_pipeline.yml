@@ -2,9 +2,9 @@ name: Clang17 CMake Build
 
 on:
   push:
-    branches: ["main", "dev"]
+    branches: [ "main", "dev" ]
   pull_request:
-    branches: ["main", "dev"]
+    branches: [ "main", "dev" ]
 
 env:
   BUILD_TYPE: RelWithDebInfo
@@ -55,17 +55,23 @@ jobs:
           vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang
           vulkan-use-cache: true
 
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+
+
       - name: Configure CMake
         run: cmake
           -B build
           -D DISARRAY_BUILD_TESTS=ON
+          -D CMAKE_C_COMPILER_LAUNCHER=ccache
+          -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
           -D CMAKE_CXX_COMPILER=${{env.CXX}}
           -D CMAKE_C_COMPILER=${{env.CC}}
           -D CMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
           -G Ninja
 
       - name: Build
-        run: cmake --build build --config ${{env.BUILD_TYPE}} --parallel 20
+        run: cmake --build build --config ${{env.BUILD_TYPE}}
 
       - name: Test
         working-directory: build

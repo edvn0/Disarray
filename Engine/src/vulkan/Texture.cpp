@@ -9,7 +9,7 @@
 
 namespace Disarray::Vulkan {
 
-	Texture::Texture(Disarray::Device& dev, const Disarray::TextureProperties& properties)
+	Texture::Texture(const Disarray::Device& dev, const Disarray::TextureProperties& properties)
 		: device(dev)
 		, props(properties)
 	{

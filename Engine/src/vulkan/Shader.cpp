@@ -28,7 +28,7 @@ namespace Disarray::Vulkan {
 			}
 		}
 
-		void create_module(Vulkan::Device& device, const std::string& code, VkShaderModule& shader)
+		void create_module(const Vulkan::Device& device, const std::string& code, VkShaderModule& shader)
 		{
 			auto create_info = vk_structures<VkShaderModuleCreateInfo> {}();
 			create_info.codeSize = code.size();
@@ -38,12 +38,11 @@ namespace Disarray::Vulkan {
 		}
 	} // namespace
 
-	Shader::Shader(Disarray::Device& dev, const ShaderProperties& properties)
+	Shader::Shader(const Disarray::Device& dev, const ShaderProperties& properties)
 		: device(dev)
 		, props(properties)
 	{
 		auto source = read_file(props.path);
-		shader_path = props.path.string();
 
 		auto type = to_stage(props.type);
 
@@ -64,7 +63,7 @@ namespace Disarray::Vulkan {
 
 	std::string Shader::read_file(const std::filesystem::path& path)
 	{
-		std::ifstream stream { path, std::ios::ate | std::ios::in | std::ios::binary };
+		std::ifstream stream { path.string().c_str(), std::ios::ate | std::ios::in | std::ios::binary };
 		if (!stream) {
 			throw std::runtime_error("Could not open stream to file");
 		}

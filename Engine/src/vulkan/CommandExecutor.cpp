@@ -32,6 +32,17 @@ namespace Disarray::Vulkan {
 		recreate_executor(false);
 	}
 
+	CommandExecutor::CommandExecutor(
+		const Disarray::Device& dev, const Disarray::Swapchain& sc, const Disarray::CommandExecutorProperties& properties)
+		: device(dev)
+		, swapchain(sc)
+		, indexes(device.get_physical_device().get_queue_family_indexes())
+		, props(properties)
+		, is_frame_dependent_executor(properties.count.has_value() && *properties.count > 1 && !properties.owned_by_swapchain)
+	{
+		recreate_executor(false);
+	}
+
 	CommandExecutor::~CommandExecutor() { destroy_executor(); }
 
 	void CommandExecutor::recreate_executor(bool should_clean)

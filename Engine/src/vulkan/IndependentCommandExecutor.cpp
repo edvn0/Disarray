@@ -24,7 +24,7 @@ namespace Disarray::Vulkan {
 		const char name[17] = "debug marker tag";
 	} demo2;
 
-	IndependentCommandExecutor::IndependentCommandExecutor(Disarray::Device& dev, const Disarray::CommandExecutorProperties& properties)
+	IndependentCommandExecutor::IndependentCommandExecutor(const Disarray::Device& dev, const Disarray::CommandExecutorProperties& properties)
 		: device(dev)
 		, indexes(device.get_physical_device().get_queue_family_indexes())
 		, props(properties)

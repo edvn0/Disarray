@@ -2,17 +2,23 @@ cmake_minimum_required(VERSION 3.22)
 
 project(Engine CXX)
 
-FetchContent_Declare(fmt
+FetchContent_Declare(
+        fmt
         GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-        GIT_TAG master
-)
+        GIT_TAG master)
 FetchContent_MakeAvailable(fmt)
 
-FetchContent_Declare(magic_enum
+FetchContent_Declare(
+        magic_enum
         GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
-        GIT_TAG master
-)
+        GIT_TAG master)
 FetchContent_MakeAvailable(magic_enum)
+
+FetchContent_Declare(
+        nlohmann_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.11.2)
+FetchContent_MakeAvailable(nlohmann_json)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -55,6 +61,8 @@ set(ENGINE_SOURCES
         include/scene/Camera.hpp
         include/scene/Components.hpp
         include/scene/Entity.hpp
+        include/scene/Serialiser.hpp
+        include/scene/ComponentSerialisers.hpp
         include/scene/Scene.hpp
         include/core/ThreadPool.hpp
         include/core/FileWatcher.hpp
@@ -76,6 +84,7 @@ set(ENGINE_SOURCES
         include/core/Clock.hpp
         include/core/KeyCode.hpp
         include/core/Log.hpp
+        include/core/Tuple.hpp
         include/core/Platform.hpp
         include/core/CleanupAwaiter.hpp
         include/core/PointerDefinition.hpp
@@ -149,6 +158,9 @@ set(ENGINE_SOURCES
         src/scene/Entity.cpp
         src/scene/Scene.cpp
         src/scene/Camera.cpp
+        src/scene/ComponentSerialisers.cpp
+        src/scene/ComponentDeserialisers.cpp
+        src/scene/SerialisationTypeConversions.cpp
         src/core/DataBuffer.cpp
         src/core/Layer.cpp
         src/core/ReferenceCounted.cpp
@@ -192,24 +204,40 @@ set(ENGINE_SOURCES
         src/vulkan/Image.cpp
         src/imgui/InterfaceLayer.cpp)
 
-if(DISARRAY_OS STREQUAL "Windows")
-        list(APPEND ENGINE_SOURCES src/windows/UI.cpp)
-elseif(DISARRAY_OS STREQUAL "Linux")
-        list(APPEND ENGINE_SOURCES src/linux/UI.cpp)
-endif()
+if (DISARRAY_OS STREQUAL "Windows")
+    list(APPEND ENGINE_SOURCES src/windows/UI.cpp)
+elseif (DISARRAY_OS STREQUAL "Linux")
+    list(APPEND ENGINE_SOURCES src/linux/UI.cpp)
+endif ()
 
-add_library(${PROJECT_NAME} STATIC
+add_library(
+        ${PROJECT_NAME} STATIC
         ${THIRD_PARTY}/imgui/backends/imgui_impl_glfw.cpp
-        ${THIRD_PARTY}/imgui/backends/imgui_impl_vulkan.cpp
-        ${ENGINE_SOURCES})
+        ${THIRD_PARTY}/imgui/backends/imgui_impl_vulkan.cpp ${ENGINE_SOURCES})
 add_library(Disarray::Engine ALIAS ${PROJECT_NAME})
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/imgui)
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator imgui magic_enum::magic_enum tinyobjloader stb_image thread-pool EnTT::EnTT fmt::fmt)
-target_precompile_headers(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/DisarrayPCH.hpp)
+target_include_directories(
+        ${PROJECT_NAME}
+        PRIVATE ${Vulkan_INCLUDE_DIRS}
+        PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/imgui)
+target_link_libraries(
+        ${PROJECT_NAME}
+        PRIVATE glfw
+        Vulkan::Vulkan
+        GPUOpen::VulkanMemoryAllocator
+        imgui
+        nlohmann_json::nlohmann_json
+        tinyobjloader
+        stb_image
+        thread-pool
+        magic_enum::magic_enum
+        EnTT::EnTT
+        fmt::fmt)
+target_precompile_headers(${PROJECT_NAME} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/DisarrayPCH.hpp)
 
 default_compile_flags()
 
-if(DISARRAY_BUILD_TESTS)
-        add_subdirectory(tests)
-endif()
+if (DISARRAY_BUILD_TESTS)
+    add_subdirectory(tests)
+endif ()

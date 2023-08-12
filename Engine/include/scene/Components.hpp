@@ -12,7 +12,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <unordered_set>
 
-namespace Disarray {
+namespace Disarray::Components {
 
 	namespace {
 		static const auto default_rotation = glm::angleAxis(0.f, glm::vec3 { 0.f, 0.f, 1.0f });
@@ -37,37 +37,29 @@ namespace Disarray {
 		auto compute() const { return translate_matrix(position) * glm::mat4_cast(rotation) * scale_matrix(scale); }
 	};
 
-	// These are components that share name with other classes in Disarray.
-	// They could be named something else (like XComponent), but I prefer this solution.
-	namespace Components {
-		struct Mesh {
-			Mesh() = default;
-			// Deserialisation constructor :)
-			explicit Mesh(Device&, std::string_view path);
-			explicit Mesh(Ref<Disarray::Mesh>);
-			Ref<Disarray::Mesh> mesh { nullptr };
-		};
+	struct Mesh {
+		Mesh() = default;
+		// Deserialisation constructor :)
+		explicit Mesh(Device&, std::string_view path);
+		explicit Mesh(Ref<Disarray::Mesh>);
+		Ref<Disarray::Mesh> mesh { nullptr };
+	};
 
-		struct Pipeline {
-			Pipeline() = default;
-			explicit Pipeline(Ref<Disarray::Pipeline>);
-			Ref<Disarray::Pipeline> pipeline { nullptr };
-		};
+	struct Pipeline {
+		Pipeline() = default;
+		explicit Pipeline(Ref<Disarray::Pipeline>);
+		Ref<Disarray::Pipeline> pipeline { nullptr };
+	};
 
-		struct Texture {
-			Texture() = default;
-			explicit Texture(Ref<Disarray::Texture>, const glm::vec4& = glm::vec4 { 1.0f });
-			explicit Texture(const glm::vec4&);
-			// Deserialisation constructor :)
-			explicit Texture(Device&, std::string_view path);
-			Ref<Disarray::Texture> texture { nullptr };
-			glm::vec4 colour { 1.0f };
-		};
-
-		struct Geometry {
-			Disarray::Geometry geometry { Disarray::Geometry::Rectangle };
-		};
-	} // namespace Components
+	struct Texture {
+		Texture() = default;
+		explicit Texture(Ref<Disarray::Texture>, const glm::vec4& = glm::vec4 { 1.0f });
+		explicit Texture(const glm::vec4&);
+		// Deserialisation constructor :)
+		explicit Texture(Device&, std::string_view path);
+		Ref<Disarray::Texture> texture { nullptr };
+		glm::vec4 colour { 1.0f };
+	};
 
 	struct LineGeometry {
 		explicit LineGeometry(const glm::vec3& pos)
@@ -94,10 +86,10 @@ namespace Disarray {
 	};
 
 	struct Inheritance {
-		std::unordered_set<entt::entity> children {};
-		entt::entity parent {};
+		std::unordered_set<Identifier> children {};
+		Identifier parent {};
 
 		void add_child(Entity&);
 	};
 
-} // namespace Disarray
+} // namespace Disarray::Components

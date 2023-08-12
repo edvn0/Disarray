@@ -32,7 +32,7 @@ namespace Disarray::Vulkan {
 
 	void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const glm::mat4& transform)
 	{
-		draw_mesh(executor, mesh, mesh.get_pipeline(), transform);
+		draw_mesh(executor, mesh, *mesh.get_properties().pipeline, transform);
 	}
 
 	void Renderer::draw_mesh(
