@@ -6,7 +6,9 @@
 #include "scene/ComponentSerialisers.hpp"
 #include "scene/Entity.hpp"
 
+#include <fstream>
 #include <nlohmann/json.hpp>
+#include <sstream>
 
 namespace Disarray {
 
@@ -24,6 +26,26 @@ namespace Disarray {
 		template <class... Deserialisers> struct Deserialiser {
 			using json = nlohmann::json;
 
+			explicit Deserialiser(Scene& s, const Device& dev, std::istream& to_deserialise)
+				: scene(s)
+				, device(dev)
+			{
+				json in = json::parse(to_deserialise);
+
+				bool could_serialise;
+				try {
+					could_serialise = try_deserialise(in);
+				} catch (const CouldNotDeserialiseException& exc) {
+					Log::error("Scene Deserialiser", "Could not serialise scene. Message: {}", exc.what());
+					return;
+				}
+
+				if (!could_serialise) {
+					Log::info("Scene Deserialiser", "Deserialised output was empty...?");
+					return;
+				}
+			}
+
 			explicit Deserialiser(Scene& s, const Device& dev, const std::filesystem::path& input_path)
 				: scene(s)
 				, device(dev)
@@ -32,7 +54,7 @@ namespace Disarray {
 				json in;
 				std::ifstream input_stream { path };
 				if (!input_stream) {
-					Log::error("Scene Deserialiser", "Could not open file at {}", path);
+					Log::error("Scene Deserialiser", "Could not open file at {}", path.string());
 					return;
 				}
 
@@ -67,13 +89,13 @@ namespace Disarray {
 					auto&& components = json_entity.value()["components"];
 					auto&& [id, tag] = parse_key(key);
 					auto entity = Entity::deserialise(scene, registry.create(), id, tag);
-					deserialise_component<Components::QuadGeometry>(components, entity, device);
-					deserialise_component<Components::LineGeometry>(components, entity, device);
-					deserialise_component<Components::Transform>(components, entity, device);
-					deserialise_component<Components::Pipeline>(components, entity, device);
-					deserialise_component<Components::Texture>(components, entity, device);
-					deserialise_component<Components::Mesh>(components, entity, device);
-					deserialise_component<Components::Inheritance>(components, entity, device);
+					deserialise_component<Components::QuadGeometry>(components, entity);
+					deserialise_component<Components::LineGeometry>(components, entity);
+					deserialise_component<Components::Transform>(components, entity);
+					deserialise_component<Components::Pipeline>(components, entity);
+					deserialise_component<Components::Texture>(components, entity);
+					deserialise_component<Components::Mesh>(components, entity);
+					deserialise_component<Components::Inheritance>(components, entity);
 				}
 
 				return true;
@@ -90,7 +112,7 @@ namespace Disarray {
 				return { std::stoull(id), tag };
 			}
 
-			template <class T> void deserialise_component(const json& components, Entity& entity, const Device& device)
+			template <class T> void deserialise_component(const json& components, Entity& entity)
 			{
 				static constexpr auto type = serialiser_type_for<T>;
 				auto result = std::apply(
@@ -98,11 +120,11 @@ namespace Disarray {
 						return std::tuple_cat(std::conditional_t<(decltype(ts)::type == type), std::tuple<decltype(ts)>, std::tuple<>> {}...);
 					},
 					serialisers);
-				Tuple::static_for(result, [&entity, &components, &device](auto, auto& deserialiser) {
+				Tuple::static_for(result, [&entity, &components, &dev = device](auto, auto& deserialiser) {
 					const auto key = deserialiser.get_component_name();
 					if (components.contains(key) && deserialiser.should_add_component(components[key])) {
 						auto& component = entity.add_component<T>();
-						deserialiser.deserialise(components[key], component, device);
+						deserialiser.deserialise(components[key], component, dev);
 					}
 				});
 			}
