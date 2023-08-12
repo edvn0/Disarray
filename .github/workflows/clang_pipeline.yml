@@ -59,8 +59,6 @@ jobs:
         run: cmake
           -B build
           -D DISARRAY_BUILD_TESTS=ON
-          -D CMAKE_C_COMPILER_LAUNCHER=ccache
-          -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
           -D CMAKE_CXX_COMPILER=${{env.CXX}}
           -D CMAKE_C_COMPILER=${{env.CC}}
           -D CMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
