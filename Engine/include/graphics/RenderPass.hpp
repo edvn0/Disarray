@@ -17,7 +17,7 @@ namespace Disarray {
 	class RenderPass : public ReferenceCountable {
 		DISARRAY_OBJECT(RenderPass)
 	public:
-		static Ref<RenderPass> construct(Device&, const RenderPassProperties& = {});
+		static Ref<RenderPass> construct(const Device&, const RenderPassProperties& = {});
 	};
 
 } // namespace Disarray

@@ -5,6 +5,8 @@
 #include "scene/ComponentSerialisers.hpp"
 
 #include <filesystem>
+#include <fmt/format.h>
+#include <fstream>
 #include <nlohmann/json.hpp>
 #include <sstream>
 #include <tuple>
@@ -31,15 +33,14 @@ namespace Disarray {
 				: scene(s)
 				, path(output_path)
 			{
-				json out;
 				try {
-					out = serialise();
+					serialised_object = serialise();
 				} catch (const CouldNotSerialiseException& exc) {
 					Log::error("Scene Serialiser", "Could not serialise scene. Message: {}", exc.what());
 					return;
 				}
 
-				if (out.empty()) {
+				if (serialised_object.empty()) {
 					Log::info("Scene Serialiser", "Serialised output was empty...?");
 					return;
 				}
@@ -53,16 +54,17 @@ namespace Disarray {
 				std::replace(name.begin(), name.end(), '+', '_');
 
 				auto scene_name = fmt::format("{}-{}.json", name, time);
-				std::ofstream output { path / scene_name };
+				auto full_path = path / scene_name;
+				std::ofstream output { full_path };
 				if (!output) {
-					Log::error("Scene Serialiser", "Could not open {} for writing.", path);
+					Log::error("Scene Serialiser", "Could not open {} for writing.", full_path.string());
 				}
 
-				output << std::setw(2) << out;
+				output << std::setw(2) << serialised_object;
 				Log::info("Scene Serialiser", "Successfully serialised scene!");
 			};
 
-			std::tuple<Serialisers...> serialisers {};
+			std::tuple<Serialisers...> serialisers;
 
 			json serialise()
 			{
@@ -75,7 +77,7 @@ namespace Disarray {
 				json entities;
 				for (const auto [handle, id, tag] : view.each()) {
 					Entity entity { scene, handle };
-					auto key = fmt::format("{}__disarray__{}", tag.name, id.identifier);
+					auto key = fmt::format("{}__disarray__{}", id.identifier, tag.name);
 
 					json entity_object;
 
@@ -116,13 +118,16 @@ namespace Disarray {
 				});
 			}
 
+			const auto& get_as_json() const { return serialised_object; }
+
 		private:
 			Scene& scene;
 			std::filesystem::path path;
+			json serialised_object;
 		};
 	} // namespace
 
-	using SceneSerialiser = Serialiser<PipelineSerialiser, TextureSerialiser, MeshSerialiser, TransformSerialiser, InheritanceSerialiser,
-		LineGeometrySerialiser, QuadGeometrySerialiser>;
+	using SceneSerialiser
+		= Serialiser<TextureSerialiser, MeshSerialiser, TransformSerialiser, InheritanceSerialiser, LineGeometrySerialiser, QuadGeometrySerialiser>;
 
 } // namespace Disarray

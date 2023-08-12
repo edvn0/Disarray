@@ -17,6 +17,7 @@ namespace Disarray::Vulkan {
 		void force_recreation() override { }
 
 		Disarray::QueueFamilyIndex& get_queue_family_indexes() override { return *queue_family_index; }
+		const Disarray::QueueFamilyIndex& get_queue_family_indexes() const override { return *queue_family_index; }
 
 		VkPhysicalDevice supply() const override { return physical_device; }
 

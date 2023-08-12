@@ -9,7 +9,7 @@ namespace Disarray::Vulkan {
 
 	class RenderPass : public Disarray::RenderPass, public PropertySupplier<VkRenderPass> {
 	public:
-		RenderPass(Disarray::Device&, const RenderPassProperties&);
+		RenderPass(const Disarray::Device&, const RenderPassProperties&);
 		~RenderPass() override;
 
 		void create_with(VkRenderPassCreateInfo);
@@ -22,7 +22,7 @@ namespace Disarray::Vulkan {
 	private:
 		void recreate_renderpass(bool should_clean = true);
 
-		Disarray::Device& device;
+		const Disarray::Device& device;
 		RenderPassProperties props;
 		VkRenderPass render_pass;
 		VkRenderPassCreateInfo render_pass_info;

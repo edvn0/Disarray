@@ -6,7 +6,7 @@
 
 namespace Disarray {
 
-	Ref<Texture> Texture::construct(Disarray::Device& device, const Disarray::TextureProperties& props)
+	Ref<Texture> Texture::construct(const Disarray::Device& device, const Disarray::TextureProperties& props)
 	{
 		return make_ref<Vulkan::Texture>(device, props);
 	}

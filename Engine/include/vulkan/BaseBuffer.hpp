@@ -19,7 +19,8 @@ public:                                                                         
 
 	class BaseBuffer : public PropertySupplier<VkBuffer> {
 	protected:
-		BaseBuffer(Disarray::Device&, BufferType type, const Disarray::BufferProperties&);
+		BaseBuffer(const Disarray::Device&, BufferType type, const Disarray::BufferProperties&);
+		virtual ~BaseBuffer() override = default;
 
 		virtual std::size_t size() const
 		{
@@ -41,7 +42,7 @@ public:                                                                         
 		void create_with_empty_data();
 		VkBufferUsageFlags to_vulkan_usage(BufferType type);
 
-		Disarray::Device& device;
+		const Disarray::Device& device;
 
 		BufferType type;
 		BufferProperties props;

@@ -63,7 +63,6 @@ set(ENGINE_SOURCES
         include/scene/Entity.hpp
         include/scene/Serialiser.hpp
         include/scene/ComponentSerialisers.hpp
-        include/scene/Deserialiser.hpp
         include/scene/Scene.hpp
         include/core/ThreadPool.hpp
         include/core/FileWatcher.hpp
@@ -160,7 +159,8 @@ set(ENGINE_SOURCES
         src/scene/Scene.cpp
         src/scene/Camera.cpp
         src/scene/ComponentSerialisers.cpp
-        src/scene/Deserialiser.cpp
+        src/scene/ComponentDeserialisers.cpp
+        src/scene/SerialisationTypeConversions.cpp
         src/core/DataBuffer.cpp
         src/core/Layer.cpp
         src/core/ReferenceCounted.cpp
@@ -227,10 +227,10 @@ target_link_libraries(
         GPUOpen::VulkanMemoryAllocator
         imgui
         nlohmann_json::nlohmann_json
-        magic_enum::magic_enum
         tinyobjloader
         stb_image
         thread-pool
+        magic_enum::magic_enum
         EnTT::EnTT
         fmt::fmt)
 target_precompile_headers(${PROJECT_NAME} PRIVATE

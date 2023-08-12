@@ -27,7 +27,7 @@ namespace Disarray {
 		virtual const TextureProperties& get_properties() const = 0;
 		virtual TextureProperties& get_properties() = 0;
 
-		static Ref<Texture> construct(Device&, const TextureProperties&);
+		static Ref<Texture> construct(const Device&, const TextureProperties&);
 	};
 
 } // namespace Disarray

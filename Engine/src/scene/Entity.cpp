@@ -42,6 +42,13 @@ namespace Disarray {
 	{
 	}
 
+	Entity Entity::deserialise(Disarray::Scene& scene, entt::entity handle, Disarray::Identifier id, std::string_view name)
+	{
+		Entity entity { scene, name };
+		entity.get_components<Components::ID>().identifier = id;
+		return entity;
+	}
+
 	void Entity::add_child(Entity& child)
 	{
 		if (!has_component<Components::Inheritance>()) {

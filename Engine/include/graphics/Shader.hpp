@@ -38,7 +38,7 @@ namespace Disarray {
 		virtual const ShaderProperties& get_properties() const = 0;
 		virtual ShaderProperties& get_properties() = 0;
 
-		static Ref<Disarray::Shader> construct(Disarray::Device& device, const ShaderProperties&);
+		static Ref<Disarray::Shader> construct(const Disarray::Device& device, const ShaderProperties&);
 	};
 
 } // namespace Disarray

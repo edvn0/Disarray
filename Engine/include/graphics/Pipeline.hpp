@@ -148,7 +148,7 @@ namespace Disarray {
 		virtual const PipelineProperties& get_properties() const = 0;
 		virtual PipelineProperties& get_properties() = 0;
 
-		static Ref<Pipeline> construct(Disarray::Device&, const PipelineProperties&);
+		static Ref<Pipeline> construct(const Disarray::Device&, const PipelineProperties&);
 	};
 
 } // namespace Disarray

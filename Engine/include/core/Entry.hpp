@@ -28,7 +28,10 @@ int main(int argc, char** argv)
 	auto name = program.get<std::string>("name");
 	auto is_fullscreen = program["--fullscreen"] == true;
 	const Disarray::ApplicationProperties properties {
-		.width = width, .height = height, .name = std::string { name }, .is_fullscreen = is_fullscreen
+		.width = width,
+		.height = height,
+		.name = std::string { name },
+		.is_fullscreen = is_fullscreen,
 	};
 
 	auto app = Disarray::create_application(properties);

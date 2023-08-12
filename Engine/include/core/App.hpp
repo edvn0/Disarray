@@ -77,6 +77,7 @@ namespace Disarray {
 		void on_event(Event& event);
 
 		const auto& get_statistics() const { return statistics; }
+		const auto& get_swapchain() const { return *swapchain; }
 
 	private:
 		Scope<Window> window { nullptr };

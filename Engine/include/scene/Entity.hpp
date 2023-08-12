@@ -15,6 +15,8 @@ namespace Disarray {
 		Entity(Scene&, std::string_view = "Empty");
 		Entity(Scene&, entt::entity, std::string_view = "Empty");
 
+		static Entity deserialise(Scene&, entt::entity, Identifier, std::string_view = "Empty");
+
 		template <ValidComponent... T> decltype(auto) has_any() { return scene.get_registry().any_of<T...>(identifier); }
 		template <ValidComponent... T> decltype(auto) has_all() { return scene.get_registry().all_of<T...>(identifier); }
 		template <ValidComponent... T> decltype(auto) has_any() const { return scene.get_registry().any_of<T...>(identifier); }

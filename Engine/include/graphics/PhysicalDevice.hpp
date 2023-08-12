@@ -15,6 +15,7 @@ namespace Disarray {
 		static Ref<Disarray::PhysicalDevice> construct(Disarray::Instance&, Disarray::Surface&);
 
 		virtual Disarray::QueueFamilyIndex& get_queue_family_indexes() = 0;
+		virtual const Disarray::QueueFamilyIndex& get_queue_family_indexes() const = 0;
 	};
 
 } // namespace Disarray

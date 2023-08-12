@@ -121,7 +121,7 @@ namespace Disarray::Vulkan {
 
 	} // namespace Detail
 
-	Pipeline::Pipeline(Disarray::Device& dev, const Disarray::PipelineProperties& properties)
+	Pipeline::Pipeline(const Disarray::Device& dev, const Disarray::PipelineProperties& properties)
 		: device(dev)
 		, props(properties)
 	{

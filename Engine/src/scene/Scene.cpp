@@ -13,6 +13,7 @@
 #include "graphics/Renderer.hpp"
 #include "graphics/Texture.hpp"
 #include "scene/Components.hpp"
+#include "scene/Deserialiser.hpp"
 #include "scene/Entity.hpp"
 #include "scene/Serialiser.hpp"
 
@@ -29,18 +30,18 @@ static auto rotate_by(const glm::vec3& axis_radians)
 
 namespace Disarray {
 
-	Scene::Scene(Device& dev, Window& win, Swapchain& sc, std::string_view name)
+	Scene::Scene(const Device& dev, std::string_view name)
 		: device(dev)
-		, window(win)
-		, swapchain(sc)
 		, scene_name(name)
 		, registry(entt::basic_registry())
 	{
-		(void)window.native();
 	}
 
-	void Scene::construct(Disarray::App&, Disarray::Renderer& renderer, Disarray::ThreadPool&)
+	void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray::ThreadPool&)
 	{
+		extent = app.get_swapchain().get_extent();
+		command_executor = CommandExecutor::construct(device, app.get_swapchain(), { .count = 3, .is_primary = true, .record_stats = true });
+
 		int rects_x { 2 };
 		int rects_y { 2 };
 		auto parent = create("Grid");
@@ -106,7 +107,6 @@ namespace Disarray {
 			}
 		}
 
-		command_executor = CommandExecutor::construct(device, swapchain, { .count = 3, .is_primary = true, .record_stats = true });
 		renderer.on_batch_full([&exec = *command_executor](Renderer& r) { r.flush_batch(exec); });
 
 		VertexLayout layout {
@@ -116,11 +116,9 @@ namespace Disarray {
 			{ ElementType::Float3, "normals" },
 		};
 
-		auto extent = swapchain.get_extent();
-
 		framebuffer = Framebuffer::construct(device,
 			{
-				.extent = swapchain.get_extent(),
+				.extent = extent,
 				.attachments = { { Disarray::ImageFormat::SBGR }, { ImageFormat::Depth } },
 				.clear_colour_on_load = false,
 				.clear_depth_on_load = false,
@@ -129,7 +127,7 @@ namespace Disarray {
 
 		identity_framebuffer = Framebuffer::construct(device,
 			{
-				.extent = swapchain.get_extent(),
+				.extent = extent,
 				.attachments = { { ImageFormat::SBGR }, { ImageFormat::Uint, false }, { ImageFormat::Depth } },
 				.clear_colour_on_load = true,
 				.clear_depth_on_load = true,
@@ -162,7 +160,7 @@ namespace Disarray {
 		v_mesh.add_component<Components::Texture>(renderer.get_texture_cache().get("viking_room"));
 
 		TextureProperties texture_properties {
-			.extent = swapchain.get_extent(),
+			.extent = extent,
 			.format = ImageFormat::SBGR,
 			.debug_name = "viking",
 		};
@@ -175,7 +173,7 @@ namespace Disarray {
 			std::array<std::uint32_t, 1> white_tex_data = { 1 };
 			DataBuffer pixels { white_tex_data.data(), sizeof(std::uint32_t) };
 			TextureProperties white_tex_props {
-				.extent = swapchain.get_extent(),
+				.extent = extent,
 				.format = ImageFormat::SBGR,
 				.debug_name = "white_tex",
 			};
@@ -265,8 +263,10 @@ namespace Disarray {
 		});
 	}
 
-	void Scene::recreate(const Extent& extent)
+	void Scene::recreate(const Extent& new_ex)
 	{
+		extent = new_ex;
+
 		identity_framebuffer->recreate(true, extent);
 		framebuffer->recreate(true, extent);
 		command_executor->recreate(true, extent);
@@ -278,6 +278,13 @@ namespace Disarray {
 	{
 		auto entity = Entity(*this, name);
 		return entity;
+	}
+
+	Scope<Scene> Scene::deserialise(const Device& device, std::string_view name, const std::filesystem::path& filename)
+	{
+		Scope<Scene> created = make_scope<Scene>(device, name);
+		SceneDeserialiser deserialiser { *created, device, filename };
+		return created;
 	}
 
 } // namespace Disarray

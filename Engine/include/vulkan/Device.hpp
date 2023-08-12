@@ -11,12 +11,13 @@ namespace Disarray::Vulkan {
 		Device(Disarray::Window&);
 		~Device() override;
 
-		VkQueue get_graphics_queue() { return graphics; }
-		VkQueue get_present_queue() { return present; }
+		VkQueue get_graphics_queue() const { return graphics; }
+		VkQueue get_present_queue() const { return present; }
 
 		VkDevice supply() const override { return device; }
 
 		Disarray::PhysicalDevice& get_physical_device() override { return *physical_device; }
+		const Disarray::PhysicalDevice& get_physical_device() const override { return *physical_device; }
 
 	private:
 		Ref<Disarray::PhysicalDevice> physical_device;

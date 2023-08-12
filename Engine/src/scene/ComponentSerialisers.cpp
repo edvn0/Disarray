@@ -7,6 +7,7 @@
 namespace Disarray {
 
 	using json = nlohmann::json;
+	using namespace std::string_view_literals;
 
 	void PipelineSerialiser::serialise_impl(const Components::Pipeline& pipeline, nlohmann::json& object)
 	{
@@ -18,7 +19,7 @@ namespace Disarray {
 			properties["fragment_shader"] = props.fragment_shader->get_properties().path;
 			// VertexLayout layout {};
 			// PushConstantLayout push_constant_layout {};
-			properties["extent"] = json::array({ props.extent.width, props.extent.height });
+			properties["extent"] = props.extent;
 			properties["polygon_mode"] = magic_enum::enum_name(props.polygon_mode);
 			properties["samples"] = magic_enum::enum_name(props.samples);
 			properties["depth_comparison_operator"] = magic_enum::enum_name(props.depth_comparison_operator);
@@ -36,6 +37,7 @@ namespace Disarray {
 			const auto& props = mesh.mesh->get_properties();
 			properties["path"] = props.path;
 			properties["pipeline"] = static_cast<bool>(props.pipeline);
+			properties["initial_rotation"] = props.initial_rotation;
 			object["properties"] = properties;
 		}
 	}

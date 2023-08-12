@@ -31,7 +31,7 @@ namespace Disarray {
 		virtual const MeshProperties& get_properties() const = 0;
 		virtual MeshProperties& get_properties() = 0;
 
-		static Ref<Mesh> construct(Disarray::Device&, const MeshProperties& = {});
+		static Ref<Mesh> construct(const Disarray::Device&, const MeshProperties& = {});
 	};
 
 } // namespace Disarray

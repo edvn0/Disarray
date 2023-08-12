@@ -22,13 +22,14 @@ namespace Disarray::Vulkan {
 
 		std::uint32_t image_count() const override { return static_cast<std::uint32_t>(swapchain_images.size()); }
 		Disarray::Extent get_extent() const override { return { extent.width, extent.height }; }
-		SampleCount get_samples() override { return samples; }
+		SampleCount get_samples() const override { return samples; }
 
-		std::uint32_t get_current_frame() override { return current_frame; }
+		std::uint32_t get_current_frame() const override { return current_frame; }
 		std::uint32_t advance_frame() override { return current_frame++; }
-		std::uint32_t get_image_index() override { return image_index; }
+		std::uint32_t get_image_index() const override { return image_index; }
 		auto get_framebuffer() { return framebuffers[get_current_frame()]; }
 
+		VkCommandBuffer get_drawbuffer() const { return command_buffers[get_current_frame()].buffer; }
 		VkCommandBuffer get_drawbuffer() { return command_buffers[get_current_frame()].buffer; }
 
 		Disarray::RenderPass& get_render_pass() override;
@@ -37,7 +38,7 @@ namespace Disarray::Vulkan {
 		bool prepare_frame() override;
 		void present() override;
 
-		bool needs_recreation() override { return swapchain_needs_recreation; }
+		bool needs_recreation() const override { return swapchain_needs_recreation; }
 		void reset_recreation_status() override { swapchain_needs_recreation = false; }
 
 		const auto& get_views() const { return swapchain_image_views; }

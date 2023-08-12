@@ -39,6 +39,7 @@ namespace Disarray {
 		}
 
 		static Ref<CommandExecutor> construct(Disarray::Device&, Disarray::Swapchain&, const CommandExecutorProperties&);
+		static Ref<CommandExecutor> construct(const Disarray::Device&, const Disarray::Swapchain&, const CommandExecutorProperties&);
 
 		virtual void begin() = 0;
 		virtual void end() = 0;

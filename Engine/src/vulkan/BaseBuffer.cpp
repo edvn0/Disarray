@@ -5,7 +5,7 @@
 
 namespace Disarray::Vulkan {
 
-	BaseBuffer::BaseBuffer(Disarray::Device& dev, BufferType t, const Disarray::BufferProperties& properties)
+	BaseBuffer::BaseBuffer(const Disarray::Device& dev, BufferType t, const Disarray::BufferProperties& properties)
 		: device(dev)
 		, type(t)
 		, props(properties)

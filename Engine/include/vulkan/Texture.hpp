@@ -9,7 +9,7 @@ namespace Disarray::Vulkan {
 
 	class Texture : public Disarray::Texture {
 	public:
-		Texture(Device&, const TextureProperties&);
+		Texture(const Device&, const TextureProperties&);
 		~Texture() override;
 
 		void force_recreation() override { recreate_texture(); };
@@ -32,7 +32,7 @@ namespace Disarray::Vulkan {
 
 		DataBuffer pixels;
 
-		Device& device;
+		const Device& device;
 
 		Scope<Vulkan::Image> image;
 		TextureProperties props;

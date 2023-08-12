@@ -6,7 +6,7 @@
 
 namespace Disarray {
 
-	Ref<VertexBuffer> VertexBuffer::construct(Disarray::Device& device, const Disarray::BufferProperties& props)
+	Ref<VertexBuffer> VertexBuffer::construct(const Disarray::Device& device, const Disarray::BufferProperties& props)
 	{
 		return make_ref<Vulkan::VertexBuffer>(device, props);
 	}

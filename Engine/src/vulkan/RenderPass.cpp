@@ -15,7 +15,7 @@
 
 namespace Disarray::Vulkan {
 
-	RenderPass::RenderPass(Disarray::Device& dev, const Disarray::RenderPassProperties& properties)
+	RenderPass::RenderPass(const Disarray::Device& dev, const Disarray::RenderPassProperties& properties)
 		: device(dev)
 		, props(properties)
 	{

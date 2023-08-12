@@ -1,39 +1,35 @@
 #pragma once
 
+#include "core/Concepts.hpp"
+#include "scene/ComponentSerialisers.hpp"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <magic_enum.hpp>
 #include <nlohmann/json.hpp>
 
 namespace Disarray {
 
+	struct FloatExtent;
+	struct Extent;
+
+	template <IsEnum Enum> inline constexpr decltype(auto) to_enum_value(const auto& object, std::string_view key)
+	{
+		std::string value;
+		if (!object.contains(key)) {
+			throw ComponentDeserialiseException { fmt::format("Key {} was missing from object", key) };
+		}
+		object[key].get_to(value);
+		return magic_enum::enum_cast<Enum>(value);
+	}
 	using json = nlohmann::json;
 
-	void to_json(json& j, const Extent& p)
-	{
-		j = json {
-			{ "width", p.width },
-			{ "height", p.height },
-		};
-	}
-	void from_json(const json& j, Extent& p)
-	{
-		j.at("width").get_to(p.width);
-		j.at("height").get_to(p.height);
-	}
+	void to_json(json& j, const Extent& p);
+	void from_json(const json& j, Extent& p);
 
-	void to_json(json& j, const FloatExtent& p)
-	{
-		j = json {
-			{ "width", p.width },
-			{ "height", p.height },
-		};
-	}
-	void from_json(const json& j, FloatExtent& p)
-	{
-		j.at("width").get_to(p.width);
-		j.at("height").get_to(p.height);
-	}
+	void to_json(json& j, const FloatExtent& p);
+	void from_json(const json& j, FloatExtent& p);
 
 } // namespace Disarray
 
@@ -78,8 +74,40 @@ template <> struct adl_serializer<glm::quat> {
 	static void from_json(const json& j, glm::quat& opt) { opt = glm::quat(j[1], j[2], j[3], j[4]); }
 };
 
+template <std::size_t N> struct adl_serializer<glm::mat<N, N, float>> {
+	static void to_json(json& j, const glm::mat<N, N, float>& p)
+	{
+		if constexpr (N == 2) {
+			j = json::array({ p[0], p[1] });
+		}
+		if constexpr (N == 3) {
+			j = json::array({ p[0], p[1], p[2] });
+		}
+		if constexpr (N == 4) {
+			j = json::array({ p[0], p[1], p[2], p[3] });
+		}
+	}
+	static void from_json(const json& j, glm::mat<N, N, float>& opt)
+	{
+		if constexpr (N == 2) {
+			opt = glm::mat2 { j[0], j[1] };
+		}
+		if constexpr (N == 3) {
+			opt = glm::mat3 { j[0], j[1], j[2] };
+		}
+		if constexpr (N == 4) {
+			opt = glm::mat4 { j[0], j[1], j[2], j[3] };
+		}
+	}
+};
+
 template <> struct adl_serializer<std::filesystem::path> {
-	static void to_json(json& j, const std::filesystem::path& p) { j = p.string(); }
-	static void from_json(const json& j, std::filesystem::path& opt) { opt = to_string(j); }
+	static void to_json(json& j, const std::filesystem::path& p) { j = std::filesystem::relative(p).string(); }
+	static void from_json(const json& j, std::filesystem::path& opt)
+	{
+		std::string filename;
+		j.get_to(filename);
+		opt = std::filesystem::path(filename);
+	}
 };
 NLOHMANN_JSON_NAMESPACE_END

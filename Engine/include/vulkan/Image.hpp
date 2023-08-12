@@ -93,7 +93,7 @@ namespace Disarray::Vulkan {
 
 	class Image : public Disarray::Image, public Disarray::UniquelyIdentifiable<Vulkan::Image> {
 	public:
-		Image(Disarray::Device&, const ImageProperties&);
+		Image(const Disarray::Device&, const ImageProperties&);
 		~Image() override;
 
 		void force_recreation() override { recreate(true, props.extent); };
@@ -118,7 +118,7 @@ namespace Disarray::Vulkan {
 		VkDescriptorImageInfo descriptor_info;
 		VkDescriptorSetLayout layout;
 
-		Disarray::Device& device;
+		const Disarray::Device& device;
 		ImageProperties props;
 	};
 

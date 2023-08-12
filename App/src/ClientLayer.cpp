@@ -10,8 +10,8 @@
 
 namespace Disarray::Client {
 
-	ClientLayer::ClientLayer(Device& dev, Window& win, Swapchain& swapchain)
-		: scene(dev, win, swapchain, "Default scene")
+	ClientLayer::ClientLayer(Device& device, Window& win, Swapchain& swapchain)
+		: device(device)
 		, camera(60.f, static_cast<float>(swapchain.get_extent().width), static_cast<float>(swapchain.get_extent().height), 0.1f, 1000.f, nullptr)
 	{
 	}
@@ -20,12 +20,16 @@ namespace Disarray::Client {
 
 	void ClientLayer::construct(App& app, Renderer& renderer, ThreadPool& pool)
 	{
-		scene.construct(app, renderer, pool);
+		auto test_scene = Scene::deserialise(device, "Default scene", "Assets/Scene/Default_scene-2023-08-12-11-43-08.json");
+		scene.reset(new Scene { device, "Default scene" });
+
+		ensure(scene != nullptr, "Forgot to initialise scene->");
+		scene->construct(app, renderer, pool);
 
 		auto stats_panel = app.add_panel<StatisticsPanel>(app.get_statistics());
 		auto content_panel = app.add_panel<DirectoryContentPanel>("Assets");
-		auto scene_panel = app.add_panel<ScenePanel>(scene);
-		auto execution_stats_panel = app.add_panel<ExecutionStatisticsPanel>(scene.get_command_executor());
+		auto scene_panel = app.add_panel<ScenePanel>(*scene);
+		auto execution_stats_panel = app.add_panel<ExecutionStatisticsPanel>(scene->get_command_executor());
 
 		stats_panel->construct(app, renderer, pool);
 		content_panel->construct(app, renderer, pool);
@@ -75,7 +79,7 @@ namespace Disarray::Client {
 			auto viewport_size = ImGui::GetContentRegionAvail();
 			// camera.set_viewport_size<FloatExtent>({ viewport_size.x, viewport_size.y });
 
-			auto& image = scene.get_image(0);
+			auto& image = scene->get_image(0);
 			UI::image(image, { viewport_size.x, viewport_size.y });
 
 			auto window_size = ImGui::GetWindowSize();
@@ -88,13 +92,13 @@ namespace Disarray::Client {
 			viewport_bounds[0] = { min_bound.x, min_bound.y };
 			viewport_bounds[1] = { max_bound.x, max_bound.y };
 
-			scene.set_viewport_bounds({ viewport_bounds[1].x - viewport->Pos.x, viewport_bounds[1].y - viewport->Pos.y },
+			scene->set_viewport_bounds({ viewport_bounds[1].x - viewport->Pos.x, viewport_bounds[1].y - viewport->Pos.y },
 				{ viewport_bounds[0].x - viewport->Pos.x, viewport_bounds[0].y - viewport->Pos.y });
 		}
 		ImGui::End();
 		ImGui::PopStyleVar();
 
-		auto& depth_image = scene.get_image(2);
+		auto& depth_image = scene->get_image(2);
 		UI::scope("Depth"sv, [&depth_image]() {
 			auto viewport_size = ImGui::GetContentRegionAvail();
 			UI::image(depth_image, { viewport_size.x, viewport_size.y });
@@ -103,23 +107,23 @@ namespace Disarray::Client {
 		ImGui::End();
 	}
 
-	void ClientLayer::handle_swapchain_recreation(Swapchain& swapchain) { scene.recreate(swapchain.get_extent()); }
+	void ClientLayer::handle_swapchain_recreation(Swapchain& swapchain) { scene->recreate(swapchain.get_extent()); }
 
-	void ClientLayer::on_event(Event& event) { scene.on_event(event); }
+	void ClientLayer::on_event(Event& event) { scene->on_event(event); }
 
 	void ClientLayer::update(float ts)
 	{
-		scene.update(ts);
+		scene->update(ts);
 		camera.on_update(ts);
 	}
 
 	void ClientLayer::render(Disarray::Renderer& renderer)
 	{
 		renderer.begin_frame(camera);
-		scene.render(renderer);
+		scene->render(renderer);
 		renderer.end_frame();
 	}
 
-	void ClientLayer::destruct() { scene.destruct(); }
+	void ClientLayer::destruct() { scene->destruct(); }
 
 } // namespace Disarray::Client
