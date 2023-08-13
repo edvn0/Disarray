@@ -16,44 +16,44 @@
 
 namespace Disarray {
 
-	struct TextureCacheCreationProperties {
-		std::string key;
-		std::string debug_name;
-		std::filesystem::path path;
-		std::uint32_t mips { 1 };
-		ImageFormat format;
-	};
+struct TextureCacheCreationProperties {
+	std::string key;
+	std::string debug_name;
+	std::filesystem::path path;
+	std::uint32_t mips { 1 };
+	ImageFormat format;
+};
 
-	class TextureCache : public ResourceCache<Ref<Disarray::Texture>, TextureCacheCreationProperties, TextureCache, std::string, StringHash> {
-	public:
-		TextureCache(Disarray::Device& device, std::filesystem::path path)
-			: ResourceCache(device, path, { ".png", ".jpg" })
-		{
-			auto files = get_unique_files_recursively();
-			for (const auto& p : files) {
-				put(TextureCacheCreationProperties {
-					.key = p.stem().string(),
-					.path = p.string(),
-				});
-			}
-		}
-
-		void force_recreate_impl(const Extent& extent)
-		{
-			for_each_in_storage([&extent](auto& resource) {
-				auto& [k, v] = resource;
-				v->recreate(true, extent);
+class TextureCache : public ResourceCache<Ref<Disarray::Texture>, TextureCacheCreationProperties, TextureCache, std::string, StringHash> {
+public:
+	TextureCache(Disarray::Device& device, std::filesystem::path path)
+		: ResourceCache(device, path, { ".png", ".jpg" })
+	{
+		auto files = get_unique_files_recursively();
+		for (const auto& p : files) {
+			put(TextureCacheCreationProperties {
+				.key = p.stem().string(),
+				.path = p.string(),
 			});
 		}
+	}
 
-		Ref<Disarray::Texture> create_from_impl(const TextureCacheCreationProperties& props)
-		{
-			return Texture::construct(get_device(),
-				TextureProperties {
-					.path = props.path.string(),
-				});
-		}
+	void force_recreate_impl(const Extent& extent)
+	{
+		for_each_in_storage([&extent](auto& resource) {
+			auto& [k, v] = resource;
+			v->recreate(true, extent);
+		});
+	}
 
-		std::string create_key_impl(const TextureCacheCreationProperties& props) { return props.key; }
-	};
+	Ref<Disarray::Texture> create_from_impl(const TextureCacheCreationProperties& props)
+	{
+		return Texture::construct(get_device(),
+			TextureProperties {
+				.path = props.path.string(),
+			});
+	}
+
+	std::string create_key_impl(const TextureCacheCreationProperties& props) { return props.key; }
+};
 } // namespace Disarray

@@ -2,9 +2,9 @@
 
 namespace Disarray {
 
-	class Surface {
-	public:
-		virtual ~Surface() = default;
-	};
+class Surface {
+public:
+	virtual ~Surface() = default;
+};
 
 } // namespace Disarray

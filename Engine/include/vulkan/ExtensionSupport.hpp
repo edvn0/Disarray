@@ -6,14 +6,14 @@
 
 namespace Disarray::Vulkan {
 
-	class ExtensionSupport {
-	public:
-		ExtensionSupport(VkPhysicalDevice device);
+class ExtensionSupport {
+public:
+	ExtensionSupport(VkPhysicalDevice device);
 
-		operator bool() const { return valid; }
+	operator bool() const { return valid; }
 
-	private:
-		bool valid { false };
-	};
+private:
+	bool valid { false };
+};
 
 } // namespace Disarray::Vulkan

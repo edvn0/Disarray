@@ -7,35 +7,35 @@
 
 namespace Disarray::Vulkan {
 
-	class Texture : public Disarray::Texture {
-	public:
-		Texture(const Device&, const TextureProperties&);
-		~Texture() override;
+class Texture : public Disarray::Texture {
+public:
+	Texture(const Device&, const TextureProperties&);
+	~Texture() override;
 
-		void force_recreation() override { recreate_texture(); };
-		void recreate(bool should_clean, const Extent& extent) override
-		{
-			props.extent = extent;
-			recreate_texture(should_clean);
-		}
-		VkImageView get_view() { return image->get_descriptor_info().imageView; }
+	void force_recreation() override { recreate_texture(); };
+	void recreate(bool should_clean, const Extent& extent) override
+	{
+		props.extent = extent;
+		recreate_texture(should_clean);
+	}
+	VkImageView get_view() { return image->get_descriptor_info().imageView; }
 
-		Image& get_image() override { return *image; }
-		const Image& get_image() const override { return *image; }
+	Image& get_image() override { return *image; }
+	const Image& get_image() const override { return *image; }
 
-		const TextureProperties& get_properties() const override { return props; }
-		TextureProperties& get_properties() override { return props; }
+	const TextureProperties& get_properties() const override { return props; }
+	TextureProperties& get_properties() override { return props; }
 
-	private:
-		void recreate_texture(bool should_clean = true);
-		void load_pixels();
+private:
+	void recreate_texture(bool should_clean = true);
+	void load_pixels();
 
-		DataBuffer pixels;
+	DataBuffer pixels;
 
-		const Device& device;
+	const Device& device;
 
-		Scope<Vulkan::Image> image;
-		TextureProperties props;
-	};
+	Scope<Vulkan::Image> image;
+	TextureProperties props;
+};
 
 } // namespace Disarray::Vulkan

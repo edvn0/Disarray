@@ -8,16 +8,16 @@
 
 namespace Disarray {
 
-	struct RenderPassProperties {
-		std::string debug_name { "RenderPass" };
-	};
+struct RenderPassProperties {
+	std::string debug_name { "RenderPass" };
+};
 
-	class Device;
+class Device;
 
-	class RenderPass : public ReferenceCountable {
-		DISARRAY_OBJECT(RenderPass)
-	public:
-		static Ref<RenderPass> construct(const Device&, const RenderPassProperties& = {});
-	};
+class RenderPass : public ReferenceCountable {
+	DISARRAY_OBJECT(RenderPass)
+public:
+	static Ref<RenderPass> construct(const Device&, const RenderPassProperties& = {});
+};
 
 } // namespace Disarray

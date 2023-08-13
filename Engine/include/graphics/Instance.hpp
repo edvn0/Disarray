@@ -4,10 +4,10 @@
 
 namespace Disarray {
 
-	class Instance {
-	public:
-		static Scope<Instance> construct();
-		virtual ~Instance() = default;
-	};
+class Instance {
+public:
+	static Scope<Instance> construct();
+	virtual ~Instance() = default;
+};
 
 } // namespace Disarray

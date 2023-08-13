@@ -4,9 +4,9 @@
 
 namespace Disarray::Vulkan {
 
-	IndexBuffer::IndexBuffer(const Disarray::Device& dev, const BufferProperties& properties)
-		: BaseBuffer(dev, BufferType::Index, properties)
-	{
-	}
+IndexBuffer::IndexBuffer(const Disarray::Device& dev, const BufferProperties& properties)
+	: BaseBuffer(dev, BufferType::Index, properties)
+{
+}
 
 } // namespace Disarray::Vulkan

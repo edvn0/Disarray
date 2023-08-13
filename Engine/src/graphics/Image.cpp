@@ -1,7 +1,6 @@
 #include "DisarrayPCH.hpp"
 
 #include "graphics/Image.hpp"
-
 #include "vulkan/Image.hpp"
 
 #include <fmt/format.h>
@@ -53,6 +52,6 @@ auto fmt::formatter<Disarray::SampleCount>::format(Disarray::SampleCount samples
 
 namespace Disarray {
 
-	Ref<Image> Image::construct(Device& device, const ImageProperties& image_properties) { return make_ref<Vulkan::Image>(device, image_properties); }
+Ref<Image> Image::construct(Device& device, const ImageProperties& image_properties) { return make_ref<Vulkan::Image>(device, image_properties); }
 
 } // namespace Disarray

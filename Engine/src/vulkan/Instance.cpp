@@ -1,10 +1,9 @@
 #include "DisarrayPCH.hpp"
 
-#include "vulkan/Instance.hpp"
-
 #include "core/Log.hpp"
 #include "graphics/PhysicalDevice.hpp"
 #include "vulkan/Config.hpp"
+#include "vulkan/Instance.hpp"
 #include "vulkan/QueueFamilyIndex.hpp"
 #include "vulkan/Verify.hpp"
 
@@ -75,90 +74,90 @@ void destroy_debug_messenger_ext(VkInstance instance, VkDebugUtilsMessengerEXT d
 
 namespace Disarray::Vulkan {
 
-	Instance::Instance(const std::vector<const char*>& supported_layers)
-		: requested_layers(supported_layers)
-	{
-		if (Config::use_validation_layers && !check_validation_layer_support()) {
-			throw std::runtime_error("Could not configure validation layers, and it was asked for.");
-		}
-
-		VkApplicationInfo app_info {};
-		app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		app_info.pApplicationName = "Disarray";
-		app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-		app_info.pEngineName = "Disarray Engine";
-		app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-		app_info.apiVersion = VK_API_VERSION_1_3;
-
-		VkInstanceCreateInfo create_info {};
-		create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		create_info.pApplicationInfo = &app_info;
-
-		const auto exts = get_required_extensions();
-		create_info.enabledExtensionCount = static_cast<std::uint32_t>(exts.size());
-		create_info.ppEnabledExtensionNames = exts.data();
-
-		VkDebugUtilsMessengerCreateInfoEXT debug_create_info {};
-		if constexpr (Config::use_validation_layers) {
-			create_info.enabledLayerCount = static_cast<std::uint32_t>(requested_layers.size());
-			create_info.ppEnabledLayerNames = requested_layers.data();
-
-			populate_debug_messenger_create_info(debug_create_info);
-			create_info.pNext = &debug_create_info;
-		} else {
-			create_info.enabledLayerCount = 0;
-		}
-		verify(vkCreateInstance(&create_info, nullptr, &instance));
-
-		setup_debug_messenger();
-
-		Log::debug("Instance", "Instance created!");
+Instance::Instance(const std::vector<const char*>& supported_layers)
+	: requested_layers(supported_layers)
+{
+	if (Config::use_validation_layers && !check_validation_layer_support()) {
+		throw std::runtime_error("Could not configure validation layers, and it was asked for.");
 	}
 
-	Instance::~Instance()
-	{
-		if (Config::use_validation_layers) {
-			destroy_debug_messenger_ext(instance, debug_messenger, nullptr);
-		}
-		vkDestroyInstance(instance, nullptr);
+	VkApplicationInfo app_info {};
+	app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+	app_info.pApplicationName = "Disarray";
+	app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+	app_info.pEngineName = "Disarray Engine";
+	app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+	app_info.apiVersion = VK_API_VERSION_1_3;
+
+	VkInstanceCreateInfo create_info {};
+	create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	create_info.pApplicationInfo = &app_info;
+
+	const auto exts = get_required_extensions();
+	create_info.enabledExtensionCount = static_cast<std::uint32_t>(exts.size());
+	create_info.ppEnabledExtensionNames = exts.data();
+
+	VkDebugUtilsMessengerCreateInfoEXT debug_create_info {};
+	if constexpr (Config::use_validation_layers) {
+		create_info.enabledLayerCount = static_cast<std::uint32_t>(requested_layers.size());
+		create_info.ppEnabledLayerNames = requested_layers.data();
+
+		populate_debug_messenger_create_info(debug_create_info);
+		create_info.pNext = &debug_create_info;
+	} else {
+		create_info.enabledLayerCount = 0;
 	}
+	verify(vkCreateInstance(&create_info, nullptr, &instance));
 
-	void Instance::setup_debug_messenger()
-	{
-		if (!Config::use_validation_layers)
-			return;
+	setup_debug_messenger();
 
-		VkDebugUtilsMessengerCreateInfoEXT create_info;
-		populate_debug_messenger_create_info(create_info);
+	Log::debug("Instance", "Instance created!");
+}
 
-		verify(create_debug_messenger_ext(instance, &create_info, nullptr, &debug_messenger));
+Instance::~Instance()
+{
+	if (Config::use_validation_layers) {
+		destroy_debug_messenger_ext(instance, debug_messenger, nullptr);
 	}
+	vkDestroyInstance(instance, nullptr);
+}
 
-	bool Instance::check_validation_layer_support() const
-	{
-		uint32_t layer_count;
-		vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
+void Instance::setup_debug_messenger()
+{
+	if (!Config::use_validation_layers)
+		return;
 
-		std::vector<VkLayerProperties> available_layers(layer_count);
-		vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data());
+	VkDebugUtilsMessengerCreateInfoEXT create_info;
+	populate_debug_messenger_create_info(create_info);
 
-		for (const char* layer_name : requested_layers) {
-			bool layer_found = false;
+	verify(create_debug_messenger_ext(instance, &create_info, nullptr, &debug_messenger));
+}
 
-			for (const auto& layer_properties : available_layers) {
-				if (std::strcmp(layer_name, layer_properties.layerName) == 0) {
-					layer_found = true;
-					break;
-				}
-			}
+bool Instance::check_validation_layer_support() const
+{
+	uint32_t layer_count;
+	vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
 
-			if (!layer_found) {
-				Log::debug("Instance", "Layer was not found");
-				return false;
+	std::vector<VkLayerProperties> available_layers(layer_count);
+	vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data());
+
+	for (const char* layer_name : requested_layers) {
+		bool layer_found = false;
+
+		for (const auto& layer_properties : available_layers) {
+			if (std::strcmp(layer_name, layer_properties.layerName) == 0) {
+				layer_found = true;
+				break;
 			}
 		}
 
-		return true;
+		if (!layer_found) {
+			Log::debug("Instance", "Layer was not found");
+			return false;
+		}
 	}
+
+	return true;
+}
 
 } // namespace Disarray::Vulkan
