@@ -1,4 +1,5 @@
 #include <Disarray.hpp>
+#include <ImGuizmo.h>
 #include <array>
 #include <vector>
 
@@ -23,6 +24,7 @@ namespace Disarray::Client {
 		Device& device;
 
 		EditorCamera camera;
+		ImGuizmo::OPERATION gizmo_type { ImGuizmo::OPERATION::ROTATE };
 
 		bool viewport_panel_mouse_over { false };
 		bool viewport_panel_focused { false };

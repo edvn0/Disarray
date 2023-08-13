@@ -66,8 +66,7 @@ namespace Disarray::Vulkan {
 				{ ElementType::Float4, "colour" }, { ElementType::Uint, "identifier" } },
 			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, sizeof(PushConstant) } },
 			.extent = swapchain.get_extent(),
-			.descriptor_set_layout = layouts.data(),
-			.descriptor_set_layout_count = static_cast<std::uint32_t>(layouts.size()),
+			.descriptor_set_layouts = layouts,
 		};
 		{
 			// Quad

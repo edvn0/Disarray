@@ -4,6 +4,7 @@
 #include "core/Concepts.hpp"
 #include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
+#include "graphics/Material.hpp"
 #include "graphics/Renderer.hpp"
 
 #include <entt/entt.hpp>
@@ -43,6 +44,13 @@ namespace Disarray::Components {
 		explicit Mesh(Device&, std::string_view path);
 		explicit Mesh(Ref<Disarray::Mesh>);
 		Ref<Disarray::Mesh> mesh { nullptr };
+	};
+
+	struct Material {
+		Material() = default;
+		explicit Material(Device&, std::string_view vertex_path, std::string_view fragment_path);
+		explicit Material(Ref<Disarray::Material>);
+		Ref<Disarray::Material> material { nullptr };
 	};
 
 	struct Pipeline {

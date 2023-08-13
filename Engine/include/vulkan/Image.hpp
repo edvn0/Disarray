@@ -1,5 +1,6 @@
 #pragma once
 
+#include "PropertySupplier.hpp"
 #include "core/UniquelyIdentifiable.hpp"
 #include "graphics/Image.hpp"
 #include "vulkan/MemoryAllocator.hpp"
@@ -91,7 +92,19 @@ namespace Disarray::Vulkan {
 		}
 	}
 
-	class Image : public Disarray::Image, public Disarray::UniquelyIdentifiable<Vulkan::Image> {
+	constexpr auto to_vulkan_tiling(Tiling tiling)
+	{
+		switch (tiling) {
+		default:
+			unreachable();
+		case Tiling::Linear:
+			return VK_IMAGE_TILING_LINEAR;
+		case Tiling::DeviceOptimal:
+			return VK_IMAGE_TILING_OPTIMAL;
+		}
+	}
+
+	class Image : public Disarray::Image, public Disarray::UniquelyIdentifiable<Vulkan::Image>, public PropertySupplier<VkImage> {
 	public:
 		Image(const Disarray::Device&, const ImageProperties&);
 		~Image() override;
@@ -103,6 +116,8 @@ namespace Disarray::Vulkan {
 
 		VkImage get_image() const { return info.image; }
 		const VkDescriptorSetLayout& get_layout() const { return layout; }
+
+		VkImage supply() const override { return get_image(); }
 
 		const VkDescriptorImageInfo& get_descriptor_info() const { return descriptor_info; }
 

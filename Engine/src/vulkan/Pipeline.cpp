@@ -119,6 +119,18 @@ namespace Disarray::Vulkan {
 			}
 		}
 
+		static constexpr VkFrontFace to_vulkan_face_mode(FaceMode face_mode)
+		{
+			switch (face_mode) {
+			case FaceMode::Clockwise:
+				return VK_FRONT_FACE_CLOCKWISE;
+			case FaceMode::CounterClockwise:
+				return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+			default:
+				unreachable();
+			}
+		}
+
 	} // namespace Detail
 
 	Pipeline::Pipeline(const Disarray::Device& dev, const Disarray::PipelineProperties& properties)
@@ -193,7 +205,7 @@ namespace Disarray::Vulkan {
 		rasterizer.polygonMode = Detail::vk_polygon_mode(props.polygon_mode);
 		rasterizer.lineWidth = props.line_width;
 		rasterizer.cullMode = Detail::to_vulkan_cull_mode(props.cull_mode);
-		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizer.frontFace = Detail::to_vulkan_face_mode(props.face_mode);
 		rasterizer.depthBiasEnable = false;
 		rasterizer.depthBiasConstantFactor = 0.0f; // Optional
 		rasterizer.depthBiasClamp = 0.0f; // Optional
@@ -286,8 +298,8 @@ namespace Disarray::Vulkan {
 
 		VkPipelineLayoutCreateInfo pipeline_layout_info {};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipeline_layout_info.setLayoutCount = props.descriptor_set_layout_count; // Optional
-		pipeline_layout_info.pSetLayouts = props.descriptor_set_layout; // Optional
+		pipeline_layout_info.setLayoutCount = static_cast<std::uint32_t>(props.descriptor_set_layouts.size()); // Optional
+		pipeline_layout_info.pSetLayouts = props.descriptor_set_layouts.data(); // Optional
 
 		pipeline_layout_info.pushConstantRangeCount = static_cast<std::uint32_t>(props.push_constant_layout.size()); // Optional
 		std::vector<VkPushConstantRange> result;
@@ -360,7 +372,6 @@ namespace Disarray::Vulkan {
 			vkDestroyPipeline(supply_cast<Vulkan::Device>(device), pipeline, nullptr);
 		}
 
-		// get the new extent somehow
 		construct_layout();
 	}
 

@@ -33,6 +33,7 @@ namespace Disarray {
 	};
 
 	enum class CullMode { Back, Front, None, Both };
+	enum class FaceMode { Clockwise, CounterClockwise };
 
 	enum class ElementType {
 		Float,
@@ -131,10 +132,10 @@ namespace Disarray {
 		SampleCount samples { SampleCount::One };
 		DepthCompareOperator depth_comparison_operator { DepthCompareOperator::GreaterOrEqual };
 		CullMode cull_mode { CullMode::Front };
+		FaceMode face_mode { FaceMode::Clockwise };
 		bool write_depth { true };
 		bool test_depth { true };
-		const VkDescriptorSetLayout* descriptor_set_layout { nullptr };
-		std::uint32_t descriptor_set_layout_count { 0 };
+		std::vector<VkDescriptorSetLayout> descriptor_set_layouts;
 	};
 
 	class Pipeline : public ReferenceCountable {

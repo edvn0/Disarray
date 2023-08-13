@@ -18,7 +18,7 @@ if (WIN32)
 endif ()
 
 add_executable(${PROJECT_NAME} main.cpp scene/serialise_compare_test.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE ApprovalTests::ApprovalTests Disarray::Engine GTest::gtest magic_enum::magic_enum nlohmann_json::nlohmann_json Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator imgui tinyobjloader stb_image thread-pool EnTT::EnTT fmt::fmt)
+target_link_libraries(${PROJECT_NAME} PRIVATE ApprovalTests::ApprovalTests Disarray::Engine GTest::gtest magic_enum::magic_enum imguizmo nlohmann_json::nlohmann_json Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator imgui tinyobjloader stb_image thread-pool EnTT::EnTT fmt::fmt)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory

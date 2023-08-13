@@ -2,22 +2,30 @@ cmake_minimum_required(VERSION 3.22)
 
 project(Engine CXX)
 
+
+set(FETCHCONTENT_QUIET FALSE)
 FetchContent_Declare(
         fmt
         GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-        GIT_TAG master)
+        GIT_TAG master
+        GIT_PROGRESS TRUE
+)
 FetchContent_MakeAvailable(fmt)
 
 FetchContent_Declare(
         magic_enum
         GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
-        GIT_TAG master)
+        GIT_TAG master
+        GIT_PROGRESS TRUE
+)
 FetchContent_MakeAvailable(magic_enum)
 
 FetchContent_Declare(
         nlohmann_json
         GIT_REPOSITORY https://github.com/nlohmann/json.git
-        GIT_TAG v3.11.2)
+        GIT_TAG v3.11.2
+        GIT_PROGRESS TRUE
+)
 FetchContent_MakeAvailable(nlohmann_json)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -34,6 +42,7 @@ set(ENGINE_SOURCES
         include/graphics/VertexBuffer.hpp
         include/graphics/CommandExecutor.hpp
         include/graphics/Device.hpp
+        include/graphics/Material.hpp
         include/graphics/ImageProperties.hpp
         include/graphics/Surface.hpp
         include/graphics/Swapchain.hpp
@@ -112,6 +121,7 @@ set(ENGINE_SOURCES
         include/vulkan/Allocator.hpp
         include/vulkan/Window.hpp
         include/vulkan/Device.hpp
+        include/vulkan/Material.hpp
         include/vulkan/Surface.hpp
         include/vulkan/Swapchain.hpp
         include/vulkan/PhysicalDevice.hpp
@@ -148,6 +158,7 @@ set(ENGINE_SOURCES
         src/graphics/Renderer.cpp
         src/graphics/Pipeline.cpp
         src/graphics/Device.cpp
+        src/graphics/Material.cpp
         src/graphics/ImageLoader.cpp
         src/graphics/IndexBuffer.cpp
         src/graphics/Texture.cpp
@@ -197,6 +208,7 @@ set(ENGINE_SOURCES
         src/vulkan/DebugMarker.cpp
         src/vulkan/Pipeline.cpp
         src/vulkan/Device.cpp
+        src/vulkan/Material.cpp
         src/vulkan/ImageUtilities.cpp
         src/vulkan/Structures.cpp
         src/vulkan/IndexBuffer.cpp
@@ -219,17 +231,20 @@ add_library(Disarray::Engine ALIAS ${PROJECT_NAME})
 target_include_directories(
         ${PROJECT_NAME}
         PRIVATE ${Vulkan_INCLUDE_DIRS}
-        PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/imgui)
+        PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/imgui ${THIRD_PARTY}/imguizmo)
 target_link_libraries(
         ${PROJECT_NAME}
-        PRIVATE glfw
-        Vulkan::Vulkan
+        PRIVATE
+        glfw
         GPUOpen::VulkanMemoryAllocator
         imgui
         nlohmann_json::nlohmann_json
         tinyobjloader
         stb_image
+        PUBLIC
         thread-pool
+        Vulkan::Vulkan
+        imguizmo
         magic_enum::magic_enum
         EnTT::EnTT
         fmt::fmt)

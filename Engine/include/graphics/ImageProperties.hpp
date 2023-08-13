@@ -18,6 +18,8 @@ namespace Disarray {
 		SixtyFour = 0x00000040,
 	};
 
+	enum class Tiling { Linear, DeviceOptimal };
+
 	template <class T> struct IExtent {
 		T width {};
 		T height {};
@@ -35,10 +37,15 @@ namespace Disarray {
 	enum class ImageFormat { SRGB, RGB, SBGR, BGR, SRGB32, RGB32, Depth, DepthStencil, Uint };
 
 } // namespace Disarray
-template <> struct fmt::formatter<Disarray::SampleCount> : fmt::formatter<std::string_view> {
-	auto format(Disarray::SampleCount samples, format_context& ctx);
-};
 
-template <> struct fmt::formatter<Disarray::ImageFormat> : fmt::formatter<std::string_view> {
-	auto format(Disarray::ImageFormat format, format_context& ctx);
-};
+namespace fmt {
+
+	template <> struct formatter<Disarray::SampleCount> : formatter<std::string_view> {
+		auto format(Disarray::SampleCount samples, format_context& ctx) const;
+	};
+
+	template <> struct formatter<Disarray::ImageFormat> : formatter<std::string_view> {
+		auto format(Disarray::ImageFormat format, format_context& ctx) const;
+	};
+
+} // namespace fmt

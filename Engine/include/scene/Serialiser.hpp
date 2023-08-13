@@ -58,6 +58,7 @@ namespace Disarray {
 				std::ofstream output { full_path };
 				if (!output) {
 					Log::error("Scene Serialiser", "Could not open {} for writing.", full_path.string());
+					return;
 				}
 
 				output << std::setw(2) << serialised_object;
@@ -76,7 +77,7 @@ namespace Disarray {
 				const auto view = registry.view<const Components::ID, const Components::Tag>();
 				json entities;
 				for (const auto [handle, id, tag] : view.each()) {
-					Entity entity { scene, handle };
+					Entity entity { scene, handle, tag.name };
 					auto key = fmt::format("{}__disarray__{}", id.identifier, tag.name);
 
 					json entity_object;

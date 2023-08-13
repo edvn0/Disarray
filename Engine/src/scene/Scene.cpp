@@ -8,6 +8,7 @@
 #include "core/ThreadPool.hpp"
 #include "core/events/Event.hpp"
 #include "core/events/KeyEvent.hpp"
+#include "core/events/MouseEvent.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Renderer.hpp"
@@ -17,6 +18,7 @@
 #include "scene/Entity.hpp"
 #include "scene/Serialiser.hpp"
 
+#include <ImGuizmo.h>
 #include <entt/entt.hpp>
 
 static auto rotate_by(const glm::vec3& axis_radians)
@@ -35,6 +37,8 @@ namespace Disarray {
 		, scene_name(name)
 		, registry(entt::basic_registry())
 	{
+		picked_entity = make_scope<Entity>(*this);
+		selected_entity = make_scope<Entity>(*this);
 	}
 
 	void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray::ThreadPool&)
@@ -52,9 +56,9 @@ namespace Disarray {
 				auto& transform = rect.get_components<Components::Transform>();
 				transform.position = { 2 * static_cast<float>(i) + 0.5f, -1, 2 * static_cast<float>(j) + 0.5f };
 				transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
-				glm::vec4 colour {};
+				glm::vec4 colour { i, 0, j, 1 };
 				rect.add_component<Components::QuadGeometry>();
-				rect.add_component<Components::Texture>();
+				rect.add_component<Components::Texture>(colour);
 			}
 		}
 
@@ -145,8 +149,7 @@ namespace Disarray {
 			.extent = extent,
 			.depth_comparison_operator = DepthCompareOperator::GreaterOrEqual,
 			.cull_mode = CullMode::Back,
-			.descriptor_set_layout = renderer.get_descriptor_set_layouts().data(),
-			.descriptor_set_layout_count = static_cast<std::uint32_t>(renderer.get_descriptor_set_layouts().size()),
+			.descriptor_set_layouts = renderer.get_descriptor_set_layouts(),
 		};
 		auto viking_rotation = rotate_by(glm::radians(glm::vec3 { 0, 0, 90 }));
 
@@ -158,6 +161,11 @@ namespace Disarray {
 			}));
 		v_mesh.add_component<Components::Pipeline>(Pipeline::construct(device, props));
 		v_mesh.add_component<Components::Texture>(renderer.get_texture_cache().get("viking_room"));
+		v_mesh.add_component<Components::Material>(Material::construct(device,
+			{
+				.vertex_shader = vert,
+				.fragment_shader = frag,
+			}));
 
 		TextureProperties texture_properties {
 			.extent = extent,
@@ -190,7 +198,13 @@ namespace Disarray {
 		registry.clear();
 	}
 
-	void Scene::update(float) { }
+	void Scene::update(float)
+	{
+		if (picked_entity->is_valid()) {
+			selected_entity.swap(picked_entity);
+			picked_entity = make_scope<Entity>(*this);
+		}
+	}
 
 	void Scene::render(Renderer& renderer)
 	{
@@ -199,7 +213,7 @@ namespace Disarray {
 			renderer.begin_pass(*command_executor, *framebuffer, true);
 
 			auto mesh_view = registry.view<const Components::Mesh, const Components::Pipeline, const Components::Transform>();
-			for (const auto& [entity, mesh, pipeline, transform] : mesh_view.each()) {
+			for (auto&& [entity, mesh, pipeline, transform] : mesh_view.each()) {
 				renderer.draw_mesh(*command_executor, *mesh.mesh, *pipeline.pipeline, transform.compute());
 			}
 
@@ -248,18 +262,25 @@ namespace Disarray {
 	{
 		EventDispatcher dispatcher(event);
 
-		dispatcher.dispatch<KeyPressedEvent>([&max = vp_max, &min = vp_min, &fb = identity_framebuffer](KeyPressedEvent& pressed) {
-			if (pressed.get_key_code() == KeyCode::L) {
-				const auto& image = fb->get_image(1);
+		dispatcher.dispatch<MouseButtonReleasedEvent>([this](MouseButtonReleasedEvent& pressed) {
+			if (ImGuizmo::IsUsing())
+				return true;
+			if (pressed.get_mouse_button() == MouseCode::Left) {
+				const auto& image = identity_framebuffer->get_image(1);
 				auto pos = Input::mouse_position();
-				pos -= min;
+				pos -= vp_min;
 
-				pos.x /= (max.x - min.x);
-				pos.y /= max.y;
+				pos.x /= (vp_max.x - vp_min.x);
+				pos.y /= vp_max.y;
 				glm::vec4 pixel_data = image.read_pixel(pos);
-				Log::debug("Scene - PixelData", "{}", pixel_data);
+
+				// stupid check... clarify image read api for uint and colour.
+				if (pixel_data[0] != 0) {
+					entt::entity handle { static_cast<std::uint32_t>(pixel_data[0]) };
+					picked_entity = make_scope<Entity>(*this, handle);
+				}
 			}
-			return true;
+			return false;
 		});
 	}
 
