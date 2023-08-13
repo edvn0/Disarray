@@ -11,6 +11,8 @@
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Device.hpp"
 
+#include <core/ThreadPool.hpp>
+#include <stb_image_write.h>
 #include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {
@@ -52,6 +54,11 @@ namespace Disarray::Vulkan {
 		VkBuffer pixel_data_buffer;
 		Allocator allocator { "ReadPixelData" };
 		VmaAllocation allocation;
+
+		auto copy = props;
+		copy.tiling = Tiling::Linear;
+		auto staging_image = make_scope<Vulkan::Image>(device, copy);
+
 		{
 			auto immediate = construct_immediate(device);
 			VkImageAspectFlags aspect_mask = props.format == ImageFormat::Depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
@@ -64,12 +71,13 @@ namespace Disarray::Vulkan {
 			subresource_range.baseMipLevel = 0;
 			subresource_range.levelCount = 1;
 			set_image_layout(immediate->supply(), info.image, descriptor_info.imageLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, subresource_range);
+			set_image_layout(
+				immediate->supply(), staging_image->supply(), descriptor_info.imageLayout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
 
 			auto create_info = vk_structures<VkBufferCreateInfo>()();
 			VkDeviceSize size = props.data.is_valid() ? props.data.get_size() : props.extent.get_size() * sizeof(float);
 			create_info.size = size;
-			create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-
+			create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 			allocation = allocator.allocate_buffer(
 				pixel_data_buffer, create_info, { .usage = Usage::CPU_COPY, .creation = Creation::HOST_ACCESS_RANDOM_BIT });
 
@@ -83,7 +91,31 @@ namespace Disarray::Vulkan {
 			buffer_copy_region.imageExtent.depth = 1;
 			buffer_copy_region.bufferOffset = 0;
 
-			vkCmdCopyImageToBuffer(immediate->supply(), info.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, pixel_data_buffer, 1, &buffer_copy_region);
+			VkImageCopy copy_region {};
+			VkImageSubresourceLayers layers = {};
+			layers.layerCount = 1;
+			layers.aspectMask = aspect_mask;
+			layers.mipLevel = 0;
+
+			copy_region.srcSubresource = layers;
+			copy_region.dstSubresource = layers;
+			copy_region.extent = { .width = props.extent.width, .height = props.extent.height, .depth = 1 };
+
+			auto vk_cmd = immediate->supply();
+
+			vkCmdCopyImage(vk_cmd, info.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging_image->supply(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+				&copy_region);
+			set_image_layout(immediate->supply(), info.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, descriptor_info.imageLayout, subresource_range);
+
+			set_image_layout(
+				vk_cmd, staging_image->supply(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, subresource_range);
+			vkCmdCopyImageToBuffer(vk_cmd, staging_image->supply(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, pixel_data_buffer, 1, &buffer_copy_region);
+
+			VkImageSubresource subresource {};
+			subresource.aspectMask = aspect_mask;
+			subresource.mipLevel = 0;
+			VkSubresourceLayout subresource_layout {};
+			vkGetImageSubresourceLayout(supply_cast<Vulkan::Device>(device), staging_image->supply(), &subresource, &subresource_layout);
 
 			auto* data = allocator.map_memory<std::byte>(allocation);
 
@@ -92,10 +124,14 @@ namespace Disarray::Vulkan {
 			std::size_t offset = (offset_y * props.extent.width + offset_x) * sizeof(float);
 
 			ensure(data != nullptr);
-			out = { data[offset], data[offset + 1], data[offset + 2], data[offset + 3] };
+			if (props.format == ImageFormat::Uint) {
+				// ID of the entity
+				out = { data[offset], data[offset], data[offset], data[offset] };
+			} else {
+				// Pixel colour
+				out = { data[offset], data[offset + 1], data[offset + 2], data[offset + 3] };
+			}
 			allocator.unmap_memory(allocation);
-
-			set_image_layout(immediate->supply(), info.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, descriptor_info.imageLayout, subresource_range);
 		}
 		allocator.deallocate_buffer(allocation, pixel_data_buffer);
 		return out;
@@ -131,7 +167,7 @@ namespace Disarray::Vulkan {
 		image_create_info.samples = to_vulkan_samples(props.samples);
 		image_create_info.mipLevels = props.mips;
 		image_create_info.arrayLayers = 1;
-		image_create_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+		image_create_info.tiling = to_vulkan_tiling(props.tiling);
 		image_create_info.usage = usage;
 		image_create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		{

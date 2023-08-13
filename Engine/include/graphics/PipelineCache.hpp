@@ -32,8 +32,7 @@ namespace Disarray {
 		PolygonMode polygon_mode { PolygonMode::Fill };
 		float line_width { 1.0f };
 		SampleCount samples { SampleCount::One };
-		const VkDescriptorSetLayout* descriptor_set_layout { nullptr };
-		std::uint32_t descriptor_set_layout_count { 0 };
+		std::vector<VkDescriptorSetLayout> descriptor_set_layouts;
 	};
 
 	class PipelineCache : public ResourceCache<Ref<Disarray::Pipeline>, PipelineCacheCreationProperties, PipelineCache, std::string, StringHash> {
@@ -60,8 +59,7 @@ namespace Disarray {
 				.polygon_mode = props.polygon_mode,
 				.line_width = props.line_width,
 				.samples = props.samples,
-				.descriptor_set_layout = props.descriptor_set_layout,
-				.descriptor_set_layout_count = props.descriptor_set_layout_count,
+				.descriptor_set_layouts = props.descriptor_set_layouts,
 			};
 
 			return Pipeline::construct(get_device(), properties);

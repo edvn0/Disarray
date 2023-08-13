@@ -35,6 +35,16 @@ namespace Disarray {
 		add_component<Components::Tag>(name);
 	}
 
+	Entity::Entity(Scene& scene, entt::entity handle)
+		: Entity(scene, handle, "Empty")
+	{
+	}
+
+	Entity::Entity(Scene& scene)
+		: Entity(scene, entt::null, "Empty")
+	{
+	}
+
 	Entity::Entity(Scene& s, entt::entity entity, std::string_view n)
 		: scene(s)
 		, name(n)

@@ -50,6 +50,7 @@ namespace Disarray {
 		const CommandExecutor& get_command_executor() const { return *command_executor; };
 
 		entt::registry& get_registry() { return registry; };
+		const auto& get_selected_entity() const { return *selected_entity; }
 		const entt::registry& get_registry() const { return registry; };
 		const std::string& get_name() const { return scene_name; };
 
@@ -66,6 +67,9 @@ namespace Disarray {
 	private:
 		const Disarray::Device& device;
 		std::string scene_name;
+
+		Scope<Entity> picked_entity { nullptr };
+		Scope<Entity> selected_entity { nullptr };
 
 		Extent extent;
 		glm::vec2 vp_max { 1 };

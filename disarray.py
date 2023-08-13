@@ -1,8 +1,9 @@
 from typing import List
 
 from pathlib import Path
-import os
+from shutil import which
 from argparse import Action, ArgumentParser, Namespace
+import os
 import shutil
 import subprocess
 import enum
@@ -106,9 +107,10 @@ def generate_cmake(
             f"-D CMAKE_C_COMPILER={os.environ['CMAKE_C_COMPILER']}",
         ]
 
-    from shutil import which
-    if which("ccache") is not None:
-        extra_compile_definitions.append(f"-D CMAKE_CXX_COMPILER_LAUNCHER={which('ccache')}")
+    ccache = which("ccache")
+    if ccache is not None:
+        extra_compile_definitions.append(f"-D CMAKE_CXX_COMPILER_LAUNCHER={ccache}")
+        extra_compile_definitions.append(f"-D CMAKE_C_COMPILER_LAUNCHER={ccache}")
 
     compile_definitions = [
         f"-G {generator_string}",

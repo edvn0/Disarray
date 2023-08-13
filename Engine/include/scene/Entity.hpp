@@ -12,10 +12,14 @@ namespace Disarray {
 
 	class Entity {
 	public:
-		Entity(Scene&, std::string_view = "Empty");
-		Entity(Scene&, entt::entity, std::string_view = "Empty");
+		Entity(Scene&, std::string_view);
+		Entity(Scene&, entt::entity, std::string_view);
+		Entity(Scene&, entt::entity);
+		Entity(Scene&);
 
 		static Entity deserialise(Scene&, entt::entity, Identifier, std::string_view = "Empty");
+
+		bool is_valid() const { return scene.get_registry().valid(identifier); }
 
 		template <ValidComponent... T> decltype(auto) has_any() { return scene.get_registry().any_of<T...>(identifier); }
 		template <ValidComponent... T> decltype(auto) has_all() { return scene.get_registry().all_of<T...>(identifier); }

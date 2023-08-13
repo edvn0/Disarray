@@ -67,7 +67,7 @@ namespace Disarray::Vulkan {
 		static void initialise(Vulkan::Device&, Vulkan::PhysicalDevice&, Vulkan::Instance&);
 		static void shutdown();
 
-		template <typename T> T* map_memory(VmaAllocation allocation)
+		template <typename T = UnkownData> T* map_memory(VmaAllocation allocation)
 		{
 			T* data { nullptr };
 			vmaMapMemory(allocator, allocation, Disarray::bit_cast<void**>(&data));

@@ -19,6 +19,26 @@ namespace Disarray::Components {
 	{
 	}
 
+	Material::Material(Device& device, std::string_view vertex, std::string_view fragment)
+		: material(Disarray::Material::construct(device,
+			MaterialProperties {
+				.vertex_shader = Shader::construct(device,
+					{
+						.path = std::filesystem::path { vertex },
+					}),
+				.fragment_shader = Shader::construct(device,
+					{
+						.path = std::filesystem::path { fragment },
+					}),
+			}))
+	{
+	}
+
+	Material::Material(Ref<Disarray::Material> m)
+		: material(m)
+	{
+	}
+
 	Pipeline::Pipeline(Ref<Disarray::Pipeline> p)
 		: pipeline(p)
 	{
