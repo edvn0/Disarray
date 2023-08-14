@@ -7,10 +7,10 @@
 
 namespace Disarray::Vulkan {
 
-	class IndexBuffer : public Disarray::IndexBuffer, public Vulkan::BaseBuffer {
-		MAKE_SUB_BUFFER(IndexBuffer)
-	public:
-		IndexBuffer(const Disarray::Device&, const BufferProperties&);
-	};
+class IndexBuffer : public Disarray::IndexBuffer, public Vulkan::BaseBuffer {
+	MAKE_SUB_BUFFER(IndexBuffer)
+public:
+	IndexBuffer(const Disarray::Device&, const BufferProperties&);
+};
 
 } // namespace Disarray::Vulkan

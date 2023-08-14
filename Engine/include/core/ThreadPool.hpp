@@ -4,6 +4,6 @@
 
 namespace Disarray {
 
-	using ThreadPool = BS::thread_pool;
+using ThreadPool = BS::thread_pool;
 
 }

@@ -4,9 +4,9 @@
 
 namespace Disarray {
 
-	class Panel : public Disarray::Layer {
-	public:
-		virtual ~Panel() = default;
-	};
+class Panel : public Disarray::Layer {
+public:
+	virtual ~Panel() = default;
+};
 
 } // namespace Disarray

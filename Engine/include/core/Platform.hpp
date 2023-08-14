@@ -7,7 +7,7 @@
 #endif
 
 namespace Disarray {
-	inline constexpr bool is_vulkan_supported = true;
+inline constexpr bool is_vulkan_supported = true;
 }
 
 #else
@@ -17,7 +17,7 @@ namespace Disarray {
 #endif
 
 namespace Disarray {
-	inline constexpr bool is_vulkan_supported = false;
+inline constexpr bool is_vulkan_supported = false;
 }
 
 #endif

@@ -14,73 +14,73 @@
 
 namespace Disarray {
 
-	class Entity;
+class Entity;
 
-	class Scene {
-	public:
-		Scene(const Disarray::Device&, std::string_view);
-		~Scene();
-		void update(float);
-		void render(Disarray::Renderer&);
-		void construct(Disarray::App&, Disarray::Renderer&, Disarray::ThreadPool&);
-		void destruct();
-		void on_event(Disarray::Event&);
-		void recreate(const Extent& extent);
+class Scene {
+public:
+	Scene(const Disarray::Device&, std::string_view);
+	~Scene();
+	void update(float);
+	void render(Disarray::Renderer&);
+	void construct(Disarray::App&, Disarray::Renderer&, Disarray::ThreadPool&);
+	void destruct();
+	void on_event(Disarray::Event&);
+	void recreate(const Extent& extent);
 
-		void set_viewport_bounds(const glm::vec2& max, const glm::vec2& min)
-		{
-			vp_max = max;
-			vp_min = min;
+	void set_viewport_bounds(const glm::vec2& max, const glm::vec2& min)
+	{
+		vp_max = max;
+		vp_min = min;
+	}
+
+	FloatExtent get_viewport_bounds() const { return { vp_max.x - vp_min.x, vp_max.y - vp_min.y }; }
+
+	Entity create(std::string_view = "Unnamed");
+
+	Disarray::Image& get_image(std::uint32_t index)
+	{
+		if (index == 0)
+			return framebuffer->get_image();
+		else if (index == 1)
+			return identity_framebuffer->get_image(1);
+		else
+			return identity_framebuffer->get_depth_image();
+	}
+
+	const CommandExecutor& get_command_executor() const { return *command_executor; };
+
+	entt::registry& get_registry() { return registry; };
+	const auto& get_selected_entity() const { return *selected_entity; }
+	const entt::registry& get_registry() const { return registry; };
+	const std::string& get_name() const { return scene_name; };
+
+	template <class Func> constexpr void for_all_entities(Func&& func)
+	{
+		const auto view = get_registry().storage<entt::entity>().each();
+		for (const auto& [entity] : view) {
+			func(entity);
 		}
+	}
 
-		FloatExtent get_viewport_bounds() const { return { vp_max.x - vp_min.x, vp_max.y - vp_min.y }; }
+	static Scope<Scene> deserialise(const Device&, std::string_view, const std::filesystem::path&);
 
-		Entity create(std::string_view = "Unnamed");
+private:
+	const Disarray::Device& device;
+	std::string scene_name;
 
-		Disarray::Image& get_image(std::uint32_t index)
-		{
-			if (index == 0)
-				return framebuffer->get_image();
-			else if (index == 1)
-				return identity_framebuffer->get_image(1);
-			else
-				return identity_framebuffer->get_depth_image();
-		}
+	Scope<Entity> picked_entity { nullptr };
+	Scope<Entity> selected_entity { nullptr };
 
-		const CommandExecutor& get_command_executor() const { return *command_executor; };
+	Extent extent;
+	glm::vec2 vp_max { 1 };
+	glm::vec2 vp_min { 1 };
 
-		entt::registry& get_registry() { return registry; };
-		const auto& get_selected_entity() const { return *selected_entity; }
-		const entt::registry& get_registry() const { return registry; };
-		const std::string& get_name() const { return scene_name; };
+	Ref<Disarray::Framebuffer> framebuffer;
+	Ref<Disarray::Framebuffer> identity_framebuffer;
+	Ref<Disarray::CommandExecutor> command_executor;
 
-		template <class Func> constexpr void for_all_entities(Func&& func)
-		{
-			const auto view = get_registry().storage<entt::entity>().each();
-			for (const auto& [entity] : view) {
-				func(entity);
-			}
-		}
-
-		static Scope<Scene> deserialise(const Device&, std::string_view, const std::filesystem::path&);
-
-	private:
-		const Disarray::Device& device;
-		std::string scene_name;
-
-		Scope<Entity> picked_entity { nullptr };
-		Scope<Entity> selected_entity { nullptr };
-
-		Extent extent;
-		glm::vec2 vp_max { 1 };
-		glm::vec2 vp_min { 1 };
-
-		Ref<Disarray::Framebuffer> framebuffer;
-		Ref<Disarray::Framebuffer> identity_framebuffer;
-		Ref<Disarray::CommandExecutor> command_executor;
-
-		// Should contain some kind of container for entities :)
-		entt::registry registry;
-	};
+	// Should contain some kind of container for entities :)
+	entt::registry registry;
+};
 
 } // namespace Disarray

@@ -1,14 +1,13 @@
 #include "DisarrayPCH.hpp"
 
 #include "graphics/RenderPass.hpp"
-
 #include "vulkan/RenderPass.hpp"
 
 namespace Disarray {
 
-	Ref<RenderPass> RenderPass::construct(const Disarray::Device& device, const Disarray::RenderPassProperties& props)
-	{
-		return make_ref<Vulkan::RenderPass>(device, props);
-	}
+Ref<RenderPass> RenderPass::construct(const Disarray::Device& device, const Disarray::RenderPassProperties& props)
+{
+	return make_ref<Vulkan::RenderPass>(device, props);
+}
 
 } // namespace Disarray

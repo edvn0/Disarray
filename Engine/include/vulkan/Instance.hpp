@@ -9,23 +9,23 @@
 
 namespace Disarray::Vulkan {
 
-	class PhysicalDevice;
+class PhysicalDevice;
 
-	class Instance : public Disarray::Instance, public PropertySupplier<VkInstance> {
-	public:
-		Instance(const std::vector<const char*>& vec = { "VK_LAYER_KHRONOS_validation" });
-		~Instance() override;
+class Instance : public Disarray::Instance, public PropertySupplier<VkInstance> {
+public:
+	Instance(const std::vector<const char*>& vec = { "VK_LAYER_KHRONOS_validation" });
+	~Instance() override;
 
-		VkInstance supply() const override { return instance; }
+	VkInstance supply() const override { return instance; }
 
-	private:
-		bool check_validation_layer_support() const;
-		void setup_debug_messenger();
+private:
+	bool check_validation_layer_support() const;
+	void setup_debug_messenger();
 
-	private:
-		std::vector<const char*> requested_layers {};
-		VkInstance instance;
-		VkDebugUtilsMessengerEXT debug_messenger;
-	};
+private:
+	std::vector<const char*> requested_layers {};
+	VkInstance instance;
+	VkDebugUtilsMessengerEXT debug_messenger;
+};
 
 } // namespace Disarray::Vulkan

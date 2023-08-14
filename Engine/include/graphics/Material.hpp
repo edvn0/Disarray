@@ -7,27 +7,27 @@
 
 namespace Disarray {
 
-	struct MaterialProperties {
-		Ref<Shader> vertex_shader;
-		Ref<Shader> fragment_shader;
-	};
+struct MaterialProperties {
+	Ref<Shader> vertex_shader;
+	Ref<Shader> fragment_shader;
+};
 
-	class Material : public ReferenceCountable {
-		DISARRAY_OBJECT(Material)
-	public:
-		static Ref<Material> construct(const Disarray::Device&, const MaterialProperties&);
-		const MaterialProperties& get_properties() const { return props; };
+class Material : public ReferenceCountable {
+	DISARRAY_OBJECT(Material)
+public:
+	static Ref<Material> construct(const Disarray::Device&, const MaterialProperties&);
+	const MaterialProperties& get_properties() const { return props; };
 
-		virtual void update_material(Renderer&) = 0;
+	virtual void update_material(Renderer&) = 0;
 
-	protected:
-		Material(const MaterialProperties& properties)
-			: props(properties)
-		{
-		}
+protected:
+	Material(const MaterialProperties& properties)
+		: props(properties)
+	{
+	}
 
-	private:
-		MaterialProperties props;
-	};
+private:
+	MaterialProperties props;
+};
 
 } // namespace Disarray

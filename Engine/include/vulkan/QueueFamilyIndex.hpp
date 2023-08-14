@@ -11,11 +11,11 @@
 
 namespace Disarray::Vulkan {
 
-	class QueueFamilyIndex : public Disarray::QueueFamilyIndex {
-	public:
-		~QueueFamilyIndex() override = default;
-		explicit QueueFamilyIndex(Disarray::PhysicalDevice&, Disarray::Surface&);
-		explicit QueueFamilyIndex(VkPhysicalDevice, Disarray::Surface&);
-	};
+class QueueFamilyIndex : public Disarray::QueueFamilyIndex {
+public:
+	~QueueFamilyIndex() override = default;
+	explicit QueueFamilyIndex(Disarray::PhysicalDevice&, Disarray::Surface&);
+	explicit QueueFamilyIndex(VkPhysicalDevice, Disarray::Surface&);
+};
 
 } // namespace Disarray::Vulkan

@@ -5,7 +5,7 @@ FixNamespaceComments: true
 IncludeBlocks: Regroup
 IncludeCategories:
   - Regex: "DisarrayPCH.hpp"
-    Priority: -1
+    Priority: 0
   - Regex: '^"'
     Priority: 1
   - Regex: "(projectDir1|projectDir2|projectDir3)"
@@ -14,7 +14,7 @@ IncludeCategories:
     Priority: 3
   - Regex: ".*"
     Priority: 4
-NamespaceIndentation: All
+NamespaceIndentation: Inner
 Standard: c++20
 TabWidth: 4
 UseTab: Always
