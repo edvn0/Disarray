@@ -8,6 +8,7 @@
 #include "graphics/Shader.hpp"
 #include "graphics/Texture.hpp"
 
+#include <unordered_map>
 #include <array>
 #include <filesystem>
 #include <functional>

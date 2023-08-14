@@ -28,4 +28,8 @@ function(detect_compiler)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         set(DISARRAY_COMPILER "GNU" PARENT_SCOPE)
     endif ()
+
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+        set(DISARRAY_COMPILER "AppleClang" PARENT_SCOPE)
+    endif()
 endfunction()

@@ -3,6 +3,7 @@
 #include "core/Ensure.hpp"
 #include "core/Hashes.hpp"
 #include "core/Log.hpp"
+#include "core/Collections.hpp"
 #include "graphics/Device.hpp"
 
 #include <algorithm>
@@ -13,21 +14,13 @@
 
 namespace Disarray {
 
-namespace CollectionOperations {
-
-	template <typename Collection, typename Func> static inline void for_each(Collection& coll, Func&& func)
-	{
-		std::ranges::for_each(std::begin(coll), std::end(coll), std::forward<Func>(func));
-	}
-
-} // namespace CollectionOperations
-
 template <class T>
 concept CacheableResource = requires(T t, bool should_clean, const Extent& extent) { t.recreate(should_clean, extent); }
 	or requires(T t, bool should_clean, const Extent& extent) { (*t).recreate(should_clean, extent); };
 
 template <CacheableResource Resource, class Props, class Child, class Key = std::string, class Hash = StringHash> class ResourceCache {
 	using ResourceMap = std::unordered_map<Key, Resource, Hash, std::equal_to<>>;
+    using UniquePathSet = std::unordered_set<std::filesystem::path, FileSystemPathHasher>;
 
 public:
 	~ResourceCache() { storage.clear(); };
@@ -44,7 +37,7 @@ public:
 		return pair->second;
 	}
 
-	template <class Func> void for_each_in_storage(Func&& f) { CollectionOperations::for_each(storage, std::forward<Func>(f)); }
+	template <class Func> void for_each_in_storage(Func&& f) { Collections::for_each(storage, std::forward<Func>(f)); }
 
 	void force_recreate(const Extent& extent) { return get_child().force_recreate_impl(extent); };
 	Resource create_from(const Props& props) { return get_child().create_from_impl(props); }
@@ -65,9 +58,9 @@ protected:
 	{
 	}
 
-	std::unordered_set<std::filesystem::path> get_unique_files_recursively() const
+    UniquePathSet get_unique_files_recursively() const
 	{
-		std::unordered_set<std::filesystem::path> paths;
+		UniquePathSet paths;
 		if (!std::filesystem::exists(path)) {
 			Log::error("ResourceCache - Load all files", "{}", "The path was not found.");
 			return paths;

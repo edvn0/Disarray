@@ -10,6 +10,7 @@
 #include <future>
 #include <thread>
 #include <unordered_set>
+#include <unordered_map>
 #include <vector>
 
 namespace Disarray {
@@ -65,7 +66,7 @@ public:
 private:
 	static void for_each(const FileInformation& i, const std::vector<std::function<void(const FileInformation&)>>& funcs)
 	{
-		std::for_each(std::execution::par, std::begin(funcs), std::end(funcs), [&info = i](auto& func) { func(info); });
+		std::for_each(std::begin(funcs), std::end(funcs), [&info = i](auto& func) { func(info); });
 	}
 
 	void start(const std::function<void(const FileInformation&)>& activation_function);

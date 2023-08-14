@@ -1,7 +1,8 @@
 #include "DisarrayPCH.hpp"
 
 #include "graphics/ModelLoader.hpp"
-#include "tinyobjloader.h"
+#include <tinyobjloader.h>
+#include "core/Collections.hpp"
 
 #include <algorithm>
 #include <glm/ext/matrix_transform.hpp>
@@ -62,8 +63,9 @@ ModelLoader::ModelLoader(const std::filesystem::path& path, const glm::mat4& ini
 	}
 
 	if (needs_rotate)
-		std::for_each(
-			std::execution::par, std::begin(vertices), std::end(vertices), [&rot = initial_rotation](auto& vertex) { vertex.rotate_by(rot); });
+    {
+        Collections::for_each(vertices, [&rot = initial_rotation](auto& vertex) { vertex.rotate_by(rot); });
+    }
 }
 
 } // namespace Disarray
