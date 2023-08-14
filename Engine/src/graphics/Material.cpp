@@ -5,9 +5,9 @@
 
 namespace Disarray {
 
-	Ref<Material> Material::construct(const Disarray::Device& device, const MaterialProperties& properties)
-	{
-		return make_ref<Vulkan::Material>(device, properties);
-	}
+Ref<Material> Material::construct(const Disarray::Device& device, const MaterialProperties& properties)
+{
+	return make_ref<Vulkan::Material>(device, properties);
+}
 
 } // namespace Disarray

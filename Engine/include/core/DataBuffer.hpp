@@ -7,42 +7,42 @@
 
 namespace Disarray {
 
-	class DataBuffer {
-	public:
-		DataBuffer() = default;
-		explicit DataBuffer(std::size_t);
-		DataBuffer(std::nullptr_t);
+class DataBuffer {
+public:
+	DataBuffer() = default;
+	explicit DataBuffer(std::size_t);
+	DataBuffer(std::nullptr_t);
 
-		DataBuffer(const void* data, std::size_t);
+	DataBuffer(const void* data, std::size_t);
 
-		DataBuffer(const DataBuffer&);
-		DataBuffer(DataBuffer&&) noexcept;
-		DataBuffer& operator=(DataBuffer);
-		~DataBuffer();
+	DataBuffer(const DataBuffer&);
+	DataBuffer(DataBuffer&&) noexcept;
+	DataBuffer& operator=(DataBuffer);
+	~DataBuffer();
 
-		void allocate(std::size_t);
-		void copy_from(const DataBuffer&);
+	void allocate(std::size_t);
+	void copy_from(const DataBuffer&);
 
-		void reset();
+	void reset();
 
-		template <typename T>
-			requires(!std::is_same_v<T, bool>)
-		T& read(std::size_t element_offset = 0)
-		{
-			return *bit_cast<T*>(data + element_offset * sizeof(T));
-		}
+	template <typename T>
+		requires(!std::is_same_v<T, bool>)
+	T& read(std::size_t element_offset = 0)
+	{
+		return *bit_cast<T*>(data + element_offset * sizeof(T));
+	}
 
-		friend void swap(DataBuffer& first, DataBuffer& second) noexcept;
+	friend void swap(DataBuffer& first, DataBuffer& second) noexcept;
 
-		auto get_size() const { return size; }
-		auto* get_data() const { return data; }
+	auto get_size() const { return size; }
+	auto* get_data() const { return data; }
 
-		explicit(false) operator bool() const { return is_valid(); }
-		bool is_valid() const { return size == 0 && data == nullptr; }
+	explicit(false) operator bool() const { return is_valid(); }
+	bool is_valid() const { return size == 0 && data == nullptr; }
 
-	private:
-		std::byte* data { nullptr };
-		std::size_t size { 0 };
-	};
+private:
+	std::byte* data { nullptr };
+	std::size_t size { 0 };
+};
 
 } // namespace Disarray

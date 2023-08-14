@@ -1,18 +1,17 @@
 #include "DisarrayPCH.hpp"
 
-#include "graphics/Framebuffer.hpp"
-
 #include "core/Ensure.hpp"
+#include "graphics/Framebuffer.hpp"
 #include "graphics/PhysicalDevice.hpp"
 #include "graphics/RenderPass.hpp"
 #include "vulkan/Framebuffer.hpp"
 
 namespace Disarray {
 
-	Ref<Framebuffer> Framebuffer::construct(const Disarray::Device& device, const Disarray::FramebufferProperties& props)
-	{
-		ensure(props.extent != Extent { 0, 0 });
-		return make_ref<Vulkan::Framebuffer>(device, props);
-	}
+Ref<Framebuffer> Framebuffer::construct(const Disarray::Device& device, const Disarray::FramebufferProperties& props)
+{
+	ensure(props.extent != Extent { 0, 0 });
+	return make_ref<Vulkan::Framebuffer>(device, props);
+}
 
 } // namespace Disarray

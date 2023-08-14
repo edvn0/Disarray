@@ -8,27 +8,27 @@
 
 namespace Disarray::Vulkan {
 
-	class PhysicalDevice : public Disarray::PhysicalDevice, public PropertySupplier<VkPhysicalDevice> {
-	public:
-		explicit PhysicalDevice(Disarray::Instance&, Disarray::Surface&);
-		~PhysicalDevice() override;
+class PhysicalDevice : public Disarray::PhysicalDevice, public PropertySupplier<VkPhysicalDevice> {
+public:
+	explicit PhysicalDevice(Disarray::Instance&, Disarray::Surface&);
+	~PhysicalDevice() override;
 
-		void recreate(bool, const Disarray::Extent&) override { }
-		void force_recreation() override { }
+	void recreate(bool, const Disarray::Extent&) override { }
+	void force_recreation() override { }
 
-		Disarray::QueueFamilyIndex& get_queue_family_indexes() override { return *queue_family_index; }
-		const Disarray::QueueFamilyIndex& get_queue_family_indexes() const override { return *queue_family_index; }
+	Disarray::QueueFamilyIndex& get_queue_family_indexes() override { return *queue_family_index; }
+	const Disarray::QueueFamilyIndex& get_queue_family_indexes() const override { return *queue_family_index; }
 
-		VkPhysicalDevice supply() const override { return physical_device; }
+	VkPhysicalDevice supply() const override { return physical_device; }
 
-		VkPhysicalDeviceLimits get_limits() const { return device_properties.limits; }
-		SampleCount get_sample_count() const { return samples; }
+	VkPhysicalDeviceLimits get_limits() const { return device_properties.limits; }
+	SampleCount get_sample_count() const { return samples; }
 
-	private:
-		VkPhysicalDevice physical_device;
-		Ref<Disarray::QueueFamilyIndex> queue_family_index;
-		VkPhysicalDeviceProperties device_properties;
-		SampleCount samples { SampleCount::One };
-	};
+private:
+	VkPhysicalDevice physical_device;
+	Ref<Disarray::QueueFamilyIndex> queue_family_index;
+	VkPhysicalDeviceProperties device_properties;
+	SampleCount samples { SampleCount::One };
+};
 
 } // namespace Disarray::Vulkan

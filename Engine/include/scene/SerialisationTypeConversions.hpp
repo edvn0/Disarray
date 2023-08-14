@@ -11,25 +11,25 @@
 
 namespace Disarray {
 
-	struct FloatExtent;
-	struct Extent;
+struct FloatExtent;
+struct Extent;
 
-	template <class Enum> inline decltype(auto) to_enum_value(const auto& object, std::string_view key)
-	{
-		std::string value;
-		if (!object.contains(key)) {
-			throw ComponentDeserialiseException { fmt::format("Key {} was missing from object", key) };
-		}
-		object[key].get_to(value);
-		return magic_enum::enum_cast<Enum>(value);
+template <class Enum> inline decltype(auto) to_enum_value(const auto& object, std::string_view key)
+{
+	std::string value;
+	if (!object.contains(key)) {
+		throw ComponentDeserialiseException { fmt::format("Key {} was missing from object", key) };
 	}
-	using json = nlohmann::json;
+	object[key].get_to(value);
+	return magic_enum::enum_cast<Enum>(value);
+}
+using json = nlohmann::json;
 
-	void to_json(json& j, const Extent& p);
-	void from_json(const json& j, Extent& p);
+void to_json(json& j, const Extent& p);
+void from_json(const json& j, Extent& p);
 
-	void to_json(json& j, const FloatExtent& p);
-	void from_json(const json& j, FloatExtent& p);
+void to_json(json& j, const FloatExtent& p);
+void from_json(const json& j, FloatExtent& p);
 
 } // namespace Disarray
 
