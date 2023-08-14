@@ -1,6 +1,7 @@
 #include "ClientLayer.hpp"
 
 #include "core/events/KeyEvent.hpp"
+#include "core/events/MouseEvent.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "panels/DirectoryContentPanel.hpp"
@@ -136,8 +137,10 @@ void ClientLayer::interface()
 		viewport_bounds[0] = { min_bound.x, min_bound.y };
 		viewport_bounds[1] = { max_bound.x, max_bound.y };
 
-		scene->set_viewport_bounds({ viewport_bounds[1].x - viewport->Pos.x, viewport_bounds[1].y - viewport->Pos.y },
-			{ viewport_bounds[0].x - viewport->Pos.x, viewport_bounds[0].y - viewport->Pos.y });
+		vp_bounds = { glm::vec2 { viewport_bounds[1].x - viewport->Pos.x, viewport_bounds[1].y - viewport->Pos.y },
+			{ viewport_bounds[0].x - viewport->Pos.x, viewport_bounds[0].y - viewport->Pos.y } };
+
+		scene->set_viewport_bounds(vp_bounds[0], vp_bounds[1]);
 	}
 	ImGui::End();
 	ImGui::PopStyleVar();
@@ -171,6 +174,31 @@ void ClientLayer::on_event(Event& event)
 		default:
 			return false;
 		}
+	});
+
+	dispatcher.dispatch<MouseButtonReleasedEvent>([this](MouseButtonReleasedEvent& pressed) {
+		if (ImGuizmo::IsUsing())
+			return true;
+
+		if (pressed.get_mouse_button() == MouseCode::Left) {
+			const auto& image = scene->get_image(1);
+			auto pos = Input::mouse_position();
+			pos -= vp_bounds[1];
+
+			pos.x /= (vp_bounds[0].x - vp_bounds[1].x);
+			pos.y /= vp_bounds[0].y;
+
+			if (pos.x < 0 || pos.x > 1 || pos.y < 0 || pos.y > 1)
+				return true;
+
+			auto pixel_data = image.get_pixel_data<std::uint32_t>(pos);
+
+			// stupid check... clarify image read api for uint and colour.
+			if (pixel_data != 0) {
+				scene->update_picked_entity(pixel_data);
+			}
+		}
+		return false;
 	});
 	scene->on_event(event);
 }

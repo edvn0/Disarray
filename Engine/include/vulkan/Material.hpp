@@ -11,6 +11,7 @@ namespace Disarray::Vulkan {
 class Material : public Disarray::Material {
 public:
 	Material(const Device& dev, const MaterialProperties& properties);
+	~Material() override;
 
 	void recreate(bool, const Extent&) override;
 	void force_recreation() override;

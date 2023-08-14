@@ -257,31 +257,7 @@ void Scene::render(Renderer& renderer)
 	command_executor->submit_and_end();
 }
 
-void Scene::on_event(Event& event)
-{
-	EventDispatcher dispatcher(event);
-
-	dispatcher.dispatch<MouseButtonReleasedEvent>([this](MouseButtonReleasedEvent& pressed) {
-		if (ImGuizmo::IsUsing())
-			return true;
-		if (pressed.get_mouse_button() == MouseCode::Left) {
-			const auto& image = identity_framebuffer->get_image(1);
-			auto pos = Input::mouse_position();
-			pos -= vp_min;
-
-			pos.x /= (vp_max.x - vp_min.x);
-			pos.y /= vp_max.y;
-			glm::vec4 pixel_data = image.read_pixel(pos);
-
-			// stupid check... clarify image read api for uint and colour.
-			if (pixel_data[0] != 0) {
-				entt::entity handle { static_cast<std::uint32_t>(pixel_data[0]) };
-				picked_entity = make_scope<Entity>(*this, handle);
-			}
-		}
-		return false;
-	});
-}
+void Scene::on_event(Event& event) { }
 
 void Scene::recreate(const Extent& new_ex)
 {
@@ -306,5 +282,7 @@ Scope<Scene> Scene::deserialise(const Device& device, std::string_view name, con
 	SceneDeserialiser deserialiser { *created, device, filename };
 	return created;
 }
+
+void Scene::update_picked_entity(std::uint32_t handle) { picked_entity = make_scope<Entity>(*this, handle); }
 
 } // namespace Disarray
