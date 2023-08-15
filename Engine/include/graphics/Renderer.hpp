@@ -96,7 +96,7 @@ public:
 
 	virtual void expose_to_shaders(Image&) = 0;
 	void expose_to_shaders(Texture& tex) { expose_to_shaders(tex.get_image()); };
-	virtual VkDescriptorSet get_descriptor_set(std::uint32_t) = 0;
+	virtual VkDescriptorSet get_descriptor_set(std::uint32_t, std::uint32_t) = 0;
 	virtual VkDescriptorSet get_descriptor_set() = 0;
 	virtual const std::vector<VkDescriptorSetLayout>& get_descriptor_set_layouts() = 0;
 	virtual const PushConstant* get_push_constant() const = 0;

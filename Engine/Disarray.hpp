@@ -10,8 +10,11 @@
 #include "core/Log.hpp"
 #include "core/Panel.hpp"
 #include "core/ThreadPool.hpp"
+#include "core/Tuple.hpp"
 #include "core/Types.hpp"
 #include "core/Window.hpp"
+#include "core/events/KeyEvent.hpp"
+#include "core/events/MouseEvent.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Mesh.hpp"
@@ -29,8 +32,10 @@
 #include "util/FormattingUtilities.hpp"
 
 #include <fmt/format.h>
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <imgui.h>
 

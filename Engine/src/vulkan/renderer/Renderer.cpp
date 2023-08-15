@@ -94,7 +94,6 @@ Renderer::~Renderer()
 	Collections::for_each(layouts, [&vk_device](VkDescriptorSetLayout& layout) { vkDestroyDescriptorSetLayout(vk_device, layout, nullptr); });
 
 	vkDestroyDescriptorPool(vk_device, pool, nullptr);
-	descriptors.clear();
 }
 
 void Renderer::on_resize()
@@ -153,7 +152,5 @@ void Renderer::add_geometry_to_batch(Disarray::Geometry geometry, const Disarray
 }
 
 void Renderer::flush_batch(Disarray::CommandExecutor& executor) { batch_renderer.flush(*this, executor); }
-
-void Renderer::FrameDescriptor::destroy(Disarray::Device& dev) { }
 
 } // namespace Disarray::Vulkan

@@ -14,6 +14,23 @@
 
 namespace Disarray {
 
+enum class GizmoType {
+	TranslateX = (1u << 0),
+	Translate_Y = (1u << 1),
+	TranslateZ = (1u << 2),
+	RotateX = (1u << 3),
+	RotateY = (1u << 4),
+	RotateZ = (1u << 5),
+	RotateScreen = (1u << 6),
+	ScaleX = (1u << 7),
+	ScaleY = (1u << 8),
+	ScaleZ = (1u << 9),
+	Bounds = (1u << 10),
+	Translate = TranslateX | Translate_Y | TranslateZ,
+	Rotate = RotateX | RotateY | RotateZ | RotateScreen,
+	Scale = ScaleX | ScaleY | ScaleZ
+};
+
 class Entity;
 
 class Scene {
@@ -55,6 +72,7 @@ public:
 	const std::string& get_name() const { return scene_name; };
 
 	void update_picked_entity(std::uint32_t handle);
+	void manipulate_entity_transform(Entity&, Camera&, GizmoType);
 
 	template <class Func> constexpr void for_all_entities(Func&& func)
 	{

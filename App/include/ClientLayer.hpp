@@ -24,7 +24,7 @@ private:
 	Device& device;
 
 	EditorCamera camera;
-	ImGuizmo::OPERATION gizmo_type { ImGuizmo::OPERATION::ROTATE };
+	GizmoType gizmo_type { GizmoType::Rotate };
 
 	bool viewport_panel_mouse_over { false };
 	bool viewport_panel_focused { false };

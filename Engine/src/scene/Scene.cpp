@@ -19,6 +19,8 @@
 
 #include <ImGuizmo.h>
 #include <entt/entt.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 static auto rotate_by(const glm::vec3& axis_radians)
 {
@@ -70,16 +72,6 @@ void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray
 	floor_transform.scale = { 100, 100, 1 };
 	floor_transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
 #endif
-
-	for (auto i = 0; i < 4; i++) {
-		auto rect = create(fmt::format("Rect{}", i));
-		auto& transform = rect.get_components<Components::Transform>();
-		transform.position = { 2 * static_cast<float>(i) + 0.5f, -1, 0 };
-		transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
-		glm::vec4 colour { i / 3.f, 0.3, i / 3.f, 1.f };
-		rect.add_component<Components::QuadGeometry>();
-		rect.add_component<Components::Texture>(colour);
-	}
 
 	auto unit_vectors = create("UnitVectors");
 	{
@@ -287,6 +279,46 @@ void Scene::update_picked_entity(std::uint32_t handle)
 {
 	if (handle != 0)
 		picked_entity = make_scope<Entity>(*this, handle);
+}
+
+void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoType gizmo_type)
+{
+	ImGuizmo::SetDrawlist();
+	ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
+
+	const auto& camera_view = camera.get_view_matrix();
+	const auto& camera_projection = camera.get_projection_matrix();
+	auto copy = camera_projection;
+	copy[1][1] *= -1.0f;
+
+	auto& entity_transform = entity.get_components<Components::Transform>();
+	auto transform = entity_transform.compute();
+
+	bool snap = Input::key_pressed(KeyCode::LeftShift);
+	float snap_value = 0.5f;
+	if (static_cast<ImGuizmo::OPERATION>(gizmo_type) == ImGuizmo::OPERATION::ROTATE) {
+		snap_value = 45.0f;
+	}
+
+	std::array snap_values = { snap_value, snap_value, snap_value };
+
+	ImGuizmo::Manipulate(glm::value_ptr(camera_view), glm::value_ptr(copy), static_cast<ImGuizmo::OPERATION>(gizmo_type), ImGuizmo::LOCAL,
+		glm::value_ptr(transform), nullptr, snap ? snap_values.data() : nullptr);
+
+	if (ImGuizmo::IsUsing()) {
+		glm::vec3 scale;
+		glm::quat rotation;
+		glm::vec3 translation;
+		glm::vec3 skew;
+		glm::vec4 perspective;
+		glm::decompose(transform, scale, rotation, translation, skew, perspective);
+
+		auto delta_rotation = rotation - entity_transform.rotation;
+
+		entity_transform.position = translation;
+		entity_transform.rotation += delta_rotation;
+		entity_transform.scale = scale;
+	}
 }
 
 } // namespace Disarray

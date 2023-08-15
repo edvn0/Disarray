@@ -46,8 +46,10 @@ void Renderer::draw_mesh(
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &pc);
 
-	const std::array<VkDescriptorSet, 1> desc { get_descriptor_set() };
-	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, 1, desc.data(), 0, nullptr);
+	const std::array<VkDescriptorSet, 2> desc { get_descriptor_set(swapchain.get_current_frame(), 0),
+		get_descriptor_set(swapchain.get_current_frame(), 1) };
+	vkCmdBindDescriptorSets(
+		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
 
 	std::array<VkBuffer, 1> arr;
 	arr[0] = supply_cast<Vulkan::VertexBuffer>(mesh.get_vertices());

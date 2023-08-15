@@ -18,6 +18,9 @@ namespace Disarray::Vulkan {
 
 static constexpr auto max_batch_renderer_objects = 1000;
 
+// TODO: Make this dynamic
+static constexpr auto set_count = 2;
+
 class Renderer : public Disarray::Renderer {
 public:
 	Renderer(Disarray::Device&, Disarray::Swapchain&, const RendererProperties&);
@@ -40,8 +43,11 @@ public:
 
 	// IGraphicsResource
 	void expose_to_shaders(Disarray::Image&) override;
-	VkDescriptorSet get_descriptor_set(std::uint32_t index) override { return descriptors[index].set; }
-	VkDescriptorSet get_descriptor_set() override { return get_descriptor_set(swapchain.get_current_frame()); };
+	VkDescriptorSet get_descriptor_set(std::uint32_t frame_index, std::uint32_t set) override
+	{
+		return descriptor_sets[(frame_index * set_count) + set];
+	}
+	VkDescriptorSet get_descriptor_set() override { return get_descriptor_set(swapchain.get_current_frame(), 0); };
 	const std::vector<VkDescriptorSetLayout>& get_descriptor_set_layouts() override { return layouts; }
 	// End IGraphicsResource
 
@@ -73,14 +79,9 @@ private:
 
 	std::function<void(Disarray::Renderer&)> on_batch_full_func = [](auto&) {};
 
-	// TODO: FrameDescriptor::construct(device, props)....
-	struct FrameDescriptor {
-		VkDescriptorSet set;
-		void destroy(Disarray::Device& dev);
-	};
-	std::vector<VkDescriptorSetLayout> layouts;
 	VkDescriptorPool pool;
-	std::vector<FrameDescriptor> descriptors;
+	std::vector<VkDescriptorSet> descriptor_sets;
+	std::vector<VkDescriptorSetLayout> layouts;
 	void initialise_descriptors();
 
 	UBO uniform {};

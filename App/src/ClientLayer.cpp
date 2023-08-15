@@ -1,18 +1,13 @@
 #include "ClientLayer.hpp"
 
-#include "core/Tuple.hpp"
-#include "core/events/KeyEvent.hpp"
-#include "core/events/MouseEvent.hpp"
-#include "glm/ext/matrix_transform.hpp"
-#include "glm/gtc/type_ptr.hpp"
 #include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
 #include "panels/ScenePanel.hpp"
 #include "panels/StatisticsPanel.hpp"
 
 #include <Disarray.hpp>
-#include <ImGuizmo.h>
 #include <array>
+#include <fmt/format.h>
 #include <glm/gtx/matrix_decompose.hpp>
 
 namespace Disarray::Client {
@@ -90,42 +85,7 @@ void ClientLayer::interface()
 		UI::image(image, { viewport_size.x, viewport_size.y });
 
 		if (auto entity = scene->get_selected_entity(); entity.is_valid()) {
-			ImGuizmo::SetDrawlist();
-			ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
-
-			const auto& camera_view = camera.get_view_matrix();
-			const auto& camera_projection = camera.get_projection_matrix();
-			auto copy = camera_projection;
-			copy[1][1] *= -1.0f;
-
-			auto& entity_transform = entity.get_components<Components::Transform>();
-			auto transform = entity_transform.compute();
-
-			bool snap = Input::key_pressed(KeyCode::LeftShift);
-			float snap_value = 0.5f;
-			if (gizmo_type == ImGuizmo::OPERATION::ROTATE) {
-				snap_value = 45.0f;
-			}
-
-			std::array snap_values = { snap_value, snap_value, snap_value };
-
-			ImGuizmo::Manipulate(glm::value_ptr(camera_view), glm::value_ptr(copy), gizmo_type, ImGuizmo::LOCAL, glm::value_ptr(transform), nullptr,
-				snap ? snap_values.data() : nullptr);
-
-			if (ImGuizmo::IsUsing()) {
-				glm::vec3 scale;
-				glm::quat rotation;
-				glm::vec3 translation;
-				glm::vec3 skew;
-				glm::vec4 perspective;
-				glm::decompose(transform, scale, rotation, translation, skew, perspective);
-
-				auto delta_rotation = rotation - entity_transform.rotation;
-
-				entity_transform.position = translation;
-				entity_transform.rotation += delta_rotation;
-				entity_transform.scale = scale;
-			}
+			scene->manipulate_entity_transform(entity, camera, gizmo_type);
 		}
 
 		auto window_size = ImGui::GetWindowSize();
@@ -163,12 +123,12 @@ void ClientLayer::on_event(Event& event)
 	dispatcher.dispatch<KeyReleasedEvent>([this](auto& event) {
 		switch (event.get_key_code()) {
 		case T: {
-			if (gizmo_type == ImGuizmo::OPERATION::TRANSLATE) {
-				gizmo_type = ImGuizmo::OPERATION::ROTATE;
-			} else if (gizmo_type == ImGuizmo::OPERATION::ROTATE) {
-				gizmo_type = ImGuizmo::OPERATION::SCALE;
+			if (gizmo_type == GizmoType::Translate) {
+				gizmo_type = GizmoType::Rotate;
+			} else if (gizmo_type == GizmoType::Rotate) {
+				gizmo_type = GizmoType::Scale;
 			} else {
-				gizmo_type = ImGuizmo::OPERATION::TRANSLATE;
+				gizmo_type = GizmoType::Translate;
 			}
 			return false;
 		}
@@ -193,11 +153,12 @@ void ClientLayer::on_event(Event& event)
 				return true;
 
 			auto pixel_data = image.read_pixel(pos);
-			std::visit(Tuple::overload { [&s = this->scene](std::uint32_t& handle) {
-											Log::info("Client Layer", "Entity data: {}", handle);
-											s->update_picked_entity(handle);
-										},
-						   [](glm::vec4& vec) { Log::info("Client Layer", "Pixel data: {}", vec); }, [](std::monostate) {} },
+			std::visit(
+				Tuple::overload { [&s = this->scene](std::uint32_t& handle) {
+									 Log::info("Client Layer", "Entity data: {}", handle);
+									 s->update_picked_entity(handle);
+								 },
+					[](glm::vec4& vec) { Log::info("Client Layer", "Pixel data: {},{},{},{}", vec.x, vec.y, vec.z, vec.w); }, [](std::monostate) {} },
 				pixel_data);
 		}
 		return false;

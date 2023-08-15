@@ -232,19 +232,19 @@ add_library(Disarray::Engine ALIAS ${PROJECT_NAME})
 target_include_directories(
         ${PROJECT_NAME}
         PRIVATE ${Vulkan_INCLUDE_DIRS}
-        PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/imgui ${THIRD_PARTY}/imguizmo)
+        PUBLIC include . ${THIRD_PARTY}/glm)
 target_link_libraries(
         ${PROJECT_NAME}
         PRIVATE
         glfw
         GPUOpen::VulkanMemoryAllocator
-        imgui
         nlohmann_json::nlohmann_json
         tinyobjloader
         stb_image
         PUBLIC
         thread-pool
         Vulkan::Vulkan
+        imgui
         imguizmo
         magic_enum::magic_enum
         EnTT::EnTT
