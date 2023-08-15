@@ -8,8 +8,6 @@ namespace Disarray::Vulkan {
 
 class Device : public Disarray::Device, public PropertySupplier<VkDevice> {
 public:
-	using base = Disarray::Device;
-
 	Device(Disarray::Window&);
 	~Device() override;
 
