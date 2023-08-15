@@ -54,6 +54,8 @@ public:
 	const entt::registry& get_registry() const { return registry; };
 	const std::string& get_name() const { return scene_name; };
 
+	void update_picked_entity(std::uint32_t handle);
+
 	template <class Func> constexpr void for_all_entities(Func&& func)
 	{
 		const auto view = get_registry().storage<entt::entity>().each();

@@ -112,7 +112,7 @@ public:
 	void force_recreation() override { recreate(true, props.extent); };
 	void recreate(bool should_clean, const Extent&) override;
 
-	glm::vec4 read_pixel(const glm::vec2&) const override;
+	PixelReadData read_pixel(const glm::vec2&) const override;
 
 	VkImage get_image() const { return info.image; }
 	const VkDescriptorSetLayout& get_layout() const { return layout; }

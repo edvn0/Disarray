@@ -3,12 +3,14 @@
 #include "core/Ensure.hpp"
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
+#include "graphics/Image.hpp"
 #include "graphics/ImageProperties.hpp"
 #include "util/FormattingUtilities.hpp"
 #include "vulkan/Allocator.hpp"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Image.hpp"
+#include "vulkan/vulkan_core.h"
 
 #include <core/ThreadPool.hpp>
 #include <stb_image_write.h>
@@ -32,8 +34,10 @@ Image::~Image() { destroy_resources(); }
 void Image::destroy_resources()
 {
 	Allocator allocator { "Image[" + props.debug_name + "]" };
-	vkDestroyImageView(supply_cast<Vulkan::Device>(device), info.view, nullptr);
-	vkDestroySampler(supply_cast<Vulkan::Device>(device), info.sampler, nullptr);
+	const auto& vk_device = supply_cast<Vulkan::Device>(device);
+	vkDestroyImageView(vk_device, info.view, nullptr);
+	vkDestroySampler(vk_device, info.sampler, nullptr);
+	vkDestroyDescriptorSetLayout(vk_device, layout, nullptr);
 	allocator.deallocate_image(info.allocation, info.image);
 	info.view = nullptr;
 	info.sampler = nullptr;
@@ -47,9 +51,9 @@ void Image::recreate(bool should_clean, const Extent& extent)
 	recreate_image(should_clean);
 }
 
-glm::vec4 Image::read_pixel(const glm::vec2& pos) const
+PixelReadData Image::read_pixel(const glm::vec2& pos) const
 {
-	glm::vec4 out { 1.0f };
+	PixelReadData read_data { std::monostate {} };
 	VkBuffer pixel_data_buffer;
 	Allocator allocator { "ReadPixelData" };
 	VmaAllocation allocation;
@@ -77,8 +81,8 @@ glm::vec4 Image::read_pixel(const glm::vec2& pos) const
 		VkDeviceSize size = props.data.is_valid() ? props.data.get_size() : props.extent.get_size() * sizeof(float);
 		create_info.size = size;
 		create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-		allocation
-			= allocator.allocate_buffer(pixel_data_buffer, create_info, { .usage = Usage::CPU_COPY, .creation = Creation::HOST_ACCESS_RANDOM_BIT });
+		allocation = allocator.allocate_buffer(
+			pixel_data_buffer, create_info, { .usage = Usage::AUTO_PREFER_HOST, .creation = Creation::HOST_ACCESS_RANDOM_BIT });
 
 		VkBufferImageCopy buffer_copy_region = {};
 		buffer_copy_region.imageSubresource.aspectMask = aspect_mask;
@@ -118,22 +122,23 @@ glm::vec4 Image::read_pixel(const glm::vec2& pos) const
 
 		auto* data = allocator.map_memory<std::byte>(allocation);
 
-		auto offset_y = static_cast<std::uint32_t>(pos.y * props.extent.height);
+		auto fix_y = 1.f - pos.y;
+		auto offset_y = static_cast<std::uint32_t>(fix_y * props.extent.height);
 		auto offset_x = static_cast<std::uint32_t>(pos.x * props.extent.width);
 		std::size_t offset = (offset_y * props.extent.width + offset_x) * sizeof(float);
 
 		ensure(data != nullptr);
 		if (props.format == ImageFormat::Uint) {
 			// ID of the entity
-			out = { data[offset], data[offset], data[offset], data[offset] };
+			read_data = static_cast<std::uint32_t>(data[offset]);
 		} else {
 			// Pixel colour
-			out = { data[offset], data[offset + 1], data[offset + 2], data[offset + 3] };
+			read_data = glm::vec4 { data[offset], data[offset + 1], data[offset + 2], data[offset + 3] };
 		}
 		allocator.unmap_memory(allocation);
 	}
 	allocator.deallocate_buffer(allocation, pixel_data_buffer);
-	return out;
+	return read_data;
 }
 
 void Image::recreate_image(bool should_clean)

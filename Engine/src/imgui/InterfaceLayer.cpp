@@ -55,7 +55,7 @@ void InterfaceLayer::construct(App&, Renderer& renderer, ThreadPool&)
 
 	auto pool_info = Vulkan::vk_structures<VkDescriptorPoolCreateInfo> {}();
 	pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-	pool_info.maxSets = 1000;
+	pool_info.maxSets = static_cast<std::uint32_t>(pool_sizes.size()) * 11ul;
 	pool_info.poolSizeCount = static_cast<std::uint32_t>(std::size(pool_sizes));
 	pool_info.pPoolSizes = pool_sizes.data();
 
@@ -90,7 +90,7 @@ void InterfaceLayer::construct(App&, Renderer& renderer, ThreadPool&)
 	init_info.Device = *vk_device;
 	init_info.Queue = vk_device.get_graphics_queue();
 	init_info.DescriptorPool = pimpl->pool;
-	init_info.MinImageCount = 3;
+	init_info.MinImageCount = 2;
 	init_info.ImageCount = 3;
 	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 

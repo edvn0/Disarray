@@ -79,4 +79,6 @@ void Material::recreate(bool, const Extent&) { }
 
 void Material::force_recreation() { }
 
+Material::~Material() { vkDestroyDescriptorSetLayout(supply_cast<Vulkan::Device>(device), layout, nullptr); }
+
 } // namespace Disarray::Vulkan

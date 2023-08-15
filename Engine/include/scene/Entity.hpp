@@ -15,6 +15,8 @@ public:
 	Entity(Scene&, std::string_view);
 	Entity(Scene&, entt::entity, std::string_view);
 	Entity(Scene&, entt::entity);
+	Entity(Scene& s, entt::id_type id)
+		: Entity(s, static_cast<entt::entity>(id)) {};
 	Entity(Scene&);
 
 	static Entity deserialise(Scene&, entt::entity, Identifier, std::string_view = "Empty");

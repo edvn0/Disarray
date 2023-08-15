@@ -222,7 +222,7 @@ void Scene::render(Renderer& renderer)
 		renderer.begin_pass(*command_executor, *framebuffer);
 
 		auto line_view = registry.view<const Components::LineGeometry, const Components::Texture, const Components::Transform>();
-		for (const auto& [entity, geom, tex, transform] : line_view.each()) {
+		for (auto&& [entity, geom, tex, transform] : line_view.each()) {
 			renderer.draw_planar_geometry(Geometry::Line,
 				{
 					.position = transform.position,
@@ -238,7 +238,7 @@ void Scene::render(Renderer& renderer)
 
 		auto rect_view
 			= registry.view<const Components::Texture, const Components::QuadGeometry, const Components::Transform, const Components::ID>();
-		for (const auto& [entity, tex, geom, transform, id] : rect_view.each()) {
+		for (auto&& [entity, tex, geom, transform, id] : rect_view.each()) {
 			renderer.draw_planar_geometry(Geometry::Rectangle,
 				{
 					.position = transform.position,
@@ -257,31 +257,7 @@ void Scene::render(Renderer& renderer)
 	command_executor->submit_and_end();
 }
 
-void Scene::on_event(Event& event)
-{
-	EventDispatcher dispatcher(event);
-
-	dispatcher.dispatch<MouseButtonReleasedEvent>([this](MouseButtonReleasedEvent& pressed) {
-		if (ImGuizmo::IsUsing())
-			return true;
-		if (pressed.get_mouse_button() == MouseCode::Left) {
-			const auto& image = identity_framebuffer->get_image(1);
-			auto pos = Input::mouse_position();
-			pos -= vp_min;
-
-			pos.x /= (vp_max.x - vp_min.x);
-			pos.y /= vp_max.y;
-			glm::vec4 pixel_data = image.read_pixel(pos);
-
-			// stupid check... clarify image read api for uint and colour.
-			if (pixel_data[0] != 0) {
-				entt::entity handle { static_cast<std::uint32_t>(pixel_data[0]) };
-				picked_entity = make_scope<Entity>(*this, handle);
-			}
-		}
-		return false;
-	});
-}
+void Scene::on_event(Event& event) { }
 
 void Scene::recreate(const Extent& new_ex)
 {
@@ -305,6 +281,12 @@ Scope<Scene> Scene::deserialise(const Device& device, std::string_view name, con
 	Scope<Scene> created = make_scope<Scene>(device, name);
 	SceneDeserialiser deserialiser { *created, device, filename };
 	return created;
+}
+
+void Scene::update_picked_entity(std::uint32_t handle)
+{
+	if (handle != 0)
+		picked_entity = make_scope<Entity>(*this, handle);
 }
 
 } // namespace Disarray

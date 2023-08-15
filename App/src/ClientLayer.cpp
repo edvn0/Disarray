@@ -1,6 +1,8 @@
 #include "ClientLayer.hpp"
 
+#include "core/Tuple.hpp"
 #include "core/events/KeyEvent.hpp"
+#include "core/events/MouseEvent.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "panels/DirectoryContentPanel.hpp"
@@ -136,8 +138,10 @@ void ClientLayer::interface()
 		viewport_bounds[0] = { min_bound.x, min_bound.y };
 		viewport_bounds[1] = { max_bound.x, max_bound.y };
 
-		scene->set_viewport_bounds({ viewport_bounds[1].x - viewport->Pos.x, viewport_bounds[1].y - viewport->Pos.y },
-			{ viewport_bounds[0].x - viewport->Pos.x, viewport_bounds[0].y - viewport->Pos.y });
+		vp_bounds = { glm::vec2 { viewport_bounds[1].x - viewport->Pos.x, viewport_bounds[1].y - viewport->Pos.y },
+			{ viewport_bounds[0].x - viewport->Pos.x, viewport_bounds[0].y - viewport->Pos.y } };
+
+		scene->set_viewport_bounds(vp_bounds[0], vp_bounds[1]);
 	}
 	ImGui::End();
 	ImGui::PopStyleVar();
@@ -171,6 +175,32 @@ void ClientLayer::on_event(Event& event)
 		default:
 			return false;
 		}
+	});
+
+	dispatcher.dispatch<MouseButtonReleasedEvent>([this](MouseButtonReleasedEvent& pressed) {
+		if (ImGuizmo::IsUsing())
+			return true;
+
+		if (pressed.get_mouse_button() == MouseCode::Left) {
+			const auto& image = scene->get_image(1);
+			auto pos = Input::mouse_position();
+			pos -= vp_bounds[1];
+
+			pos.x /= (vp_bounds[0].x - vp_bounds[1].x);
+			pos.y /= vp_bounds[0].y;
+
+			if (pos.x < 0 || pos.x > 1 || pos.y < 0 || pos.y > 1)
+				return true;
+
+			auto pixel_data = image.read_pixel(pos);
+			std::visit(Tuple::overload { [&s = this->scene](std::uint32_t& handle) {
+											Log::info("Client Layer", "Entity data: {}", handle);
+											s->update_picked_entity(handle);
+										},
+						   [](glm::vec4& vec) { Log::info("Client Layer", "Pixel data: {}", vec); }, [](std::monostate) {} },
+				pixel_data);
+		}
+		return false;
 	});
 	scene->on_event(event);
 }

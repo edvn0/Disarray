@@ -10,7 +10,8 @@ namespace Disarray::Vulkan {
 
 class Material : public Disarray::Material {
 public:
-	Material(const Device& dev, const MaterialProperties& properties);
+	Material(const Disarray::Device& dev, const MaterialProperties& properties);
+	~Material() override;
 
 	void recreate(bool, const Extent&) override;
 	void force_recreation() override;
@@ -24,7 +25,7 @@ public:
 private:
 	void recreate_material(bool should_clean);
 
-	const Device& device;
+	const Disarray::Device& device;
 	VkDescriptorSetLayout layout {};
 	VkDescriptorSet descriptor_set {};
 
