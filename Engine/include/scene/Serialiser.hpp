@@ -74,7 +74,7 @@ namespace {
 
 			const auto& registry = scene.get_registry();
 
-			const auto view = registry.view<const Components::ID, const Components::Tag>();
+			const auto view = registry.template view<const Components::ID, const Components::Tag>();
 			json entities;
 			for (const auto [handle, id, tag] : view.each()) {
 				Entity entity { scene, handle, tag.name };

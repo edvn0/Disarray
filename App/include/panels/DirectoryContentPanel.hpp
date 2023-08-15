@@ -6,6 +6,7 @@
 
 #include <filesystem>
 #include <mutex>
+#include <unordered_map>
 #include <unordered_set>
 
 struct path_hash {

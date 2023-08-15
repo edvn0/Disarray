@@ -1,10 +1,11 @@
 #include "DisarrayPCH.hpp"
 
+#include "core/Collections.hpp"
 #include "graphics/ModelLoader.hpp"
-#include "tinyobjloader.h"
 
 #include <algorithm>
 #include <glm/ext/matrix_transform.hpp>
+#include <tinyobjloader.h>
 #include <unordered_map>
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -39,7 +40,7 @@ ModelLoader::ModelLoader(const std::filesystem::path& path, const glm::mat4& ini
 	std::unordered_map<Vertex, uint32_t> unique_vertices {};
 
 	for (const auto& shape : shapes) {
-		std::for_each(std::begin(shape.mesh.indices), std::end(shape.mesh.indices), [&](const auto& index) {
+		Collections::for_each(shape.mesh.indices, [&](const auto& index) {
 			Vertex vertex {};
 
 			vertex.pos = { attrib.vertices[3 * index.vertex_index + 0], attrib.vertices[3 * index.vertex_index + 1],
@@ -61,9 +62,9 @@ ModelLoader::ModelLoader(const std::filesystem::path& path, const glm::mat4& ini
 		});
 	}
 
-	if (needs_rotate)
-		std::for_each(
-			std::execution::par, std::begin(vertices), std::end(vertices), [&rot = initial_rotation](auto& vertex) { vertex.rotate_by(rot); });
+	if (needs_rotate) {
+		Collections::for_each(vertices, [&rot = initial_rotation](auto& vertex) { vertex.rotate_by(rot); });
+	}
 }
 
 } // namespace Disarray

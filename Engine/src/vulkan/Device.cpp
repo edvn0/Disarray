@@ -51,13 +51,6 @@ Device::Device(Disarray::Window& window)
 
 	vkGetDeviceQueue(device, queue_family_index.get_graphics_family(), 0, &graphics);
 	vkGetDeviceQueue(device, queue_family_index.get_present_family(), 0, &present);
-
-	// The debug marker extension is not part of the core, so function pointers need to be loaded manually.
-	auto vkDebugMarkerSetObjectTag = (PFN_vkDebugMarkerSetObjectTagEXT)vkGetDeviceProcAddr(device, "vkDebugMarkerSetObjectTagEXT");
-	auto vkDebugMarkerSetObjectName = (PFN_vkDebugMarkerSetObjectNameEXT)vkGetDeviceProcAddr(device, "vkDebugMarkerSetObjectNameEXT");
-	auto vkCmdDebugMarkerBegin = (PFN_vkCmdDebugMarkerBeginEXT)vkGetDeviceProcAddr(device, "vkCmdDebugMarkerBeginEXT");
-	auto vkCmdDebugMarkerEnd = (PFN_vkCmdDebugMarkerEndEXT)vkGetDeviceProcAddr(device, "vkCmdDebugMarkerEndEXT");
-	auto vkCmdDebugMarkerInsert = (PFN_vkCmdDebugMarkerInsertEXT)vkGetDeviceProcAddr(device, "vkCmdDebugMarkerInsertEXT");
 }
 
 Device::~Device()

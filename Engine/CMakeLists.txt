@@ -218,6 +218,8 @@ set(ENGINE_SOURCES
 
 if (DISARRAY_OS STREQUAL "Windows")
     list(APPEND ENGINE_SOURCES src/windows/UI.cpp)
+elseif (DISARRAY_OS STREQUAL "MacOS")
+    list(APPEND ENGINE_SOURCES src/linux/UI.cpp)
 elseif (DISARRAY_OS STREQUAL "Linux")
     list(APPEND ENGINE_SOURCES src/linux/UI.cpp)
 endif ()

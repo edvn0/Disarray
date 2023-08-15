@@ -13,6 +13,7 @@
 #include <functional>
 #include <glm/glm.hpp>
 #include <magic_enum.hpp>
+#include <unordered_map>
 
 namespace Disarray::UI {
 

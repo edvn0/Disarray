@@ -18,7 +18,7 @@ PipelineCache::PipelineCache(Disarray::Device& dev, const std::filesystem::path&
 
 	// create all pairs of shaders
 	std::vector<std::filesystem::path> as_vector { all_files.begin(), all_files.end() };
-	std::ranges::sort(as_vector.begin(), as_vector.end());
+	std::sort(as_vector.begin(), as_vector.end());
 
 	for (const auto& shader_path : as_vector) {
 		auto name = shader_path.filename();
