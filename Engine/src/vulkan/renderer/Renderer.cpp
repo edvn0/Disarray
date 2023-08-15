@@ -1,5 +1,6 @@
 #include "DisarrayPCH.hpp"
 
+#include "core/Collections.hpp"
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
@@ -90,8 +91,7 @@ Renderer::Renderer(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarra
 Renderer::~Renderer()
 {
 	const auto& vk_device = supply_cast<Vulkan::Device>(device);
-	std::for_each(std::begin(layouts), std::end(layouts),
-		[&vk_device](VkDescriptorSetLayout& layout) { vkDestroyDescriptorSetLayout(vk_device, layout, nullptr); });
+	Collections::for_each(layouts, [&vk_device](VkDescriptorSetLayout& layout) { vkDestroyDescriptorSetLayout(vk_device, layout, nullptr); });
 
 	vkDestroyDescriptorPool(vk_device, pool, nullptr);
 	descriptors.clear();
