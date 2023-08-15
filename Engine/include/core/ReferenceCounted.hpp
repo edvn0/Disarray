@@ -2,6 +2,7 @@
 
 #include "util/BitCast.hpp"
 
+#include <utility>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
