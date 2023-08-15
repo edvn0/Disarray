@@ -26,7 +26,7 @@ std::vector<const char*> get_required_extensions()
 	}
 
 #ifdef DISARRAY_MACOS
-    extensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+	extensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 #endif
 
 	return extensions;
@@ -112,9 +112,9 @@ Instance::Instance(const std::vector<const char*>& supported_layers)
 		create_info.enabledLayerCount = 0;
 	}
 
-    #ifdef DISARRAY_MACOS
-    create_info.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
-    #endif
+#ifdef DISARRAY_MACOS
+	create_info.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+#endif
 
 	verify(vkCreateInstance(&create_info, nullptr, &instance));
 

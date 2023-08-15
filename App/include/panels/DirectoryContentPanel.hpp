@@ -4,9 +4,9 @@
 #include "core/Panel.hpp"
 #include "graphics/Texture.hpp"
 
-#include <unordered_map>
 #include <filesystem>
 #include <mutex>
+#include <unordered_map>
 #include <unordered_set>
 
 struct path_hash {

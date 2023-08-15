@@ -1,9 +1,9 @@
 #pragma once
 
+#include "core/Collections.hpp"
 #include "core/Ensure.hpp"
 #include "core/Hashes.hpp"
 #include "core/Log.hpp"
-#include "core/Collections.hpp"
 #include "graphics/Device.hpp"
 
 #include <algorithm>
@@ -20,7 +20,7 @@ concept CacheableResource = requires(T t, bool should_clean, const Extent& exten
 
 template <CacheableResource Resource, class Props, class Child, class Key = std::string, class Hash = StringHash> class ResourceCache {
 	using ResourceMap = std::unordered_map<Key, Resource, Hash, std::equal_to<>>;
-    using UniquePathSet = std::unordered_set<std::filesystem::path, FileSystemPathHasher>;
+	using UniquePathSet = std::unordered_set<std::filesystem::path, FileSystemPathHasher>;
 
 public:
 	~ResourceCache() { storage.clear(); };
@@ -58,7 +58,7 @@ protected:
 	{
 	}
 
-    UniquePathSet get_unique_files_recursively() const
+	UniquePathSet get_unique_files_recursively() const
 	{
 		UniquePathSet paths;
 		if (!std::filesystem::exists(path)) {

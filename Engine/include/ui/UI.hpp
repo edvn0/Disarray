@@ -8,12 +8,12 @@
 #include "graphics/Shader.hpp"
 #include "graphics/Texture.hpp"
 
-#include <unordered_map>
 #include <array>
 #include <filesystem>
 #include <functional>
 #include <glm/glm.hpp>
 #include <magic_enum.hpp>
+#include <unordered_map>
 
 namespace Disarray::UI {
 

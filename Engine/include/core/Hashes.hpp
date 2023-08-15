@@ -1,8 +1,8 @@
 #pragma once
 
+#include <filesystem>
 #include <functional>
 #include <string_view>
-#include <filesystem>
 
 namespace Disarray {
 
@@ -17,10 +17,11 @@ struct StringHash {
 };
 
 struct FileSystemPathHasher {
-  std::size_t operator()(const std::filesystem::path&path)const {
-    std::hash<std::filesystem::path::string_type> hasher;
-    return hasher(path.native());
-  }
+	std::size_t operator()(const std::filesystem::path& path) const
+	{
+		std::hash<std::filesystem::path::string_type> hasher;
+		return hasher(path.native());
+	}
 };
 
 } // namespace Disarray

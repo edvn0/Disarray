@@ -19,9 +19,12 @@ namespace Disarray::UI {
 struct InterfaceLayer::RendererSpecific {
 	Device& device;
 
-    explicit RendererSpecific(Device& dev):device(dev) {}
+	explicit RendererSpecific(Device& dev)
+		: device(dev)
+	{
+	}
 
-	VkDescriptorPool pool {nullptr};
+	VkDescriptorPool pool { nullptr };
 
 	~RendererSpecific() { vkDestroyDescriptorPool(supply_cast<Vulkan::Device>(device), pool, nullptr); }
 };

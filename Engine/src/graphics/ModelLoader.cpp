@@ -1,11 +1,11 @@
 #include "DisarrayPCH.hpp"
 
-#include "graphics/ModelLoader.hpp"
-#include <tinyobjloader.h>
 #include "core/Collections.hpp"
+#include "graphics/ModelLoader.hpp"
 
 #include <algorithm>
 #include <glm/ext/matrix_transform.hpp>
+#include <tinyobjloader.h>
 #include <unordered_map>
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -62,10 +62,9 @@ ModelLoader::ModelLoader(const std::filesystem::path& path, const glm::mat4& ini
 		});
 	}
 
-	if (needs_rotate)
-    {
-        Collections::for_each(vertices, [&rot = initial_rotation](auto& vertex) { vertex.rotate_by(rot); });
-    }
+	if (needs_rotate) {
+		Collections::for_each(vertices, [&rot = initial_rotation](auto& vertex) { vertex.rotate_by(rot); });
+	}
 }
 
 } // namespace Disarray
