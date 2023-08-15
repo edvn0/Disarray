@@ -2,11 +2,11 @@
 
 #include "util/BitCast.hpp"
 
-#include <utility>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
+#include <utility>
 
 namespace Disarray {
 
