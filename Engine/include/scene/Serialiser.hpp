@@ -40,11 +40,6 @@ namespace {
 				return;
 			}
 
-			if (serialised_object.empty()) {
-				Log::info("Scene Serialiser", "Serialised output was empty...?");
-				return;
-			}
-
 			namespace ch = std::chrono;
 			auto time = Log::current_time(false);
 			std::replace(time.begin(), time.end(), ':', '-');

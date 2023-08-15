@@ -126,62 +126,90 @@ template <ValidComponent T> void draw_component(Entity& entity, const std::strin
 		entity.remove_component<T>();
 }
 
+ScenePanel::ScenePanel(Device& dev, Window&, Swapchain&, Scene& s)
+	: device(dev)
+	, scene(s)
+{
+
+	selected_entity = std::make_unique<entt::entity>(entt::null);
+}
+
+void ScenePanel::draw_entity_node(Disarray::Entity& entity)
+{
+	const auto& tag = entity.get_components<Components::Tag>().name;
+
+	const auto is_same = (*selected_entity == entity.get_identifier());
+	ImGuiTreeNodeFlags flags = (is_same ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
+	flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
+	const auto& id = entity.get_components<Components::ID>();
+	bool opened = ImGui::TreeNodeEx(Disarray::bit_cast<const void*>(id.identifier), flags, "%s", tag.c_str());
+	if (ImGui::IsItemClicked()) {
+		*selected_entity = entity.get_identifier();
+	}
+
+	bool entity_deleted = false;
+	if (ImGui::BeginPopupContextWindow("##testtest")) {
+		if (ImGui::MenuItem("Delete Entity"))
+			entity_deleted = true;
+
+		ImGui::EndPopup();
+	}
+
+	if (opened) {
+		if (entity.has_component<Components::Inheritance>()) {
+			const auto children = entity.get_components<Components::Inheritance>();
+			constexpr auto opened_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+			for (const auto& child : children.children) {
+				const auto child_entity = scene.get_by_identifier(child);
+				if (!child_entity)
+					continue;
+				const auto& t = (*child_entity).get_components<Components::Tag>();
+				ImGui::Text("%s", t.name.c_str());
+			}
+		}
+		ImGui::TreePop();
+	}
+
+	if (entity_deleted) {
+		scene.delete_entity(entity);
+		if (*selected_entity == entity.get_identifier())
+			selected_entity = {};
+	}
+}
+
 void ScenePanel::interface()
 {
-	auto& registry = scene.get_registry();
-
 	UI::begin("Scene");
-	std::unordered_set<entt::entity> selectable_entities;
-	if (ImGui::BeginTable("Entities", 2)) {
-		const auto inheritance_view = registry.view<const Components::ID, const Components::Tag, const Components::Inheritance>();
-		for (const auto& [entity, id, tag, inheritance] : inheritance_view.each()) {
-			selectable_entities.insert(entity);
-			ImGui::TableNextRow();
-			ImGui::TableNextColumn();
-			ImGui::Text("%s", tag.name.c_str());
-			ImGui::TableNextColumn();
-			const auto& children = inheritance.children;
-			std::string text;
-			if (!children.empty()) {
-				text = fmt::format("{} - Children: [{}]", id.identifier, fmt::join(children, ", "));
-			} else {
-				text = fmt::format("{}", id.identifier);
-			}
-			ImGui::Text("%s", text.c_str());
-		}
+	scene.for_all_entities([this](entt::entity entity_id) {
+		Entity entity { scene, entity_id };
+		draw_entity_node(entity);
+	});
 
-		const auto view = registry.view<const Components::ID, const Components::Tag>(entt::exclude<Components::Inheritance>);
-		for (const auto& [entity, id, tag] : view.each()) {
-			selectable_entities.insert(entity);
-			ImGui::TableNextRow();
-			ImGui::TableNextColumn();
-			ImGui::Text("%s", tag.name.c_str());
-			ImGui::TableNextColumn();
-			ImGui::Text("%u", id.get_id<std::uint32_t>());
-		}
+	if (ImGui::BeginPopupContextWindow("EmptyEntityId", 1)) {
+		if (ImGui::MenuItem("Create Empty Entity"))
+			scene.create("Empty Entity");
 
-		ImGui::EndTable();
-	}
-
-	std::vector<Entity> entities;
-	entities.reserve(selectable_entities.size());
-	for (const auto& handle : selectable_entities) {
-		entities.emplace_back(scene, handle);
-	}
-
-	UI::begin("Entity");
-	for (auto& entity : entities) {
-		if (!entity.has_component<Components::Pipeline>())
-			continue;
-
-		for_all_components(entity);
+		ImGui::EndPopup();
 	}
 	UI::end();
 
+	ImGui::Begin("Properties");
+	if (!selected_entity) {
+		UI::end();
+		return;
+	}
+
+	if (auto ent = Entity(scene, *selected_entity); ent.is_valid())
+		for_all_components(ent);
 	UI::end();
 } // namespace Disarray::Client
 
-void Disarray::Client::ScenePanel::update(float) { }
+void Disarray::Client::ScenePanel::update(float)
+{
+	if (const auto& picked = scene.get_selected_entity(); picked && picked->is_valid()) {
+		*selected_entity = picked->get_identifier();
+	}
+}
 
 void ScenePanel::for_all_components(Entity& entity)
 {
@@ -195,6 +223,18 @@ void ScenePanel::for_all_components(Entity& entity)
 
 		if (any_changed) {
 			transform.rotation = glm::quat(glm::vec3(euler_angles.x, euler_angles.y, euler_angles.z));
+		}
+	});
+
+	draw_component<Components::Texture>(entity, "Texture", [&dev = device](Components::Texture& tex) {
+		auto& [texture, colour] = tex;
+		auto& props = texture->get_properties();
+		bool any_changed = false;
+		auto size = ImGui::GetWindowSize();
+		Ref<Texture> temporary_texture {};
+		any_changed |= UI::texture_drop_button(dev, "Texture", *texture, std::ref(temporary_texture));
+		if (any_changed) {
+			texture = temporary_texture;
 		}
 	});
 

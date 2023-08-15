@@ -11,6 +11,7 @@
 namespace Disarray {
 
 enum class ShaderType { Vertex, Fragment, Compute };
+
 static constexpr auto shader_type_extension(ShaderType shader_type)
 {
 	switch (shader_type) {

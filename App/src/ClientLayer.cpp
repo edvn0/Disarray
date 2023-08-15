@@ -84,8 +84,8 @@ void ClientLayer::interface()
 		auto& image = scene->get_image(0);
 		UI::image(image, { viewport_size.x, viewport_size.y });
 
-		if (auto entity = scene->get_selected_entity(); entity.is_valid()) {
-			scene->manipulate_entity_transform(entity, camera, gizmo_type);
+		if (auto& entity = scene->get_selected_entity(); entity->is_valid()) {
+			scene->manipulate_entity_transform(*entity, camera, gizmo_type);
 		}
 
 		auto window_size = ImGui::GetWindowSize();
@@ -149,8 +149,10 @@ void ClientLayer::on_event(Event& event)
 			pos.x /= (vp_bounds[0].x - vp_bounds[1].x);
 			pos.y /= vp_bounds[0].y;
 
-			if (pos.x < 0 || pos.x > 1 || pos.y < 0 || pos.y > 1)
+			if (pos.x < 0 || pos.x > 1 || pos.y < 0 || pos.y > 1) {
+				scene->update_picked_entity(0);
 				return true;
+			}
 
 			auto pixel_data = image.read_pixel(pos);
 			std::visit(

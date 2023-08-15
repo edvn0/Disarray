@@ -268,6 +268,10 @@ Entity Scene::create(std::string_view name)
 	return entity;
 }
 
+void Scene::delete_entity(entt::entity entity) { registry.destroy(entity); }
+
+void Scene::delete_entity(const Entity& entity) { delete_entity(entity.get_identifier()); }
+
 Scope<Scene> Scene::deserialise(const Device& device, std::string_view name, const std::filesystem::path& filename)
 {
 	Scope<Scene> created = make_scope<Scene>(device, name);
@@ -275,11 +279,7 @@ Scope<Scene> Scene::deserialise(const Device& device, std::string_view name, con
 	return created;
 }
 
-void Scene::update_picked_entity(std::uint32_t handle)
-{
-	if (handle != 0)
-		picked_entity = make_scope<Entity>(*this, handle);
-}
+void Scene::update_picked_entity(std::uint32_t handle) { picked_entity = make_scope<Entity>(*this, handle == 0 ? entt::null : handle); }
 
 void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoType gizmo_type)
 {
@@ -319,6 +319,16 @@ void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoTyp
 		entity_transform.rotation += delta_rotation;
 		entity_transform.scale = scale;
 	}
+}
+
+std::optional<Entity> Scene::get_by_identifier(Identifier identifier)
+{
+	for (const auto [entity, id] : registry.view<Components::ID>().each()) {
+		if (id.identifier == identifier)
+			return Entity { *this, entity };
+	}
+
+	return std::nullopt;
 }
 
 } // namespace Disarray

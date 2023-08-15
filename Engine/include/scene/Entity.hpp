@@ -39,6 +39,13 @@ public:
 		return emplace_component<T>(std::forward<Args>(args)...);
 	}
 
+	template <ValidComponent T, typename... Args> decltype(auto) try_add_component(Args&&... args)
+	{
+		if (has_component<T>())
+			return;
+		emplace_component<T>(std::forward<Args>(args)...);
+	}
+
 	template <ValidComponent T, typename... Args> decltype(auto) emplace_component(Args&&... args)
 	{
 		auto& registry = scene.get_registry();
@@ -55,6 +62,9 @@ public:
 
 	void add_child(Entity&);
 	void add_child(Entity* = nullptr);
+
+	auto operator==(const Entity& other) const { return identifier == other.identifier; }
+	auto operator!=(const Entity& other) const { return !operator==(other); }
 
 	const auto& get_identifier() const { return identifier; }
 

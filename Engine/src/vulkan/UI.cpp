@@ -1,14 +1,15 @@
 #include "DisarrayPCH.hpp"
 
 #include "Forward.hpp"
-#include "backends/imgui_impl_vulkan.h"
 #include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
 #include "ui/UI.hpp"
 #include "util/BitCast.hpp"
 #include "vulkan/Image.hpp"
+#include "vulkan/Texture.hpp"
 
 #include <GLFW/glfw3.h>
+#include <backends/imgui_impl_vulkan.h>
 #include <imgui.h>
 #include <unordered_map>
 
@@ -44,6 +45,23 @@ void image_button(Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& 
 	auto& vk_image = cast_to<Vulkan::Image>(image);
 
 	const auto hash = vk_image.hash();
+	auto& cache = get_cache();
+	ImageIdentifier id;
+	if (!get_cache().contains(hash)) {
+		id = add_image(vk_image.get_descriptor_info());
+		cache.try_emplace(hash, std::make_unique<ImageIdentifier>(id));
+	} else {
+		id = *get_cache()[hash];
+	}
+
+	ImGui::ImageButton("Image", id, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
+}
+
+void image_button(const Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
+{
+	auto& vk_image = cast_to<Vulkan::Image>(image);
+
+	auto hash = vk_image.hash();
 	auto& cache = get_cache();
 	ImageIdentifier id;
 	if (!get_cache().contains(hash)) {
@@ -125,7 +143,7 @@ bool is_maximised(Window& window)
 bool shader_drop_button(Device& device, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader)
 {
 	ImGui::Button(button_name.c_str());
-	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", ".spv")) {
+	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".spv" })) {
 		// We know that it is a spv file :)
 		auto shader_path = *dropped;
 		const auto ext = shader_path.replace_extension();
@@ -138,6 +156,19 @@ bool shader_drop_button(Device& device, const std::string& button_name, ShaderTy
 			out_shader = shader;
 			return true;
 		}
+	}
+
+	return false;
+}
+
+bool texture_drop_button(Device& device, const std::string& button_name, const Texture& texture, Ref<Texture>& out_texture)
+{
+	UI::image_button(texture.get_image());
+	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { "*.png", "*.jpg", "*.jpeg" })) {
+		auto texture_path = *dropped;
+		const auto ext = texture_path.replace_extension();
+		out_texture = Texture::construct(device, { .path = texture_path });
+		return true;
 	}
 
 	return false;

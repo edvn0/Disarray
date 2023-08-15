@@ -14,6 +14,7 @@
 #include <glm/glm.hpp>
 #include <magic_enum.hpp>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace Disarray::UI {
 
@@ -37,6 +38,7 @@ using UIFunction = std::function<void(void)>;
 static constexpr auto default_function = []() {};
 
 void image_button(Image&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+void image_button(const Image&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
 void image(Image&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
 void image_button(Texture&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
 void image(Texture&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
@@ -52,7 +54,8 @@ bool is_selectable(std::string_view name, const bool is_selected);
 void set_item_default_focus();
 
 void drag_drop(const std::filesystem::path& path);
-std::optional<std::filesystem::path> accept_drag_drop(const std::string& payload_identifier, const std::string& allowed_extension = "*");
+std::optional<std::filesystem::path> accept_drag_drop(
+	const std::string& payload_identifier, const std::unordered_set<const char*>& allowed_extension = { "*" });
 bool is_item_hovered();
 bool is_mouse_double_clicked(MouseCode code = MouseCode::Left);
 void handle_double_click(auto&& handler)
@@ -96,6 +99,7 @@ template <IsEnum T> bool combo_choice(std::string name, T& initial_value)
 }
 
 bool shader_drop_button(Device&, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader);
+bool texture_drop_button(Device&, const std::string& button_name, const Texture&, Ref<Texture>& out_texture);
 
 bool is_maximised(Window& window);
 

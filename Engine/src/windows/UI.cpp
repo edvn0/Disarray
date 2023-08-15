@@ -15,7 +15,7 @@ void drag_drop(const std::filesystem::path& path)
 	}
 }
 
-std::optional<std::filesystem::path> accept_drag_drop(const std::string& payload_id, const std::string& allowed_extension)
+std::optional<std::filesystem::path> accept_drag_drop(const std::string& payload_id, const std::unordered_set<const char*>& allowed_extensions)
 {
 	std::optional<std::filesystem::path> fp {};
 	if (ImGui::BeginDragDropTarget()) {
@@ -29,10 +29,11 @@ std::optional<std::filesystem::path> accept_drag_drop(const std::string& payload
 	if (!fp)
 		return {};
 
-	if (allowed_extension == "*")
+	if (allowed_extensions.contains("*"))
 		return fp;
+	const auto as_string = fp->extension().string();
 
-	if (fp.value().extension() != allowed_extension)
+	if (!allowed_extensions.contains(as_string.c_str()))
 		return {};
 
 	return fp;

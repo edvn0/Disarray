@@ -104,7 +104,7 @@ constexpr auto to_vulkan_tiling(Tiling tiling)
 	}
 }
 
-class Image : public Disarray::Image, public Disarray::UniquelyIdentifiable<Vulkan::Image>, public PropertySupplier<VkImage> {
+class Image : public Disarray::Image, public PropertySupplier<VkImage> {
 public:
 	Image(const Disarray::Device&, const ImageProperties&);
 	~Image() override;
@@ -121,7 +121,10 @@ public:
 
 	const VkDescriptorImageInfo& get_descriptor_info() const { return descriptor_info; }
 
-	Identifier hash_impl() { return bit_cast<std::uint64_t>(descriptor_info.imageView) ^ bit_cast<std::uint64_t>(descriptor_info.sampler); };
+	Identifier hash() const override
+	{
+		return bit_cast<std::uint64_t>(descriptor_info.imageView) ^ bit_cast<std::uint64_t>(descriptor_info.sampler);
+	};
 
 private:
 	void recreate_image(bool should_clean);

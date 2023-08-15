@@ -53,6 +53,8 @@ public:
 	FloatExtent get_viewport_bounds() const { return { vp_max.x - vp_min.x, vp_max.y - vp_min.y }; }
 
 	Entity create(std::string_view = "Unnamed");
+	void delete_entity(entt::entity);
+	void delete_entity(const Entity& entity);
 
 	Disarray::Image& get_image(std::uint32_t index)
 	{
@@ -67,9 +69,11 @@ public:
 	const CommandExecutor& get_command_executor() const { return *command_executor; };
 
 	entt::registry& get_registry() { return registry; };
-	const auto& get_selected_entity() const { return *selected_entity; }
+	const auto& get_selected_entity() const { return picked_entity; }
 	const entt::registry& get_registry() const { return registry; };
 	const std::string& get_name() const { return scene_name; };
+
+	std::optional<Entity> get_by_identifier(Identifier);
 
 	void update_picked_entity(std::uint32_t handle);
 	void manipulate_entity_transform(Entity&, Camera&, GizmoType);

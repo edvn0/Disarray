@@ -29,9 +29,9 @@ Entity::Entity(Scene& s, std::string_view n)
 	, name(n)
 	, identifier(scene.get_registry().create())
 {
-	add_component<Components::Transform>();
-	add_component<Components::ID>(global_identifier++);
-	add_component<Components::Tag>(name);
+	try_add_component<Components::Transform>();
+	try_add_component<Components::ID>(global_identifier++);
+	try_add_component<Components::Tag>(name);
 }
 
 Entity::Entity(Scene& scene, entt::entity handle)
