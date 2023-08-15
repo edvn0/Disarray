@@ -222,7 +222,7 @@ void Scene::render(Renderer& renderer)
 		renderer.begin_pass(*command_executor, *framebuffer);
 
 		auto line_view = registry.view<const Components::LineGeometry, const Components::Texture, const Components::Transform>();
-		for (const auto& [entity, geom, tex, transform] : line_view.each()) {
+		for (auto&& [entity, geom, tex, transform] : line_view.each()) {
 			renderer.draw_planar_geometry(Geometry::Line,
 				{
 					.position = transform.position,
@@ -238,7 +238,7 @@ void Scene::render(Renderer& renderer)
 
 		auto rect_view
 			= registry.view<const Components::Texture, const Components::QuadGeometry, const Components::Transform, const Components::ID>();
-		for (const auto& [entity, tex, geom, transform, id] : rect_view.each()) {
+		for (auto&& [entity, tex, geom, transform, id] : rect_view.each()) {
 			renderer.draw_planar_geometry(Geometry::Rectangle,
 				{
 					.position = transform.position,
@@ -283,6 +283,10 @@ Scope<Scene> Scene::deserialise(const Device& device, std::string_view name, con
 	return created;
 }
 
-void Scene::update_picked_entity(std::uint32_t handle) { picked_entity = make_scope<Entity>(*this, handle); }
+void Scene::update_picked_entity(std::uint32_t handle)
+{
+	if (handle != 0)
+		picked_entity = make_scope<Entity>(*this, handle);
+}
 
 } // namespace Disarray

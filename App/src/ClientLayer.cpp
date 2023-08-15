@@ -1,5 +1,6 @@
 #include "ClientLayer.hpp"
 
+#include "core/Tuple.hpp"
 #include "core/events/KeyEvent.hpp"
 #include "core/events/MouseEvent.hpp"
 #include "glm/ext/matrix_transform.hpp"
@@ -191,12 +192,13 @@ void ClientLayer::on_event(Event& event)
 			if (pos.x < 0 || pos.x > 1 || pos.y < 0 || pos.y > 1)
 				return true;
 
-			auto pixel_data = image.get_pixel_data<std::uint32_t>(pos);
-
-			// stupid check... clarify image read api for uint and colour.
-			if (pixel_data != 0) {
-				scene->update_picked_entity(pixel_data);
-			}
+			auto pixel_data = image.read_pixel(pos);
+			std::visit(Tuple::overload { [&s = this->scene](std::uint32_t& handle) {
+											Log::info("Client Layer", "Entity data: {}", handle);
+											s->update_picked_entity(handle);
+										},
+						   [](glm::vec4& vec) { Log::info("Client Layer", "Pixel data: {}", vec); }, [](std::monostate) {} },
+				pixel_data);
 		}
 		return false;
 	});

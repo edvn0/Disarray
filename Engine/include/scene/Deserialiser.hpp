@@ -131,7 +131,7 @@ namespace {
 
 	private:
 		Scene& scene;
-		const Device& device;
+		const Disarray::Device& device;
 		std::filesystem::path path;
 	};
 } // namespace

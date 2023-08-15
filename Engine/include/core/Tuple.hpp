@@ -4,6 +4,11 @@
 
 namespace Disarray::Tuple {
 
+template <class... Ts> struct overload : Ts... {
+	using Ts::operator()...;
+};
+template <class... Ts> overload(Ts...) -> overload<Ts...>;
+
 template <class Tup, class Func, std::size_t... Is> constexpr void static_for_impl(Tup&& t, Func&& f, std::index_sequence<Is...>)
 {
 	(f(std::integral_constant<std::size_t, Is> {}, std::get<Is>(t)), ...);

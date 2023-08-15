@@ -32,4 +32,8 @@ function(default_compile_flags)
     if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")
         target_compile_definitions(${PROJECT_NAME} PRIVATE IS_DEBUG)
     endif ()
+
+    if (DISARRAY_USE_VULKAN)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_VULKAN)
+    endif ()
 endfunction()
