@@ -235,6 +235,12 @@ void InterfaceLayer::end()
 	Vulkan::DebugMarker::end_region(draw_command_buffer);
 	vkCmdEndRenderPass(draw_command_buffer);
 
+	while (!frame_end_callbacks.empty()) {
+		auto front = frame_end_callbacks.front();
+		frame_end_callbacks.pop();
+		front(*command_executor);
+	}
+
 	Vulkan::verify(vkEndCommandBuffer(draw_command_buffer));
 
 	if (const ImGuiIO& io = ImGui::GetIO(); io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {

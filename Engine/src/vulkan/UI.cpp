@@ -1,12 +1,14 @@
 #include "DisarrayPCH.hpp"
 
 #include "Forward.hpp"
+#include "core/FileWatcher.hpp"
 #include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
 #include "ui/UI.hpp"
 #include "util/BitCast.hpp"
 #include "vulkan/Image.hpp"
 #include "vulkan/Texture.hpp"
+#include "vulkan/vulkan_core.h"
 
 #include <GLFW/glfw3.h>
 #include <backends/imgui_impl_vulkan.h>
@@ -128,6 +130,7 @@ void begin(std::string_view name) { ImGui::Begin(name.data(), nullptr); }
 void end() { ImGui::End(); }
 
 bool begin_combo(std::string_view name, std::string_view data) { return ImGui::BeginCombo(name.data(), data.data()); }
+
 void end_combo() { ImGui::EndCombo(); }
 
 bool is_selectable(std::string_view name, const bool is_selected) { return ImGui::Selectable(name.data(), is_selected); }
@@ -161,17 +164,32 @@ bool shader_drop_button(Device& device, const std::string& button_name, ShaderTy
 	return false;
 }
 
-bool texture_drop_button(Device& device, const std::string& button_name, const Texture& texture, Ref<Texture>& out_texture)
+Ref<Texture> texture_drop_button(Device& device, const Texture& out_texture)
 {
-	UI::image_button(texture.get_image());
-	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { "*.png", "*.jpg", "*.jpeg" })) {
+	remove_image(out_texture);
+	UI::image_button(out_texture.get_image());
+	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".png", ".jpg", ".jpeg" })) {
 		auto texture_path = *dropped;
-		const auto ext = texture_path.replace_extension();
-		out_texture = Texture::construct(device, { .path = texture_path });
-		return true;
+		return Texture::construct(device, { .path = std::filesystem::path(texture_path) });
 	}
 
-	return false;
+	return nullptr;
+}
+
+void remove_image(const Texture& tex)
+{
+	const auto hash = tex.get_image().hash();
+	remove_image(hash);
+}
+
+void remove_image(ImageIdentifier hash)
+{
+	auto& cache = get_cache();
+	if (!cache.contains(hash))
+		return;
+	const auto& value = cache[hash];
+	ImGui_ImplVulkan_RemoveTexture(Disarray::bit_cast<VkDescriptorSet>(*value));
+	cache.erase(hash);
 }
 
 void DescriptorCache::initialise() { cache.reserve(100); }

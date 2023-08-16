@@ -36,6 +36,7 @@ private:
 
 	Scope<Vulkan::Image> image;
 	TextureProperties props;
+	std::filesystem::path cached_path;
 };
 
 } // namespace Disarray::Vulkan

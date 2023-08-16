@@ -1,8 +1,11 @@
 #include "panels/ScenePanel.hpp"
 
 #include "core/Formatters.hpp"
+#include "graphics/CommandExecutor.hpp"
 #include "graphics/ImageProperties.hpp"
 #include "graphics/Pipeline.hpp"
+#include "ui/InterfaceLayer.hpp"
+#include "ui/UI.hpp"
 
 #include <fmt/format.h>
 #include <imgui_internal.h>
@@ -228,13 +231,11 @@ void ScenePanel::for_all_components(Entity& entity)
 
 	draw_component<Components::Texture>(entity, "Texture", [&dev = device](Components::Texture& tex) {
 		auto& [texture, colour] = tex;
-		auto& props = texture->get_properties();
-		bool any_changed = false;
-		auto size = ImGui::GetWindowSize();
-		Ref<Texture> temporary_texture {};
-		any_changed |= UI::texture_drop_button(dev, "Texture", *texture, std::ref(temporary_texture));
-		if (any_changed) {
-			texture = temporary_texture;
+		auto new_texture = UI::texture_drop_button(dev, *texture);
+
+		if (new_texture) {
+			tex.texture.reset();
+			tex.texture = new_texture;
 		}
 	});
 

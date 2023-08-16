@@ -2,6 +2,7 @@
 
 #include "Forward.hpp"
 #include "core/Concepts.hpp"
+#include "core/Hashes.hpp"
 #include "core/Input.hpp"
 #include "core/Window.hpp"
 #include "graphics/Image.hpp"
@@ -18,7 +19,9 @@
 
 namespace Disarray::UI {
 
+using ExtensionSet = std::unordered_set<std::string, string_hash>;
 using ImageIdentifier = std::uint64_t;
+
 class DescriptorCache {
 	using ImageCache = std::unordered_map<ImageIdentifier, std::unique_ptr<ImageIdentifier>>;
 
@@ -54,8 +57,7 @@ bool is_selectable(std::string_view name, const bool is_selected);
 void set_item_default_focus();
 
 void drag_drop(const std::filesystem::path& path);
-std::optional<std::filesystem::path> accept_drag_drop(
-	const std::string& payload_identifier, const std::unordered_set<const char*>& allowed_extension = { "*" });
+std::optional<std::filesystem::path> accept_drag_drop(const std::string& payload_identifier, const ExtensionSet& allowed_extension = { "*" });
 bool is_item_hovered();
 bool is_mouse_double_clicked(MouseCode code = MouseCode::Left);
 void handle_double_click(auto&& handler)
@@ -99,8 +101,10 @@ template <IsEnum T> bool combo_choice(std::string name, T& initial_value)
 }
 
 bool shader_drop_button(Device&, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader);
-bool texture_drop_button(Device&, const std::string& button_name, const Texture&, Ref<Texture>& out_texture);
+Ref<Texture> texture_drop_button(Device&, const Texture& texture);
 
 bool is_maximised(Window& window);
+void remove_image(const Texture& texture);
+void remove_image(ImageIdentifier hash);
 
 } // namespace Disarray::UI

@@ -15,12 +15,13 @@ void drag_drop(const std::filesystem::path& path)
 	}
 }
 
-std::optional<std::filesystem::path> accept_drag_drop(const std::string& payload_id, const std::unordered_set<const char*>& allowed_extensions)
+std::optional<std::filesystem::path> accept_drag_drop(const std::string& payload_id, const ExtensionSet& allowed_extensions)
 {
 	std::optional<std::filesystem::path> fp {};
 	if (ImGui::BeginDragDropTarget()) {
 		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payload_id.c_str())) {
 			const auto* path = static_cast<const wchar_t*>(payload->Data);
+			Log::info("Drag Drop Accept", "{}", Disarray::bit_cast<const char*>(path));
 			fp = path;
 		}
 		ImGui::EndDragDropTarget();

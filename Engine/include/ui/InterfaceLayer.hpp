@@ -6,6 +6,7 @@
 #include "core/UsageBadge.hpp"
 #include "graphics/CommandExecutor.hpp"
 
+#include <queue>
 #include <vector>
 
 namespace Disarray::UI {
@@ -40,6 +41,17 @@ public:
 		}
 	}
 
+	template <class Func>
+		requires requires(Func f, CommandExecutor& exec) {
+			{
+				f.operator()(exec)
+			} -> std::same_as<void>;
+		}
+	static void on_frame_end(Func&& func)
+	{
+		frame_end_callbacks.push(std::forward<Func>(func));
+	}
+
 	void begin();
 	void end();
 
@@ -53,6 +65,9 @@ private:
 	std::unique_ptr<RendererSpecific> pimpl { nullptr };
 
 	Ref<Disarray::CommandExecutor> command_executor;
+
+	using FrameEndCallback = std::function<void(CommandExecutor&)>;
+	static inline std::queue<FrameEndCallback> frame_end_callbacks {};
 };
 
 } // namespace Disarray::UI
