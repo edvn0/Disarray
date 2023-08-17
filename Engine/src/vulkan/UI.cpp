@@ -149,7 +149,7 @@ bool shader_drop_button(Device& device, const std::string& button_name, ShaderTy
 	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".spv" })) {
 		// We know that it is a spv file :)
 		auto shader_path = *dropped;
-		const auto ext = shader_path.replace_extension();
+		auto ext = shader_path.replace_extension();
 		if (ext.extension() == shader_type_extension(shader_type)) {
 			auto shader = Shader::construct(device,
 				ShaderProperties {
@@ -166,10 +166,9 @@ bool shader_drop_button(Device& device, const std::string& button_name, ShaderTy
 
 Ref<Texture> texture_drop_button(Device& device, const Texture& out_texture)
 {
-	remove_image(out_texture);
 	UI::image_button(out_texture.get_image());
 	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".png", ".jpg", ".jpeg" })) {
-		auto texture_path = *dropped;
+		const auto& texture_path = *dropped;
 		return Texture::construct(device, { .path = std::filesystem::path(texture_path) });
 	}
 

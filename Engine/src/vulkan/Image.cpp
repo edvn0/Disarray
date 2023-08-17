@@ -122,9 +122,8 @@ PixelReadData Image::read_pixel(const glm::vec2& pos) const
 
 		auto* data = allocator.map_memory<std::byte>(allocation);
 
-		auto fix_y = 1.f - pos.y;
-		auto offset_y = static_cast<std::uint32_t>(fix_y * props.extent.height);
 		auto offset_x = static_cast<std::uint32_t>(pos.x * props.extent.width);
+		auto offset_y = static_cast<std::uint32_t>(pos.y * props.extent.height);
 		std::size_t offset = (offset_y * props.extent.width + offset_x) * sizeof(float);
 
 		ensure(data != nullptr);

@@ -141,7 +141,8 @@ void ClientLayer::on_event(Event& event)
 		if (ImGuizmo::IsUsing())
 			return true;
 
-		if (pressed.get_mouse_button() == MouseCode::Left) {
+		const auto vp_is_focused = viewport_panel_focused && viewport_panel_mouse_over;
+		if (pressed.get_mouse_button() == MouseCode::Left && vp_is_focused) {
 			const auto& image = scene->get_image(1);
 			auto pos = Input::mouse_position();
 			pos -= vp_bounds[1];
@@ -155,14 +156,17 @@ void ClientLayer::on_event(Event& event)
 			}
 
 			auto pixel_data = image.read_pixel(pos);
-			std::visit(
-				Tuple::overload { [&s = this->scene](std::uint32_t& handle) {
-									 Log::info("Client Layer", "Entity data: {}", handle);
-									 s->update_picked_entity(handle);
-								 },
-					[](glm::vec4& vec) { Log::info("Client Layer", "Pixel data: {},{},{},{}", vec.x, vec.y, vec.z, vec.w); }, [](std::monostate) {} },
+			std::visit(Tuple::overload { [&s = this->scene](const std::uint32_t& handle) {
+											Log::info("Client Layer", "Entity data: {}", handle);
+											s->update_picked_entity(handle);
+										},
+						   [](const glm::vec4& vec) { Log::info("Client Layer", "Pixel data: {},{},{},{}", vec.x, vec.y, vec.z, vec.w); },
+						   [](std::monostate) {} },
 				pixel_data);
+			return true;
 		}
+
+		scene->update_picked_entity(0);
 		return false;
 	});
 	scene->on_event(event);

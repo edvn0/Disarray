@@ -11,6 +11,7 @@
 #include "graphics/Texture.hpp"
 #include "graphics/TextureCache.hpp"
 
+#include <entt/entt.hpp>
 #include <functional>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -67,6 +68,7 @@ struct PushConstant {
 	glm::mat4 object_transform { 1.0f };
 	glm::vec4 colour { 1.0f };
 	std::uint32_t max_identifiers {};
+	std::uint32_t current_identifier {};
 };
 
 struct UBO {
@@ -84,6 +86,9 @@ public:
 	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const glm::mat4& transform = glm::identity<glm::mat4>()) = 0;
 	virtual void draw_mesh(
 		Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4& transform = glm::identity<glm::mat4>())
+		= 0;
+	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&,
+		const glm::mat4& transform = glm::identity<glm::mat4>(), const std::uint32_t identifier = entt::null)
 		= 0;
 	virtual void submit_batched_geometry(Disarray::CommandExecutor&) = 0;
 	virtual void on_batch_full(std::function<void(Renderer&)>&&) = 0;

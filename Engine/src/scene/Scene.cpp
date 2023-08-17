@@ -47,17 +47,25 @@ void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray
 	extent = app.get_swapchain().get_extent();
 	command_executor = CommandExecutor::construct(device, app.get_swapchain(), { .count = 3, .is_primary = true, .record_stats = true });
 
-	int rects_x { 2 };
-	int rects_y { 2 };
+	int rects { 2 };
 	auto parent = create("Grid");
-	for (auto j = -rects_y / 2; j < rects_y / 2; j++) {
-		for (auto i = -rects_x / 2; i < rects_x / 2; i++) {
+	for (auto j = -rects / 2; j < rects / 2; j++) {
+		for (auto i = -rects / 2; i < rects / 2; i++) {
 			auto rect = create(fmt::format("Rect{}-{}", i, j));
 			parent.add_child(rect);
 			auto& transform = rect.get_components<Components::Transform>();
 			transform.position = { 2 * static_cast<float>(i) + 0.5f, -1, 2 * static_cast<float>(j) + 0.5f };
 			transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
-			glm::vec4 colour { i, 0, j, 1 };
+			float col_x = (i + (static_cast<float>(rects) / 2)) / static_cast<float>(rects);
+			float col_y = (j + (static_cast<float>(rects) / 2)) / static_cast<float>(rects);
+			if (col_x == 0) {
+				col_x += 0.2f;
+			}
+
+			if (col_y == 0) {
+				col_y += 0.2f;
+			}
+			glm::vec4 colour { col_x, 0, col_y, 1 };
 			rect.add_component<Components::QuadGeometry>();
 			rect.add_component<Components::Texture>(colour);
 		}
@@ -131,16 +139,17 @@ void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray
 
 	const auto& vert = renderer.get_pipeline_cache().get_shader("main.vert");
 	const auto& frag = renderer.get_pipeline_cache().get_shader("main.frag");
+	const auto& desc_layout = renderer.get_descriptor_set_layouts();
 	PipelineProperties props = {
 			.vertex_shader = vert,
 			.fragment_shader = frag,
-			.framebuffer = framebuffer,
+			.framebuffer = identity_framebuffer,
 			.layout = layout,
-			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, std::size_t { 84 }, }, },
+			.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, std::size_t { 88 }, }, },
 			.extent = extent,
 			.depth_comparison_operator = DepthCompareOperator::GreaterOrEqual,
 			.cull_mode = CullMode::Back,
-			.descriptor_set_layouts = renderer.get_descriptor_set_layouts(),
+			.descriptor_set_layouts = desc_layout,
 		};
 	auto viking_rotation = rotate_by(glm::radians(glm::vec3 { 0, 0, 90 }));
 
@@ -191,25 +200,15 @@ Scene::~Scene()
 
 void Scene::update(float)
 {
-	if (picked_entity->is_valid()) {
+	if (picked_entity) {
 		selected_entity.swap(picked_entity);
-		picked_entity = make_scope<Entity>(*this);
+		picked_entity = nullptr;
 	}
 }
 
 void Scene::render(Renderer& renderer)
 {
 	command_executor->begin();
-	{
-		renderer.begin_pass(*command_executor, *framebuffer, true);
-
-		auto mesh_view = registry.view<const Components::Mesh, const Components::Pipeline, const Components::Transform>();
-		for (auto&& [entity, mesh, pipeline, transform] : mesh_view.each()) {
-			renderer.draw_mesh(*command_executor, *mesh.mesh, *pipeline.pipeline, transform.compute());
-		}
-
-		renderer.end_pass(*command_executor);
-	}
 	{
 		renderer.begin_pass(*command_executor, *framebuffer);
 
@@ -236,9 +235,15 @@ void Scene::render(Renderer& renderer)
 					.position = transform.position,
 					.colour = tex.colour,
 					.rotation = transform.rotation,
-					.dimensions = { transform.scale },
-					.identifier = { id.get_id<std::uint32_t>() },
+					.dimensions = transform.scale,
+					.identifier = static_cast<std::uint32_t>(entity),
 				});
+		}
+
+		auto mesh_view = registry.view<const Components::Mesh, const Components::Pipeline, const Components::Transform>();
+		for (auto&& [entity, mesh, pipeline, transform] : mesh_view.each()) {
+			const auto identifier = static_cast<std::uint32_t>(entity);
+			renderer.draw_mesh(*command_executor, *mesh.mesh, *pipeline.pipeline, transform.compute(), identifier);
 		}
 
 		// TODO: Implement
@@ -249,7 +254,16 @@ void Scene::render(Renderer& renderer)
 	command_executor->submit_and_end();
 }
 
-void Scene::on_event(Event& event) { }
+void Scene::on_event(Event& event)
+{
+	EventDispatcher dispatcher { event };
+	dispatcher.dispatch<KeyPressedEvent>([this](KeyPressedEvent&) {
+		if (Input::all<KeyCode::LeftControl, KeyCode::LeftShift, KeyCode::S>()) {
+			SceneSerialiser scene_serialiser(*this);
+		}
+		return false;
+	});
+}
 
 void Scene::recreate(const Extent& new_ex)
 {
@@ -300,7 +314,7 @@ void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoTyp
 		snap_value = 45.0f;
 	}
 
-	std::array snap_values = { snap_value, snap_value, snap_value };
+	std::array<float, 3> snap_values = { snap_value, snap_value, snap_value };
 
 	ImGuizmo::Manipulate(glm::value_ptr(camera_view), glm::value_ptr(copy), static_cast<ImGuizmo::OPERATION>(gizmo_type), ImGuizmo::LOCAL,
 		glm::value_ptr(transform), nullptr, snap ? snap_values.data() : nullptr);

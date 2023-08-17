@@ -11,6 +11,7 @@
 #include "vulkan/Instance.hpp"
 #include "vulkan/PhysicalDevice.hpp"
 
+#include <ImGuizmo.h>
 #include <imgui.h>
 #include <vulkan/vulkan.h>
 
@@ -140,6 +141,7 @@ void InterfaceLayer::begin()
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
+	ImGuizmo::BeginFrame();
 }
 
 void InterfaceLayer::end()

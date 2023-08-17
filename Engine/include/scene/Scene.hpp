@@ -59,7 +59,7 @@ public:
 	Disarray::Image& get_image(std::uint32_t index)
 	{
 		if (index == 0)
-			return framebuffer->get_image();
+			return identity_framebuffer->get_image(0);
 		else if (index == 1)
 			return identity_framebuffer->get_image(1);
 		else
@@ -69,7 +69,7 @@ public:
 	const CommandExecutor& get_command_executor() const { return *command_executor; };
 
 	entt::registry& get_registry() { return registry; };
-	const auto& get_selected_entity() const { return picked_entity; }
+	const auto& get_selected_entity() const { return selected_entity; }
 	const entt::registry& get_registry() const { return registry; };
 	const std::string& get_name() const { return scene_name; };
 

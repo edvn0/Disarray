@@ -97,6 +97,17 @@ public:
 		return false;
 	}
 
+	template <HasHandledAndGetStaticType T, class Func> bool dispatch(Func&& callback)
+	{
+		if (event.get_event_type() == T::get_static_type() && !event.handled) {
+			auto& cast = polymorphic_cast<T>(event);
+			callback(cast);
+			event.handled = false;
+			return true;
+		}
+		return false;
+	}
+
 private:
 	Event& event;
 };

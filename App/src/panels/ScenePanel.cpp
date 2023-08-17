@@ -13,81 +13,6 @@
 static constexpr float font_size = 11.0f;
 static constexpr float frame_padding = 0.5f;
 
-[[nodiscard]] static bool draw_vec3_control(const std::string& label, glm::vec3& values, float reset_value = 0.0f, float column_width = 100.0f)
-{
-	bool any_updated = false;
-	ImGuiIO& io = ImGui::GetIO();
-	auto bold_font = io.Fonts->Fonts[0];
-
-	ImGui::PushID(label.c_str());
-
-	ImGui::Columns(2);
-	ImGui::SetColumnWidth(0, column_width);
-	ImGui::Text("%s", label.c_str());
-	ImGui::NextColumn();
-
-	ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
-	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2 { 0, 0 });
-
-	float line_height = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
-	ImVec2 button_size = { line_height + 3.0f, line_height };
-
-	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4 { 0.8f, 0.1f, 0.15f, 1.0f });
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4 { 0.9f, 0.2f, 0.2f, 1.0f });
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4 { 0.8f, 0.1f, 0.15f, 1.0f });
-	ImGui::PushFont(bold_font);
-	if (ImGui::Button("X", button_size)) {
-		any_updated |= true;
-		values.x = reset_value;
-	}
-	ImGui::PopFont();
-	ImGui::PopStyleColor(3);
-
-	ImGui::SameLine();
-	any_updated |= ImGui::DragFloat("##X", &values.x, 0.1f, 0.0f, 0.0f, "%.2f");
-	ImGui::PopItemWidth();
-	ImGui::SameLine();
-
-	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4 { 0.2f, 0.7f, 0.2f, 1.0f });
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4 { 0.3f, 0.8f, 0.3f, 1.0f });
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4 { 0.2f, 0.7f, 0.2f, 1.0f });
-	ImGui::PushFont(bold_font);
-	if (ImGui::Button("Y", button_size)) {
-		any_updated |= true;
-		values.y = reset_value;
-	}
-	ImGui::PopFont();
-	ImGui::PopStyleColor(3);
-
-	ImGui::SameLine();
-	any_updated |= ImGui::DragFloat("##Y", &values.y, 0.1f, 0.0f, 0.0f, "%.2f");
-	ImGui::PopItemWidth();
-	ImGui::SameLine();
-
-	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4 { 0.1f, 0.25f, 0.8f, 1.0f });
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4 { 0.2f, 0.35f, 0.9f, 1.0f });
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4 { 0.1f, 0.25f, 0.8f, 1.0f });
-	ImGui::PushFont(bold_font);
-	if (ImGui::Button("Z", button_size)) {
-		any_updated |= true;
-		values.z = reset_value;
-	}
-	ImGui::PopFont();
-	ImGui::PopStyleColor(3);
-
-	ImGui::SameLine();
-	any_updated |= ImGui::DragFloat("##Z", &values.z, 0.1f, 0.0f, 0.0f, "%.2f");
-	ImGui::PopItemWidth();
-
-	ImGui::PopStyleVar();
-
-	ImGui::Columns(1);
-
-	ImGui::PopID();
-
-	return any_updated;
-}
-
 namespace Disarray::Client {
 
 template <ValidComponent T> void draw_component(Entity& entity, const std::string& name, auto&& ui_function)
@@ -125,8 +50,10 @@ template <ValidComponent T> void draw_component(Entity& entity, const std::strin
 		ImGui::TreePop();
 	}
 
-	if (remove_component)
-		entity.remove_component<T>();
+	if (remove_component) {
+		if constexpr (DeletableComponent<T>)
+			entity.remove_component<T>();
+	}
 }
 
 ScenePanel::ScenePanel(Device& dev, Window&, Swapchain&, Scene& s)
@@ -161,7 +88,6 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity)
 	if (opened) {
 		if (entity.has_component<Components::Inheritance>()) {
 			const auto children = entity.get_components<Components::Inheritance>();
-			constexpr auto opened_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
 			for (const auto& child : children.children) {
 				const auto child_entity = scene.get_by_identifier(child);
 				if (!child_entity)
@@ -209,20 +135,33 @@ void ScenePanel::interface()
 
 void Disarray::Client::ScenePanel::update(float)
 {
-	if (const auto& picked = scene.get_selected_entity(); picked && picked->is_valid()) {
-		*selected_entity = picked->get_identifier();
+	if (const auto& selected = scene.get_selected_entity(); selected && selected->is_valid()) {
+		*selected_entity = selected->get_identifier();
 	}
 }
 
 void ScenePanel::for_all_components(Entity& entity)
 {
+	draw_component<Components::Tag>(entity, "Tag", [](Components::Tag& tag) {
+		std::string buffer = tag.name;
+		buffer.resize(256);
+
+		if (ImGui::InputText("Tag", buffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+			buffer.shrink_to_fit();
+
+			if (!buffer.empty() && tag.name != buffer) {
+				tag.name = buffer;
+			}
+		}
+	});
+
 	draw_component<Components::Transform>(entity, "Transform", [](Components::Transform& transform) {
 		bool any_changed = false;
 
-		any_changed |= draw_vec3_control("Position", std::ref(transform.position));
+		any_changed |= ImGui::DragFloat3("Position", glm::value_ptr(transform.position));
 		auto euler_angles = eulerAngles(transform.rotation);
-		any_changed |= draw_vec3_control("Rotation (Euler)", std::ref(euler_angles));
-		any_changed |= draw_vec3_control("Scale", std::ref(transform.scale));
+		any_changed |= ImGui::DragFloat3("Rotation (Euler)", glm::value_ptr(euler_angles));
+		any_changed |= ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale));
 
 		if (any_changed) {
 			transform.rotation = glm::quat(glm::vec3(euler_angles.x, euler_angles.y, euler_angles.z));
@@ -231,9 +170,16 @@ void ScenePanel::for_all_components(Entity& entity)
 
 	draw_component<Components::Texture>(entity, "Texture", [&dev = device](Components::Texture& tex) {
 		auto& [texture, colour] = tex;
-		auto new_texture = UI::texture_drop_button(dev, *texture);
+		Ref<Texture> new_texture { nullptr };
+		if (texture) {
+			new_texture = UI::texture_drop_button(dev, *texture);
+		}
 
-		if (new_texture) {
+		bool any_changed = false;
+		any_changed = new_texture != nullptr;
+		any_changed |= ImGui::DragFloat4("Colour", glm::value_ptr(colour));
+
+		if (any_changed) {
 			tex.texture.reset();
 			tex.texture = new_texture;
 		}
@@ -255,6 +201,6 @@ void ScenePanel::for_all_components(Entity& entity)
 	});
 }
 
-void Disarray::Client::ScenePanel::on_event(Event& event) { }
+void ScenePanel::on_event(Event& event) { }
 
 } // namespace Disarray::Client

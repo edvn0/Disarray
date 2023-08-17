@@ -19,5 +19,5 @@ void main() {
     float identity = float(identifer + 1);
     float scaled_identity = identity / float(PushConstants.max_identifiers);
     colour = fragColor * vec4(scaled_identity, scaled_identity, scaled_identity, 1);
-    id = identifer + 1;
+    id = identifer;
 }

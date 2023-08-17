@@ -7,7 +7,17 @@ layout(location = 1) in vec2 uvs;
 layout(location = 2) in vec3 normals;
 
 layout(location = 0) out vec4 colour;
+layout(location = 1) out uint identifier;
+
+layout(push_constant) uniform constants
+{
+    mat4 object_transform;
+    vec4 colour;
+    uint max_identifiers;
+    uint current_identifier;
+} PushConstants;
 
 void main() {
-    colour = texture(textureSampler, uvs);
+    colour = fragColour * texture(textureSampler, uvs);
+    identifier = PushConstants.current_identifier;
 }

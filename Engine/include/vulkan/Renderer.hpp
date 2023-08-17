@@ -35,6 +35,8 @@ public:
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::GeometryProperties&) override;
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const glm::mat4& transform) override;
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4& transform) override;
+	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4& transform,
+		const std::uint32_t identifier) override;
 	void draw_planar_geometry(Disarray::Geometry, const Disarray::GeometryProperties&) override;
 	void submit_batched_geometry(Disarray::CommandExecutor&) override;
 	void on_batch_full(std::function<void(Disarray::Renderer&)>&& func) override { on_batch_full_func = func; }

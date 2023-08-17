@@ -1,12 +1,12 @@
 #include "DisarrayPCH.hpp"
 
 // clang-format off
-#include "graphics/Pipeline.hpp"
 #include "vulkan/Renderer.hpp"
 // clang-format on
 
 #include "core/Clock.hpp"
 #include "core/Types.hpp"
+#include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Device.hpp"
@@ -38,11 +38,18 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 void Renderer::draw_mesh(
 	Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline, const glm::mat4& transform)
 {
+	draw_mesh(executor, mesh, mesh_pipeline, transform, entt::null);
+}
+
+void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
+	const glm::mat4& transform, const std::uint32_t identifier)
+{
 	auto command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
 	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 
 	pc.object_transform = transform;
+	pc.current_identifier = identifier;
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &pc);
 
@@ -51,7 +58,7 @@ void Renderer::draw_mesh(
 	vkCmdBindDescriptorSets(
 		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
 
-	std::array<VkBuffer, 1> arr;
+	std::array<VkBuffer, 1> arr {};
 	arr[0] = supply_cast<Vulkan::VertexBuffer>(mesh.get_vertices());
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets);
