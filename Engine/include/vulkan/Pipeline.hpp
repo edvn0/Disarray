@@ -24,6 +24,7 @@ public:
 
 private:
 	void construct_layout();
+	void try_find_or_recreate_cache();
 	std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo> retrieve_shader_stages(
 		Ref<Disarray::Shader> vertex, Ref<Disarray::Shader> fragment) const;
 	void recreate_pipeline(bool should_clean);

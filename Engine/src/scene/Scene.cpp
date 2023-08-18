@@ -47,7 +47,7 @@ void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray
 	extent = app.get_swapchain().get_extent();
 	command_executor = CommandExecutor::construct(device, app.get_swapchain(), { .count = 3, .is_primary = true, .record_stats = true });
 
-	int rects { 2 };
+	int rects { 20 };
 	auto parent = create("Grid");
 	for (auto j = -rects / 2; j < rects / 2; j++) {
 		for (auto i = -rects / 2; i < rects / 2; i++) {
@@ -68,6 +68,7 @@ void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray
 			glm::vec4 colour { col_x, 0, col_y, 1 };
 			rect.add_component<Components::QuadGeometry>();
 			rect.add_component<Components::Texture>(colour);
+			rect.add_component<Components::Pipeline>(renderer.get_pipeline_cache().get("quad"));
 		}
 	}
 

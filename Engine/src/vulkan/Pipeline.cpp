@@ -1,5 +1,6 @@
 #include "DisarrayPCH.hpp"
 
+#include "core/Formatters.hpp"
 #include "core/Types.hpp"
 #include "core/filesystem/FileIO.hpp"
 #include "graphics/Framebuffer.hpp"
@@ -143,9 +144,7 @@ Pipeline::Pipeline(const Disarray::Device& dev, const Disarray::PipelineProperti
 void Pipeline::construct_layout()
 {
 	if (!cache) {
-		VkPipelineCacheCreateInfo cache_create_info {};
-		cache_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-		vkCreatePipelineCache(supply_cast<Vulkan::Device>(device), &cache_create_info, nullptr, &cache);
+		try_find_or_recreate_cache();
 	}
 
 	std::vector<VkDynamicState> dynamic_states = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_LINE_WIDTH };
@@ -332,10 +331,10 @@ void Pipeline::construct_layout()
 
 	VkGraphicsPipelineCreateInfo pipeline_create_info {};
 	pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipeline_create_info.stageCount = 2;
 	auto stages = retrieve_shader_stages(props.vertex_shader, props.fragment_shader);
 	std::vector<VkPipelineShaderStageCreateInfo> stage_data { stages.first, stages.second };
 	pipeline_create_info.pStages = stage_data.data();
+	pipeline_create_info.stageCount = static_cast<std::uint32_t>(stage_data.size());
 	pipeline_create_info.pVertexInputState = &vertex_input_info;
 	pipeline_create_info.pInputAssemblyState = &input_assembly;
 	pipeline_create_info.pViewportState = &viewport_state;
@@ -368,15 +367,16 @@ Pipeline::~Pipeline()
 
 	vkGetPipelineCacheData(supply_cast<Vulkan::Device>(device), cache, &size, nullptr);
 
-	void* data;
-	data = malloc(size);
-	vkGetPipelineCacheData(supply_cast<Vulkan::Device>(device), cache, &size, data);
+	std::vector<const void*> data;
+	data.resize(size);
+	vkGetPipelineCacheData(supply_cast<Vulkan::Device>(device), cache, &size, data.data());
 
-	const auto name = fmt::format("Assets/Pipelines/Cache-{}{}{}.binary", hash(), props.vertex_shader->get_properties().path.filename(),
-		props.fragment_shader->get_properties().path.filename());
-	FS::write_to_file(name, size, data);
+	const auto pipeline_name = fmt::format(
+		"Pipeline-{}-{}", props.vertex_shader->get_properties().path.filename(), props.fragment_shader->get_properties().path.filename());
 
-	free(data);
+	const auto name = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", pipeline_name, props.hash());
+	FS::write_to_file(name, size, std::span { data });
+
 	vkDestroyPipelineCache(supply_cast<Vulkan::Device>(device), cache, nullptr);
 }
 
@@ -401,5 +401,34 @@ void Pipeline::recreate_pipeline(bool should_clean)
 Disarray::Framebuffer& Pipeline::get_framebuffer() { return *props.framebuffer; }
 
 Disarray::RenderPass& Pipeline::get_render_pass() { return props.framebuffer->get_render_pass(); }
+
+void Pipeline::try_find_or_recreate_cache()
+{
+	const auto hash = props.hash();
+	const auto name = fmt::format("Assets/Pipelines/Pipeline-{}-{}-Cache-{}.pipe-bin", props.vertex_shader->get_properties().path.filename(),
+		props.fragment_shader->get_properties().path.filename(), hash);
+
+	std::ifstream input_stream { name, std::ios::ate | std::ios::binary };
+	if (!input_stream) {
+		VkPipelineCacheCreateInfo cache_create_info {};
+		cache_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+		vkCreatePipelineCache(supply_cast<Vulkan::Device>(device), &cache_create_info, nullptr, &cache);
+		return;
+	}
+
+	const auto size = input_stream.tellg();
+	std::vector<char> buffer;
+	buffer.resize(size);
+
+	input_stream.seekg(0);
+
+	input_stream.read(buffer.data(), size);
+
+	VkPipelineCacheCreateInfo cache_create_info {};
+	cache_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+	cache_create_info.pInitialData = buffer.data();
+	cache_create_info.initialDataSize = buffer.size() * sizeof(char);
+	vkCreatePipelineCache(supply_cast<Vulkan::Device>(device), &cache_create_info, nullptr, &cache);
+}
 
 } // namespace Disarray::Vulkan

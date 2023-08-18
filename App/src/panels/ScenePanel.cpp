@@ -173,11 +173,13 @@ void ScenePanel::for_all_components(Entity& entity)
 		Ref<Texture> new_texture { nullptr };
 		if (texture) {
 			new_texture = UI::texture_drop_button(dev, *texture);
+			ImGui::NewLine();
 		}
 
 		bool any_changed = false;
-		any_changed = new_texture != nullptr;
-		any_changed |= ImGui::DragFloat4("Colour", glm::value_ptr(colour));
+		any_changed |= new_texture != nullptr;
+
+		ImGui::ColorEdit4("Colour", glm::value_ptr(colour));
 
 		if (any_changed) {
 			tex.texture.reset();

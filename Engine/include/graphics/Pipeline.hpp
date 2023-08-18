@@ -3,6 +3,7 @@
 #include "Forward.hpp"
 #include "PushConstantLayout.hpp"
 #include "core/DisarrayObject.hpp"
+#include "core/Hashes.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
 #include "graphics/Framebuffer.hpp"
@@ -136,6 +137,14 @@ struct PipelineProperties {
 	bool write_depth { true };
 	bool test_depth { true };
 	std::vector<VkDescriptorSetLayout> descriptor_set_layouts;
+
+	std::size_t hash() const
+	{
+		std::size_t seed { 0 };
+		hash_combine(seed, extent.width, extent.height, cull_mode, face_mode, depth_comparison_operator, samples, write_depth, test_depth, line_width,
+			vertex_shader->get_properties().path, fragment_shader->get_properties().path);
+		return seed;
+	}
 };
 
 class Pipeline : public ReferenceCountable {

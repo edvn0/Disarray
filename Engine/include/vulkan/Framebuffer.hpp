@@ -6,7 +6,6 @@
 #include "vulkan/PropertySupplier.hpp"
 #include "vulkan/RenderPass.hpp"
 
-#include <span>
 #include <vector>
 
 namespace Disarray::Vulkan {

@@ -3,6 +3,7 @@
 #include "core/Log.hpp"
 #include "core/Tuple.hpp"
 #include "scene/ComponentSerialisers.hpp"
+#include "util/Timer.hpp"
 
 #include <filesystem>
 #include <fmt/format.h>
@@ -61,36 +62,55 @@ namespace {
 		};
 
 		std::tuple<Serialisers...> serialisers;
+		struct EntityAndKey {
+			std::string key;
+			json data;
+		};
 
 		json serialise()
 		{
+			ThreadPool pool { 8 };
+
 			json root;
 			root["name"] = "Scene";
 
 			const auto& registry = scene.get_registry();
-
 			const auto view = registry.template view<const Components::ID, const Components::Tag>();
+
+			MSTimer timer {};
+			std::vector<std::future<EntityAndKey>> output;
+			output.reserve(view.size_hint());
+			view.each([&](const auto handle, const auto& id, const auto& tag) {
+				output.push_back(pool.submit([&]() {
+					Entity entity { scene, handle, tag.name };
+					auto key = fmt::format("{}__disarray__{}", id.identifier, tag.name);
+					json entity_object;
+					json components;
+					serialise_component<Components::Pipeline>(entity, components);
+					serialise_component<Components::Texture>(entity, components);
+					serialise_component<Components::Mesh>(entity, components);
+					serialise_component<Components::Transform>(entity, components);
+					serialise_component<Components::LineGeometry>(entity, components);
+					serialise_component<Components::QuadGeometry>(entity, components);
+					serialise_component<Components::Inheritance>(entity, components);
+					entity_object["components"] = components;
+					return EntityAndKey { key, entity_object };
+				}));
+			});
+
+			pool.wait_for_tasks();
+
 			json entities;
-			for (const auto [handle, id, tag] : view.each()) {
-				Entity entity { scene, handle, tag.name };
-				auto key = fmt::format("{}__disarray__{}", id.identifier, tag.name);
+			Collections::for_each(output, [&e = entities](std::future<EntityAndKey>& a) {
+				EntityAndKey k = a.get();
+				e[k.key] = k.data;
+			});
 
-				json entity_object;
-
-				json components;
-				serialise_component<Components::Pipeline>(entity, components);
-				serialise_component<Components::Texture>(entity, components);
-				serialise_component<Components::Mesh>(entity, components);
-				serialise_component<Components::Transform>(entity, components);
-				serialise_component<Components::LineGeometry>(entity, components);
-				serialise_component<Components::QuadGeometry>(entity, components);
-				serialise_component<Components::Inheritance>(entity, components);
-				entity_object["components"] = components;
-
-				entities[key] = entity_object;
-			}
+			const double elapsed = timer.elapsed<Granularity::Seconds>();
 
 			root["entities"] = entities;
+
+			Log::info("Serialiser", "Serialising took {}s", elapsed);
 
 			return root;
 		}

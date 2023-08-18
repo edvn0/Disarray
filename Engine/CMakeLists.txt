@@ -107,6 +107,7 @@ set(ENGINE_SOURCES
         include/core/Concepts.hpp
         include/util/BitCast.hpp
         include/util/FormattingUtilities.hpp
+        include/util/Timer.hpp
         include/vulkan/Config.hpp
         include/vulkan/RenderPass.hpp
         include/vulkan/Renderer.hpp
