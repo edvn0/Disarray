@@ -30,8 +30,9 @@ private:
 
 	const Disarray::Device& device;
 	PipelineProperties props;
-	VkPipeline pipeline;
-	VkPipelineLayout layout;
+	VkPipeline pipeline { nullptr };
+	VkPipelineCache cache { nullptr };
+	VkPipelineLayout layout { nullptr };
 };
 
 } // namespace Disarray::Vulkan

@@ -172,6 +172,7 @@ set(ENGINE_SOURCES
         src/scene/ComponentDeserialisers.cpp
         src/scene/SerialisationTypeConversions.cpp
         src/core/DataBuffer.cpp
+        src/core/filesystem/FileIO.cpp
         src/core/Layer.cpp
         src/core/ReferenceCounted.cpp
         src/core/App.cpp

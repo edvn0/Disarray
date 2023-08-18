@@ -15,13 +15,13 @@ Surface::Surface(Instance& inst, GLFWwindow* window)
 {
 	using namespace std::string_view_literals;
 	verify(glfwCreateWindowSurface(*instance, window, nullptr, &surface));
-	Log::debug("Surface"sv, "Surface created!");
+	Log::debug("Surface", "{}", "Surface created!");
 }
 
 Surface::~Surface()
 {
 	vkDestroySurfaceKHR(*instance, surface, nullptr);
-	Log::debug("Surface", "Surface destroyed.");
+	Log::debug("Surface", "{}", "Surface destroyed.");
 }
 
 } // namespace Disarray::Vulkan

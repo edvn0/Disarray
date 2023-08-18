@@ -27,6 +27,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <regex>
 #include <set>
 #include <sstream>

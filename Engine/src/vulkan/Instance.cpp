@@ -120,7 +120,7 @@ Instance::Instance(const std::vector<const char*>& supported_layers)
 
 	setup_debug_messenger();
 
-	Log::debug("Instance", "Instance created!");
+	Log::debug("{}", "Instance created!");
 }
 
 Instance::~Instance()

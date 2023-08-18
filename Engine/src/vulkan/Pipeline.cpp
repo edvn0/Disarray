@@ -1,6 +1,7 @@
 #include "DisarrayPCH.hpp"
 
 #include "core/Types.hpp"
+#include "core/filesystem/FileIO.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PushConstantLayout.hpp"
@@ -141,6 +142,12 @@ Pipeline::Pipeline(const Disarray::Device& dev, const Disarray::PipelineProperti
 
 void Pipeline::construct_layout()
 {
+	if (!cache) {
+		VkPipelineCacheCreateInfo cache_create_info {};
+		cache_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+		vkCreatePipelineCache(supply_cast<Vulkan::Device>(device), &cache_create_info, nullptr, &cache);
+	}
+
 	std::vector<VkDynamicState> dynamic_states = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_LINE_WIDTH };
 
 	VkPipelineDynamicStateCreateInfo dynamic_state {};
@@ -343,7 +350,7 @@ void Pipeline::construct_layout()
 	pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipeline_create_info.basePipelineIndex = -1; // Optional
 
-	verify(vkCreateGraphicsPipelines(supply_cast<Vulkan::Device>(device), nullptr, 1, &pipeline_create_info, nullptr, &pipeline));
+	verify(vkCreateGraphicsPipelines(supply_cast<Vulkan::Device>(device), cache, 1, &pipeline_create_info, nullptr, &pipeline));
 }
 
 Pipeline::~Pipeline()
@@ -353,6 +360,24 @@ Pipeline::~Pipeline()
 
 	props.vertex_shader->destroy_module();
 	props.fragment_shader->destroy_module();
+
+	if (!cache)
+		return;
+
+	std::size_t size;
+
+	vkGetPipelineCacheData(supply_cast<Vulkan::Device>(device), cache, &size, nullptr);
+
+	void* data;
+	data = malloc(size);
+	vkGetPipelineCacheData(supply_cast<Vulkan::Device>(device), cache, &size, data);
+
+	const auto name = fmt::format("Assets/Pipelines/Cache-{}{}{}.binary", hash(), props.vertex_shader->get_properties().path.filename(),
+		props.fragment_shader->get_properties().path.filename());
+	FS::write_to_file(name, size, data);
+
+	free(data);
+	vkDestroyPipelineCache(supply_cast<Vulkan::Device>(device), cache, nullptr);
 }
 
 std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo> Pipeline::retrieve_shader_stages(
