@@ -69,8 +69,6 @@ namespace {
 
 		json serialise()
 		{
-			ThreadPool pool { 8 };
-
 			json root;
 			root["name"] = "Scene";
 
@@ -78,33 +76,26 @@ namespace {
 			const auto view = registry.template view<const Components::ID, const Components::Tag>();
 
 			MSTimer timer {};
-			std::vector<std::future<EntityAndKey>> output;
+			std::vector<EntityAndKey> output;
 			output.reserve(view.size_hint());
 			view.each([&](const auto handle, const auto& id, const auto& tag) {
-				output.push_back(pool.submit([&]() {
-					Entity entity { scene, handle, tag.name };
-					auto key = fmt::format("{}__disarray__{}", id.identifier, tag.name);
-					json entity_object;
-					json components;
-					serialise_component<Components::Pipeline>(entity, components);
-					serialise_component<Components::Texture>(entity, components);
-					serialise_component<Components::Mesh>(entity, components);
-					serialise_component<Components::Transform>(entity, components);
-					serialise_component<Components::LineGeometry>(entity, components);
-					serialise_component<Components::QuadGeometry>(entity, components);
-					serialise_component<Components::Inheritance>(entity, components);
-					entity_object["components"] = components;
-					return EntityAndKey { key, entity_object };
-				}));
+				Entity entity { scene, handle, tag.name };
+				auto key = fmt::format("{}__disarray__{}", id.identifier, tag.name);
+				json entity_object;
+				json components;
+				serialise_component<Components::Pipeline>(entity, components);
+				serialise_component<Components::Texture>(entity, components);
+				serialise_component<Components::Mesh>(entity, components);
+				serialise_component<Components::Transform>(entity, components);
+				serialise_component<Components::LineGeometry>(entity, components);
+				serialise_component<Components::QuadGeometry>(entity, components);
+				serialise_component<Components::Inheritance>(entity, components);
+				entity_object["components"] = components;
+				output.push_back({ key, entity_object });
 			});
-
-			pool.wait_for_tasks();
 
 			json entities;
-			Collections::for_each(output, [&e = entities](std::future<EntityAndKey>& a) {
-				EntityAndKey k = a.get();
-				e[k.key] = k.data;
-			});
+			Collections::for_each(output, [&e = entities](EntityAndKey k) { e[k.key] = k.data; });
 
 			const double elapsed = timer.elapsed<Granularity::Seconds>();
 

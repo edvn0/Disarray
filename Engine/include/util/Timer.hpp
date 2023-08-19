@@ -6,10 +6,10 @@
 namespace Disarray {
 
 enum class Granularity { Seconds, Millis, Nanos };
-template <Granularity T> constexpr double convert_to_factor = 0;
-template <> constexpr double convert_to_factor<Granularity::Seconds> = 1e6;
-template <> constexpr double convert_to_factor<Granularity::Millis> = 1e3;
-template <> constexpr double convert_to_factor<Granularity::Nanos> = 1;
+template <Granularity T> inline constexpr double convert_from_nano_seconds_to_factor = 0;
+template <> inline constexpr double convert_from_nano_seconds_to_factor<Granularity::Seconds> = 1e6;
+template <> inline constexpr double convert_from_nano_seconds_to_factor<Granularity::Millis> = 1e3;
+template <> inline constexpr double convert_from_nano_seconds_to_factor<Granularity::Nanos> = 1;
 
 template <std::floating_point T> class Timer {
 public:
@@ -22,7 +22,7 @@ public:
 	template <Granularity Other> T elapsed()
 	{
 		const double current_nanos = nanos();
-		constexpr auto factor = convert_to_factor<Other>;
+		constexpr auto factor = convert_from_nano_seconds_to_factor<Other>;
 		const auto diff = current_nanos - start_nanos;
 		return diff / factor;
 	}
