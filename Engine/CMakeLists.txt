@@ -2,31 +2,6 @@ cmake_minimum_required(VERSION 3.22)
 
 project(Engine CXX)
 
-
-FetchContent_Declare(
-        fmt
-        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-        GIT_TAG master
-        GIT_PROGRESS TRUE
-)
-FetchContent_MakeAvailable(fmt)
-
-FetchContent_Declare(
-        magic_enum
-        GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
-        GIT_TAG master
-        GIT_PROGRESS TRUE
-)
-FetchContent_MakeAvailable(magic_enum)
-
-FetchContent_Declare(
-        nlohmann_json
-        GIT_REPOSITORY https://github.com/nlohmann/json.git
-        GIT_TAG v3.11.2
-        GIT_PROGRESS TRUE
-)
-FetchContent_MakeAvailable(nlohmann_json)
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
