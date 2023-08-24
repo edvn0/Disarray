@@ -39,6 +39,6 @@ compile_shaders()
 include("${CMAKE_SOURCE_DIR}/cmake/copy_directory.cmake")
 copy_directory_to_binary(Assets "Models;Shaders;Textures;Icons;Scene;Pipelines")
 
-if (${Vulkan_glslangValidator_FOUND})
+if (${Vulkan_glslc_FOUND})
     add_dependencies(${PROJECT_NAME} shaders)
 endif ()
