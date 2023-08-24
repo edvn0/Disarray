@@ -1,6 +1,18 @@
 #include "DisarrayPCH.hpp"
 
+#include "scene/Scene.hpp"
+
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
+
+#include <ImGuizmo.h>
+#include <entt/entt.hpp>
+
+#include <mutex>
+#include <thread>
+
 #include "core/App.hpp"
+#include "core/Collections.hpp"
 #include "core/Ensure.hpp"
 #include "core/Formatters.hpp"
 #include "core/Input.hpp"
@@ -15,15 +27,7 @@
 #include "scene/Components.hpp"
 #include "scene/Deserialiser.hpp"
 #include "scene/Entity.hpp"
-#include "scene/Scene.hpp"
 #include "scene/Serialiser.hpp"
-
-#include <ImGuizmo.h>
-#include <entt/entt.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
-#include <mutex>
-#include <thread>
 
 static auto rotate_by(const glm::vec3& axis_radians)
 {
@@ -50,17 +54,19 @@ void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray
 	final_pool_callback = pool.submit([&flag = should_run_callbacks, &mutex = callback_mutex, &cv = callback_cv, &cbs = thread_pool_callbacks]() {
 		using namespace std::chrono_literals;
 		while (flag) {
-
 			std::unique_lock lock { mutex };
-			auto callback_count = cbs.size();
+			std::vector<ThreadPoolCallback> parallels {};
 			while (!cbs.empty()) {
-				auto&& front = cbs.front();
-				front();
+				ThreadPoolCallback& front = cbs.front();
+				if (front.parallel)
+					parallels.push_back(std::move(front));
+				else
+					front.func();
 				cbs.pop();
 			}
 
-			Log::info("Callback executor", "Executed {} callbacks.", callback_count);
-			cv.wait_for(lock, 2500ms);
+			Collections::parallel_for_each(parallels, [](auto& f) { f.func(); });
+			cv.wait_for(lock, 10s);
 		}
 	});
 
@@ -335,7 +341,10 @@ void Scene::on_event(Event& event)
 	dispatcher.dispatch<KeyPressedEvent>([this](KeyPressedEvent&) {
 		if (Input::all<KeyCode::LeftControl, KeyCode::LeftShift, KeyCode::S>()) {
 			auto func = [this] { SceneSerialiser scene_serialiser(*this); };
-			thread_pool_callbacks.push(func);
+			thread_pool_callbacks.push({
+				.func = func,
+				.parallel = false,
+			});
 		}
 		return true;
 	});

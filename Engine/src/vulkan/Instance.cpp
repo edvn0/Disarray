@@ -1,19 +1,21 @@
 #include "DisarrayPCH.hpp"
 
-#include "core/Log.hpp"
-#include "graphics/PhysicalDevice.hpp"
-#include "util/BitCast.hpp"
-#include "vulkan/Config.hpp"
 #include "vulkan/Instance.hpp"
-#include "vulkan/QueueFamilyIndex.hpp"
-#include "vulkan/Verify.hpp"
-#include "vulkan/exceptions/VulkanExceptions.hpp"
 
 #include <GLFW/glfw3.h>
+
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
+
+#include "core/Log.hpp"
+#include "graphics/PhysicalDevice.hpp"
+#include "util/BitCast.hpp"
+#include "vulkan/Config.hpp"
+#include "vulkan/QueueFamilyIndex.hpp"
+#include "vulkan/Verify.hpp"
+#include "vulkan/exceptions/VulkanExceptions.hpp"
 
 std::vector<const char*> get_required_extensions()
 {
@@ -84,7 +86,7 @@ Instance::Instance(const std::vector<const char*>& supported_layers)
 	: requested_layers(supported_layers)
 {
 	const auto check_support = check_validation_layer_support();
-	Log::info("Instance", "Requested: {}, supported: {}", Config::use_validation_layers, check_support);
+	Log::info("Instance - Validation Layers", "Requested?: {}. Supported?: {}", Config::use_validation_layers, check_support);
 	if (Config::use_validation_layers && !check_support) {
 		throw CouldNotCreateValidationLayersException("Could not configure validation layers, and it was asked for.");
 	}

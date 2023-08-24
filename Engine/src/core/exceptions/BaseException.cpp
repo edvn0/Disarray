@@ -1,10 +1,11 @@
 #include "DisarrayPCH.hpp"
 
-#include "core/Log.hpp"
 #include "core/exceptions/BaseException.hpp"
 
 #include <algorithm>
 #include <stdexcept>
+
+#include "core/Log.hpp"
 
 namespace Disarray {
 

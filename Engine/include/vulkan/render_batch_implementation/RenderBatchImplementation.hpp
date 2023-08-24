@@ -1,5 +1,10 @@
 #pragma once
 
+#include <glm/ext/matrix_transform.hpp>
+#include <vulkan/vulkan.h>
+
+#include <array>
+
 #include "core/Clock.hpp"
 #include "core/Formatters.hpp"
 #include "core/Types.hpp"
@@ -14,10 +19,6 @@
 #include "vulkan/Renderer.hpp"
 #include "vulkan/UniformBuffer.hpp"
 #include "vulkan/VertexBuffer.hpp"
-
-#include <array>
-#include <glm/ext/matrix_transform.hpp>
-#include <vulkan/vulkan.h>
 
 namespace Disarray {
 

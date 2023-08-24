@@ -1,5 +1,12 @@
 #pragma once
 
+#include <entt/entt.hpp>
+
+#include <concepts>
+#include <mutex>
+#include <queue>
+#include <type_traits>
+
 #include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
 #include "core/events/Event.hpp"
@@ -7,12 +14,6 @@
 #include "graphics/Mesh.hpp"
 #include "graphics/Texture.hpp"
 #include "scene/Component.hpp"
-
-#include <concepts>
-#include <entt/entt.hpp>
-#include <mutex>
-#include <queue>
-#include <type_traits>
 
 namespace Disarray {
 
@@ -108,7 +109,12 @@ private:
 	// Should contain some kind of container for entities :)
 	entt::registry registry;
 
-	std::queue<std::function<void(void)>> thread_pool_callbacks {};
+	struct ThreadPoolCallback {
+		std::function<void(void)> func;
+		bool parallel { false };
+	};
+	std::queue<ThreadPoolCallback> thread_pool_callbacks {};
+
 	std::future<void> final_pool_callback {};
 	std::atomic_bool should_run_callbacks { true };
 	std::condition_variable callback_cv {};

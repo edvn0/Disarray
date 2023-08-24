@@ -1,12 +1,14 @@
 #include "DisarrayPCH.hpp"
 
+#include "graphics/Pipeline.hpp"
+
 #include "core/Formatters.hpp"
 #include "core/Types.hpp"
 #include "core/filesystem/FileIO.hpp"
 #include "graphics/Framebuffer.hpp"
-#include "graphics/Pipeline.hpp"
 #include "graphics/PushConstantLayout.hpp"
 #include "graphics/RenderPass.hpp"
+#include "util/Timer.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/RenderPass.hpp"
@@ -38,7 +40,6 @@ namespace Detail {
 		case ElementType::Int4:
 			return VK_FORMAT_R16G16B16A16_SINT;
 		case ElementType::Uint:
-			// SPECIAL CASE FOR IDENTIFIERS
 			return VK_FORMAT_R32_UINT;
 		case ElementType::Uint2:
 			return VK_FORMAT_R16G16_UINT;
@@ -407,7 +408,7 @@ void Pipeline::try_find_or_recreate_cache()
 	const auto name = fmt::format("Assets/Pipelines/Pipeline-{}-{}-Cache-{}.pipe-bin", props.vertex_shader->get_properties().path.filename(),
 		props.fragment_shader->get_properties().path.filename(), hash);
 
-	std::ifstream input_stream { name, std::ios::ate | std::ios::binary };
+	std::ifstream input_stream { name, std::fstream::ate | std::fstream::binary };
 	if (!input_stream) {
 		VkPipelineCacheCreateInfo cache_create_info {};
 		cache_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
@@ -415,19 +416,15 @@ void Pipeline::try_find_or_recreate_cache()
 		return;
 	}
 
-	const auto size = input_stream.tellg();
-	std::vector<char> buffer;
-	buffer.resize(size);
-
-	input_stream.seekg(0);
-
-	input_stream.read(buffer.data(), size);
+	MSTimer timer;
+	std::vector<unsigned char> buffer(std::istreambuf_iterator<char>(input_stream), {});
 
 	VkPipelineCacheCreateInfo cache_create_info {};
 	cache_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
 	cache_create_info.pInitialData = buffer.data();
-	cache_create_info.initialDataSize = buffer.size() * sizeof(char);
+	cache_create_info.initialDataSize = buffer.size() * sizeof(unsigned char);
 	vkCreatePipelineCache(supply_cast<Vulkan::Device>(device), &cache_create_info, nullptr, &cache);
+	Log::info("Pipeline - Cache", "Time elapsed: {}ms", timer.elapsed<Granularity::Millis>());
 }
 
 } // namespace Disarray::Vulkan

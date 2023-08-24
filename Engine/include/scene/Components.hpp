@@ -1,17 +1,19 @@
 #pragma once
 
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
+
+#include <entt/entt.hpp>
+
+#include <unordered_set>
+
 #include "Forward.hpp"
 #include "core/Concepts.hpp"
 #include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
 #include "graphics/Material.hpp"
 #include "graphics/Renderer.hpp"
-
-#include <entt/entt.hpp>
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <unordered_set>
 
 namespace Disarray::Components {
 
@@ -94,10 +96,10 @@ struct Tag {
 };
 
 struct DirectionalLight {
-	glm::vec3 direction { 1, 0, 0 };
+	glm::vec3 direction { 1, 1, 1 };
 	float intensity { .8f };
 
-	constexpr glm::vec4 compute() const { return { glm::normalize(direction), intensity }; }
+	glm::vec4 compute() const { return { glm::normalize(direction), intensity }; }
 };
 
 struct PointLight {

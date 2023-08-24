@@ -1,15 +1,17 @@
 #include "ClientLayer.hpp"
 
+#include <glm/gtx/matrix_decompose.hpp>
+
+#include <Disarray.hpp>
+#include <fmt/format.h>
+
+#include <array>
+
 #include "graphics/Renderer.hpp"
 #include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
 #include "panels/ScenePanel.hpp"
 #include "panels/StatisticsPanel.hpp"
-
-#include <Disarray.hpp>
-#include <array>
-#include <fmt/format.h>
-#include <glm/gtx/matrix_decompose.hpp>
 
 namespace Disarray::Client {
 
@@ -23,7 +25,6 @@ ClientLayer::~ClientLayer() = default;
 
 void ClientLayer::construct(App& app, Renderer& renderer, ThreadPool& pool)
 {
-	auto test_scene = Scene::deserialise(device, "Default scene", "Assets/Scene/Default_scene-2023-08-12-11-43-08.json");
 	scene.reset(new Scene { device, "Default scene" });
 
 	ensure(scene != nullptr, "Forgot to initialise scene");
