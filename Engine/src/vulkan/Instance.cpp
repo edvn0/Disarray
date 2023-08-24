@@ -2,6 +2,7 @@
 
 #include "core/Log.hpp"
 #include "graphics/PhysicalDevice.hpp"
+#include "util/BitCast.hpp"
 #include "vulkan/Config.hpp"
 #include "vulkan/Instance.hpp"
 #include "vulkan/QueueFamilyIndex.hpp"
@@ -32,16 +33,16 @@ std::vector<const char*> get_required_extensions()
 	return extensions;
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-	VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type,
+	const VkDebugUtilsMessengerCallbackDataEXT* callback_data, void* user_data)
 {
-	switch (messageSeverity) {
+	switch (severity) {
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-		Disarray::Log::debug("Validation", "Validation layer: {}", std::string(pCallbackData->pMessage));
+		Disarray::Log::debug("Validation", "Validation layer: {}", std::string(callback_data->pMessage));
 		return VK_FALSE;
 	default:
-		Disarray::Log::error("Validation", "Validation layer: {}", std::string(pCallbackData->pMessage));
+		Disarray::Log::error("Validation", "Validation layer: {}", std::string(callback_data->pMessage));
 		return VK_FALSE;
 	}
 }
@@ -57,22 +58,22 @@ void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT& cr
 	create_info.pfnUserCallback = debug_callback;
 }
 
-VkResult create_debug_messenger_ext(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-	const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
+VkResult create_debug_messenger_ext(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* create_info,
+	const VkAllocationCallbacks* allocator, VkDebugUtilsMessengerEXT* debug_messenger)
 {
-	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+	auto func = Disarray::bit_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
 	if (func != nullptr) {
-		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+		return func(instance, create_info, allocator, debug_messenger);
 	} else {
 		return VK_ERROR_EXTENSION_NOT_PRESENT;
 	}
 }
 
-void destroy_debug_messenger_ext(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
+void destroy_debug_messenger_ext(VkInstance instance, VkDebugUtilsMessengerEXT debug_messenger, const VkAllocationCallbacks* allocator)
 {
-	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+	auto func = Disarray::bit_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
 	if (func != nullptr) {
-		func(instance, debugMessenger, pAllocator);
+		func(instance, debug_messenger, allocator);
 	}
 }
 
@@ -81,7 +82,9 @@ namespace Disarray::Vulkan {
 Instance::Instance(const std::vector<const char*>& supported_layers)
 	: requested_layers(supported_layers)
 {
-	if (Config::use_validation_layers && !check_validation_layer_support()) {
+	const auto check_support = check_validation_layer_support();
+	Log::info("Instance", "Requested: {}, supported: {}", Config::use_validation_layers, check_support);
+	if (Config::use_validation_layers && !check_support) {
 		throw std::runtime_error("Could not configure validation layers, and it was asked for.");
 	}
 
@@ -120,7 +123,7 @@ Instance::Instance(const std::vector<const char*>& supported_layers)
 
 	setup_debug_messenger();
 
-	Log::debug("{}", "Instance created!");
+	Log::debug("Vulkan Instance", "{}", "Instance created!");
 }
 
 Instance::~Instance()
@@ -129,6 +132,7 @@ Instance::~Instance()
 		destroy_debug_messenger_ext(instance, debug_messenger, nullptr);
 	}
 	vkDestroyInstance(instance, nullptr);
+	Log::debug("Vulkan Instance", "{}", "Instance destroyed!");
 }
 
 void Instance::setup_debug_messenger()

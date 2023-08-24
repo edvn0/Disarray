@@ -1,5 +1,6 @@
 #include "ClientLayer.hpp"
 
+#include "graphics/Renderer.hpp"
 #include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
 #include "panels/ScenePanel.hpp"
@@ -172,9 +173,9 @@ void ClientLayer::on_event(Event& event)
 	scene->on_event(event);
 }
 
-void ClientLayer::update(float ts)
+void ClientLayer::update(float ts, IGraphicsResource& resource_renderer)
 {
-	scene->update(ts);
+	scene->update(ts, resource_renderer);
 	camera.on_update(ts);
 }
 

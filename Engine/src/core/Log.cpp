@@ -2,16 +2,15 @@
 
 #include "core/Log.hpp"
 
-#include <cstdarg> // va_start, va_end, std::va_list
-#include <cstddef> // std::size_t
+#include <cstdarg>
+#include <cstddef>
 #include <iostream>
-#include <stdexcept> // std::runtime_error
-#include <vector> // std::vector
+#include <stdexcept>
+#include <vector>
 
 namespace Disarray {
 
-#define ALLOW_SLOW_LOGGING
-#ifdef ALLOW_SLOW_LOGGING
+#ifdef DISARRAY_ALLOW_SLOW_LOGGING
 void Logging::Logger::debug(const std::string& message) { std::cout << message << std::endl; }
 void Logging::Logger::info(const std::string& message) { std::cout << message << std::endl; }
 void Logging::Logger::error(const std::string& message) { std::cerr << message << std::endl; }

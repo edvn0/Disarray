@@ -115,10 +115,10 @@ void InterfaceLayer::on_event(Event& event)
 	}
 }
 
-void InterfaceLayer::update(float ts)
+void InterfaceLayer::update(float ts, IGraphicsResource& resource_renderer)
 {
 	for (auto& panel : panels) {
-		panel->update(ts);
+		panel->update(ts, resource_renderer);
 	}
 }
 

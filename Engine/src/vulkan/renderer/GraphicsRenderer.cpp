@@ -1,6 +1,7 @@
 #include "DisarrayPCH.hpp"
 
 // clang-format off
+#include "graphics/Texture.hpp"
 #include "vulkan/Renderer.hpp"
 // clang-format on
 
@@ -49,6 +50,46 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 
 	pc.object_transform = transform;
+	pc.current_identifier = identifier;
+	vkCmdPushConstants(
+		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &pc);
+
+	const std::array<VkDescriptorSet, 2> desc { get_descriptor_set(swapchain.get_current_frame(), 0),
+		get_descriptor_set(swapchain.get_current_frame(), 1) };
+	vkCmdBindDescriptorSets(
+		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
+
+	std::array<VkBuffer, 1> arr {};
+	arr[0] = supply_cast<Vulkan::VertexBuffer>(mesh.get_vertices());
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets);
+
+	if (pipeline.get_properties().polygon_mode == PolygonMode::Line) {
+		vkCmdSetLineWidth(command_buffer, pipeline.get_properties().line_width);
+	}
+
+	vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(mesh.get_indices()), 0, VK_INDEX_TYPE_UINT32);
+
+	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(mesh.get_indices().size()), 1, 0, 0, 0);
+}
+
+void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
+	const Disarray::Texture& texture, const glm::mat4& transform, const std::uint32_t identifier)
+{
+	draw_mesh(executor, mesh, mesh_pipeline, texture, glm::vec4 { 1.0f }, transform, identifier);
+}
+
+void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
+	const Disarray::Texture& texture, const glm::vec4& colour, const glm::mat4& transform, const std::uint32_t identifier)
+{
+	auto command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
+	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
+	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+
+	(void)texture;
+
+	pc.object_transform = transform;
+	pc.colour = colour;
 	pc.current_identifier = identifier;
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &pc);

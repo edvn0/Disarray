@@ -1,6 +1,9 @@
 #pragma once
 
+#include "core/Clock.hpp"
+#include "core/Formatters.hpp"
 #include "core/Types.hpp"
+#include "graphics/Maths.hpp"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Framebuffer.hpp"
@@ -13,7 +16,6 @@
 #include "vulkan/VertexBuffer.hpp"
 
 #include <array>
-#include <core/Clock.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <vulkan/vulkan.h>
 
@@ -58,18 +60,23 @@ template <std::size_t Objects> void QuadVertexBatch<Objects>::create_new_impl(Ge
 	static constexpr std::array<glm::vec2, 4> texture_coordinates = { glm::vec2 { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 1.0f } };
 	static constexpr std::array<glm::vec4, 4> quad_positions
 		= { glm::vec4 { -0.5f, -0.5f, 0.0f, 1.0f }, { 0.5f, -0.5f, 0.0f, 1.0f }, { 0.5f, 0.5f, 0.0f, 1.0f }, { -0.5f, 0.5f, 0.0f, 1.0f } };
-	static constexpr glm::vec4 quad_normal = glm::vec4 { 0, 0, 1, 0 };
 
 	glm::mat4 transform
 		= glm::translate(glm::mat4 { 1.0f }, props.position) * glm::mat4_cast(props.rotation) * glm::scale(glm::mat4 { 1.0f }, props.dimensions);
 
+	auto start_index = submitted_vertices;
 	for (std::size_t i = 0; i < vertex_per_object_count<QuadVertex>; i++) {
-		auto& vertex = emplace();
+		QuadVertex& vertex = emplace();
 		vertex.pos = transform * quad_positions[i];
-		vertex.normals = transform * quad_normal;
 		vertex.uvs = texture_coordinates[i];
 		vertex.colour = props.colour;
-		vertex.identifier = *props.identifier;
+		vertex.identifier = props.identifier.value_or(0);
+	}
+
+	glm::vec3 normals = Maths::compute_normal(vertices[start_index + 1].pos, vertices[start_index + 0].pos, vertices[start_index + 2].pos);
+
+	for (std::size_t i = start_index; i < start_index + vertex_per_object_count<QuadVertex>; i++) {
+		vertices[i].normals = normals;
 	}
 
 	submitted_indices += 6;
@@ -89,7 +96,6 @@ template <std::size_t Objects> void QuadVertexBatch<Objects>::submit_impl(Render
 
 	const auto& vb = vertex_buffer;
 	const auto& ib = index_buffer;
-	// const auto& descriptor = descriptor_sets[renderer.get_current_frame()];
 	const auto index_count = submitted_indices;
 	const auto& vk_pipeline = cast_to<Vulkan::Pipeline>(*pipeline);
 
@@ -149,6 +155,9 @@ template <std::size_t Objects> void LineVertexBatch<Objects>::create_new_impl(Ge
 	if (geometry != Geometry::Line)
 		return;
 
+	if (props.identifier)
+		return;
+
 	{
 		auto& vertex = emplace();
 		vertex.pos = props.position;
@@ -205,6 +214,60 @@ template <std::size_t Objects> void LineVertexBatch<Objects>::flush_impl(Disarra
 	submit_impl(renderer, executor);
 	reset();
 	// flush_vertex_buffer();
+}
+
+// LINE ID VERTEX
+
+template <std::size_t Objects> void LineIdVertexBatch<Objects>::construct_impl(Disarray::Renderer& renderer, Disarray::Device& dev)
+{
+	this->reset();
+
+	this->pipeline = renderer.get_pipeline_cache().get("line_id");
+
+	std::vector<std::uint32_t> line_indices;
+	line_indices.resize(Objects * this->IndexCount);
+	for (std::size_t i = 0; i < line_indices.size(); i++) {
+		line_indices[i] = static_cast<std::uint32_t>(i);
+	}
+
+	this->index_buffer = make_scope<Vulkan::IndexBuffer>(dev,
+		BufferProperties {
+			.data = line_indices.data(),
+			.size = this->index_buffer_size(),
+			.count = line_indices.size(),
+		});
+
+	this->vertex_buffer = make_scope<Vulkan::VertexBuffer>(dev,
+		BufferProperties {
+			.size = this->vertex_buffer_size(),
+			.count = this->vertices.size(),
+		});
+}
+
+template <std::size_t Objects> void LineIdVertexBatch<Objects>::create_new_impl(Geometry geometry, const Disarray::GeometryProperties& props)
+{
+	if (geometry != Geometry::Line)
+		return;
+
+	if (!props.identifier)
+		return;
+
+	{
+		LineIdVertex& vertex = this->emplace();
+		vertex.pos = props.position;
+		vertex.colour = props.colour;
+		vertex.identifier = props.identifier.value_or(0);
+	}
+
+	{
+		LineIdVertex& vertex = this->emplace();
+		vertex.pos = props.to_position;
+		vertex.colour = props.colour;
+		vertex.identifier = props.identifier.value_or(0);
+	}
+
+	this->submitted_indices += 2;
+	this->submitted_objects++;
 }
 
 } // namespace Disarray

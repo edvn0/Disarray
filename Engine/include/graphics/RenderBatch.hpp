@@ -91,11 +91,17 @@ template <std::size_t Objects = 1> struct QuadVertexBatch final : public RenderB
 	void flush_impl(Disarray::Renderer&, Disarray::CommandExecutor&);
 };
 
+template <std::size_t Objects = 1> struct LineIdVertexBatch final : public LineVertexBatch<Objects> {
+	void construct_impl(Disarray::Renderer&, Disarray::Device&);
+	void create_new_impl(Geometry, const GeometryProperties&);
+};
+
 template <std::size_t Objects = 1> struct BatchRenderer {
 	using Quads = QuadVertexBatch<Objects>;
 	using Lines = LineVertexBatch<Objects>;
+	using LinesWithIdentifiers = LineVertexBatch<Objects>;
 
-	std::tuple<Quads, Lines> objects {};
+	std::tuple<Quads, Lines, LinesWithIdentifiers> objects {};
 
 	// How many times have we submitted geometries?
 	// Used by shaders to determine scale of picking count

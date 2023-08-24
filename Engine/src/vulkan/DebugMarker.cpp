@@ -1,13 +1,15 @@
 #include "vulkan/DebugMarker.hpp"
 
+#include "core/FileWatcher.hpp"
 #include "core/Log.hpp"
+#include "util/BitCast.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 
 namespace Disarray::Vulkan {
 
-bool active = false;
-bool extension_present = false;
+static bool active = false;
+static bool extension_present = false;
 
 PFN_vkDebugMarkerSetObjectTagEXT vkDebugMarkerSetObjectTag = VK_NULL_HANDLE; // NOLINT
 PFN_vkDebugMarkerSetObjectNameEXT vkDebugMarkerSetObjectName = VK_NULL_HANDLE; // NOLINT
@@ -29,15 +31,12 @@ void DebugMarker::setup(VkDevice device, VkPhysicalDevice physical_device)
 	}
 
 	if (extension_present) {
-		vkDebugMarkerSetObjectTag = (PFN_vkDebugMarkerSetObjectTagEXT)vkGetDeviceProcAddr(device, "vkDebugMarkerSetObjectTagEXT"); // NOLINT
-		vkDebugMarkerSetObjectName = (PFN_vkDebugMarkerSetObjectNameEXT)vkGetDeviceProcAddr(device,
-			"vkDebugMarkerSetObjectNameEXT"); // NOLINT
-		vkCmdDebugMarkerBegin = (PFN_vkCmdDebugMarkerBeginEXT)vkGetDeviceProcAddr(device,
-			"vkCmdDebugMarkerBeginEXT"); // NOLINT
-		vkCmdDebugMarkerEnd = (PFN_vkCmdDebugMarkerEndEXT)vkGetDeviceProcAddr(device,
-			"vkCmdDebugMarkerEndEXT"); // NOLINT
-		vkCmdDebugMarkerInsert = (PFN_vkCmdDebugMarkerInsertEXT)vkGetDeviceProcAddr(device,
-			"vkCmdDebugMarkerInsertEXT"); // NOLINT
+		vkDebugMarkerSetObjectTag = Disarray::bit_cast<PFN_vkDebugMarkerSetObjectTagEXT>(vkGetDeviceProcAddr(device, "vkDebugMarkerSetObjectTagEXT"));
+		vkDebugMarkerSetObjectName
+			= Disarray::bit_cast<PFN_vkDebugMarkerSetObjectNameEXT>(vkGetDeviceProcAddr(device, "vkDebugMarkerSetObjectNameEXT"));
+		vkCmdDebugMarkerBegin = Disarray::bit_cast<PFN_vkCmdDebugMarkerBeginEXT>(vkGetDeviceProcAddr(device, "vkCmdDebugMarkerBeginEXT"));
+		vkCmdDebugMarkerEnd = Disarray::bit_cast<PFN_vkCmdDebugMarkerEndEXT>(vkGetDeviceProcAddr(device, "vkCmdDebugMarkerEndEXT"));
+		vkCmdDebugMarkerInsert = Disarray::bit_cast<PFN_vkCmdDebugMarkerInsertEXT>(vkGetDeviceProcAddr(device, "vkCmdDebugMarkerInsertEXT"));
 		// Set flag if at least one function pointer is present
 		active = (vkDebugMarkerSetObjectName != VK_NULL_HANDLE);
 
@@ -51,7 +50,8 @@ void DebugMarker::setup(VkDevice device, VkPhysicalDevice physical_device)
 void DebugMarker::set_object_name(VkDevice device, uint64_t object, VkDebugReportObjectTypeEXT object_type, const char* name)
 {
 	if (active) {
-		VkDebugMarkerObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT };
+		VkDebugMarkerObjectNameInfoEXT name_info {};
+		name_info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
 		name_info.objectType = object_type;
 		name_info.object = object;
 		name_info.pObjectName = name;
@@ -63,7 +63,8 @@ void DebugMarker::set_object_tag(
 	VkDevice device, uint64_t object, VkDebugReportObjectTypeEXT object_tag, uint64_t name, size_t tag_size, const void* tag)
 {
 	if (active) {
-		VkDebugMarkerObjectTagInfoEXT tag_info = { VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_TAG_INFO_EXT };
+		VkDebugMarkerObjectTagInfoEXT tag_info {};
+		tag_info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_TAG_INFO_EXT;
 		tag_info.objectType = object_tag;
 		tag_info.object = object;
 		tag_info.tagName = name;
@@ -76,7 +77,7 @@ void DebugMarker::set_object_tag(
 void DebugMarker::begin_region(VkCommandBuffer cmdbuffer, const char* marker_name, glm::vec4 color)
 {
 	if (active) {
-		VkDebugMarkerMarkerInfoEXT marker_info = {};
+		VkDebugMarkerMarkerInfoEXT marker_info {};
 		marker_info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
 		std::memcpy(marker_info.color, glm::value_ptr(color), sizeof(float) * 4);
 		marker_info.pMarkerName = marker_name;
@@ -87,7 +88,7 @@ void DebugMarker::begin_region(VkCommandBuffer cmdbuffer, const char* marker_nam
 void DebugMarker::insert(VkCommandBuffer cmdbuffer, std::string marker_name, glm::vec4 color)
 {
 	if (active) {
-		VkDebugMarkerMarkerInfoEXT marker_info = {};
+		VkDebugMarkerMarkerInfoEXT marker_info {};
 		marker_info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
 		memcpy(marker_info.color, &color[0], sizeof(float) * 4);
 		marker_info.pMarkerName = marker_name.c_str();

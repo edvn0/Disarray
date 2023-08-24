@@ -1,6 +1,8 @@
 #pragma once
 
-#include "core/Log.hpp"
+namespace Disarray::Log {
+std::string format(const char* const format, ...);
+}
 
 #if defined(IS_DEBUG) && defined(DEBUG_ALLOCATIONS)
 #define VMA_DEBUG_LOG_FORMAT(fmt, ...)                                                                                                               \

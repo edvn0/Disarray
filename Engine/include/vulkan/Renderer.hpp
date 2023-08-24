@@ -32,11 +32,14 @@ public:
 	void end_pass(Disarray::CommandExecutor&) override;
 
 	// IGraphics
-	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::GeometryProperties&) override;
-	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const glm::mat4& transform) override;
-	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4& transform) override;
-	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4& transform,
-		const std::uint32_t identifier) override;
+	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const GeometryProperties& = {}) override;
+	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const glm::mat4&) override;
+	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4&) override;
+	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4&, const std::uint32_t) override;
+	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&, const glm::mat4&,
+		const std::uint32_t) override;
+	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&, const glm::vec4&,
+		const glm::mat4&, const std::uint32_t) override;
 	void draw_planar_geometry(Disarray::Geometry, const Disarray::GeometryProperties&) override;
 	void submit_batched_geometry(Disarray::CommandExecutor&) override;
 	void on_batch_full(std::function<void(Disarray::Renderer&)>&& func) override { on_batch_full_func = func; }
@@ -64,6 +67,9 @@ public:
 
 	const PushConstant* get_push_constant() const override { return &pc; }
 	PushConstant& get_editable_push_constant() override { return pc; }
+
+	const UBO* get_ubo() const override { return &uniform; }
+	UBO& get_editable_ubo() override { return uniform; }
 
 private:
 	void add_geometry_to_batch(Geometry, const GeometryProperties&);

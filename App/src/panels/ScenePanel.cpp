@@ -1,9 +1,13 @@
 #include "panels/ScenePanel.hpp"
 
 #include "core/Formatters.hpp"
+#include "glm/common.hpp"
+#include "glm/ext/matrix_transform.hpp"
+#include "glm/gtx/dual_quaternion.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/ImageProperties.hpp"
 #include "graphics/Pipeline.hpp"
+#include "scene/Components.hpp"
 #include "ui/InterfaceLayer.hpp"
 #include "ui/UI.hpp"
 
@@ -133,7 +137,7 @@ void ScenePanel::interface()
 	UI::end();
 } // namespace Disarray::Client
 
-void Disarray::Client::ScenePanel::update(float)
+void Disarray::Client::ScenePanel::update(float, IGraphicsResource&)
 {
 	if (const auto& selected = scene.get_selected_entity(); selected && selected->is_valid()) {
 		*selected_entity = selected->get_identifier();
@@ -185,6 +189,16 @@ void ScenePanel::for_all_components(Entity& entity)
 			tex.texture.reset();
 			tex.texture = new_texture;
 		}
+	});
+
+	draw_component<Components::DirectionalLight>(entity, "Directional Light", [](Components::DirectionalLight& directional) {
+		auto& [direction, intensity] = directional;
+
+		if (glm::all(glm::isnan(direction)))
+			direction = glm::vec3(0.0f);
+
+		if (ImGui::DragFloat3("Direction", glm::value_ptr(direction))) { }
+		if (ImGui::DragFloat("Intensity", &intensity, 0.05f, 0.01f, 1.0f)) { }
 	});
 
 	draw_component<Components::Pipeline>(entity, "Pipeline", [&dev = device](Components::Pipeline& pipeline) {

@@ -62,7 +62,7 @@ Renderer::Renderer(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarra
 		.vertex_shader_key = "quad.vert",
 		.fragment_shader_key = "quad.frag",
 		.framebuffer = geometry_framebuffer,
-		.layout = { LayoutElement { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float2, "normals" },
+		.layout = { LayoutElement { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float3, "normals" },
 			{ ElementType::Float4, "colour" }, { ElementType::Uint, "identifier" } },
 		.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, sizeof(PushConstant) } },
 		.extent = swapchain.get_extent(),
@@ -82,6 +82,17 @@ Renderer::Renderer(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarra
 		pipeline_properties.line_width = 8.0f;
 		pipeline_properties.polygon_mode = PolygonMode::Line;
 		pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" } };
+		pipeline_cache.put(pipeline_properties);
+	}
+	{
+		// Line
+		pipeline_properties.framebuffer = quad_framebuffer;
+		pipeline_properties.pipeline_key = "line_id";
+		pipeline_properties.vertex_shader_key = "line_id.vert";
+		pipeline_properties.fragment_shader_key = "line_id.frag";
+		pipeline_properties.line_width = 8.0f;
+		pipeline_properties.polygon_mode = PolygonMode::Line;
+		pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" }, { ElementType::Uint, "id" } };
 		pipeline_cache.put(pipeline_properties);
 	}
 

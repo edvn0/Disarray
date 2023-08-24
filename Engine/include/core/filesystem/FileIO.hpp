@@ -14,7 +14,7 @@ template <class T> void write_to_file(std::string_view path, std::size_t size, s
 
 template <class T> static void write_to_file(std::string_view path, std::size_t size, const T* data)
 {
-	FS::write_to_file(std::move(path), size, Disarray::bit_cast<const void*>(data));
+	FS::write_to_file(std::move(path), size, Disarray::bit_cast<const char*>(data));
 }
 
 } // namespace Disarray::FS

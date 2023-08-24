@@ -5,6 +5,7 @@
 #include "core/Panel.hpp"
 #include "core/UsageBadge.hpp"
 #include "graphics/CommandExecutor.hpp"
+#include "graphics/Renderer.hpp"
 
 #include <queue>
 #include <vector>
@@ -20,7 +21,7 @@ public:
 	void handle_swapchain_recreation(Swapchain&) override;
 	void on_event(Event&) override;
 	void interface() override;
-	void update(float ts) override;
+	void update(float ts, IGraphicsResource&) override;
 	void destruct() override;
 	void render(Renderer&) override;
 	bool is_interface_layer() const override { return true; }

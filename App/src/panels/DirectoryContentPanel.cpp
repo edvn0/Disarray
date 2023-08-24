@@ -74,7 +74,7 @@ bool DirectoryContentPanel::traverse_up(bool force_reload)
 	return could;
 }
 
-void DirectoryContentPanel::update(float ts)
+void DirectoryContentPanel::update(float ts, IGraphicsResource&)
 {
 	if (changed) {
 		current_directory_content = path_and_content_cache[current];

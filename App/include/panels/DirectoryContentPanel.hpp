@@ -25,7 +25,7 @@ public:
 	bool can_traverse_up() const;
 
 	void construct(App&, Renderer&, ThreadPool&) override;
-	void update(float ts) override;
+	void update(float ts, IGraphicsResource&) override;
 	void interface() override;
 	void destruct() override;
 	void render(Renderer&) override;

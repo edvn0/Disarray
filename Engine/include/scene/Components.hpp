@@ -93,6 +93,18 @@ struct Tag {
 	std::string name {};
 };
 
+struct DirectionalLight {
+	glm::vec3 direction;
+	float intensity { .8f };
+
+	constexpr glm::vec4 compute() const { return { glm::normalize(direction), intensity }; }
+};
+
+struct PointLight {
+	glm::vec3 direction;
+	float intensity { .8f };
+};
+
 struct Inheritance {
 	std::unordered_set<Identifier> children {};
 	Identifier parent {};

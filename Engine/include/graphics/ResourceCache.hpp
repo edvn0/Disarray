@@ -30,8 +30,9 @@ public:
 
 	const Resource& put(const Props& props)
 	{
+		const auto key = create_key(props);
 		auto resource = create_from(props);
-		const auto& [pair, could] = storage.try_emplace(create_key(props), std::move(resource));
+		const auto& [pair, could] = storage.try_emplace(std::move(key), std::move(resource));
 		if (!could)
 			Log::error("ResourceCache - Put", "Could not insert resource.");
 		return pair->second;

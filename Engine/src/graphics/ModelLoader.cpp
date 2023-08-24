@@ -11,17 +11,6 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <execution>
 #include <glm/glm.hpp>
-#include <glm/gtx/hash.hpp>
-
-namespace std {
-template <> struct hash<Disarray::Vertex> {
-	size_t operator()(Disarray::Vertex const& vertex) const
-	{
-		return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.uvs) << 1)
-			^ ((hash<glm::vec3>()(vertex.normals) << 1) >> 1);
-	}
-};
-} // namespace std
 
 namespace Disarray {
 
@@ -37,11 +26,11 @@ ModelLoader::ModelLoader(const std::filesystem::path& path, const glm::mat4& ini
 		throw std::runtime_error(fmt::format("\n{}\n{}", warn, err));
 	}
 
-	std::unordered_map<Vertex, uint32_t> unique_vertices {};
+	std::unordered_map<ModelVertex, uint32_t> unique_vertices {};
 
 	for (const auto& shape : shapes) {
 		Collections::for_each(shape.mesh.indices, [&](const auto& index) {
-			Vertex vertex {};
+			ModelVertex vertex {};
 
 			vertex.pos = { attrib.vertices[3 * index.vertex_index + 0], attrib.vertices[3 * index.vertex_index + 1],
 				attrib.vertices[3 * index.vertex_index + 2] };

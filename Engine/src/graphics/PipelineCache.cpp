@@ -49,6 +49,4 @@ PipelineCache::PipelineCache(Disarray::Device& dev, const std::filesystem::path&
 	}
 }
 
-const Ref<Shader>& PipelineCache::get_shader(const std::string& key) { return shader_cache[key]; }
-
 } // namespace Disarray

@@ -364,7 +364,6 @@ Pipeline::~Pipeline()
 		return;
 
 	std::size_t size;
-
 	vkGetPipelineCacheData(supply_cast<Vulkan::Device>(device), cache, &size, nullptr);
 
 	std::vector<const void*> data;

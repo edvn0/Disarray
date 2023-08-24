@@ -10,6 +10,8 @@
 
 #include <concepts>
 #include <entt/entt.hpp>
+#include <mutex>
+#include <queue>
 #include <type_traits>
 
 namespace Disarray {
@@ -37,7 +39,7 @@ class Scene {
 public:
 	Scene(const Disarray::Device&, std::string_view);
 	~Scene();
-	void update(float);
+	void update(float, IGraphicsResource&);
 	void render(Disarray::Renderer&);
 	void construct(Disarray::App&, Disarray::Renderer&, Disarray::ThreadPool&);
 	void destruct();
@@ -99,12 +101,18 @@ private:
 	glm::vec2 vp_max { 1 };
 	glm::vec2 vp_min { 1 };
 
-	Ref<Disarray::Framebuffer> framebuffer;
-	Ref<Disarray::Framebuffer> identity_framebuffer;
-	Ref<Disarray::CommandExecutor> command_executor;
+	Ref<Disarray::Framebuffer> framebuffer {};
+	Ref<Disarray::Framebuffer> identity_framebuffer {};
+	Ref<Disarray::CommandExecutor> command_executor {};
 
 	// Should contain some kind of container for entities :)
 	entt::registry registry;
+
+	std::queue<std::function<void(void)>> thread_pool_callbacks {};
+	std::future<void> final_pool_callback {};
+	std::atomic_bool should_run_callbacks { true };
+	std::condition_variable callback_cv {};
+	std::mutex callback_mutex {};
 };
 
 } // namespace Disarray

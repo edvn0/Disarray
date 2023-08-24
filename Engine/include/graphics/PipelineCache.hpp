@@ -76,7 +76,8 @@ public:
 	}
 
 	std::string create_key_impl(const PipelineCacheCreationProperties& props) { return props.pipeline_key; }
-	const Ref<Shader>& get_shader(const std::string&);
+
+	template <class Key> const Ref<Shader>& get_shader(Key&& key) { return shader_cache.at(std::forward<Key>(key)); }
 
 private:
 	std::unordered_map<std::string, Ref<Shader>> shader_cache {};

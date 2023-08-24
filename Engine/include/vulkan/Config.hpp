@@ -11,7 +11,7 @@ static constexpr bool is_debug = true;
 static constexpr bool is_debug = false;
 #endif
 
-#ifdef WIN32
+#ifdef DISARRAY_WINDOWS
 static constexpr auto is_windows = true;
 #else
 static constexpr auto is_windows = false;

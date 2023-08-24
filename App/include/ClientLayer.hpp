@@ -15,7 +15,7 @@ public:
 	void construct(App&, Renderer&, ThreadPool&) override;
 	void handle_swapchain_recreation(Swapchain&) override;
 	void on_event(Event&) override;
-	void update(float) override;
+	void update(float, IGraphicsResource&) override;
 	void render(Renderer&) override;
 	void destruct() override;
 

@@ -97,11 +97,15 @@ void IndependentCommandExecutor::destroy_executor()
 	const auto& vk_device = supply_cast<Vulkan::Device>(device);
 
 	vkDestroyCommandPool(vk_device, command_pool, nullptr);
-	if (props.record_stats)
+	if (props.record_stats) {
 		for (auto& pool : timestamp_query_pools) {
-			Log::error("IndependentCommandExecutor - Destroy Executor", "Destroying query pool: {}", FormattingUtilities::pointer_to_string(pool));
 			vkDestroyQueryPool(vk_device, pool, nullptr);
 		}
+
+		for (auto& pool : pipeline_statistics_query_pools) {
+			vkDestroyQueryPool(vk_device, pool, nullptr);
+		}
+	}
 	for (auto& fence : fences)
 		vkDestroyFence(vk_device, fence, nullptr);
 }

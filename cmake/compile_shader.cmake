@@ -22,13 +22,14 @@ function(compile_shaders)
             COMMENT "Creating ${SHADER_BINARY_DIR}"
     )
 
-    if(${Vulkan_glslangValidator_FOUND})
+    if(${Vulkan_glslc_FOUND})
+        set(SHADER_INCLUDE_DIRECTORY "${SHADER_SOURCE_DIR}/Include")
         foreach(source IN LISTS SHADERS)
             get_filename_component(FILENAME ${source} NAME)
             add_custom_command(
                     COMMAND
-                    ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE}
-                    -V ${source} -o ${SHADER_BINARY_DIR}/${FILENAME}.spv
+                    ${Vulkan_GLSLC_EXECUTABLE}
+                    ${source} -I${SHADER_INCLUDE_DIRECTORY} -o ${SHADER_BINARY_DIR}/${FILENAME}.spv
                     OUTPUT ${SHADER_BINARY_DIR}/${FILENAME}.spv
                     DEPENDS ${source} ${SHADER_BINARY_DIR}
             )
@@ -38,6 +39,6 @@ function(compile_shaders)
         add_custom_target(shaders ALL DEPENDS ${SPV_SHADERS})
         set_source_files_properties(shaders PROPERTIES SYMBOLIC 1)
     else()
-        message(AUTHOR_WARNING "Could not find glslangValidator. Won't compile shaders.")
+        message(AUTHOR_WARNING "Could not find glslc. Won't compile shaders.")
     endif()
 endfunction()
