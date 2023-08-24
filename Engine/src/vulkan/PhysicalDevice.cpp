@@ -10,7 +10,9 @@
 #include "vulkan/PhysicalDevice.hpp"
 #include "vulkan/QueueFamilyIndex.hpp"
 #include "vulkan/SwapchainUtilities.hpp"
-#include "vulkan/vulkan_core.h"
+#include "vulkan/exceptions/VulkanExceptions.hpp"
+
+#include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {
 
@@ -57,7 +59,7 @@ PhysicalDevice::PhysicalDevice(Disarray::Instance& inst, Disarray::Surface& surf
 	vkEnumeratePhysicalDevices(*instance, &device_count, nullptr);
 
 	if (device_count == 0) {
-		throw std::runtime_error("failed to find GPUs with Vulkan support!");
+		throw NoSuitableDeviceException("failed to find GPUs with Vulkan support!");
 	}
 
 	std::vector<VkPhysicalDevice> devices(device_count);
@@ -71,7 +73,7 @@ PhysicalDevice::PhysicalDevice(Disarray::Instance& inst, Disarray::Surface& surf
 	}
 
 	if (physical_device == VK_NULL_HANDLE) {
-		throw std::runtime_error("failed to find a suitable GPU!");
+		throw NoSuitableDeviceException("failed to find a suitable GPU!");
 	}
 
 	vkGetPhysicalDeviceProperties(physical_device, &device_properties);

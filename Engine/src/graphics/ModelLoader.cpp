@@ -1,6 +1,7 @@
 #include "DisarrayPCH.hpp"
 
 #include "core/Collections.hpp"
+#include "core/exceptions/GeneralExceptions.hpp"
 #include "graphics/ModelLoader.hpp"
 
 #include <algorithm>
@@ -23,7 +24,11 @@ ModelLoader::ModelLoader(const std::filesystem::path& path, const glm::mat4& ini
 	std::string warn;
 
 	if (std::string err; !tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.string().c_str())) {
-		throw std::runtime_error(fmt::format("\n{}\n{}", warn, err));
+		if (warn.empty()) {
+			throw CouldNotLoadModelException(fmt::format("Error: {}", err));
+		} else {
+			throw CouldNotLoadModelException(fmt::format("Error: {}, Warning: {}", err, warn));
+		}
 	}
 
 	std::unordered_map<ModelVertex, uint32_t> unique_vertices {};
@@ -52,7 +57,7 @@ ModelLoader::ModelLoader(const std::filesystem::path& path, const glm::mat4& ini
 	}
 
 	if (needs_rotate) {
-		Collections::for_each(vertices, [&rot = initial_rotation](auto& vertex) { vertex.rotate_by(rot); });
+		Collections::parallel_for_each(vertices, [&rot = initial_rotation](auto& vertex) { vertex.rotate_by(rot); });
 	}
 }
 

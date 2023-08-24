@@ -23,7 +23,7 @@ namespace {
 		case ShaderType::Compute:
 			return VK_SHADER_STAGE_COMPUTE_BIT;
 		default:
-			throw std::runtime_error("Could not map to Vulkan stage");
+			unreachable("Could not map to Vulkan stage");
 		}
 	}
 
@@ -64,7 +64,7 @@ std::string Shader::read_file(const std::filesystem::path& path)
 {
 	std::ifstream stream { path.string().c_str(), std::ios::ate | std::ios::in | std::ios::binary };
 	if (!stream) {
-		throw std::runtime_error("Could not open stream to file");
+		throw CouldNotOpenStreamException("Could not open stream to file");
 	}
 
 	const std::size_t size = stream.tellg();

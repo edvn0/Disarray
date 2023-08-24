@@ -2,6 +2,7 @@
 
 #include "core/PointerDefinition.hpp"
 #include "core/PolymorphicCast.hpp"
+#include "core/exceptions/GeneralExceptions.hpp"
 
 #include <cstdint>
 #include <memory>
@@ -61,6 +62,6 @@ decltype(auto) supply_cast(const From& obj)
 	return polymorphic_cast<To>(obj).supply();
 }
 
-[[noreturn]] inline auto unreachable() { throw std::runtime_error("Reached unreachable code."); }
+[[noreturn]] inline auto unreachable(std::string_view info = "Reached unreachable code") { throw UnreachableException { info }; }
 
 } // namespace Disarray

@@ -7,6 +7,7 @@
 #include "vulkan/Instance.hpp"
 #include "vulkan/QueueFamilyIndex.hpp"
 #include "vulkan/Verify.hpp"
+#include "vulkan/exceptions/VulkanExceptions.hpp"
 
 #include <GLFW/glfw3.h>
 #include <cstring>
@@ -85,7 +86,7 @@ Instance::Instance(const std::vector<const char*>& supported_layers)
 	const auto check_support = check_validation_layer_support();
 	Log::info("Instance", "Requested: {}, supported: {}", Config::use_validation_layers, check_support);
 	if (Config::use_validation_layers && !check_support) {
-		throw std::runtime_error("Could not configure validation layers, and it was asked for.");
+		throw CouldNotCreateValidationLayersException("Could not configure validation layers, and it was asked for.");
 	}
 
 	VkApplicationInfo app_info {};

@@ -2,6 +2,7 @@
 
 #include "core/DisarrayObject.hpp"
 #include "core/Types.hpp"
+#include "core/exceptions/GeneralExceptions.hpp"
 
 #include <optional>
 #include <stdexcept>
@@ -34,8 +35,9 @@ protected:
 private:
 	template <typename T> std::uint32_t get_or_throw(T t) const
 	{
-		if (!t)
-			throw std::runtime_error("Missing value");
+		if (!t) {
+			throw MissingValueException("Missing value");
+		}
 		return *t;
 	}
 

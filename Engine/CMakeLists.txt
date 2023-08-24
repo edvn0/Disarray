@@ -50,6 +50,8 @@ set(ENGINE_SOURCES
     include/core/ThreadPool.hpp
     include/core/FileWatcher.hpp
     include/core/App.hpp
+    include/core/exceptions/BaseException.hpp
+    include/core/exceptions/GeneralExceptions.hpp
     include/core/Hashes.hpp
     include/core/UsageBadge.hpp
     include/core/ReferenceCounted.hpp
@@ -94,6 +96,7 @@ set(ENGINE_SOURCES
     include/vulkan/ExtensionSupport.hpp
     include/vulkan/CommandExecutor.hpp
     include/vulkan/Allocator.hpp
+    include/vulkan/exceptions/VulkanExceptions.hpp
     include/vulkan/Window.hpp
     include/vulkan/Device.hpp
     include/vulkan/Material.hpp
@@ -148,6 +151,7 @@ set(ENGINE_SOURCES
     src/scene/ComponentDeserialisers.cpp
     src/scene/SerialisationTypeConversions.cpp
     src/core/DataBuffer.cpp
+    src/core/exceptions/BaseException.cpp
     src/core/filesystem/FileIO.cpp
     src/core/Layer.cpp
     src/core/ReferenceCounted.cpp

@@ -94,7 +94,7 @@ struct Tag {
 };
 
 struct DirectionalLight {
-	glm::vec3 direction;
+	glm::vec3 direction { 1, 0, 0 };
 	float intensity { .8f };
 
 	constexpr glm::vec4 compute() const { return { glm::normalize(direction), intensity }; }

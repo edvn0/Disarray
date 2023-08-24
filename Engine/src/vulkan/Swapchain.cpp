@@ -20,6 +20,7 @@
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/SwapchainUtilities.hpp"
 #include "vulkan/Verify.hpp"
+#include "vulkan/exceptions/VulkanExceptions.hpp"
 
 #include <algorithm>
 #include <vulkan/vulkan.h>
@@ -83,7 +84,7 @@ bool Swapchain::prepare_frame()
 		recreate_swapchain();
 		return false;
 	} else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-		throw std::runtime_error("failed to acquire swap chain image!");
+		throw SwapchainImageAcquisitionException("failed to acquire swap chain image!");
 	}
 
 	verify(vkResetFences(vk_device, 1, &in_flight_fences[get_current_frame()]));
@@ -125,7 +126,7 @@ void Swapchain::present()
 		recreate_swapchain();
 		window.reset_resize_status();
 	} else if (result != VK_SUCCESS) {
-		throw std::runtime_error("failed to present swap chain image!");
+		throw CouldNotPresentSwapchainException("failed to present swap chain image!");
 	}
 
 	current_frame = (current_frame + 1) % image_count();
@@ -135,30 +136,30 @@ void Swapchain::present()
 void Swapchain::recreate_renderpass()
 {
 	// Render Pass
-	VkAttachmentDescription colorAttachmentDesc = {};
+	VkAttachmentDescription colour_attachment_description = {};
 	// Color attachment
-	colorAttachmentDesc.format = VK_FORMAT_B8G8R8A8_SRGB;
-	colorAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-	colorAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	colorAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	colorAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	colorAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	colorAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	colorAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	colour_attachment_description.format = VK_FORMAT_B8G8R8A8_SRGB;
+	colour_attachment_description.samples = VK_SAMPLE_COUNT_1_BIT;
+	colour_attachment_description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colour_attachment_description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colour_attachment_description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colour_attachment_description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colour_attachment_description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	colour_attachment_description.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-	VkAttachmentReference colorReference = {};
-	colorReference.attachment = 0;
-	colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	VkAttachmentReference colour_reference = {};
+	colour_reference.attachment = 0;
+	colour_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-	VkSubpassDescription subpassDescription = {};
-	subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpassDescription.colorAttachmentCount = 1;
-	subpassDescription.pColorAttachments = &colorReference;
-	subpassDescription.inputAttachmentCount = 0;
-	subpassDescription.pInputAttachments = nullptr;
-	subpassDescription.preserveAttachmentCount = 0;
-	subpassDescription.pPreserveAttachments = nullptr;
-	subpassDescription.pResolveAttachments = nullptr;
+	VkSubpassDescription subpass_description = {};
+	subpass_description.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass_description.colorAttachmentCount = 1;
+	subpass_description.pColorAttachments = &colour_reference;
+	subpass_description.inputAttachmentCount = 0;
+	subpass_description.pInputAttachments = nullptr;
+	subpass_description.preserveAttachmentCount = 0;
+	subpass_description.pPreserveAttachments = nullptr;
+	subpass_description.pResolveAttachments = nullptr;
 
 	VkSubpassDependency dependency = {};
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -168,18 +169,18 @@ void Swapchain::recreate_renderpass()
 	dependency.srcAccessMask = 0;
 	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-	VkRenderPassCreateInfo renderPassInfo = {};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = 1;
-	renderPassInfo.pAttachments = &colorAttachmentDesc;
-	renderPassInfo.subpassCount = 1;
-	renderPassInfo.pSubpasses = &subpassDescription;
-	renderPassInfo.dependencyCount = 1;
-	renderPassInfo.pDependencies = &dependency;
+	VkRenderPassCreateInfo render_pass_info = {};
+	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	render_pass_info.attachmentCount = 1;
+	render_pass_info.pAttachments = &colour_attachment_description;
+	render_pass_info.subpassCount = 1;
+	render_pass_info.pSubpasses = &subpass_description;
+	render_pass_info.dependencyCount = 1;
+	render_pass_info.pDependencies = &dependency;
 
 	render_pass = RenderPass::construct(device);
 	auto& vk_render_pass = cast_to<Vulkan::RenderPass>(*render_pass);
-	vk_render_pass.create_with(renderPassInfo);
+	vk_render_pass.create_with(render_pass_info);
 }
 
 void Swapchain::recreate_swapchain(Disarray::Swapchain* old, bool should_clean)

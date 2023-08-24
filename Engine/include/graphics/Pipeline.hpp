@@ -65,7 +65,7 @@ static constexpr auto to_size(ElementType type)
 	case ElementType::Uint:
 		return sizeof(unsigned);
 	default:
-		throw std::runtime_error("Could not map to size.");
+		unreachable("Could not map to size.");
 	}
 }
 

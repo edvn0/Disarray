@@ -1,6 +1,7 @@
 #include "DisarrayPCH.hpp"
 
 #include "core/Log.hpp"
+#include "core/exceptions/GeneralExceptions.hpp"
 
 #include <cstdarg>
 #include <cstddef>
@@ -41,8 +42,9 @@ namespace Log {
 			va_start(args, format);
 			const auto status = std::vsnprintf(temp.data(), temp.size(), format, args);
 			va_end(args);
-			if (status < 0)
-				throw std::runtime_error { "string formatting error" };
+			if (status < 0) {
+				throw CouldNotFormatException { "string formatting error" };
+			}
 			length = static_cast<std::size_t>(status);
 		}
 		return std::string { temp.data(), length };

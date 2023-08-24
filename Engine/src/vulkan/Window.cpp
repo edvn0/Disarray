@@ -6,8 +6,10 @@
 #include "core/events/ApplicationEvent.hpp"
 #include "core/events/KeyEvent.hpp"
 #include "core/events/MouseEvent.hpp"
+#include "core/exceptions/GeneralExceptions.hpp"
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/Window.hpp"
+#include "vulkan/exceptions/VulkanExceptions.hpp"
 
 #include <graphics/ImageLoader.hpp>
 #include <string>
@@ -126,7 +128,7 @@ Window::Window(const Disarray::WindowProperties& properties)
 	: Disarray::Window(properties)
 {
 	if (const auto initialised = glfwInit(); !initialised) {
-		throw;
+		throw CouldNotInitialiseWindowingAPI("Could not initialise GLFW.");
 	}
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -173,7 +175,7 @@ Window::Window(const Disarray::WindowProperties& properties)
 	}
 
 	if (window == nullptr)
-		throw;
+		throw WindowingAPIException("Window was nullptr");
 
 	instance = make_scope<Vulkan::Instance>();
 	surface = make_scope<Vulkan::Surface>(*instance, window);

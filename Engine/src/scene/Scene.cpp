@@ -199,22 +199,8 @@ void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray
 
 	{
 		auto sun = create("Sun");
-		sun.add_component<Components::Mesh>(Mesh::construct(device,
-			{
-				.path = "Assets/Models/sphere.mesh",
-			}));
-		const auto& sun_vert = renderer.get_pipeline_cache().get_shader("sun.vert");
-		const auto& sun_frag = renderer.get_pipeline_cache().get_shader("sun.frag");
-		props.vertex_shader = sun_vert;
-		props.fragment_shader = sun_frag;
-		sun.add_component<Components::Pipeline>(Pipeline::construct(device, props));
 		sun.add_component<Components::Texture>(nullptr, glm::vec4 { 0.6, 0.8, 0.1, 1.0 });
 		sun.add_component<Components::DirectionalLight>();
-		sun.add_component<Components::Material>(Material::construct(device,
-			{
-				.vertex_shader = sun_vert,
-				.fragment_shader = sun_frag,
-			}));
 		sun.get_components<Components::Transform>().position = { 5, -5, 5 };
 	}
 
