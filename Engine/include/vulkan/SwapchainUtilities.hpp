@@ -1,18 +1,20 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+
+#include <GLFW/glfw3.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <limits>
+#include <vector>
+
 #include "core/Types.hpp"
 #include "core/Window.hpp"
 #include "graphics/PhysicalDevice.hpp"
 #include "graphics/Surface.hpp"
 #include "vulkan/PhysicalDevice.hpp"
 #include "vulkan/Surface.hpp"
-
-#include <GLFW/glfw3.h>
-#include <algorithm>
-#include <cstdint>
-#include <limits>
-#include <vector>
-#include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {
 

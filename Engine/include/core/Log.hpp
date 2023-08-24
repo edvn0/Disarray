@@ -1,8 +1,9 @@
 #pragma once
 
-#include <chrono>
 #include <fmt/chrono.h>
 #include <fmt/core.h>
+
+#include <chrono>
 #include <string>
 
 namespace Disarray {

@@ -1,5 +1,9 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
+#include <filesystem>
+
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
@@ -8,9 +12,6 @@
 #include "graphics/Pipeline.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/VertexBuffer.hpp"
-
-#include <filesystem>
-#include <glm/glm.hpp>
 
 namespace Disarray {
 

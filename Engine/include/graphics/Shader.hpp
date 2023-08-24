@@ -1,12 +1,12 @@
 #pragma once
 
+#include <filesystem>
+#include <string_view>
+
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
 #include "graphics/Device.hpp"
-
-#include <filesystem>
-#include <string_view>
 
 namespace Disarray {
 

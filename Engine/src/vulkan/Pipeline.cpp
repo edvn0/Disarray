@@ -2,6 +2,8 @@
 
 #include "graphics/Pipeline.hpp"
 
+#include <vulkan/vulkan.h>
+
 #include "core/Formatters.hpp"
 #include "core/Types.hpp"
 #include "core/filesystem/FileIO.hpp"
@@ -14,7 +16,6 @@
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Shader.hpp"
 #include "vulkan/Swapchain.hpp"
-#include "vulkan/vulkan_core.h"
 
 namespace Disarray::Vulkan {
 

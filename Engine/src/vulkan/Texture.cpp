@@ -1,10 +1,11 @@
 #include "DisarrayPCH.hpp"
 
+#include "vulkan/Texture.hpp"
+
 #include "core/Log.hpp"
 #include "graphics/Image.hpp"
 #include "graphics/ImageLoader.hpp"
 #include "vulkan/Image.hpp"
-#include "vulkan/Texture.hpp"
 
 namespace Disarray::Vulkan {
 

@@ -1,10 +1,11 @@
 #pragma once
 
-#include "core/Types.hpp"
+#include <fmt/core.h>
 
 #include <cstddef>
 #include <cstdint>
-#include <fmt/core.h>
+
+#include "core/Types.hpp"
 
 namespace Disarray {
 

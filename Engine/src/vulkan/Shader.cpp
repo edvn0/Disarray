@@ -1,14 +1,15 @@
 #include "DisarrayPCH.hpp"
 
 #include "graphics/Shader.hpp"
-#include "vulkan/Device.hpp"
-#include "vulkan/Shader.hpp"
-#include "vulkan/Structures.hpp"
-#include "vulkan/Verify.hpp"
 
 #include <bit>
 #include <fstream>
 #include <stdexcept>
+
+#include "vulkan/Device.hpp"
+#include "vulkan/Shader.hpp"
+#include "vulkan/Structures.hpp"
+#include "vulkan/Verify.hpp"
 
 namespace Disarray::Vulkan {
 

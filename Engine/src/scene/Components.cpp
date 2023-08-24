@@ -1,7 +1,8 @@
 #include "DisarrayPCH.hpp"
 
-#include "graphics/Mesh.hpp"
 #include "scene/Components.hpp"
+
+#include "graphics/Mesh.hpp"
 #include "scene/Entity.hpp"
 
 namespace Disarray::Components {

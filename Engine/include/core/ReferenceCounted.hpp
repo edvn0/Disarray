@@ -1,12 +1,12 @@
 #pragma once
 
-#include "util/BitCast.hpp"
-
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
 #include <utility>
+
+#include "util/BitCast.hpp"
 
 namespace Disarray {
 

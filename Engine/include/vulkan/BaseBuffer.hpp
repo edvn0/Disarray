@@ -1,12 +1,12 @@
 #pragma once
 
+#include <vk_mem_alloc.h>
+
 #include "PropertySupplier.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "graphics/BufferProperties.hpp"
 #include "graphics/Device.hpp"
 #include "graphics/Swapchain.hpp"
-
-#include <vk_mem_alloc.h>
 
 namespace Disarray::Vulkan {
 

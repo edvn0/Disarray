@@ -1,12 +1,13 @@
 #pragma once
 
-#include "scene/Component.hpp"
-#include "scene/Scene.hpp"
-
 #include <entt/entt.hpp>
 #include <fmt/core.h>
+
 #include <string>
 #include <string_view>
+
+#include "scene/Component.hpp"
+#include "scene/Scene.hpp"
 
 namespace Disarray {
 

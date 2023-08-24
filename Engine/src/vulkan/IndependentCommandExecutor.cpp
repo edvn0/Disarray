@@ -4,6 +4,11 @@
 #include "vulkan/CommandExecutor.hpp"
 // clang-format on
 
+#include <vulkan/vulkan.h>
+
+#include <core/Ensure.hpp>
+#include <util/FormattingUtilities.hpp>
+
 #include "core/Log.hpp"
 #include "core/Types.hpp"
 #include "vulkan/Config.hpp"
@@ -12,10 +17,6 @@
 #include "vulkan/PhysicalDevice.hpp"
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/Verify.hpp"
-
-#include <core/Ensure.hpp>
-#include <util/FormattingUtilities.hpp>
-#include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {
 

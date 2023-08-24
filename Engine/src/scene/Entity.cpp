@@ -1,11 +1,12 @@
 #include "DisarrayPCH.hpp"
 
-#include "core/Log.hpp"
-#include "scene/Components.hpp"
 #include "scene/Entity.hpp"
-#include "util/FormattingUtilities.hpp"
 
 #include <fmt/format.h>
+
+#include "core/Log.hpp"
+#include "scene/Components.hpp"
+#include "util/FormattingUtilities.hpp"
 
 auto fmt::formatter<entt::entity>::format(entt::entity c, fmt::format_context& ctx) const -> decltype(ctx.out())
 {

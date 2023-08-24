@@ -1,7 +1,11 @@
 #include "DisarrayPCH.hpp"
 
-#include "core/AllocatorConfigurator.hpp"
 #include "core/App.hpp"
+
+#include <filesystem>
+#include <memory>
+
+#include "core/AllocatorConfigurator.hpp"
 #include "core/Clock.hpp"
 #include "core/DebugConfigurator.hpp"
 #include "core/Formatters.hpp"
@@ -12,9 +16,6 @@
 #include "graphics/Renderer.hpp"
 #include "ui/InterfaceLayer.hpp"
 #include "ui/UI.hpp"
-
-#include <filesystem>
-#include <memory>
 
 namespace Disarray {
 

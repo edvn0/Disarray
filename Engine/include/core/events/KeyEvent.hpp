@@ -1,9 +1,9 @@
 #pragma once
 
+#include <sstream>
+
 #include "Event.hpp"
 #include "core/KeyCode.hpp"
-
-#include <sstream>
 
 namespace Disarray {
 

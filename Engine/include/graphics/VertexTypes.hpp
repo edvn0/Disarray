@@ -1,8 +1,8 @@
 #pragma once
 
-#include "core/Concepts.hpp"
-
 #include <glm/glm.hpp>
+
+#include "core/Concepts.hpp"
 
 namespace Disarray {
 

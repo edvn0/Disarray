@@ -5,6 +5,11 @@
 #include "vulkan/Renderer.hpp"
 // clang-format on
 
+#include <glm/ext/matrix_transform.hpp>
+#include <vulkan/vulkan.h>
+
+#include <array>
+
 #include "core/Clock.hpp"
 #include "core/Types.hpp"
 #include "graphics/Pipeline.hpp"
@@ -19,10 +24,6 @@
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/UniformBuffer.hpp"
 #include "vulkan/VertexBuffer.hpp"
-
-#include <array>
-#include <glm/ext/matrix_transform.hpp>
-#include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {
 

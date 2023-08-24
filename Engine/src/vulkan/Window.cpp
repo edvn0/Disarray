@@ -1,5 +1,11 @@
 #include "DisarrayPCH.hpp"
 
+#include "vulkan/Window.hpp"
+
+#include <graphics/ImageLoader.hpp>
+
+#include <string>
+
 #include "GLFW/glfw3.h"
 #include "core/App.hpp"
 #include "core/Log.hpp"
@@ -8,11 +14,7 @@
 #include "core/events/MouseEvent.hpp"
 #include "core/exceptions/GeneralExceptions.hpp"
 #include "vulkan/Swapchain.hpp"
-#include "vulkan/Window.hpp"
 #include "vulkan/exceptions/VulkanExceptions.hpp"
-
-#include <graphics/ImageLoader.hpp>
-#include <string>
 
 namespace Disarray::Vulkan {
 

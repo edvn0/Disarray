@@ -1,19 +1,22 @@
 #include "DisarrayPCH.hpp"
 
-#include "Forward.hpp"
-#include "core/FileWatcher.hpp"
-#include "core/Types.hpp"
-#include "core/UniquelyIdentifiable.hpp"
 #include "ui/UI.hpp"
-#include "util/BitCast.hpp"
-#include "vulkan/Image.hpp"
-#include "vulkan/Texture.hpp"
-#include "vulkan/vulkan_core.h"
+
+#include <vulkan/vulkan.h>
 
 #include <GLFW/glfw3.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <imgui.h>
+
 #include <unordered_map>
+
+#include "Forward.hpp"
+#include "core/FileWatcher.hpp"
+#include "core/Types.hpp"
+#include "core/UniquelyIdentifiable.hpp"
+#include "util/BitCast.hpp"
+#include "vulkan/Image.hpp"
+#include "vulkan/Texture.hpp"
 
 namespace Disarray::UI {
 

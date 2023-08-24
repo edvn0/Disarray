@@ -1,5 +1,10 @@
 #pragma once
 
+#include <cstdint>
+#include <stdexcept>
+#include <utility>
+#include <vector>
+
 #include "Forward.hpp"
 #include "PushConstantLayout.hpp"
 #include "core/DisarrayObject.hpp"
@@ -9,11 +14,6 @@
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Shader.hpp"
 #include "graphics/Swapchain.hpp"
-
-#include <cstdint>
-#include <stdexcept>
-#include <utility>
-#include <vector>
 
 using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;
 

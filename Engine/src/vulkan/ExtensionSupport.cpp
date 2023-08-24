@@ -1,11 +1,12 @@
 #include "DisarrayPCH.hpp"
 
-#include "vulkan/Config.hpp"
 #include "vulkan/ExtensionSupport.hpp"
-#include "vulkan/PhysicalDevice.hpp"
 
 #include <set>
 #include <vector>
+
+#include "vulkan/Config.hpp"
+#include "vulkan/PhysicalDevice.hpp"
 
 namespace Disarray::Vulkan {
 

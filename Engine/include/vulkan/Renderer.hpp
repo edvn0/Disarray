@@ -1,5 +1,9 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
+#include <array>
+
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/IndexBuffer.hpp"
 #include "graphics/Pipeline.hpp"
@@ -10,9 +14,6 @@
 #include "graphics/UniformBuffer.hpp"
 #include "graphics/VertexBuffer.hpp"
 #include "graphics/VertexTypes.hpp"
-
-#include <array>
-#include <glm/glm.hpp>
 
 namespace Disarray::Vulkan {
 

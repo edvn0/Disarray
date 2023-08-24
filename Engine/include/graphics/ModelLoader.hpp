@@ -1,9 +1,9 @@
 #pragma once
 
-#include "graphics/ModelVertex.hpp"
-
 #include <string>
 #include <vector>
+
+#include "graphics/ModelVertex.hpp"
 
 namespace Disarray {
 

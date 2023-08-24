@@ -1,16 +1,19 @@
 #include "DisarrayPCH.hpp"
 
+#include "vulkan/RenderPass.hpp"
+
+#include <vulkan/DebugMarker.hpp>
+#include <vulkan/vulkan.h>
+
+#include <core/Ensure.hpp>
+
+#include <array>
+
 #include "core/Types.hpp"
 #include "graphics/ImageProperties.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Image.hpp"
-#include "vulkan/RenderPass.hpp"
 #include "vulkan/Verify.hpp"
-#include "vulkan/vulkan_core.h"
-
-#include <array>
-#include <core/Ensure.hpp>
-#include <vulkan/DebugMarker.hpp>
 
 namespace Disarray::Vulkan {
 

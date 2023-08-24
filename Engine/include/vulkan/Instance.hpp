@@ -1,11 +1,12 @@
 #pragma once
 
-#include "graphics/Instance.hpp"
-#include "vulkan/PropertySupplier.hpp"
+#include <vulkan/vulkan.h>
 
 #include <string_view>
 #include <vector>
-#include <vulkan/vulkan.h>
+
+#include "graphics/Instance.hpp"
+#include "vulkan/PropertySupplier.hpp"
 
 namespace Disarray::Vulkan {
 

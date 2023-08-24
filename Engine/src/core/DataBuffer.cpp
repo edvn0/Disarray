@@ -1,10 +1,11 @@
 #include "DisarrayPCH.hpp"
 
 #include "core/DataBuffer.hpp"
-#include "core/Log.hpp"
 
 #include <cstring>
 #include <utility>
+
+#include "core/Log.hpp"
 
 namespace Disarray {
 

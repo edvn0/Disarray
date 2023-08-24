@@ -1,14 +1,14 @@
 #pragma once
 
+#include <queue>
+#include <vector>
+
 #include "Forward.hpp"
 #include "core/Layer.hpp"
 #include "core/Panel.hpp"
 #include "core/UsageBadge.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Renderer.hpp"
-
-#include <queue>
-#include <vector>
 
 namespace Disarray::UI {
 

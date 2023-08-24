@@ -1,7 +1,8 @@
 #include "DisarrayPCH.hpp"
 
-#include "core/App.hpp"
 #include "core/Window.hpp"
+
+#include "core/App.hpp"
 #include "vulkan/Window.hpp"
 
 namespace Disarray {

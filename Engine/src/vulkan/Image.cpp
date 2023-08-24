@@ -1,20 +1,21 @@
 #include "DisarrayPCH.hpp"
 
+#include "graphics/Image.hpp"
+
+#include <vulkan/vulkan.h>
+
+#include <core/ThreadPool.hpp>
+#include <stb_image_write.h>
+
 #include "core/Ensure.hpp"
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
-#include "graphics/Image.hpp"
 #include "graphics/ImageProperties.hpp"
 #include "util/FormattingUtilities.hpp"
 #include "vulkan/Allocator.hpp"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Image.hpp"
-#include "vulkan/vulkan_core.h"
-
-#include <core/ThreadPool.hpp>
-#include <stb_image_write.h>
-#include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {
 

@@ -1,5 +1,15 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
+#include <magic_enum.hpp>
+
+#include <array>
+#include <filesystem>
+#include <functional>
+#include <unordered_map>
+#include <unordered_set>
+
 #include "Forward.hpp"
 #include "core/Concepts.hpp"
 #include "core/Hashes.hpp"
@@ -8,14 +18,6 @@
 #include "graphics/Image.hpp"
 #include "graphics/Shader.hpp"
 #include "graphics/Texture.hpp"
-
-#include <array>
-#include <filesystem>
-#include <functional>
-#include <glm/glm.hpp>
-#include <magic_enum.hpp>
-#include <unordered_map>
-#include <unordered_set>
 
 namespace Disarray::UI {
 

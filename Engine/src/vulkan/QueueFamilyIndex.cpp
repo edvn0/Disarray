@@ -1,9 +1,10 @@
 #include "DisarrayPCH.hpp"
 
+#include "vulkan/QueueFamilyIndex.hpp"
+
 #include "graphics/PhysicalDevice.hpp"
 #include "graphics/Surface.hpp"
 #include "vulkan/PhysicalDevice.hpp"
-#include "vulkan/QueueFamilyIndex.hpp"
 #include "vulkan/Surface.hpp"
 
 namespace Disarray::Vulkan {

@@ -1,7 +1,10 @@
 #include "DisarrayPCH.hpp"
 
-#include "graphics/Instance.hpp"
 #include "graphics/PhysicalDevice.hpp"
+
+#include <vulkan/vulkan.h>
+
+#include "graphics/Instance.hpp"
 #include "graphics/QueueFamilyIndex.hpp"
 #include "graphics/Surface.hpp"
 #include "vulkan/ExtensionSupport.hpp"
@@ -11,8 +14,6 @@
 #include "vulkan/QueueFamilyIndex.hpp"
 #include "vulkan/SwapchainUtilities.hpp"
 #include "vulkan/exceptions/VulkanExceptions.hpp"
-
-#include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {
 

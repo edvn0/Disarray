@@ -1,7 +1,8 @@
 #include "DisarrayPCH.hpp"
 
-#include "core/Input.hpp"
 #include "scene/Camera.hpp"
+
+#include "core/Input.hpp"
 
 namespace Disarray {
 

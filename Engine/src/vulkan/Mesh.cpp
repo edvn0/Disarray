@@ -1,9 +1,10 @@
 #include "DisarrayPCH.hpp"
 
+#include "vulkan/Mesh.hpp"
+
 #include "graphics/IndexBuffer.hpp"
 #include "graphics/ModelLoader.hpp"
 #include "graphics/VertexBuffer.hpp"
-#include "vulkan/Mesh.hpp"
 
 namespace Disarray::Vulkan {
 

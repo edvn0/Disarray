@@ -1,6 +1,7 @@
 #include "panels/DirectoryContentPanel.hpp"
 
 #include <Disarray.hpp>
+
 #include <filesystem>
 #include <string_view>
 

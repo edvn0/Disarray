@@ -1,9 +1,10 @@
 #pragma once
 
-#include "util/BitCast.hpp"
+#include <vulkan/vulkan.h>
 
 #include <cstdint>
-#include <vulkan/vulkan.h>
+
+#include "util/BitCast.hpp"
 
 namespace Disarray::Vulkan {
 

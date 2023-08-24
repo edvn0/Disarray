@@ -1,10 +1,10 @@
 #include "vulkan/DebugMarker.hpp"
 
+#include <glm/gtc/type_ptr.hpp>
+
 #include "core/FileWatcher.hpp"
 #include "core/Log.hpp"
 #include "util/BitCast.hpp"
-
-#include <glm/gtc/type_ptr.hpp>
 
 namespace Disarray::Vulkan {
 

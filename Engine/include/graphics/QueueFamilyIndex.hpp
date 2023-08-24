@@ -1,12 +1,12 @@
 #pragma once
 
-#include "core/DisarrayObject.hpp"
-#include "core/Types.hpp"
-#include "core/exceptions/GeneralExceptions.hpp"
-
 #include <optional>
 #include <stdexcept>
 #include <vector>
+
+#include "core/DisarrayObject.hpp"
+#include "core/Types.hpp"
+#include "core/exceptions/GeneralExceptions.hpp"
 
 namespace Disarray {
 

@@ -1,10 +1,11 @@
 #include "DisarrayPCH.hpp"
 
 #include "core/CleanupAwaiter.hpp"
-#include "core/Types.hpp"
-#include "vulkan/Device.hpp"
 
 #include <vulkan/vulkan.h>
+
+#include "core/Types.hpp"
+#include "vulkan/Device.hpp"
 
 namespace Disarray {
 

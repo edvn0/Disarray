@@ -1,17 +1,21 @@
 #include "DisarrayPCH.hpp"
 
-#include "core/Collections.hpp"
-#include "core/exceptions/GeneralExceptions.hpp"
 #include "graphics/ModelLoader.hpp"
 
-#include <algorithm>
 #include <glm/ext/matrix_transform.hpp>
+
 #include <tinyobjloader.h>
+
+#include <algorithm>
 #include <unordered_map>
 
+#include "core/Collections.hpp"
+#include "core/exceptions/GeneralExceptions.hpp"
+
 #define GLM_ENABLE_EXPERIMENTAL
-#include <execution>
 #include <glm/glm.hpp>
+
+#include <execution>
 
 namespace Disarray {
 

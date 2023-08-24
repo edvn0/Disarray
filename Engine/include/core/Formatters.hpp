@@ -1,8 +1,10 @@
 #pragma once
 
-#include <filesystem>
-#include <fmt/core.h>
 #include <glm/glm.hpp>
+
+#include <fmt/core.h>
+
+#include <filesystem>
 
 template <> struct fmt::formatter<glm::vec2> : fmt::formatter<std::string_view> {
 	auto format(const glm::vec2& format, format_context& ctx) -> decltype(ctx.out());

@@ -1,8 +1,9 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+
 #include <exception>
 #include <string_view>
-#include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {
 

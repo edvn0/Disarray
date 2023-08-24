@@ -1,8 +1,8 @@
 #pragma once
 
-#include "graphics/ImageProperties.hpp"
-
 #include <glm/glm.hpp>
+
+#include "graphics/ImageProperties.hpp"
 
 namespace Disarray {
 

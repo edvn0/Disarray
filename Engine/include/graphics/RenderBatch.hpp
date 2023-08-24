@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include "core/Tuple.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Device.hpp"
@@ -9,8 +11,6 @@
 #include "graphics/Renderer.hpp"
 #include "graphics/VertexBuffer.hpp"
 #include "graphics/VertexTypes.hpp"
-
-#include <array>
 
 namespace Disarray {
 

@@ -1,12 +1,12 @@
 #pragma once
 
+#include <vector>
+
 #include "Forward.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "vulkan/Image.hpp"
 #include "vulkan/PropertySupplier.hpp"
 #include "vulkan/RenderPass.hpp"
-
-#include <vector>
 
 namespace Disarray::Vulkan {
 

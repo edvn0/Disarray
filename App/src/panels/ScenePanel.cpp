@@ -1,5 +1,8 @@
 #include "panels/ScenePanel.hpp"
 
+#include <fmt/format.h>
+#include <imgui_internal.h>
+
 #include "core/Formatters.hpp"
 #include "glm/common.hpp"
 #include "glm/ext/matrix_transform.hpp"
@@ -10,9 +13,6 @@
 #include "scene/Components.hpp"
 #include "ui/InterfaceLayer.hpp"
 #include "ui/UI.hpp"
-
-#include <fmt/format.h>
-#include <imgui_internal.h>
 
 static constexpr float font_size = 11.0f;
 static constexpr float frame_padding = 0.5f;

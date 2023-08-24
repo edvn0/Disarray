@@ -1,9 +1,9 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+
 #include "PropertySupplier.hpp"
 #include "graphics/RenderPass.hpp"
-
-#include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {
 

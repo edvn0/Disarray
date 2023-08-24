@@ -1,5 +1,11 @@
 #pragma once
 
+#include <algorithm>
+#include <filesystem>
+#include <set>
+#include <unordered_map>
+#include <utility>
+
 #include "Forward.hpp"
 #include "core/Types.hpp"
 #include "graphics/Pipeline.hpp"
@@ -7,12 +13,6 @@
 #include "graphics/ResourceCache.hpp"
 #include "graphics/Shader.hpp"
 #include "graphics/Swapchain.hpp"
-
-#include <algorithm>
-#include <filesystem>
-#include <set>
-#include <unordered_map>
-#include <utility>
 
 using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;
 

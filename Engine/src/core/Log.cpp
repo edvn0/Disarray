@@ -1,13 +1,14 @@
 #include "DisarrayPCH.hpp"
 
 #include "core/Log.hpp"
-#include "core/exceptions/GeneralExceptions.hpp"
 
 #include <cstdarg>
 #include <cstddef>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
+
+#include "core/exceptions/GeneralExceptions.hpp"
 
 namespace Disarray {
 

@@ -1,9 +1,10 @@
 #include "DisarrayPCH.hpp"
 
+#include "vulkan/Allocator.hpp"
+
 #include "core/AllocatorConfigurator.hpp"
 #include "core/Ensure.hpp"
 #include "core/Log.hpp"
-#include "vulkan/Allocator.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Instance.hpp"
 #include "vulkan/PhysicalDevice.hpp"

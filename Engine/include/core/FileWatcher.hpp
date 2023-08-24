@@ -1,9 +1,5 @@
 #pragma once
 
-#include "core/Collections.hpp"
-#include "core/Hashes.hpp"
-#include "core/ThreadPool.hpp"
-
 #include <chrono>
 #include <execution>
 #include <filesystem>
@@ -13,6 +9,10 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+#include "core/Collections.hpp"
+#include "core/Hashes.hpp"
+#include "core/ThreadPool.hpp"
 
 namespace Disarray {
 

@@ -1,13 +1,14 @@
 #pragma once
 
-#include "core/Types.hpp"
-#include "graphics/PhysicalDevice.hpp"
-#include "graphics/QueueFamilyIndex.hpp"
+#include <vulkan/vulkan.h>
 
 #include <optional>
 #include <stdexcept>
 #include <vector>
-#include <vulkan/vulkan.h>
+
+#include "core/Types.hpp"
+#include "graphics/PhysicalDevice.hpp"
+#include "graphics/QueueFamilyIndex.hpp"
 
 namespace Disarray::Vulkan {
 

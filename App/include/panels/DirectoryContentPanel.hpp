@@ -1,13 +1,13 @@
 #pragma once
 
-#include "core/FileWatcher.hpp"
-#include "core/Panel.hpp"
-#include "graphics/Texture.hpp"
-
 #include <filesystem>
 #include <mutex>
 #include <unordered_map>
 #include <unordered_set>
+
+#include "core/FileWatcher.hpp"
+#include "core/Panel.hpp"
+#include "graphics/Texture.hpp"
 
 struct path_hash {
 	std::size_t operator()(const std::optional<std::filesystem::path>& path) const { return path ? std::filesystem::hash_value(path.value()) : 0; }

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "core/Concepts.hpp"
-
 #include <array>
+
+#include "core/Concepts.hpp"
 
 namespace Disarray::Client {
 

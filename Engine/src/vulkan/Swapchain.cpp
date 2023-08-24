@@ -1,12 +1,17 @@
 #include "DisarrayPCH.hpp"
 
+#include "graphics/Swapchain.hpp"
+
+#include <vulkan/vulkan.h>
+
+#include <algorithm>
+
 #include "core/CleanupAwaiter.hpp"
 #include "core/Log.hpp"
 #include "core/Types.hpp"
 #include "core/Window.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/RenderPass.hpp"
-#include "graphics/Swapchain.hpp"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Config.hpp"
 #include "vulkan/DebugMarker.hpp"
@@ -21,10 +26,6 @@
 #include "vulkan/SwapchainUtilities.hpp"
 #include "vulkan/Verify.hpp"
 #include "vulkan/exceptions/VulkanExceptions.hpp"
-
-#include <algorithm>
-#include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
 
 namespace Disarray::Vulkan {
 

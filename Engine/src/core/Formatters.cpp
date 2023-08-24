@@ -1,9 +1,10 @@
 #include "core/Formatters.hpp"
 
-#include <fmt/format.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
+
+#include <fmt/format.h>
 
 auto fmt::formatter<glm::vec2>::format(const glm::vec2& vec, format_context& ctx) -> decltype(ctx.out())
 {

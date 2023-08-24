@@ -1,5 +1,9 @@
 #pragma once
 
+#include <tuple>
+#include <type_traits>
+#include <vector>
+
 #include "core/ReferenceCounted.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Device.hpp"
@@ -9,10 +13,6 @@
 #include "vulkan/PropertySupplier.hpp"
 #include "vulkan/QueueFamilyIndex.hpp"
 #include "vulkan/Swapchain.hpp"
-
-#include <tuple>
-#include <type_traits>
-#include <vector>
 
 namespace Disarray::Vulkan {
 

@@ -1,9 +1,10 @@
 #include "DisarrayPCH.hpp"
 
 #include "vulkan/Verify.hpp"
-#include "vulkan/exceptions/VulkanExceptions.hpp"
 
 #include <magic_enum.hpp>
+
+#include "vulkan/exceptions/VulkanExceptions.hpp"
 
 namespace Disarray::Vulkan {
 

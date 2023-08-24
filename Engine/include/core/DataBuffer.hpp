@@ -1,9 +1,9 @@
 #pragma once
 
-#include "util/BitCast.hpp"
-
 #include <cstddef>
 #include <vector>
+
+#include "util/BitCast.hpp"
 
 namespace Disarray {
 

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "core/PointerDefinition.hpp"
-
 #include <concepts>
 #include <memory>
+
+#include "core/PointerDefinition.hpp"
 
 namespace Disarray {
 

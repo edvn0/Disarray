@@ -1,8 +1,9 @@
 #include "DisarrayPCH.hpp"
 
+#include "vulkan/Surface.hpp"
+
 #include "core/Log.hpp"
 #include "vulkan/Instance.hpp"
-#include "vulkan/Surface.hpp"
 #include "vulkan/Verify.hpp"
 
 #define GLFW_INCLUDE_VULKAN

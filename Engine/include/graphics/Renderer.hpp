@@ -1,5 +1,15 @@
 #pragma once
 
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
+
+#include <entt/entt.hpp>
+#include <scene/Camera.hpp>
+
+#include <functional>
+#include <optional>
+
 #include "Forward.hpp"
 #include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
@@ -10,14 +20,6 @@
 #include "graphics/Swapchain.hpp"
 #include "graphics/Texture.hpp"
 #include "graphics/TextureCache.hpp"
-
-#include <entt/entt.hpp>
-#include <functional>
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <optional>
-#include <scene/Camera.hpp>
 
 using VkDescriptorSet = struct VkDescriptorSet_T*;
 using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;

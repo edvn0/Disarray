@@ -1,8 +1,8 @@
 #pragma once
 
-#include "graphics/PhysicalDevice.hpp"
-
 #include <vulkan/vulkan.h>
+
+#include "graphics/PhysicalDevice.hpp"
 
 namespace Disarray::Vulkan {
 

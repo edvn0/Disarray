@@ -1,18 +1,20 @@
 #include "DisarrayPCH.hpp"
 
+#include "vulkan/CommandExecutor.hpp"
+
+#include <vulkan/vulkan.h>
+
+#include <core/Ensure.hpp>
+#include <util/FormattingUtilities.hpp>
+
 #include "core/Log.hpp"
 #include "core/Types.hpp"
-#include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Config.hpp"
 #include "vulkan/DebugMarker.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/PhysicalDevice.hpp"
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/Verify.hpp"
-
-#include <core/Ensure.hpp>
-#include <util/FormattingUtilities.hpp>
-#include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {
 

@@ -1,13 +1,14 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+
+#include <cstring>
+#include <string>
+
 #include "core/DataBuffer.hpp"
 #include "core/Types.hpp"
 #include "util/BitCast.hpp"
 #include "vulkan/MemoryAllocator.hpp"
-
-#include <cstring>
-#include <string>
-#include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {
 

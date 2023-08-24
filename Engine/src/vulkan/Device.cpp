@@ -1,14 +1,15 @@
 #include "DisarrayPCH.hpp"
 
+#include "vulkan/Device.hpp"
+
+#include <set>
+
 #include "core/Window.hpp"
 #include "graphics/PhysicalDevice.hpp"
 #include "graphics/QueueFamilyIndex.hpp"
 #include "vulkan/Config.hpp"
-#include "vulkan/Device.hpp"
 #include "vulkan/PhysicalDevice.hpp"
 #include "vulkan/Verify.hpp"
-
-#include <set>
 
 namespace Disarray::Vulkan {
 

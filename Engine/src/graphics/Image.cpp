@@ -1,9 +1,10 @@
 #include "DisarrayPCH.hpp"
 
 #include "graphics/Image.hpp"
-#include "vulkan/Image.hpp"
 
 #include <fmt/format.h>
+
+#include "vulkan/Image.hpp"
 
 namespace fmt {
 auto formatter<Disarray::ImageFormat>::format(Disarray::ImageFormat image_format, format_context& ctx) const

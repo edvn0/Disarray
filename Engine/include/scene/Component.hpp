@@ -1,9 +1,9 @@
 #pragma once
 
+#include <type_traits>
+
 #include "core/Concepts.hpp"
 #include "scene/Components.hpp"
-
-#include <type_traits>
 
 namespace Disarray {
 

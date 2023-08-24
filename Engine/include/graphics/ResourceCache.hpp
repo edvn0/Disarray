@@ -1,16 +1,16 @@
 #pragma once
 
-#include "core/Collections.hpp"
-#include "core/Ensure.hpp"
-#include "core/Hashes.hpp"
-#include "core/Log.hpp"
-#include "graphics/Device.hpp"
-
 #include <algorithm>
 #include <filesystem>
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
+
+#include "core/Collections.hpp"
+#include "core/Ensure.hpp"
+#include "core/Hashes.hpp"
+#include "core/Log.hpp"
+#include "graphics/Device.hpp"
 
 namespace Disarray {
 

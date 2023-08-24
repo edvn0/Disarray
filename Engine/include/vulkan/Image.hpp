@@ -1,11 +1,11 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+
 #include "PropertySupplier.hpp"
 #include "core/UniquelyIdentifiable.hpp"
 #include "graphics/Image.hpp"
 #include "vulkan/MemoryAllocator.hpp"
-
-#include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {
 

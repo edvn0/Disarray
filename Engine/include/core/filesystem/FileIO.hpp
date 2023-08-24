@@ -1,10 +1,10 @@
 #pragma once
 
-#include "util/BitCast.hpp"
-
 #include <cstddef>
 #include <span>
 #include <string_view>
+
+#include "util/BitCast.hpp"
 
 namespace Disarray::FS {
 

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "core/events/Event.hpp"
-
 #include <sstream>
+
+#include "core/events/Event.hpp"
 
 namespace Disarray {
 class WindowResizeEvent : public Event {

@@ -1,11 +1,11 @@
 #pragma once
 
+#include <Disarray.hpp>
+#include <entt/entt.hpp>
+
 #include "core/Panel.hpp"
 #include "scene/Components.hpp"
 #include "ui/UI.hpp"
-
-#include <Disarray.hpp>
-#include <entt/entt.hpp>
 
 namespace Disarray::Client {
 

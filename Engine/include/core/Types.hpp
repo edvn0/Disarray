@@ -1,13 +1,13 @@
 #pragma once
 
-#include "core/PointerDefinition.hpp"
-#include "core/PolymorphicCast.hpp"
-#include "core/exceptions/GeneralExceptions.hpp"
-
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
+
+#include "core/PointerDefinition.hpp"
+#include "core/PolymorphicCast.hpp"
+#include "core/exceptions/GeneralExceptions.hpp"
 
 namespace Disarray {
 

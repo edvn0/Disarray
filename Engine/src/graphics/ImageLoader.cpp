@@ -1,13 +1,15 @@
 #include "DisarrayPCH.hpp"
 
+#include "graphics/ImageLoader.hpp"
+
+#include <stb_image.h>
+
+#include <filesystem>
+#include <stdexcept>
+
 #include "core/DataBuffer.hpp"
 #include "core/Ensure.hpp"
 #include "core/Log.hpp"
-#include "graphics/ImageLoader.hpp"
-
-#include <filesystem>
-#include <stb_image.h>
-#include <stdexcept>
 
 namespace Disarray {
 

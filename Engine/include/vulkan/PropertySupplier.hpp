@@ -1,12 +1,13 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+
+#include <stdexcept>
+
 #include "core/Log.hpp"
 #include "core/Types.hpp"
 #include "vulkan/Structures.hpp"
 #include "vulkan/Verify.hpp"
-
-#include <stdexcept>
-#include <vulkan/vulkan.h>
 
 namespace Disarray::Vulkan {
 

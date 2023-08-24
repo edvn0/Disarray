@@ -1,15 +1,14 @@
 #include "vulkan/Material.hpp"
 
+#include <vulkan/UniformBuffer.hpp>
+#include <vulkan/vulkan.h>
+
 #include "vulkan/Device.hpp"
 #include "vulkan/Image.hpp"
 #include "vulkan/Material.hpp"
 #include "vulkan/Renderer.hpp"
 #include "vulkan/Structures.hpp"
 #include "vulkan/Texture.hpp"
-
-#include <vulkan/UniformBuffer.hpp>
-#include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
 
 namespace Disarray::Vulkan {
 

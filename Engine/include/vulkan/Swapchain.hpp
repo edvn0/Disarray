@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "Forward.hpp"
 #include "core/Window.hpp"
 #include "graphics/PhysicalDevice.hpp"
@@ -8,8 +10,6 @@
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/PropertySupplier.hpp"
 #include "vulkan/RenderPass.hpp"
-
-#include <vector>
 
 namespace Disarray::Vulkan {
 

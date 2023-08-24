@@ -1,13 +1,13 @@
 #pragma once
 
-#include "core/Layer.hpp"
-#include "core/events/Event.hpp"
-#include "ui/InterfaceLayer.hpp"
-
 #include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
+
+#include "core/Layer.hpp"
+#include "core/events/Event.hpp"
+#include "ui/InterfaceLayer.hpp"
 
 namespace Disarray {
 

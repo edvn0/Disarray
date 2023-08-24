@@ -1,10 +1,19 @@
 #pragma once
 
-#include "core/Log.hpp"
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/hash.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <vulkan/vulkan.h>
 
-#include <array>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
+#include <fmt/chrono.h>
+#include <fmt/format.h>
+#include <imgui.h>
+
+#include <array>
 #include <bit>
 #include <chrono>
 #include <concepts>
@@ -12,16 +21,8 @@
 #include <cstddef> // std::size_t
 #include <execution>
 #include <filesystem>
-#include <fmt/chrono.h>
-#include <fmt/format.h>
 #include <fstream>
 #include <functional>
-#include <glm/ext/matrix_clip_space.hpp>
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/hash.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <imgui.h>
 #include <initializer_list>
 #include <iostream>
 #include <map>
@@ -41,4 +42,5 @@
 #include <utility>
 #include <variant>
 #include <vector>
-#include <vulkan/vulkan.h>
+
+#include "core/Log.hpp"
