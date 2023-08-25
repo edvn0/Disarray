@@ -2,9 +2,13 @@ name: Clang16 CMake Build
 
 on:
   push:
-    branches: ["main", "dev"]
+    branches:
+      - "main"
+      - "dev"
   pull_request:
-    branches: ["main", "dev"]
+    branches:
+      - "main"
+      - "dev"
 
 env:
   BUILD_TYPE: RelWithDebInfo
