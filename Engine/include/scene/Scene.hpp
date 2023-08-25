@@ -106,7 +106,6 @@ private:
 	Ref<Disarray::Framebuffer> identity_framebuffer {};
 	Ref<Disarray::CommandExecutor> command_executor {};
 
-	// Should contain some kind of container for entities :)
 	entt::registry registry;
 
 	struct ThreadPoolCallback {

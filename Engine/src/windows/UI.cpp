@@ -2,15 +2,17 @@
 
 #include "ui/UI.hpp"
 
-#include <wchar.h>
+#include <cstring>
+#include <string>
 
 namespace Disarray::UI {
 
 void drag_drop(const std::filesystem::path& path)
 {
 	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
-		const auto* item_path = path.c_str();
-		ImGui::SetDragDropPayload("Disarray::DragDropItem", item_path, (wcslen(item_path) + 1) * sizeof(wchar_t));
+		const auto item_path = path.string();
+		const auto* item_c_str = item_path.c_str();
+		ImGui::SetDragDropPayload("Disarray::DragDropItem", item_c_str, item_path.size());
 		ImGui::EndDragDropSource();
 	}
 }
@@ -20,8 +22,8 @@ std::optional<std::filesystem::path> accept_drag_drop(const std::string& payload
 	std::optional<std::filesystem::path> fp {};
 	if (ImGui::BeginDragDropTarget()) {
 		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payload_id.c_str())) {
-			const auto* path = static_cast<const wchar_t*>(payload->Data);
-			Log::info("Drag Drop Accept", "{}", Disarray::bit_cast<const char*>(path));
+			const auto* path = static_cast<const char*>(payload->Data);
+			Log::info("Drag Drop Accept", "{}", path);
 			fp = path;
 		}
 		ImGui::EndDragDropTarget();

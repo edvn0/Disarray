@@ -3,9 +3,11 @@
 #include "core/Types.hpp"
 
 namespace Disarray {
+
 class App;
 class CommandExecutor;
 class Device;
+class Layer;
 class Entity;
 class Framebuffer;
 class Image;
@@ -25,4 +27,7 @@ class Swapchain;
 class Texture;
 class VertexBuffer;
 class Window;
+class PipelineCache;
+class TextureCache;
+
 } // namespace Disarray

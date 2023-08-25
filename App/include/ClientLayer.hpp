@@ -21,6 +21,8 @@ public:
 	void destruct() override;
 
 private:
+	void handle_file_drop(const std::filesystem::path&);
+
 	Scope<Scene> scene;
 	Device& device;
 

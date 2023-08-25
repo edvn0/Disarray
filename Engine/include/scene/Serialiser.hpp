@@ -9,6 +9,7 @@
 #include <sstream>
 #include <tuple>
 
+#include "core/Collections.hpp"
 #include "core/Hashes.hpp"
 #include "core/Log.hpp"
 #include "core/Tuple.hpp"

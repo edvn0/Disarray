@@ -3,6 +3,10 @@
 #include "PC.glsl"
 #include "UBO.glsl"
 
+layout(set = 0, binding = 0) uniform UniformBlock {
+	Uniform ubo;
+} UBO;
+
 layout(location = 0) in vec3 pos;
 layout(location = 1) in vec2 uv;
 layout(location = 2) in vec3 normals;
@@ -15,7 +19,9 @@ layout(location = 2) out vec3 outNormals;
 layout(location = 3) out flat uint outIdentifier;
 
 void main() {
-    gl_Position = UBO.view_projection * vec4(pos, 1.0);
+    Uniform ubo = UBO.ubo;
+
+    gl_Position = ubo.view_projection * vec4(pos, 1.0);
     fragColor = colour;
     uvs = uv;
     outNormals = normals;

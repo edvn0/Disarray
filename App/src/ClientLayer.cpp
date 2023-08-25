@@ -6,12 +6,15 @@
 #include <fmt/format.h>
 
 #include <array>
+#include <filesystem>
+#include <type_traits>
 
 #include "graphics/Renderer.hpp"
 #include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
 #include "panels/ScenePanel.hpp"
 #include "panels/StatisticsPanel.hpp"
+#include "ui/UI.hpp"
 
 namespace Disarray::Client {
 
@@ -92,6 +95,11 @@ void ClientLayer::interface()
 
 		auto window_size = ImGui::GetWindowSize();
 		ImVec2 min_bound = ImGui::GetWindowPos();
+
+		const auto drag_dropped = UI::accept_drag_drop("Disarray::DragDropItem");
+		if (drag_dropped) {
+			handle_file_drop(*drag_dropped);
+		}
 
 		min_bound.x -= viewport_offset.x;
 		min_bound.y -= viewport_offset.y;
@@ -188,5 +196,62 @@ void ClientLayer::render(Disarray::Renderer& renderer)
 }
 
 void ClientLayer::destruct() { scene->destruct(); }
+
+template <typename Child> class FileHandlerBase {
+public:
+	void operator()() { return child().operator()(); }
+
+protected:
+	explicit FileHandlerBase(const Device& dev, Scene& s, const std::filesystem::path& p, std::string_view ext)
+		: device(dev)
+		, base_scene(s)
+		, file_path(p)
+		, extension(ext)
+	{
+		Log::info("FileHandler", "Running file handler for ext: {}. The dropped file had extension: {}", extension, file_path.extension());
+		valid = file_path.extension() == extension;
+		if (valid)
+			operator()();
+	}
+	auto& child() { return static_cast<Child&>(*this); }
+	auto& get_scene() { return base_scene; }
+	const auto& get_device() const { return device; }
+	const auto& get_path() const { return file_path; }
+
+private:
+	const Device& device;
+	Scene& base_scene;
+	std::filesystem::path file_path {};
+	std::string extension {};
+	bool valid { false };
+};
+
+class PNGHandler : public FileHandlerBase<PNGHandler> {
+public:
+	void operator()()
+	{
+		auto& scene = get_scene();
+		const auto& path = get_path();
+		auto entity = scene.create(path.filename().string());
+		entity.add_component<Components::Texture>(Texture::construct(get_device(),
+			{
+				.path = path,
+				.debug_name = path.filename().string(),
+			}));
+	}
+
+	explicit PNGHandler(const Device& device, Scene& scene, const std::filesystem::path& path)
+		: FileHandlerBase(device, scene, path, ".png")
+	{
+	}
+};
+
+void ClientLayer::handle_file_drop(const std::filesystem::path& path)
+{
+	if (!std::filesystem::exists(path))
+		return;
+
+	PNGHandler png_handler { device, *scene, path };
+}
 
 } // namespace Disarray::Client

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <vulkan/vulkan.h>
 
 #include <array>
 
@@ -11,6 +12,8 @@
 #include "graphics/RenderBatch.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/Swapchain.hpp"
+#include "graphics/Texture.hpp"
+#include "graphics/TextureCache.hpp"
 #include "graphics/UniformBuffer.hpp"
 #include "graphics/VertexBuffer.hpp"
 #include "graphics/VertexTypes.hpp"
@@ -49,6 +52,7 @@ public:
 
 	// IGraphicsResource
 	void expose_to_shaders(Disarray::Image&) override;
+	void expose_to_shaders(Disarray::Texture& tex) override { expose_to_shaders(tex.get_image()); };
 	VkDescriptorSet get_descriptor_set(std::uint32_t frame_index, std::uint32_t set) override
 	{
 		return descriptor_sets[(frame_index * set_count) + set];

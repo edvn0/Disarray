@@ -22,8 +22,10 @@
 #include "core/events/MouseEvent.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
+#include "graphics/PipelineCache.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/Texture.hpp"
+#include "graphics/TextureCache.hpp"
 #include "scene/Components.hpp"
 #include "scene/Deserialiser.hpp"
 #include "scene/Entity.hpp"
@@ -167,7 +169,7 @@ void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray
 	PipelineProperties props = {
 		.framebuffer = identity_framebuffer,
 		.layout = layout,
-		.push_constant_layout = { { PushConstantKind::Both, 88 } },
+		.push_constant_layout = { { PushConstantKind::Both, 92 } },
 		.extent = extent,
 		.depth_comparison_operator = DepthCompareOperator::GreaterOrEqual,
 		.cull_mode = CullMode::Back,

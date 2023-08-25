@@ -13,7 +13,11 @@
 #include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
 #include "graphics/Material.hpp"
+#include "graphics/Mesh.hpp"
+#include "graphics/Pipeline.hpp"
 #include "graphics/Renderer.hpp"
+#include "graphics/RendererProperties.hpp"
+#include "graphics/Texture.hpp"
 
 namespace Disarray::Components {
 
