@@ -5,7 +5,6 @@
 #include <vulkan/vulkan.h>
 
 #include <core/ThreadPool.hpp>
-#include <stb_image_write.h>
 
 #include "core/Ensure.hpp"
 #include "core/Types.hpp"

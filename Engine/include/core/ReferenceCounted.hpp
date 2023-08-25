@@ -35,23 +35,22 @@ namespace MemoryTracking {
 } // namespace MemoryTracking
 
 template <class T> class ReferenceCounted {
+	static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
+
 public:
 	ReferenceCounted()
 		: instance(nullptr)
 	{
-		static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
 	}
 
 	ReferenceCounted(std::nullptr_t)
 		: instance(nullptr)
 	{
-		static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
 	}
 
 	ReferenceCounted(T* inst)
 		: instance(inst)
 	{
-		static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
 		increment_reference_count();
 	}
 
@@ -60,7 +59,6 @@ public:
 		requires(std::is_constructible_v<T, Args...>)
 		: instance(new T { std::forward<Args>(args)... })
 	{
-		static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
 		increment_reference_count();
 	}
 
@@ -76,15 +74,15 @@ public:
 		increment_reference_count();
 	}
 
-	~ReferenceCounted() { decrement_reference_count(); }
+	virtual ~ReferenceCounted() { decrement_reference_count(); }
 
-	template <class T2> ReferenceCounted(const ReferenceCounted<T2>& other)
+	template <class Other> ReferenceCounted(const ReferenceCounted<Other>& other)
 	{
 		instance = static_cast<T*>(other.instance);
 		increment_reference_count();
 	}
 
-	template <class T2> ReferenceCounted(ReferenceCounted<T2>&& other)
+	template <class Other> ReferenceCounted(ReferenceCounted<Other>&& other)
 	{
 		auto* other_instance = std::move(other.instance);
 		instance = static_cast<T*>(other_instance);
@@ -114,7 +112,7 @@ public:
 		return *this;
 	}
 
-	template <class T2> ReferenceCounted& operator=(const ReferenceCounted<T2>& other)
+	template <class Other> ReferenceCounted& operator=(const ReferenceCounted<Other>& other)
 	{
 		other.increment_reference_count();
 		decrement_reference_count();
@@ -123,7 +121,7 @@ public:
 		return *this;
 	}
 
-	template <class T2> ReferenceCounted& operator=(ReferenceCounted<T2>&& other)
+	template <class Other> ReferenceCounted& operator=(ReferenceCounted<Other>&& other)
 	{
 		decrement_reference_count();
 
@@ -133,19 +131,15 @@ public:
 	}
 
 	operator bool() { return instance != nullptr; }
-
 	operator bool() const { return instance != nullptr; }
 
 	T* operator->() { return instance; }
-
 	const T* operator->() const { return instance; }
 
 	T& operator*() { return *instance; }
-
 	const T& operator*() const { return *instance; }
 
 	T* get() { return instance; }
-
 	const T* get() const { return instance; }
 
 	void reset(T* inst = nullptr)
@@ -154,23 +148,21 @@ public:
 		instance = inst;
 	}
 
-	template <class T2> ReferenceCounted<T2> as() const { return ReferenceCounted<T2>(*this); }
-
-	template <typename... Args> static ReferenceCounted<T> construct(Args&&... args)
-	{
-		return ReferenceCounted<T>(new T(std::forward<Args>(args)...));
-	}
+	template <class Other> ReferenceCounted<Other> as() const { return ReferenceCounted<Other>(*this); }
 
 	bool operator==(const ReferenceCounted<T>& other) const { return instance == other.instance; }
-
-	bool operator!=(const ReferenceCounted<T>& other) const { return !(*this == other); }
-
+	bool operator!=(const ReferenceCounted<T>& other) const { return !this->operator==(other); }
 	bool equals(const ReferenceCounted<T>& other) const
 	{
 		if (!instance || !other.instance)
 			return false;
 
 		return *instance == *other.instance;
+	}
+
+	template <typename... Args> static ReferenceCounted<T> construct(Args&&... args)
+	{
+		return ReferenceCounted<T>(new T(std::forward<Args>(args)...));
 	}
 
 private:
@@ -194,8 +186,7 @@ private:
 		}
 	}
 
-	template <class T2> friend class ReferenceCounted;
-
+	template <class Other> friend class ReferenceCounted;
 	mutable T* instance;
 };
 

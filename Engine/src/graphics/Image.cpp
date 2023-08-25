@@ -3,6 +3,7 @@
 #include "graphics/Image.hpp"
 
 #include <fmt/format.h>
+#include <stb_image_write.h>
 
 #include "vulkan/Image.hpp"
 
@@ -59,6 +60,13 @@ namespace Disarray {
 Ref<Image> Image::construct(const Device& device, const ImageProperties& image_properties)
 {
 	return make_ref<Vulkan::Image>(device, image_properties);
+}
+
+void Image::write_to_file(std::string_view path, const Image& image, const void* data)
+{
+	const auto& props = image.get_properties();
+	const auto& [w, h] = props.extent;
+	stbi_write_bmp(path.data(), w, h, 4, data);
 }
 
 } // namespace Disarray

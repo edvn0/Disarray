@@ -113,6 +113,7 @@ public:
 	void recreate(bool should_clean, const Extent&) override;
 
 	PixelReadData read_pixel(const glm::vec2&) const override;
+	const ImageProperties& get_properties() const override { return props; }
 
 	VkImage get_image() const { return info.image; }
 	const VkDescriptorSetLayout& get_layout() const { return layout; }

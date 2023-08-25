@@ -40,7 +40,7 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 void Renderer::draw_mesh(
 	Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline, const glm::mat4& transform)
 {
-	draw_mesh(executor, mesh, mesh_pipeline, transform, entt::null);
+	draw_mesh(executor, mesh, mesh_pipeline, transform, 0);
 }
 
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
