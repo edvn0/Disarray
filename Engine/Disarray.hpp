@@ -1,6 +1,15 @@
 #ifndef DISARRAY_CLIENT_INCLUDE
 #define DISARRAY_CLIENT_INCLUDE
 
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/quaternion.hpp>
+
+#include <fmt/format.h>
+#include <imgui.h>
+
 #include "core/App.hpp"
 #include "core/Clock.hpp"
 #include "core/DataBuffer.hpp"
@@ -30,13 +39,5 @@
 #include "scene/Scene.hpp"
 #include "ui/UI.hpp"
 #include "util/FormattingUtilities.hpp"
-
-#include <fmt/format.h>
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <imgui.h>
 
 #endif

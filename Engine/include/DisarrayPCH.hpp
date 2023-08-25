@@ -17,8 +17,8 @@
 #include <bit>
 #include <chrono>
 #include <concepts>
-#include <cstdarg> // va_start, va_end, std::va_list
-#include <cstddef> // std::size_t
+#include <cstdarg>
+#include <cstddef>
 #include <execution>
 #include <filesystem>
 #include <fstream>
@@ -32,7 +32,7 @@
 #include <regex>
 #include <set>
 #include <sstream>
-#include <stdexcept> // std::runtime_error
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <tuple>
