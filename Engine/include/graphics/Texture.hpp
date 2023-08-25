@@ -1,5 +1,9 @@
 #pragma once
 
+#include <filesystem>
+#include <optional>
+#include <string>
+
 #include "Forward.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
