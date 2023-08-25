@@ -11,6 +11,7 @@
 #include "core/Hashes.hpp"
 #include "core/Log.hpp"
 #include "graphics/Device.hpp"
+#include "graphics/ImageProperties.hpp"
 
 namespace Disarray {
 
@@ -49,10 +50,11 @@ public:
 		return key;
 	}
 
-	auto& get_device() { return device; }
+	const auto& get_device() const { return device; }
 
 protected:
-	ResourceCache(Disarray::Device& dev, const std::filesystem::path& p, const std::unordered_set<std::string>& exts = { ".spv", ".png", ".jpg" })
+	ResourceCache(
+		const Disarray::Device& dev, const std::filesystem::path& p, const std::unordered_set<std::string>& exts = { ".spv", ".png", ".jpg" })
 		: device(dev)
 		, path(p)
 		, extensions(exts)
@@ -80,7 +82,7 @@ protected:
 private:
 	auto& get_child() { return static_cast<Child&>(*this); }
 
-	Disarray::Device& device;
+	const Disarray::Device& device;
 	ResourceMap storage {};
 	std::filesystem::path path {};
 	std::unordered_set<std::string> extensions {};

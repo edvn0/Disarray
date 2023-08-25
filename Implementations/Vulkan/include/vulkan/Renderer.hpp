@@ -27,7 +27,7 @@ static constexpr auto set_count = 2;
 
 class Renderer : public Disarray::Renderer {
 public:
-	Renderer(Disarray::Device&, Disarray::Swapchain&, const RendererProperties&);
+	Renderer(const Disarray::Device&, Disarray::Swapchain&, const RendererProperties&);
 	~Renderer() override;
 
 	void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) override;
@@ -79,7 +79,7 @@ public:
 private:
 	void add_geometry_to_batch(Geometry, const GeometryProperties&);
 
-	Disarray::Device& device;
+	const Disarray::Device& device;
 	Disarray::Swapchain& swapchain;
 
 	Disarray::PipelineCache pipeline_cache;

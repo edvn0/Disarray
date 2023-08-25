@@ -12,7 +12,7 @@
 
 namespace Disarray {
 
-PipelineCache::PipelineCache(Disarray::Device& dev, const std::filesystem::path& base)
+PipelineCache::PipelineCache(const Disarray::Device& dev, const std::filesystem::path& base)
 	: ResourceCache(dev, base, { ".spv" })
 {
 	const auto all_files = get_unique_files_recursively();

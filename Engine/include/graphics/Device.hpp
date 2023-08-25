@@ -1,7 +1,7 @@
 #pragma once
 
+#include "Forward.hpp"
 #include "core/Types.hpp"
-#include "graphics/PhysicalDevice.hpp"
 
 namespace Disarray {
 

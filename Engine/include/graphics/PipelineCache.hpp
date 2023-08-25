@@ -42,7 +42,7 @@ struct PipelineCacheCreationProperties {
 
 class PipelineCache : public ResourceCache<Ref<Disarray::Pipeline>, PipelineCacheCreationProperties, PipelineCache, std::string, StringHash> {
 public:
-	PipelineCache(Disarray::Device& device, const std::filesystem::path&);
+	PipelineCache(const Disarray::Device& device, const std::filesystem::path&);
 
 	void force_recreate_impl(const Extent& extent)
 	{

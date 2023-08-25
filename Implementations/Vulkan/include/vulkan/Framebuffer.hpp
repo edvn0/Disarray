@@ -3,7 +3,12 @@
 #include <vector>
 
 #include "Forward.hpp"
+#include "graphics/Device.hpp"
 #include "graphics/Framebuffer.hpp"
+#include "graphics/Image.hpp"
+#include "graphics/ImageProperties.hpp"
+#include "graphics/RenderPass.hpp"
+#include "graphics/Swapchain.hpp"
 #include "vulkan/Image.hpp"
 #include "vulkan/PropertySupplier.hpp"
 #include "vulkan/RenderPass.hpp"

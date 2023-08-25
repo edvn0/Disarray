@@ -6,7 +6,7 @@
 
 namespace Disarray {
 
-Ref<UniformBuffer> UniformBuffer::construct(Disarray::Device& device, const Disarray::BufferProperties& props)
+Ref<UniformBuffer> UniformBuffer::construct(const Disarray::Device& device, const Disarray::BufferProperties& props)
 {
 	return make_ref<Vulkan::UniformBuffer>(device, props);
 }

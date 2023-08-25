@@ -26,6 +26,7 @@
 #include "graphics/Renderer.hpp"
 #include "graphics/Texture.hpp"
 #include "graphics/TextureCache.hpp"
+#include "scene/Camera.hpp"
 #include "scene/Components.hpp"
 #include "scene/Deserialiser.hpp"
 #include "scene/Entity.hpp"

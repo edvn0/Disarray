@@ -35,6 +35,7 @@
 #include "graphics/Shader.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/Texture.hpp"
+#include "scene/Camera.hpp"
 #include "scene/Components.hpp"
 #include "scene/Entity.hpp"
 #include "scene/Scene.hpp"

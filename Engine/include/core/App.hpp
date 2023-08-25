@@ -81,13 +81,13 @@ public:
 	const auto& get_swapchain() const { return *swapchain; }
 
 private:
+	bool could_prepare_frame(Renderer& renderer);
+
 	Scope<Window> window { nullptr };
-	Scope<PhysicalDevice> physical_device { nullptr };
 	Scope<Device> device { nullptr };
 	Scope<Swapchain> swapchain { nullptr };
 	std::vector<std::shared_ptr<Layer>> layers {};
 	ApplicationStatistics statistics;
-	bool could_prepare_frame(Renderer& renderer);
 };
 
 extern std::unique_ptr<Disarray::App> create_application(const Disarray::ApplicationProperties&);

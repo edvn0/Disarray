@@ -22,7 +22,7 @@
 
 namespace Disarray {
 
-template <std::size_t Objects> void QuadVertexBatch<Objects>::construct_impl(Renderer& renderer, Device& dev)
+template <std::size_t Objects> void QuadVertexBatch<Objects>::construct_impl(Renderer& renderer, const Device& dev)
 {
 	reset();
 
@@ -125,7 +125,7 @@ template <std::size_t Objects> void QuadVertexBatch<Objects>::flush_impl(Rendere
 	// flush_vertex_buffer();
 }
 
-template <std::size_t Objects> void LineVertexBatch<Objects>::construct_impl(Disarray::Renderer& renderer, Disarray::Device& dev)
+template <std::size_t Objects> void LineVertexBatch<Objects>::construct_impl(Disarray::Renderer& renderer, const Disarray::Device& dev)
 {
 	reset();
 
@@ -219,7 +219,7 @@ template <std::size_t Objects> void LineVertexBatch<Objects>::flush_impl(Disarra
 
 // LINE ID VERTEX
 
-template <std::size_t Objects> void LineIdVertexBatch<Objects>::construct_impl(Disarray::Renderer& renderer, Disarray::Device& dev)
+template <std::size_t Objects> void LineIdVertexBatch<Objects>::construct_impl(Disarray::Renderer& renderer, const Disarray::Device& dev)
 {
 	this->reset();
 

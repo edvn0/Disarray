@@ -2,6 +2,7 @@
 
 #include "Forward.hpp"
 #include "graphics/Device.hpp"
+#include "graphics/PhysicalDevice.hpp"
 #include "vulkan/PropertySupplier.hpp"
 
 namespace Disarray::Vulkan {

@@ -123,7 +123,7 @@ void Renderer::initialise_descriptors()
 
 void Renderer::expose_to_shaders(Disarray::Image& image)
 {
-	const auto& descriptor_info = cast_to<Vulkan::Image>(image).get_descriptor_info();
+	// const auto& descriptor_info = cast_to<Vulkan::Image>(image).get_descriptor_info();
 	// Check if we can just add it to the descriptor sets
 
 	// If not, reallocate

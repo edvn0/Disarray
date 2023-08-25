@@ -140,10 +140,10 @@ Pipeline::Pipeline(const Disarray::Device& dev, const Disarray::PipelineProperti
 	: device(dev)
 	, props(properties)
 {
-	recreate_pipeline(false);
+	recreate_pipeline(false, {});
 }
 
-void Pipeline::construct_layout()
+void Pipeline::construct_layout(const Extent& extent)
 {
 	if (!cache) {
 		try_find_or_recreate_cache();
@@ -185,18 +185,25 @@ void Pipeline::construct_layout()
 	input_assembly.topology = Detail::vk_polygon_topology(props.polygon_mode);
 	input_assembly.primitiveRestartEnable = false;
 
+	// Prefer extent over props (due to resizing API)
+	std::uint32_t width { props.extent.width };
+	std::uint32_t height { props.extent.height };
+	if (extent.valid()) {
+		width = extent.width;
+		height = extent.height;
+	}
+
 	VkViewport viewport {};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = props.extent.width;
-	viewport.height = props.extent.height;
+	viewport.width = static_cast<float>(width);
+	viewport.height = static_cast<float>(height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
 	VkRect2D scissor {};
 	scissor.offset = { 0, 0 };
-	scissor.extent
-		= VkExtent2D { .width = static_cast<std::uint32_t>(props.extent.width), .height = static_cast<std::uint32_t>(props.extent.height) };
+	scissor.extent = VkExtent2D { .width = static_cast<std::uint32_t>(width), .height = static_cast<std::uint32_t>(height) };
 
 	VkPipelineViewportStateCreateInfo viewport_state {};
 	viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -387,16 +394,16 @@ std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo> Pipe
 	return { supply_cast<Vulkan::Shader>(*vertex), supply_cast<Vulkan::Shader>(*fragment) };
 }
 
-void Pipeline::recreate(bool should_clean) { recreate_pipeline(should_clean); }
+void Pipeline::recreate(bool should_clean, const Extent& extent) { recreate_pipeline(should_clean, extent); }
 
-void Pipeline::recreate_pipeline(bool should_clean)
+void Pipeline::recreate_pipeline(bool should_clean, const Extent& extent)
 {
 	if (should_clean) {
 		vkDestroyPipelineLayout(supply_cast<Vulkan::Device>(device), layout, nullptr);
 		vkDestroyPipeline(supply_cast<Vulkan::Device>(device), pipeline, nullptr);
 	}
 
-	construct_layout();
+	construct_layout(extent);
 }
 
 Disarray::Framebuffer& Pipeline::get_framebuffer() { return *props.framebuffer; }

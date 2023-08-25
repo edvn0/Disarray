@@ -10,12 +10,10 @@
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/ImageProperties.hpp"
 #include "graphics/Pipeline.hpp"
+#include "scene/Camera.hpp"
 #include "scene/Components.hpp"
 #include "ui/InterfaceLayer.hpp"
 #include "ui/UI.hpp"
-
-static constexpr float font_size = 11.0f;
-static constexpr float frame_padding = 0.5f;
 
 namespace Disarray::Client {
 
@@ -212,7 +210,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		any_changed |= UI::shader_drop_button(dev, "Vertex Shader", ShaderType::Vertex, std::ref(props.vertex_shader));
 		any_changed |= UI::shader_drop_button(dev, "Fragment Shader", ShaderType::Fragment, std::ref(props.fragment_shader));
 		if (any_changed) {
-			pipe->recreate(true);
+			pipe->recreate(true, {});
 		}
 	});
 }

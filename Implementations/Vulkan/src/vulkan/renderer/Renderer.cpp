@@ -29,7 +29,7 @@
 
 namespace Disarray::Vulkan {
 
-Renderer::Renderer(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::RendererProperties& properties)
+Renderer::Renderer(const Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::RendererProperties& properties)
 	: device(dev)
 	, swapchain(sc)
 	, pipeline_cache(dev, "Assets/Shaders")
@@ -65,7 +65,7 @@ Renderer::Renderer(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarra
 		.vertex_shader_key = "quad.vert",
 		.fragment_shader_key = "quad.frag",
 		.framebuffer = geometry_framebuffer,
-		.layout = { LayoutElement { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float3, "normals" },
+		.layout = { { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float3, "normals" },
 			{ ElementType::Float4, "colour" }, { ElementType::Uint, "identifier" } },
 		.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, sizeof(PushConstant) } },
 		.extent = swapchain.get_extent(),

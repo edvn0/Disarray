@@ -10,8 +10,9 @@ public:
 	Pipeline(const Disarray::Device&, const PipelineProperties&);
 	~Pipeline() override;
 
-	void force_recreation() override { recreate(true); };
-	void recreate(bool should_clean) override;
+	void recreate(bool should_clean, const Extent&) override;
+
+	void force_recreation() override { recreate(true, {}); };
 
 	VkPipeline supply() const override { return pipeline; }
 	VkPipelineLayout get_layout() const { return layout; }
@@ -23,11 +24,11 @@ public:
 	PipelineProperties& get_properties() override { return props; }
 
 private:
-	void construct_layout();
+	void construct_layout(const Extent&);
 	void try_find_or_recreate_cache();
 	std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo> retrieve_shader_stages(
 		Ref<Disarray::Shader> vertex, Ref<Disarray::Shader> fragment) const;
-	void recreate_pipeline(bool should_clean);
+	void recreate_pipeline(bool should_clean, const Extent&);
 
 	const Disarray::Device& device;
 	PipelineProperties props;

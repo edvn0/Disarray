@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "core/Concepts.hpp"
 #include "core/Types.hpp"
 
 namespace Disarray {
@@ -21,12 +22,14 @@ enum class SampleCount {
 
 enum class Tiling { Linear, DeviceOptimal };
 
-template <class T> struct IExtent {
+template <IsNumber T> struct IExtent {
 	T width {};
 	T height {};
 
 	T get_size() const { return width * height; }
 	float aspect_ratio() const { return static_cast<float>(width) / static_cast<float>(height); }
+
+	bool valid() const { return width > 0 && height > 0; }
 
 	bool operator==(const IExtent<T>& other) const { return width == other.width && height == other.height; }
 	bool operator!=(const IExtent<T>& other) const { return width != other.width || height != other.height; }

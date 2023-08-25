@@ -148,15 +148,10 @@ struct PipelineProperties {
 };
 
 class Pipeline : public ReferenceCountable {
-	DISARRAY_OBJECT(Pipeline)
+	DISARRAY_OBJECT_PROPS(Pipeline, PipelineProperties)
 public:
 	virtual Disarray::RenderPass& get_render_pass() = 0;
 	virtual Disarray::Framebuffer& get_framebuffer() = 0;
-
-	virtual void recreate(bool should_clear) = 0;
-
-	virtual const PipelineProperties& get_properties() const = 0;
-	virtual PipelineProperties& get_properties() = 0;
 
 	static Ref<Pipeline> construct(const Disarray::Device&, const PipelineProperties&);
 };

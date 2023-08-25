@@ -26,7 +26,7 @@ struct TextureCacheCreationProperties {
 
 class TextureCache : public ResourceCache<Ref<Disarray::Texture>, TextureCacheCreationProperties, TextureCache, std::string, StringHash> {
 public:
-	TextureCache(Disarray::Device& device, std::filesystem::path path)
+	TextureCache(const Disarray::Device& device, std::filesystem::path path)
 		: ResourceCache(device, path, { ".png", ".jpg" })
 	{
 		auto files = get_unique_files_recursively();

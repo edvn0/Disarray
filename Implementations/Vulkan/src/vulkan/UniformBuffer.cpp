@@ -11,7 +11,7 @@
 
 namespace Disarray::Vulkan {
 
-UniformBuffer::UniformBuffer(Disarray::Device& dev, const Disarray::BufferProperties& properties)
+UniformBuffer::UniformBuffer(const Disarray::Device& dev, const Disarray::BufferProperties& properties)
 	: BaseBuffer(dev, BufferType::Uniform, properties)
 {
 	create_buffer_info();

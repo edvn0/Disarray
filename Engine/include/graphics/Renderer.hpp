@@ -5,11 +5,7 @@
 #include <functional>
 
 #include "Forward.hpp"
-#include "core/Types.hpp"
-#include "core/UniquelyIdentifiable.hpp"
-#include "core/UsageBadge.hpp"
 #include "graphics/RendererProperties.hpp"
-#include "scene/Camera.hpp"
 
 using VkDescriptorSet = struct VkDescriptorSet_T*;
 using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;
@@ -78,7 +74,7 @@ public:
 
 	virtual void force_recreation() = 0;
 
-	static Ref<Renderer> construct(Disarray::Device&, Disarray::Swapchain&, const RendererProperties&);
+	static Ref<Renderer> construct(const Disarray::Device&, Disarray::Swapchain&, const RendererProperties&);
 };
 
 } // namespace Disarray

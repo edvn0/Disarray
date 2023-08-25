@@ -1,13 +1,10 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
 #include "Forward.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
-#include "graphics/Device.hpp"
-#include "graphics/Image.hpp"
-#include "graphics/ImageProperties.hpp"
-#include "graphics/RenderPass.hpp"
-#include "graphics/Swapchain.hpp"
 
 namespace Disarray {
 

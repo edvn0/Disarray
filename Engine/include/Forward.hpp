@@ -30,4 +30,6 @@ class Window;
 class PipelineCache;
 class TextureCache;
 
+class Camera;
+
 } // namespace Disarray
