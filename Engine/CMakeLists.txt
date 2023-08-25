@@ -150,8 +150,9 @@ target_include_directories(
 target_link_libraries(
   ${PROJECT_NAME}
   PRIVATE glfw GPUOpen::VulkanMemoryAllocator nlohmann_json::nlohmann_json
-          tinyobjloader stb_image Implementations::Vulkan
-  PUBLIC thread-pool
+          tinyobjloader stb_image
+  PUBLIC Implementations::Vulkan
+         thread-pool
          Vulkan::Vulkan
          imgui
          imguizmo
