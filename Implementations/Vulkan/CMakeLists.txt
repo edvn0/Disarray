@@ -74,14 +74,13 @@ add_library(${PROJECT_NAME} STATIC ${SOURCES})
 add_library(Implementations::Vulkan ALIAS ${PROJECT_NAME})
 target_link_libraries(
   ${PROJECT_NAME}
-  PRIVATE glfw
+  PRIVATE Disarray::Engine
+          glfw
           GPUOpen::VulkanMemoryAllocator
           thread-pool
           Vulkan::Vulkan
           imgui
           fmt::fmt
           magic_enum::magic_enum)
-target_include_directories(
-  ${PROJECT_NAME} PUBLIC ${THIRD_PARTY}/glm include
-                         ${CMAKE_SOURCE_DIR}/Engine/include)
+target_include_directories(${PROJECT_NAME} PUBLIC include)
 default_compile_flags()
