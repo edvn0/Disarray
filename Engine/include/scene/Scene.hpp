@@ -1,5 +1,12 @@
 #pragma once
 
+#include <entt/entt.hpp>
+
+#include <concepts>
+#include <mutex>
+#include <queue>
+#include <type_traits>
+
 #include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
 #include "core/events/Event.hpp"
@@ -8,11 +15,24 @@
 #include "graphics/Texture.hpp"
 #include "scene/Component.hpp"
 
-#include <concepts>
-#include <entt/entt.hpp>
-#include <type_traits>
-
 namespace Disarray {
+
+enum class GizmoType {
+	TranslateX = (1u << 0),
+	Translate_Y = (1u << 1),
+	TranslateZ = (1u << 2),
+	RotateX = (1u << 3),
+	RotateY = (1u << 4),
+	RotateZ = (1u << 5),
+	RotateScreen = (1u << 6),
+	ScaleX = (1u << 7),
+	ScaleY = (1u << 8),
+	ScaleZ = (1u << 9),
+	Bounds = (1u << 10),
+	Translate = TranslateX | Translate_Y | TranslateZ,
+	Rotate = RotateX | RotateY | RotateZ | RotateScreen,
+	Scale = ScaleX | ScaleY | ScaleZ
+};
 
 class Entity;
 
@@ -20,7 +40,7 @@ class Scene {
 public:
 	Scene(const Disarray::Device&, std::string_view);
 	~Scene();
-	void update(float);
+	void update(float, IGraphicsResource&);
 	void render(Disarray::Renderer&);
 	void construct(Disarray::App&, Disarray::Renderer&, Disarray::ThreadPool&);
 	void destruct();
@@ -36,11 +56,13 @@ public:
 	FloatExtent get_viewport_bounds() const { return { vp_max.x - vp_min.x, vp_max.y - vp_min.y }; }
 
 	Entity create(std::string_view = "Unnamed");
+	void delete_entity(entt::entity);
+	void delete_entity(const Entity& entity);
 
 	Disarray::Image& get_image(std::uint32_t index)
 	{
 		if (index == 0)
-			return framebuffer->get_image();
+			return identity_framebuffer->get_image(0);
 		else if (index == 1)
 			return identity_framebuffer->get_image(1);
 		else
@@ -50,11 +72,14 @@ public:
 	const CommandExecutor& get_command_executor() const { return *command_executor; };
 
 	entt::registry& get_registry() { return registry; };
-	const auto& get_selected_entity() const { return *selected_entity; }
+	const auto& get_selected_entity() const { return selected_entity; }
 	const entt::registry& get_registry() const { return registry; };
 	const std::string& get_name() const { return scene_name; };
 
+	std::optional<Entity> get_by_identifier(Identifier);
+
 	void update_picked_entity(std::uint32_t handle);
+	void manipulate_entity_transform(Entity&, Camera&, GizmoType);
 
 	template <class Func> constexpr void for_all_entities(Func&& func)
 	{
@@ -77,12 +102,23 @@ private:
 	glm::vec2 vp_max { 1 };
 	glm::vec2 vp_min { 1 };
 
-	Ref<Disarray::Framebuffer> framebuffer;
-	Ref<Disarray::Framebuffer> identity_framebuffer;
-	Ref<Disarray::CommandExecutor> command_executor;
+	Ref<Disarray::Framebuffer> framebuffer {};
+	Ref<Disarray::Framebuffer> identity_framebuffer {};
+	Ref<Disarray::CommandExecutor> command_executor {};
 
 	// Should contain some kind of container for entities :)
 	entt::registry registry;
+
+	struct ThreadPoolCallback {
+		std::function<void(void)> func;
+		bool parallel { false };
+	};
+	std::queue<ThreadPoolCallback> thread_pool_callbacks {};
+
+	std::future<void> final_pool_callback {};
+	std::atomic_bool should_run_callbacks { true };
+	std::condition_variable callback_cv {};
+	std::mutex callback_mutex {};
 };
 
 } // namespace Disarray

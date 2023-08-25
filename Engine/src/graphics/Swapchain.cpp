@@ -1,8 +1,9 @@
 #include "DisarrayPCH.hpp"
 
+#include "graphics/Swapchain.hpp"
+
 #include "core/Types.hpp"
 #include "core/Window.hpp"
-#include "graphics/Swapchain.hpp"
 #include "vulkan/Swapchain.hpp"
 
 namespace Disarray {

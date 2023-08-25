@@ -14,12 +14,6 @@ namespace Disarray {
 enum class FramebufferBlendMode { None = 0, OneZero, SrcAlphaOneMinusSrcAlpha, Additive, Zero_SrcColor };
 
 struct FramebufferTextureSpecification {
-	explicit(false) FramebufferTextureSpecification(ImageFormat fmt, bool should_blend = true)
-		: format(fmt)
-		, blend(should_blend)
-	{
-	}
-
 	ImageFormat format;
 	bool blend { true };
 	FramebufferBlendMode blend_mode { FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha };

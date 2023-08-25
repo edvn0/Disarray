@@ -1,10 +1,11 @@
 #include "DisarrayPCH.hpp"
 
-#include "core/Ensure.hpp"
 #include "core/ReferenceCounted.hpp"
 
 #include <mutex>
 #include <unordered_set>
+
+#include "core/Ensure.hpp"
 
 namespace Disarray::MemoryTracking {
 

@@ -19,13 +19,9 @@ constexpr PushConstantKind operator&(PushConstantKind a, PushConstantKind b)
 }
 
 struct PushConstantRange {
-	constexpr PushConstantRange(PushConstantKind in_flags, std::uint32_t in_size)
-		: size(in_size)
-		, flags(in_flags)
-	{
-	}
 
-	constexpr PushConstantRange(PushConstantKind in_flags, std::size_t in_size)
+	template <std::integral SizeType>
+	constexpr explicit(false) PushConstantRange(PushConstantKind in_flags, SizeType in_size)
 		: size(static_cast<std::uint32_t>(in_size))
 		, flags(in_flags)
 	{
@@ -43,7 +39,7 @@ struct PushConstantRange {
 };
 
 struct PushConstantLayout {
-	explicit PushConstantLayout(const std::initializer_list<PushConstantRange>& in);
+	PushConstantLayout(const std::initializer_list<PushConstantRange>& in);
 	const auto& get_input_ranges() const { return ranges; }
 	auto size() const { return ranges.size(); }
 

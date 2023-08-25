@@ -1,11 +1,11 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
 #include "core/KeyCode.hpp"
 #include "core/MouseCode.hpp"
 #include "core/UsageBadge.hpp"
 #include "core/Window.hpp"
-
-#include <glm/glm.hpp>
 
 namespace Disarray {
 

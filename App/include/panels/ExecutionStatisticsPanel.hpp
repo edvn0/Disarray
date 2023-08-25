@@ -1,12 +1,13 @@
 #pragma once
 
-#include "MovingAverage.hpp"
-#include "imgui.h"
-#include "ui/UI.hpp"
-
 #include <Disarray.hpp>
+#include <imgui.h>
+
 #include <array>
 #include <concepts>
+
+#include "MovingAverage.hpp"
+#include "ui/UI.hpp"
 
 namespace Disarray::Client {
 
@@ -23,7 +24,7 @@ public:
 
 		};
 
-	void update(float ts) override;
+	void update(float ts, IGraphicsResource&) override;
 
 	void interface() override;
 

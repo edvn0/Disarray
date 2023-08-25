@@ -1,15 +1,19 @@
 #pragma once
 
+#include <fmt/format.h>
+#include <nlohmann/json.hpp>
+
+#include <chrono>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <tuple>
+
+#include "core/Hashes.hpp"
 #include "core/Log.hpp"
 #include "core/Tuple.hpp"
 #include "scene/ComponentSerialisers.hpp"
-
-#include <filesystem>
-#include <fmt/format.h>
-#include <fstream>
-#include <nlohmann/json.hpp>
-#include <sstream>
-#include <tuple>
+#include "util/Timer.hpp"
 
 namespace Disarray {
 
@@ -40,20 +44,12 @@ namespace {
 				return;
 			}
 
-			if (serialised_object.empty()) {
-				Log::info("Scene Serialiser", "Serialised output was empty...?");
-				return;
-			}
-
 			namespace ch = std::chrono;
-			auto time = Log::current_time(false);
-			std::replace(time.begin(), time.end(), ':', '-');
-			std::replace(time.begin(), time.end(), ' ', '-');
 			auto name = scene.get_name();
 			std::replace(name.begin(), name.end(), ' ', '_');
 			std::replace(name.begin(), name.end(), '+', '_');
 
-			auto scene_name = fmt::format("{}-{}.json", name, time);
+			auto scene_name = fmt::format("{}-{}.json", name, std::chrono::system_clock::now().time_since_epoch().count());
 			auto full_path = path / scene_name;
 			std::ofstream output { full_path };
 			if (!output) {
@@ -66,6 +62,10 @@ namespace {
 		};
 
 		std::tuple<Serialisers...> serialisers;
+		struct EntityAndKey {
+			std::string key;
+			json data;
+		};
 
 		json serialise()
 		{
@@ -73,15 +73,15 @@ namespace {
 			root["name"] = "Scene";
 
 			const auto& registry = scene.get_registry();
-
 			const auto view = registry.template view<const Components::ID, const Components::Tag>();
-			json entities;
-			for (const auto [handle, id, tag] : view.each()) {
+
+			MSTimer timer {};
+			std::vector<EntityAndKey> output;
+			output.reserve(view.size_hint());
+			view.each([&](const auto handle, const auto& id, const auto& tag) {
 				Entity entity { scene, handle, tag.name };
 				auto key = fmt::format("{}__disarray__{}", id.identifier, tag.name);
-
 				json entity_object;
-
 				json components;
 				serialise_component<Components::Pipeline>(entity, components);
 				serialise_component<Components::Texture>(entity, components);
@@ -91,11 +91,17 @@ namespace {
 				serialise_component<Components::QuadGeometry>(entity, components);
 				serialise_component<Components::Inheritance>(entity, components);
 				entity_object["components"] = components;
+				output.push_back({ key, entity_object });
+			});
 
-				entities[key] = entity_object;
-			}
+			json entities;
+			Collections::for_each(output, [&e = entities](EntityAndKey k) { e[k.key] = k.data; });
+
+			const double elapsed = timer.elapsed<Granularity::Seconds>();
 
 			root["entities"] = entities;
+
+			Log::info("Serialiser", "Serialising took {}s", elapsed);
 
 			return root;
 		}

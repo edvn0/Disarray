@@ -1,23 +1,29 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
+#include <magic_enum.hpp>
+
+#include <array>
+#include <filesystem>
+#include <functional>
+#include <unordered_map>
+#include <unordered_set>
+
 #include "Forward.hpp"
 #include "core/Concepts.hpp"
+#include "core/Hashes.hpp"
 #include "core/Input.hpp"
 #include "core/Window.hpp"
 #include "graphics/Image.hpp"
 #include "graphics/Shader.hpp"
 #include "graphics/Texture.hpp"
 
-#include <array>
-#include <filesystem>
-#include <functional>
-#include <glm/glm.hpp>
-#include <magic_enum.hpp>
-#include <unordered_map>
-
 namespace Disarray::UI {
 
+using ExtensionSet = std::unordered_set<std::string, string_hash>;
 using ImageIdentifier = std::uint64_t;
+
 class DescriptorCache {
 	using ImageCache = std::unordered_map<ImageIdentifier, std::unique_ptr<ImageIdentifier>>;
 
@@ -37,6 +43,7 @@ using UIFunction = std::function<void(void)>;
 static constexpr auto default_function = []() {};
 
 void image_button(Image&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+void image_button(const Image&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
 void image(Image&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
 void image_button(Texture&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
 void image(Texture&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
@@ -52,7 +59,7 @@ bool is_selectable(std::string_view name, const bool is_selected);
 void set_item_default_focus();
 
 void drag_drop(const std::filesystem::path& path);
-std::optional<std::filesystem::path> accept_drag_drop(const std::string& payload_identifier, const std::string& allowed_extension = "*");
+std::optional<std::filesystem::path> accept_drag_drop(const std::string& payload_identifier, const ExtensionSet& allowed_extension = { "*" });
 bool is_item_hovered();
 bool is_mouse_double_clicked(MouseCode code = MouseCode::Left);
 void handle_double_click(auto&& handler)
@@ -96,7 +103,10 @@ template <IsEnum T> bool combo_choice(std::string name, T& initial_value)
 }
 
 bool shader_drop_button(Device&, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader);
+Ref<Texture> texture_drop_button(Device&, const Texture& texture);
 
 bool is_maximised(Window& window);
+void remove_image(const Texture& texture);
+void remove_image(ImageIdentifier hash);
 
 } // namespace Disarray::UI

@@ -1,12 +1,14 @@
 #pragma once
 
+#include <queue>
+#include <vector>
+
 #include "Forward.hpp"
 #include "core/Layer.hpp"
 #include "core/Panel.hpp"
 #include "core/UsageBadge.hpp"
 #include "graphics/CommandExecutor.hpp"
-
-#include <vector>
+#include "graphics/Renderer.hpp"
 
 namespace Disarray::UI {
 
@@ -19,7 +21,7 @@ public:
 	void handle_swapchain_recreation(Swapchain&) override;
 	void on_event(Event&) override;
 	void interface() override;
-	void update(float ts) override;
+	void update(float ts, IGraphicsResource&) override;
 	void destruct() override;
 	void render(Renderer&) override;
 	bool is_interface_layer() const override { return true; }
@@ -40,6 +42,17 @@ public:
 		}
 	}
 
+	template <class Func>
+		requires requires(Func f, CommandExecutor& exec) {
+			{
+				f.operator()(exec)
+			} -> std::same_as<void>;
+		}
+	static void on_frame_end(Func&& func)
+	{
+		frame_end_callbacks.push(std::forward<Func>(func));
+	}
+
 	void begin();
 	void end();
 
@@ -53,6 +66,9 @@ private:
 	std::unique_ptr<RendererSpecific> pimpl { nullptr };
 
 	Ref<Disarray::CommandExecutor> command_executor;
+
+	using FrameEndCallback = std::function<void(CommandExecutor&)>;
+	static inline std::queue<FrameEndCallback> frame_end_callbacks {};
 };
 
 } // namespace Disarray::UI

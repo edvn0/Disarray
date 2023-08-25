@@ -1,16 +1,16 @@
 #pragma once
 
-#include "core/Collections.hpp"
-#include "core/Ensure.hpp"
-#include "core/Hashes.hpp"
-#include "core/Log.hpp"
-#include "graphics/Device.hpp"
-
 #include <algorithm>
 #include <filesystem>
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
+
+#include "core/Collections.hpp"
+#include "core/Ensure.hpp"
+#include "core/Hashes.hpp"
+#include "core/Log.hpp"
+#include "graphics/Device.hpp"
 
 namespace Disarray {
 
@@ -30,8 +30,9 @@ public:
 
 	const Resource& put(const Props& props)
 	{
+		const auto key = create_key(props);
 		auto resource = create_from(props);
-		const auto& [pair, could] = storage.try_emplace(create_key(props), std::move(resource));
+		const auto& [pair, could] = storage.try_emplace(std::move(key), std::move(resource));
 		if (!could)
 			Log::error("ResourceCache - Put", "Could not insert resource.");
 		return pair->second;

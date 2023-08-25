@@ -1,13 +1,14 @@
 #include "DisarrayPCH.hpp"
 
+#include "graphics/PipelineCache.hpp"
+
+#include <filesystem>
+
 #include "core/Log.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Pipeline.hpp"
-#include "graphics/PipelineCache.hpp"
 #include "graphics/Shader.hpp"
 #include "graphics/Swapchain.hpp"
-
-#include <filesystem>
 
 namespace Disarray {
 
@@ -48,7 +49,5 @@ PipelineCache::PipelineCache(Disarray::Device& dev, const std::filesystem::path&
 		shader_cache.try_emplace(filename_without_spv, std::move(shader));
 	}
 }
-
-const Ref<Shader>& PipelineCache::get_shader(const std::string& key) { return shader_cache[key]; }
 
 } // namespace Disarray

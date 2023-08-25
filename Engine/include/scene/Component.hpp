@@ -1,9 +1,9 @@
 #pragma once
 
+#include <type_traits>
+
 #include "core/Concepts.hpp"
 #include "scene/Components.hpp"
-
-#include <type_traits>
 
 namespace Disarray {
 
@@ -11,7 +11,8 @@ namespace Disarray {
 namespace {
 	template <class T>
 	concept IsInAllowedComponents = AnyOf<T, Components::Tag, Components::Transform, Components::ID, Components::Inheritance,
-		Components::LineGeometry, Components::QuadGeometry, Components::Mesh, Components::Material, Components::Pipeline, Components::Texture>;
+		Components::LineGeometry, Components::QuadGeometry, Components::Mesh, Components::Material, Components::Pipeline, Components::Texture,
+		Components::DirectionalLight>;
 }
 
 template <class T>

@@ -1,9 +1,9 @@
-#include "scene/Deserialiser.hpp"
-#include "scene/Serialiser.hpp"
-
 #include <ApprovalTests.hpp>
 #include <Disarray.hpp>
 #include <gtest/gtest.h>
+
+#include "scene/Deserialiser.hpp"
+#include "scene/Serialiser.hpp"
 
 class QueueFamilyIndexMock : public Disarray::QueueFamilyIndex {
 public:

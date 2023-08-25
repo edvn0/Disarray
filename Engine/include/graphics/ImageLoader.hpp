@@ -1,9 +1,9 @@
 #pragma once
 
+#include <string>
+
 #include "ImageProperties.hpp"
 #include "core/DataBuffer.hpp"
-
-#include <string>
 
 namespace Disarray {
 

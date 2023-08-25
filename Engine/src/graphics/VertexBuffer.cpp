@@ -1,6 +1,7 @@
 #include "DisarrayPCH.hpp"
 
 #include "graphics/VertexBuffer.hpp"
+
 #include "vulkan/VertexBuffer.hpp"
 
 namespace Disarray {

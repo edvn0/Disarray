@@ -1,27 +1,21 @@
 #include "DisarrayPCH.hpp"
 
-#include "core/Collections.hpp"
 #include "graphics/ModelLoader.hpp"
 
-#include <algorithm>
 #include <glm/ext/matrix_transform.hpp>
+
 #include <tinyobjloader.h>
+
+#include <algorithm>
 #include <unordered_map>
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include <execution>
-#include <glm/glm.hpp>
-#include <glm/gtx/hash.hpp>
+#include "core/Collections.hpp"
+#include "core/exceptions/GeneralExceptions.hpp"
 
-namespace std {
-template <> struct hash<Disarray::Vertex> {
-	size_t operator()(Disarray::Vertex const& vertex) const
-	{
-		return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.uvs) << 1)
-			^ ((hash<glm::vec3>()(vertex.normals) << 1) >> 1);
-	}
-};
-} // namespace std
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
+
+#include <execution>
 
 namespace Disarray {
 
@@ -34,14 +28,18 @@ ModelLoader::ModelLoader(const std::filesystem::path& path, const glm::mat4& ini
 	std::string warn;
 
 	if (std::string err; !tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.string().c_str())) {
-		throw std::runtime_error(fmt::format("\n{}\n{}", warn, err));
+		if (warn.empty()) {
+			throw CouldNotLoadModelException(fmt::format("Error: {}", err));
+		} else {
+			throw CouldNotLoadModelException(fmt::format("Error: {}, Warning: {}", err, warn));
+		}
 	}
 
-	std::unordered_map<Vertex, uint32_t> unique_vertices {};
+	std::unordered_map<ModelVertex, uint32_t> unique_vertices {};
 
 	for (const auto& shape : shapes) {
 		Collections::for_each(shape.mesh.indices, [&](const auto& index) {
-			Vertex vertex {};
+			ModelVertex vertex {};
 
 			vertex.pos = { attrib.vertices[3 * index.vertex_index + 0], attrib.vertices[3 * index.vertex_index + 1],
 				attrib.vertices[3 * index.vertex_index + 2] };
@@ -63,7 +61,7 @@ ModelLoader::ModelLoader(const std::filesystem::path& path, const glm::mat4& ini
 	}
 
 	if (needs_rotate) {
-		Collections::for_each(vertices, [&rot = initial_rotation](auto& vertex) { vertex.rotate_by(rot); });
+		Collections::parallel_for_each(vertices, [&rot = initial_rotation](auto& vertex) { vertex.rotate_by(rot); });
 	}
 }
 

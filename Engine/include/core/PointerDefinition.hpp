@@ -1,8 +1,8 @@
 #pragma once
 
-#include "core/ReferenceCounted.hpp"
-
 #include <memory>
+
+#include "core/ReferenceCounted.hpp"
 
 namespace Disarray {
 #define CUSTOM_PREFER_IRC

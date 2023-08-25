@@ -1,5 +1,6 @@
 #include <Disarray.hpp>
 #include <ImGuizmo.h>
+
 #include <array>
 #include <vector>
 
@@ -15,7 +16,7 @@ public:
 	void construct(App&, Renderer&, ThreadPool&) override;
 	void handle_swapchain_recreation(Swapchain&) override;
 	void on_event(Event&) override;
-	void update(float) override;
+	void update(float, IGraphicsResource&) override;
 	void render(Renderer&) override;
 	void destruct() override;
 
@@ -24,7 +25,7 @@ private:
 	Device& device;
 
 	EditorCamera camera;
-	ImGuizmo::OPERATION gizmo_type { ImGuizmo::OPERATION::ROTATE };
+	GizmoType gizmo_type { GizmoType::Rotate };
 
 	bool viewport_panel_mouse_over { false };
 	bool viewport_panel_focused { false };

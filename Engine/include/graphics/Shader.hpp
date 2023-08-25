@@ -1,16 +1,17 @@
 #pragma once
 
+#include <filesystem>
+#include <string_view>
+
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
 #include "graphics/Device.hpp"
 
-#include <filesystem>
-#include <string_view>
-
 namespace Disarray {
 
 enum class ShaderType { Vertex, Fragment, Compute };
+
 static constexpr auto shader_type_extension(ShaderType shader_type)
 {
 	switch (shader_type) {

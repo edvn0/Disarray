@@ -1,11 +1,12 @@
 #include "DisarrayPCH.hpp"
 
-#include "core/Log.hpp"
-#include "scene/Components.hpp"
 #include "scene/Entity.hpp"
-#include "util/FormattingUtilities.hpp"
 
 #include <fmt/format.h>
+
+#include "core/Log.hpp"
+#include "scene/Components.hpp"
+#include "util/FormattingUtilities.hpp"
 
 auto fmt::formatter<entt::entity>::format(entt::entity c, fmt::format_context& ctx) const -> decltype(ctx.out())
 {
@@ -29,9 +30,9 @@ Entity::Entity(Scene& s, std::string_view n)
 	, name(n)
 	, identifier(scene.get_registry().create())
 {
-	add_component<Components::Transform>();
-	add_component<Components::ID>(global_identifier++);
-	add_component<Components::Tag>(name);
+	try_add_component<Components::Transform>();
+	try_add_component<Components::ID>(global_identifier++);
+	try_add_component<Components::Tag>(name);
 }
 
 Entity::Entity(Scene& scene, entt::entity handle)

@@ -1,18 +1,21 @@
 #include "DisarrayPCH.hpp"
 
+#include "ui/InterfaceLayer.hpp"
+
+#include <vulkan/vulkan.h>
+
+#include <ImGuizmo.h>
+#include <imgui.h>
+
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Device.hpp"
 #include "graphics/Renderer.hpp"
-#include "ui/InterfaceLayer.hpp"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/DebugMarker.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Instance.hpp"
 #include "vulkan/PhysicalDevice.hpp"
-
-#include <imgui.h>
-#include <vulkan/vulkan.h>
 
 namespace Disarray::UI {
 
@@ -114,10 +117,10 @@ void InterfaceLayer::on_event(Event& event)
 	}
 }
 
-void InterfaceLayer::update(float ts)
+void InterfaceLayer::update(float ts, IGraphicsResource& resource_renderer)
 {
 	for (auto& panel : panels) {
-		panel->update(ts);
+		panel->update(ts, resource_renderer);
 	}
 }
 
@@ -140,6 +143,7 @@ void InterfaceLayer::begin()
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
+	ImGuizmo::BeginFrame();
 }
 
 void InterfaceLayer::end()
@@ -234,6 +238,12 @@ void InterfaceLayer::end()
 
 	Vulkan::DebugMarker::end_region(draw_command_buffer);
 	vkCmdEndRenderPass(draw_command_buffer);
+
+	while (!frame_end_callbacks.empty()) {
+		auto front = frame_end_callbacks.front();
+		frame_end_callbacks.pop();
+		front(*command_executor);
+	}
 
 	Vulkan::verify(vkEndCommandBuffer(draw_command_buffer));
 

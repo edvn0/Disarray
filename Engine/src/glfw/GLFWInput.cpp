@@ -1,6 +1,6 @@
-#include "core/Input.hpp"
-
 #include <GLFW/glfw3.h>
+
+#include "core/Input.hpp"
 
 namespace Disarray {
 

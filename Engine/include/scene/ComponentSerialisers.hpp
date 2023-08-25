@@ -1,11 +1,11 @@
 #pragma once
 
+#include <magic_enum.hpp>
+#include <nlohmann/json.hpp>
+
 #include "scene/Component.hpp"
 #include "scene/Components.hpp"
 #include "scene/Entity.hpp"
-
-#include <magic_enum.hpp>
-#include <nlohmann/json.hpp>
 
 namespace Disarray {
 

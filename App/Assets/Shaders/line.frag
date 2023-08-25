@@ -1,5 +1,8 @@
 #version 450
 
+#include "PC.glsl"
+#include "UBO.glsl"
+
 layout(location = 0) in vec4 fragColor;
 
 layout(location = 0) out vec4 colour;

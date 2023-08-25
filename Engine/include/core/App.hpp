@@ -1,13 +1,13 @@
 #pragma once
 
-#include "core/Layer.hpp"
-#include "core/Types.hpp"
-#include "core/events/Event.hpp"
-#include "graphics/PipelineCache.hpp"
-#include "ui/InterfaceLayer.hpp"
-
+#include <filesystem>
 #include <memory>
+#include <string>
 #include <vector>
+
+#include "core/Layer.hpp"
+#include "core/events/Event.hpp"
+#include "ui/InterfaceLayer.hpp"
 
 namespace Disarray {
 
@@ -22,6 +22,7 @@ struct ApplicationProperties {
 	std::uint32_t height { 0 };
 	std::string name {};
 	bool is_fullscreen { false };
+	std::filesystem::path working_directory { std::filesystem::current_path() };
 };
 
 /**
@@ -41,7 +42,7 @@ struct ApplicationStatistics {
 class App {
 public:
 	virtual ~App();
-	App(const ApplicationProperties&);
+	explicit App(const ApplicationProperties&);
 	void run();
 
 	virtual void on_attach() = 0;

@@ -1,14 +1,16 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
+#include <variant>
+
 #include "Forward.hpp"
 #include "core/Concepts.hpp"
 #include "core/DataBuffer.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
+#include "core/UniquelyIdentifiable.hpp"
 #include "graphics/ImageProperties.hpp"
-
-#include <glm/glm.hpp>
-#include <variant>
 
 namespace Disarray {
 
@@ -30,8 +32,12 @@ class Image : public ReferenceCountable {
 	DISARRAY_OBJECT(Image)
 public:
 	virtual PixelReadData read_pixel(const glm::vec2&) const = 0;
+	virtual Identifier hash() const = 0;
+	virtual const ImageProperties& get_properties() const = 0;
 
 	static Ref<Image> construct(const Disarray::Device&, const ImageProperties&);
+
+	static void write_to_file(std::string_view path, const Image& image, const void* data);
 };
 
 } // namespace Disarray

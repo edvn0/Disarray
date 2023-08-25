@@ -1,9 +1,9 @@
 #pragma once
 
+#include <sstream>
+
 #include "core/MouseCode.hpp"
 #include "core/events/Event.hpp"
-
-#include <sstream>
 
 namespace Disarray {
 

@@ -1,7 +1,8 @@
 #include "core/FileWatcher.hpp"
 
-#include <algorithm>
 #include <core/Ensure.hpp>
+
+#include <algorithm>
 
 namespace Disarray {
 

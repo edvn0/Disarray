@@ -1,6 +1,6 @@
-#include "core/Clock.hpp"
-
 #include <GLFW/glfw3.h>
+
+#include "core/Clock.hpp"
 
 namespace Disarray {
 

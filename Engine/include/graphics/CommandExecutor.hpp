@@ -1,13 +1,13 @@
 #pragma once
 
-#include "core/CleanupAwaiter.hpp"
-#include "core/DisarrayObject.hpp"
-#include "core/Types.hpp"
-
 #include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <type_traits>
+
+#include "core/CleanupAwaiter.hpp"
+#include "core/DisarrayObject.hpp"
+#include "core/Types.hpp"
 
 namespace Disarray {
 

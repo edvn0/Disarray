@@ -1,5 +1,11 @@
 #pragma once
 
+#include <algorithm>
+#include <filesystem>
+#include <set>
+#include <unordered_map>
+#include <utility>
+
 #include "Forward.hpp"
 #include "core/Types.hpp"
 #include "graphics/Pipeline.hpp"
@@ -7,12 +13,6 @@
 #include "graphics/ResourceCache.hpp"
 #include "graphics/Shader.hpp"
 #include "graphics/Swapchain.hpp"
-
-#include <algorithm>
-#include <filesystem>
-#include <set>
-#include <unordered_map>
-#include <utility>
 
 using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;
 
@@ -32,6 +32,11 @@ struct PipelineCacheCreationProperties {
 	PolygonMode polygon_mode { PolygonMode::Fill };
 	float line_width { 1.0f };
 	SampleCount samples { SampleCount::One };
+	DepthCompareOperator depth_comparison_operator { DepthCompareOperator::GreaterOrEqual };
+	CullMode cull_mode { CullMode::Front };
+	FaceMode face_mode { FaceMode::Clockwise };
+	bool write_depth { true };
+	bool test_depth { true };
 	std::vector<VkDescriptorSetLayout> descriptor_set_layouts;
 };
 
@@ -59,6 +64,11 @@ public:
 			.polygon_mode = props.polygon_mode,
 			.line_width = props.line_width,
 			.samples = props.samples,
+			.depth_comparison_operator = props.depth_comparison_operator,
+			.cull_mode = props.cull_mode,
+			.face_mode = props.face_mode,
+			.write_depth = props.write_depth,
+			.test_depth = props.test_depth,
 			.descriptor_set_layouts = props.descriptor_set_layouts,
 		};
 
@@ -66,7 +76,8 @@ public:
 	}
 
 	std::string create_key_impl(const PipelineCacheCreationProperties& props) { return props.pipeline_key; }
-	const Ref<Shader>& get_shader(const std::string&);
+
+	template <class Key> const Ref<Shader>& get_shader(Key&& key) { return shader_cache.at(std::forward<Key>(key)); }
 
 private:
 	std::unordered_map<std::string, Ref<Shader>> shader_cache {};

@@ -23,19 +23,25 @@ find_package(Vulkan REQUIRED)
 find_program(CLANG_FORMAT "clang-format")
 include(FetchContent)
 
+add_subdirectory(Implementations)
 add_subdirectory(Engine)
 add_subdirectory(ThirdParty)
 add_subdirectory(App)
 
 if(${CMAKE_GENERATOR} STREQUAL "Ninja")
-    option(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-    add_custom_command(COMMAND ${CMAKE_COMMAND} -E copy
-        ${CMAKE_BINARY_DIR}/compile_commands.json ${CMAKE_SOURCE_DIR} OUTPUT OUT)
-    message(STATUS "Copying ${CMAKE_BINARY_DIR}/compile_commands.json to ${CMAKE_SOURCE_DIR}")
+  option(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+  add_custom_command(
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/compile_commands.json
+            ${CMAKE_SOURCE_DIR} OUTPUT OUT)
+  message(
+    STATUS
+      "Copying ${CMAKE_BINARY_DIR}/compile_commands.json to ${CMAKE_SOURCE_DIR}"
+  )
 endif()
 
 # Set global property (all targets are impacted)
-if(DISARRAY_COMPILE_PROFILE AND(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang" OR ${CMAKE_CXX_COMPILER_ID} MATCHES "GNU"))
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "time -v")
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "time -v")
+if(DISARRAY_COMPILE_PROFILE AND (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang"
+                                 OR ${CMAKE_CXX_COMPILER_ID} MATCHES "GNU"))
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "time -v")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "time -v")
 endif()

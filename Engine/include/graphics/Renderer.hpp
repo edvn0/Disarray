@@ -1,5 +1,14 @@
 #pragma once
 
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
+
+#include <scene/Camera.hpp>
+
+#include <functional>
+#include <optional>
+
 #include "Forward.hpp"
 #include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
@@ -10,13 +19,6 @@
 #include "graphics/Swapchain.hpp"
 #include "graphics/Texture.hpp"
 #include "graphics/TextureCache.hpp"
-
-#include <functional>
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <optional>
-#include <scene/Camera.hpp>
 
 using VkDescriptorSet = struct VkDescriptorSet_T*;
 using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;
@@ -67,12 +69,15 @@ struct PushConstant {
 	glm::mat4 object_transform { 1.0f };
 	glm::vec4 colour { 1.0f };
 	std::uint32_t max_identifiers {};
+	std::uint32_t current_identifier {};
 };
 
 struct UBO {
 	glm::mat4 view;
 	glm::mat4 proj;
 	glm::mat4 view_projection;
+	glm::vec4 sun_direction_and_intensity { 1.0 };
+	glm::vec4 sun_colour { 1.0f };
 };
 
 class IGraphics {
@@ -85,6 +90,15 @@ public:
 	virtual void draw_mesh(
 		Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4& transform = glm::identity<glm::mat4>())
 		= 0;
+	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&,
+		const glm::mat4& transform = glm::identity<glm::mat4>(), const std::uint32_t identifier = 0)
+		= 0;
+	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&,
+		const glm::mat4& transform = glm::identity<glm::mat4>(), const std::uint32_t identifier = 0)
+		= 0;
+	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&,
+		const glm::vec4& colour, const glm::mat4& transform = glm::identity<glm::mat4>(), const std::uint32_t identifier = 0)
+		= 0;
 	virtual void submit_batched_geometry(Disarray::CommandExecutor&) = 0;
 	virtual void on_batch_full(std::function<void(Renderer&)>&&) = 0;
 	virtual void flush_batch(Disarray::CommandExecutor&) = 0;
@@ -96,11 +110,15 @@ public:
 
 	virtual void expose_to_shaders(Image&) = 0;
 	void expose_to_shaders(Texture& tex) { expose_to_shaders(tex.get_image()); };
-	virtual VkDescriptorSet get_descriptor_set(std::uint32_t) = 0;
+	virtual VkDescriptorSet get_descriptor_set(std::uint32_t, std::uint32_t) = 0;
 	virtual VkDescriptorSet get_descriptor_set() = 0;
 	virtual const std::vector<VkDescriptorSetLayout>& get_descriptor_set_layouts() = 0;
+
 	virtual const PushConstant* get_push_constant() const = 0;
 	virtual PushConstant& get_editable_push_constant() = 0;
+
+	virtual const UBO* get_ubo() const = 0;
+	virtual UBO& get_editable_ubo() = 0;
 };
 
 class Layer;
