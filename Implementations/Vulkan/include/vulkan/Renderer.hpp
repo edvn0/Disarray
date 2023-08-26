@@ -27,7 +27,7 @@ static constexpr auto set_count = 2;
 
 class Renderer : public Disarray::Renderer {
 public:
-	Renderer(const Disarray::Device&, Disarray::Swapchain&, const RendererProperties&);
+	Renderer(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&);
 	~Renderer() override;
 
 	void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) override;
@@ -65,7 +65,8 @@ public:
 	PipelineCache& get_pipeline_cache() override { return pipeline_cache; }
 	TextureCache& get_texture_cache() override { return texture_cache; }
 
-	void begin_frame(Camera&) override;
+	void begin_frame(const Camera&) override;
+	void begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_projection) override;
 	void end_frame() override;
 
 	void force_recreation() override;
@@ -80,7 +81,7 @@ private:
 	void add_geometry_to_batch(Geometry, const GeometryProperties&);
 
 	const Disarray::Device& device;
-	Disarray::Swapchain& swapchain;
+	const Disarray::Swapchain& swapchain;
 
 	Disarray::PipelineCache pipeline_cache;
 	Disarray::TextureCache texture_cache;
@@ -93,6 +94,8 @@ private:
 	std::function<void(Disarray::Renderer&)> on_batch_full_func = [](auto&) {};
 
 	VkDescriptorPool pool;
+	// For every frame, we have a vector of descriptor sets
+
 	std::vector<VkDescriptorSet> descriptor_sets;
 	std::vector<VkDescriptorSetLayout> layouts;
 	void initialise_descriptors();

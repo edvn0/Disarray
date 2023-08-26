@@ -12,14 +12,13 @@ namespace Logging {
 	class Logger {
 	private:
 		Logger() = default;
-		~Logger() = default;
 
 	public:
 		void debug(const std::string&);
 		void info(const std::string&);
 		void error(const std::string&);
 
-		static Logger& logger()
+		static auto logger() -> Logger&
 		{
 			static Logger logger;
 			return logger;
@@ -39,7 +38,7 @@ namespace Log {
 	static constexpr std::string_view default_format = "{}[{} - {}] {}{}";
 	static constexpr std::string_view empty_scope_format = "{}[{}] {}{}";
 
-	std::string current_time(bool include_ms = true);
+	auto current_time(bool include_ms = true) -> std::string;
 
 	template <class... Args> inline void debug(std::string_view scope, fmt::format_string<Args...> fmt, Args&&... args)
 	{
@@ -87,7 +86,7 @@ namespace Log {
 		Logging::Logger::logger().error(formatted_error);
 	}
 
-	std::string format(const char* const format, ...);
+	auto format(const char* const format, ...) -> std::string;
 
 } // namespace Log
 

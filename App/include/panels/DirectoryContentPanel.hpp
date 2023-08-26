@@ -25,11 +25,10 @@ public:
 	bool traverse_up(bool force_reload = false);
 	bool can_traverse_up() const;
 
-	void construct(App&, Renderer&, ThreadPool&) override;
-	void update(float ts, IGraphicsResource&) override;
+	void construct(App&, ThreadPool&) override;
+	void update(float ts) override;
 	void interface() override;
 	void destruct() override;
-	void render(Renderer&) override;
 
 	auto& get_current() { return current; }
 	std::vector<std::filesystem::path> get_files_in_directory(const std::filesystem::path& for_path) const;

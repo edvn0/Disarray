@@ -18,7 +18,7 @@ public:
 	StatisticsPanel(Device&, Window&, Swapchain&, const ApplicationStatistics& stats)
 		: statistics(stats) {};
 
-	void update(float ts, IGraphicsResource&) override
+	void update(float ts) override
 	{
 		should_update_counter += ts;
 		if (should_update_counter > update_interval_ms) {

@@ -104,7 +104,7 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity)
 	if (entity_deleted) {
 		scene.delete_entity(entity);
 		if (*selected_entity == entity.get_identifier())
-			selected_entity = {};
+			*selected_entity = {};
 	}
 }
 
@@ -135,7 +135,7 @@ void ScenePanel::interface()
 	UI::end();
 } // namespace Disarray::Client
 
-void Disarray::Client::ScenePanel::update(float, IGraphicsResource&)
+void Disarray::Client::ScenePanel::update(float)
 {
 	if (const auto& selected = scene.get_selected_entity(); selected && selected->is_valid()) {
 		*selected_entity = selected->get_identifier();
@@ -195,7 +195,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (glm::all(glm::isnan(direction)))
 			direction = glm::vec3(0.0f);
 
-		if (ImGui::DragFloat3("Direction", glm::value_ptr(direction))) { }
+		if (ImGui::DragFloat3("Direction", glm::value_ptr(direction), 0.05f, -glm::pi<float>() / 2.f, glm::pi<float>() / 2.f)) { }
 		if (ImGui::DragFloat("Intensity", &intensity, 0.05f, 0.01f, 1.0f)) { }
 	});
 

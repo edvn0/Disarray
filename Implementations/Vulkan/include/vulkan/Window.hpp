@@ -48,6 +48,7 @@ public:
 	void wait_for_minimisation() override;
 
 	void* native() override { return window; }
+	void* native() const override { return window; }
 
 	std::pair<int, int> get_framebuffer_size() override;
 	std::pair<float, float> get_framebuffer_scale() override;

@@ -70,7 +70,7 @@ void handle_double_click(auto&& handler)
 }
 
 /**
- * Create a enum dependent combo choice. Returns [true_if_changed, current_or_new_value].
+ * Create a enum dependent combo choice. Returns true if changed.
  * @tparam T
  * @param name
  * @param initial_value reference to value
@@ -89,7 +89,6 @@ template <IsEnum T> bool combo_choice(std::string name, T& initial_value)
 			if (is_selectable(magic_enum::enum_name(value), is_selected))
 				new_value = value;
 
-			// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
 			if (is_selected) {
 				set_item_default_focus();
 			}

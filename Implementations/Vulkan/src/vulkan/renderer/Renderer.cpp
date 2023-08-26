@@ -2,10 +2,6 @@
 
 #include "graphics/Renderer.hpp"
 
-#include <glm/ext/matrix_transform.hpp>
-
-#include <core/Clock.hpp>
-
 #include <array>
 
 #include "core/Collections.hpp"
@@ -15,21 +11,17 @@
 #include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Swapchain.hpp"
-#include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/IndexBuffer.hpp"
 #include "vulkan/Mesh.hpp"
-#include "vulkan/Pipeline.hpp"
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Renderer.hpp"
 #include "vulkan/UniformBuffer.hpp"
-#include "vulkan/VertexBuffer.hpp"
-#include "vulkan/render_batch_implementation/RenderBatchImplementation.hpp"
 
 namespace Disarray::Vulkan {
 
-Renderer::Renderer(const Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::RendererProperties& properties)
+Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, const Disarray::RendererProperties& properties)
 	: device(dev)
 	, swapchain(sc)
 	, pipeline_cache(dev, "Assets/Shaders")
@@ -93,8 +85,6 @@ Renderer::Renderer(const Disarray::Device& dev, Disarray::Swapchain& sc, const D
 		pipeline_properties.pipeline_key = "line_id";
 		pipeline_properties.vertex_shader_key = "line_id.vert";
 		pipeline_properties.fragment_shader_key = "line_id.frag";
-		pipeline_properties.line_width = 8.0f;
-		pipeline_properties.polygon_mode = PolygonMode::Line;
 		pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" }, { ElementType::Uint, "id" } };
 		pipeline_cache.put(pipeline_properties);
 	}
@@ -119,14 +109,19 @@ void Renderer::on_resize()
 	pipeline_cache.force_recreate(extent);
 }
 
-void Renderer::begin_frame(Camera& camera)
+void Renderer::begin_frame(const Camera& camera)
+{
+	begin_frame(camera.get_view_matrix(), camera.get_projection_matrix(), camera.get_view_projection());
+}
+
+void Renderer::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_projection)
 {
 	// TODO: Move to some kind of scene scope?
 	batch_renderer.reset();
 
-	uniform.view = camera.get_view_matrix();
-	uniform.proj = camera.get_projection_matrix();
-	uniform.view_projection = camera.get_view_projection();
+	uniform.view = view;
+	uniform.proj = proj;
+	uniform.view_projection = view_projection;
 
 	auto& current_uniform = frame_ubos[swapchain.get_current_frame()];
 	current_uniform->set_data<UBO>(&uniform);

@@ -26,22 +26,22 @@ ClientLayer::ClientLayer(Device& device, Window& win, Swapchain& swapchain)
 
 ClientLayer::~ClientLayer() = default;
 
-void ClientLayer::construct(App& app, Renderer& renderer, ThreadPool& pool)
+void ClientLayer::construct(App& app, ThreadPool& pool)
 {
 	scene.reset(new Scene { device, "Default scene" });
 
 	ensure(scene != nullptr, "Forgot to initialise scene");
-	scene->construct(app, renderer, pool);
+	scene->construct(app, pool);
 
 	auto stats_panel = app.add_panel<StatisticsPanel>(app.get_statistics());
 	auto content_panel = app.add_panel<DirectoryContentPanel>("Assets");
 	auto scene_panel = app.add_panel<ScenePanel>(*scene);
 	auto execution_stats_panel = app.add_panel<ExecutionStatisticsPanel>(scene->get_command_executor());
 
-	stats_panel->construct(app, renderer, pool);
-	content_panel->construct(app, renderer, pool);
-	scene_panel->construct(app, renderer, pool);
-	execution_stats_panel->construct(app, renderer, pool);
+	stats_panel->construct(app, pool);
+	content_panel->construct(app, pool);
+	scene_panel->construct(app, pool);
+	execution_stats_panel->construct(app, pool);
 };
 
 void ClientLayer::interface()
@@ -84,7 +84,7 @@ void ClientLayer::interface()
 
 		auto viewport_offset = ImGui::GetCursorPos(); // includes tab bar
 		auto viewport_size = ImGui::GetContentRegionAvail();
-		// camera.set_viewport_size<FloatExtent>({ viewport_size.x, viewport_size.y });
+		camera.set_viewport_size<FloatExtent>({ viewport_size.x, viewport_size.y });
 
 		auto& image = scene->get_image(0);
 		UI::image(image, { viewport_size.x, viewport_size.y });
@@ -140,10 +140,9 @@ void ClientLayer::on_event(Event& event)
 			} else {
 				gizmo_type = GizmoType::Translate;
 			}
-			return false;
 		}
 		default:
-			return false;
+			return;
 		}
 	});
 
@@ -182,25 +181,22 @@ void ClientLayer::on_event(Event& event)
 	scene->on_event(event);
 }
 
-void ClientLayer::update(float ts, IGraphicsResource& resource_renderer)
+void ClientLayer::update(float ts)
 {
-	scene->update(ts, resource_renderer);
 	camera.on_update(ts);
+	scene->update(ts);
 }
 
-void ClientLayer::render(Disarray::Renderer& renderer)
+void ClientLayer::render()
 {
-	renderer.begin_frame(camera);
-	scene->render(renderer);
-	renderer.end_frame();
+	scene->begin_frame(camera);
+	scene->render();
+	scene->end_frame();
 }
 
 void ClientLayer::destruct() { scene->destruct(); }
 
 template <typename Child> class FileHandlerBase {
-public:
-	void operator()() { return child().operator()(); }
-
 protected:
 	explicit FileHandlerBase(const Device& dev, Scene& s, const std::filesystem::path& p, std::string_view ext)
 		: device(dev)
@@ -211,7 +207,7 @@ protected:
 		Log::info("FileHandler", "Running file handler for ext: {}. The dropped file had extension: {}", extension, file_path.extension());
 		valid = file_path.extension() == extension;
 		if (valid)
-			operator()();
+			handle();
 	}
 	auto& child() { return static_cast<Child&>(*this); }
 	auto& get_scene() { return base_scene; }
@@ -219,6 +215,7 @@ protected:
 	const auto& get_path() const { return file_path; }
 
 private:
+	void handle() { return child().handle_impl(); }
 	const Device& device;
 	Scene& base_scene;
 	std::filesystem::path file_path {};
@@ -228,22 +225,27 @@ private:
 
 class PNGHandler : public FileHandlerBase<PNGHandler> {
 public:
-	void operator()()
-	{
-		auto& scene = get_scene();
-		const auto& path = get_path();
-		auto entity = scene.create(path.filename().string());
-		entity.add_component<Components::Texture>(Texture::construct(get_device(),
-			{
-				.path = path,
-				.debug_name = path.filename().string(),
-			}));
-	}
-
 	explicit PNGHandler(const Device& device, Scene& scene, const std::filesystem::path& path)
 		: FileHandlerBase(device, scene, path, ".png")
 	{
 	}
+
+private:
+	void handle_impl()
+	{
+		auto& scene = get_scene();
+		const auto& path = get_path();
+		auto entity = scene.create(path.filename().string());
+		auto texture = Texture::construct(get_device(),
+			{
+				.path = path,
+				.debug_name = path.filename().string(),
+			});
+
+		entity.add_component<Components::Texture>(texture);
+	}
+
+	friend class FileHandlerBase<PNGHandler>;
 };
 
 void ClientLayer::handle_file_drop(const std::filesystem::path& path)

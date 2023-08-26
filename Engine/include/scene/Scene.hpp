@@ -40,9 +40,13 @@ class Scene {
 public:
 	Scene(const Disarray::Device&, std::string_view);
 	~Scene();
-	void update(float, IGraphicsResource&);
-	void render(Disarray::Renderer&);
-	void construct(Disarray::App&, Disarray::Renderer&, Disarray::ThreadPool&);
+
+	void begin_frame(const Camera&);
+	void end_frame();
+
+	void update(float);
+	void render();
+	void construct(Disarray::App&, Disarray::ThreadPool&);
 	void destruct();
 	void on_event(Disarray::Event&);
 	void recreate(const Extent& extent);
@@ -94,6 +98,7 @@ public:
 private:
 	const Disarray::Device& device;
 	std::string scene_name;
+	Scope<Renderer> scene_renderer { nullptr };
 
 	Scope<Entity> picked_entity { nullptr };
 	Scope<Entity> selected_entity { nullptr };
@@ -108,8 +113,9 @@ private:
 
 	entt::registry registry;
 
+	using FuncPtr = void (*)(Disarray::Scene&);
 	struct ThreadPoolCallback {
-		std::function<void(void)> func;
+		FuncPtr func;
 		bool parallel { false };
 	};
 	std::queue<ThreadPoolCallback> thread_pool_callbacks {};

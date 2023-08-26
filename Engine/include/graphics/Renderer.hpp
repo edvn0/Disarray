@@ -69,12 +69,14 @@ public:
 	virtual PipelineCache& get_pipeline_cache() = 0;
 	virtual TextureCache& get_texture_cache() = 0;
 
-	virtual void begin_frame(Camera& camera) = 0;
+	virtual void begin_frame(const Camera& camera) = 0;
+	virtual void begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_projection) = 0;
 	virtual void end_frame() = 0;
 
 	virtual void force_recreation() = 0;
 
-	static Ref<Renderer> construct(const Disarray::Device&, Disarray::Swapchain&, const RendererProperties&);
+	static Ref<Renderer> construct(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&);
+	static Scope<Renderer> construct_unique(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&);
 };
 
 } // namespace Disarray

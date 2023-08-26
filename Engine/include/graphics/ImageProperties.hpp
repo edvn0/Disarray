@@ -33,6 +33,20 @@ template <IsNumber T> struct IExtent {
 
 	bool operator==(const IExtent<T>& other) const { return width == other.width && height == other.height; }
 	bool operator!=(const IExtent<T>& other) const { return width != other.width || height != other.height; }
+
+	template <IsNumber Other>
+		requires(!std::is_same_v<T, Other>)
+	auto as() const
+	{
+		return IExtent<Other> { static_cast<Other>(width), static_cast<Other>(height) };
+	}
+
+	template <IsNumber Other>
+		requires(!std::is_same_v<T, Other>)
+	auto cast() const
+	{
+		return std::pair { static_cast<Other>(width), static_cast<Other>(height) };
+	}
 };
 
 struct Extent : public IExtent<std::uint32_t> { };

@@ -81,7 +81,7 @@ public:
 	const auto& get_swapchain() const { return *swapchain; }
 
 private:
-	bool could_prepare_frame(Renderer& renderer);
+	bool could_prepare_frame();
 
 	Scope<Window> window { nullptr };
 	Scope<Device> device { nullptr };

@@ -42,7 +42,7 @@ InterfaceLayer::InterfaceLayer(Device& dev, Window& win, Swapchain& swap)
 
 InterfaceLayer::~InterfaceLayer() { }
 
-void InterfaceLayer::construct(App&, Renderer& renderer, ThreadPool&)
+void InterfaceLayer::construct(App&, ThreadPool&)
 {
 	command_executor = CommandExecutor::construct(device, swapchain,
 		{
@@ -117,15 +117,18 @@ void InterfaceLayer::on_event(Event& event)
 	}
 }
 
-void InterfaceLayer::update(float ts, IGraphicsResource& resource_renderer)
+void InterfaceLayer::update(float ts)
 {
 	for (auto& panel : panels) {
-		panel->update(ts, resource_renderer);
+		panel->update(ts);
 	}
 }
 
 void InterfaceLayer::destruct()
 {
+	for (auto& panel : panels) {
+		panel->destruct();
+	}
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
@@ -253,10 +256,10 @@ void InterfaceLayer::end()
 	}
 }
 
-void InterfaceLayer::render(Renderer& renderer)
+void InterfaceLayer::render()
 {
 	for (auto& panel : panels) {
-		panel->render(renderer);
+		panel->render();
 	}
 }
 } // namespace Disarray::UI

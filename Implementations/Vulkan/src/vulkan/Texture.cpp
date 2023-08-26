@@ -2,6 +2,8 @@
 
 #include "vulkan/Texture.hpp"
 
+#include <utility>
+
 #include "core/Log.hpp"
 #include "graphics/Image.hpp"
 #include "graphics/ImageLoader.hpp"
@@ -9,9 +11,9 @@
 
 namespace Disarray::Vulkan {
 
-Texture::Texture(const Disarray::Device& dev, const Disarray::TextureProperties& properties)
-	: device(dev)
-	, props(properties)
+Texture::Texture(const Disarray::Device& dev, Disarray::TextureProperties properties)
+	: Disarray::Texture(std::move(properties))
+	, device(dev)
 {
 	load_pixels();
 
@@ -22,7 +24,7 @@ Texture::Texture(const Disarray::Device& dev, const Disarray::TextureProperties&
 		ImageProperties {
 			.extent = props.extent,
 			.format = props.format,
-			.data = pixels,
+			.data = DataBuffer { pixels },
 			.mips = *props.mips,
 			.debug_name = props.debug_name,
 		});

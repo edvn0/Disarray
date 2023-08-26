@@ -37,6 +37,11 @@ void BaseBuffer::create_with_valid_data()
 	typed_create_info.size = props.size;
 	typed_create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | to_vulkan_usage(type);
 	auto usage = type != BufferType::Uniform ? Usage::AUTO_PREFER_DEVICE : Usage::AUTO_PREFER_HOST;
+	// If we don't want it to always be mapped, be explicit here
+	if (!props.always_mapped) {
+		usage = Usage::AUTO_PREFER_DEVICE;
+	}
+
 	allocation = allocator.allocate_buffer(buffer, typed_create_info, { .usage = usage });
 
 	{
@@ -66,7 +71,18 @@ void BaseBuffer::create_with_empty_data()
 	allocation = allocator.allocate_buffer(buffer, vma_allocation_info, buffer_create_info, { .usage = usage, .creation = creation });
 }
 
-void BaseBuffer::set_data(const void* data, std::uint32_t size) { std::memcpy(vma_allocation_info.pMappedData, data, size); }
+void BaseBuffer::set_data(const void* data, std::uint32_t size)
+{
+	if (props.always_mapped) {
+		std::memcpy(vma_allocation_info.pMappedData, data, size);
+		return;
+	}
+
+	Allocator allocator { "mapper" };
+	auto* d = allocator.map_memory<std::byte>(allocation);
+	std::memcpy(d, data, size);
+	allocator.unmap_memory(allocation);
+}
 
 void BaseBuffer::destroy_buffer()
 {

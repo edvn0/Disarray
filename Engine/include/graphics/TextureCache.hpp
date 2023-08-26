@@ -33,6 +33,7 @@ public:
 		for (const auto& p : files) {
 			put(TextureCacheCreationProperties {
 				.key = p.stem().string(),
+				.debug_name = fmt::format("TextureCache-{}", p.string()),
 				.path = p.string(),
 			});
 		}
@@ -51,6 +52,7 @@ public:
 		return Texture::construct(get_device(),
 			TextureProperties {
 				.path = props.path.string(),
+				.debug_name = props.debug_name,
 			});
 	}
 

@@ -24,7 +24,7 @@ public:
 
 		};
 
-	void update(float ts, IGraphicsResource&) override;
+	void update(float ts) override;
 
 	void interface() override;
 

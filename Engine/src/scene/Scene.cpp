@@ -52,24 +52,27 @@ Scene::Scene(const Device& dev, std::string_view name)
 	selected_entity = make_scope<Entity>(*this);
 }
 
-void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray::ThreadPool& pool)
+void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 {
-	final_pool_callback = pool.submit([&flag = should_run_callbacks, &mutex = callback_mutex, &cv = callback_cv, &cbs = thread_pool_callbacks]() {
+	scene_renderer = Renderer::construct_unique(device, app.get_swapchain(), {});
+
+	final_pool_callback = pool.submit([this]() {
 		using namespace std::chrono_literals;
-		while (flag) {
-			std::unique_lock lock { mutex };
+		while (should_run_callbacks) {
+			std::unique_lock lock { callback_mutex };
 			std::vector<ThreadPoolCallback> parallels {};
-			while (!cbs.empty()) {
-				ThreadPoolCallback& front = cbs.front();
+			while (!thread_pool_callbacks.empty()) {
+				ThreadPoolCallback& front = thread_pool_callbacks.front();
 				if (front.parallel)
 					parallels.push_back(std::move(front));
 				else
-					front.func();
-				cbs.pop();
+					front.func(*this);
+				thread_pool_callbacks.pop();
 			}
 
-			Collections::parallel_for_each(parallels, [](auto& f) { f.func(); });
-			cv.wait_for(lock, 10s);
+			auto& scene = *this;
+			Collections::parallel_for_each(parallels, [&scene](auto& f) { f.func(scene); });
+			callback_cv.wait_for(lock, 10s);
 		}
 	});
 
@@ -97,7 +100,7 @@ void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray
 			glm::vec4 colour { col_x, 0, col_y, 1 };
 			rect.add_component<Components::QuadGeometry>();
 			rect.add_component<Components::Texture>(colour);
-			rect.add_component<Components::Pipeline>(renderer.get_pipeline_cache().get("quad"));
+			rect.add_component<Components::Pipeline>(scene_renderer->get_pipeline_cache().get("quad"));
 		}
 	}
 
@@ -140,7 +143,7 @@ void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray
 		}
 	}
 
-	renderer.on_batch_full([&exec = *command_executor](Renderer& r) { r.flush_batch(exec); });
+	scene_renderer->on_batch_full([&exec = *command_executor](Renderer& r) { r.flush_batch(exec); });
 
 	framebuffer = Framebuffer::construct(device,
 		{
@@ -166,7 +169,7 @@ void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray
 		{ ElementType::Float4, "colour" },
 		{ ElementType::Float3, "normals" },
 	};
-	const auto& desc_layout = renderer.get_descriptor_set_layouts();
+	const auto& desc_layout = scene_renderer->get_descriptor_set_layouts();
 	PipelineProperties props = {
 		.framebuffer = identity_framebuffer,
 		.layout = layout,
@@ -178,8 +181,8 @@ void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray
 	};
 
 	{
-		const auto& vert = renderer.get_pipeline_cache().get_shader("main.vert");
-		const auto& frag = renderer.get_pipeline_cache().get_shader("main.frag");
+		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("main.vert");
+		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("main.frag");
 		props.vertex_shader = vert;
 		props.fragment_shader = frag;
 		auto viking_rotation = rotate_by(glm::radians(glm::vec3 { 0, 0, 90 }));
@@ -190,7 +193,7 @@ void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray
 				.initial_rotation = viking_rotation,
 			}));
 		v_mesh.add_component<Components::Pipeline>(Pipeline::construct(device, props));
-		v_mesh.add_component<Components::Texture>(renderer.get_texture_cache().get("viking_room"));
+		v_mesh.add_component<Components::Texture>(scene_renderer->get_texture_cache().get("viking_room"));
 		v_mesh.add_component<Components::Material>(Material::construct(device,
 			{
 				.vertex_shader = vert,
@@ -224,7 +227,7 @@ void Scene::construct(Disarray::App& app, Disarray::Renderer& renderer, Disarray
 			.debug_name = "white_tex",
 		};
 		Ref<Texture> white_tex = Texture::construct(device, white_tex_props);
-		renderer.expose_to_shaders(*white_tex);
+		scene_renderer->expose_to_shaders(*white_tex);
 	}
 
 #endif
@@ -238,9 +241,13 @@ Scene::~Scene()
 	SceneSerialiser scene_serialiser(*this);
 }
 
-void Scene::update(float, IGraphicsResource& resource_renderer)
+void Scene::begin_frame(const Camera& camera) { scene_renderer->begin_frame(camera); }
+
+void Scene::end_frame() { scene_renderer->end_frame(); }
+
+void Scene::update(float)
 {
-	auto& editable_ubo = resource_renderer.get_editable_ubo();
+	auto& editable_ubo = scene_renderer->get_editable_ubo();
 	auto sun_component_view = registry.view<const Components::DirectionalLight, const Components::Texture>();
 
 	ensure(sun_component_view.size_hint() == 1, "More than one 'sun' registered.");
@@ -256,15 +263,15 @@ void Scene::update(float, IGraphicsResource& resource_renderer)
 	}
 }
 
-void Scene::render(Renderer& renderer)
+void Scene::render()
 {
 	command_executor->begin();
 	{
-		renderer.begin_pass(*command_executor, *framebuffer, true);
+		scene_renderer->begin_pass(*command_executor, *framebuffer, true);
 
 		auto line_view = registry.view<const Components::LineGeometry, const Components::Texture, const Components::Transform>();
 		for (auto&& [entity, geom, tex, transform] : line_view.each()) {
-			renderer.draw_planar_geometry(Geometry::Line,
+			scene_renderer->draw_planar_geometry(Geometry::Line,
 				{
 					.position = transform.position,
 					.to_position = geom.to_position,
@@ -272,14 +279,14 @@ void Scene::render(Renderer& renderer)
 				});
 		}
 
-		renderer.end_pass(*command_executor);
+		scene_renderer->end_pass(*command_executor);
 	}
 	{
-		renderer.begin_pass(*command_executor, *identity_framebuffer, true);
+		scene_renderer->begin_pass(*command_executor, *identity_framebuffer, true);
 
 		auto line_view = registry.view<const Components::LineGeometry, const Components::Texture, const Components::Transform>();
 		for (auto&& [entity, geom, tex, transform] : line_view.each()) {
-			renderer.draw_planar_geometry(Geometry::Line,
+			scene_renderer->draw_planar_geometry(Geometry::Line,
 				{
 					.position = transform.position,
 					.to_position = geom.to_position,
@@ -291,7 +298,7 @@ void Scene::render(Renderer& renderer)
 		auto rect_view
 			= registry.view<const Components::Texture, const Components::QuadGeometry, const Components::Transform, const Components::ID>();
 		for (auto&& [entity, tex, geom, transform, id] : rect_view.each()) {
-			renderer.draw_planar_geometry(Geometry::Rectangle,
+			scene_renderer->draw_planar_geometry(Geometry::Rectangle,
 				{
 					.position = transform.position,
 					.colour = tex.colour,
@@ -304,14 +311,15 @@ void Scene::render(Renderer& renderer)
 		auto mesh_view = registry.view<const Components::Mesh, const Components::Pipeline, const Components::Texture, const Components::Transform>();
 		for (auto&& [entity, mesh, pipeline, texture, transform] : mesh_view.each()) {
 			const auto identifier = static_cast<std::uint32_t>(entity);
-			renderer.draw_mesh(*command_executor, *mesh.mesh, *pipeline.pipeline, *texture.texture, texture.colour, transform.compute(), identifier);
+			scene_renderer->draw_mesh(
+				*command_executor, *mesh.mesh, *pipeline.pipeline, *texture.texture, texture.colour, transform.compute(), identifier);
 		}
 
 		auto mesh_no_texture_view
 			= registry.view<const Components::Mesh, const Components::Pipeline, const Components::Transform>(entt::exclude<Components::Texture>);
 		for (auto&& [entity, mesh, pipeline, transform] : mesh_no_texture_view.each()) {
 			const auto identifier = static_cast<std::uint32_t>(entity);
-			renderer.draw_mesh(*command_executor, *mesh.mesh, *pipeline.pipeline, transform.compute(), identifier);
+			scene_renderer->draw_mesh(*command_executor, *mesh.mesh, *pipeline.pipeline, transform.compute(), identifier);
 		}
 
 		auto directional_lights = registry.view<const Components::Transform, const Components::DirectionalLight>();
@@ -321,7 +329,7 @@ void Scene::render(Renderer& renderer)
 			distance *= 2.5;
 			auto end = begin + distance;
 
-			renderer.draw_planar_geometry(Geometry::Line,
+			scene_renderer->draw_planar_geometry(Geometry::Line,
 				{
 					.position = begin,
 					.to_position = end,
@@ -331,9 +339,9 @@ void Scene::render(Renderer& renderer)
 		}
 
 		// TODO: Implement
-		// renderer.draw_text("Hello world!", 0, 0, 12.f);
+		// scene_renderer->draw_text("Hello world!", 0, 0, 12.f);
 
-		renderer.end_pass(*command_executor);
+		scene_renderer->end_pass(*command_executor);
 	}
 	command_executor->submit_and_end();
 }
@@ -343,9 +351,8 @@ void Scene::on_event(Event& event)
 	EventDispatcher dispatcher { event };
 	dispatcher.dispatch<KeyPressedEvent>([this](KeyPressedEvent&) {
 		if (Input::all<KeyCode::LeftControl, KeyCode::LeftShift, KeyCode::S>()) {
-			auto func = [this] { SceneSerialiser scene_serialiser(*this); };
 			thread_pool_callbacks.push({
-				.func = func,
+				.func = [](Scene& scene) { SceneSerialiser scene_serialiser(scene); },
 				.parallel = false,
 			});
 		}

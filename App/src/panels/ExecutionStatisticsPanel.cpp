@@ -2,7 +2,7 @@
 
 namespace Disarray::Client {
 
-void ExecutionStatisticsPanel::update(float ts, IGraphicsResource&)
+void ExecutionStatisticsPanel::update(float ts)
 {
 	if (!has_stats)
 		return;

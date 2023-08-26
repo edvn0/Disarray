@@ -42,5 +42,3 @@
 #include <utility>
 #include <variant>
 #include <vector>
-
-#include "core/Log.hpp"

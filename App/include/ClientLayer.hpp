@@ -13,11 +13,11 @@ public:
 
 	void interface() override;
 
-	void construct(App&, Renderer&, ThreadPool&) override;
+	void construct(App&, ThreadPool&) override;
 	void handle_swapchain_recreation(Swapchain&) override;
 	void on_event(Event&) override;
-	void update(float, IGraphicsResource&) override;
-	void render(Renderer&) override;
+	void update(float) override;
+	void render() override;
 	void destruct() override;
 
 private:

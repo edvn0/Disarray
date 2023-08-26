@@ -4,8 +4,14 @@
 #include "UBO.glsl"
 
 layout(set = 0, binding = 0) uniform UniformBlock {
-	Uniform ubo;
+    Uniform ubo;
 } UBO;
+
+layout(push_constant) uniform PushConstantBlock
+{
+    PushConstant pc;
+}
+PC;
 
 layout(location = 0) in vec4 fragColour;
 layout(location = 1) in vec2 uvs;
@@ -15,6 +21,7 @@ layout(location = 0) out vec4 colour;
 layout(location = 1) out uint identifier;
 
 void main() {
+    PushConstant pc = PC.pc;
     colour = fragColour;
-    identifier = PC.current_identifier;
+    identifier = pc.current_identifier;
 }

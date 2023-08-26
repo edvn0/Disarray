@@ -57,10 +57,7 @@ auto formatter<Disarray::SampleCount>::format(Disarray::SampleCount samples, for
 
 namespace Disarray {
 
-Ref<Image> Image::construct(const Device& device, const ImageProperties& image_properties)
-{
-	return make_ref<Vulkan::Image>(device, image_properties);
-}
+auto Image::construct(const Device& device, ImageProperties image_properties) { return make_ref<Vulkan::Image>(device, std::move(image_properties)); }
 
 void Image::write_to_file(std::string_view path, const Image& image, const void* data)
 {

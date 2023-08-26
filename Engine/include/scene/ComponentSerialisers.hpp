@@ -3,6 +3,7 @@
 #include <magic_enum.hpp>
 #include <nlohmann/json.hpp>
 
+#include "core/Log.hpp"
 #include "scene/Component.hpp"
 #include "scene/Components.hpp"
 #include "scene/Entity.hpp"
@@ -16,14 +17,13 @@ public:
 	{
 		Log::error("ComponentDeserialiseException", "{}", message);
 	}
-	~ComponentDeserialiseException() noexcept override = default;
 };
 
 enum class SerialiserType : std::uint8_t { Faulty, Pipeline, Texture, Mesh, Transform, LineGeometry, QuadGeometry, Inheritance };
 template <class T> inline constexpr SerialiserType serialiser_type_for = SerialiserType::Faulty;
 
 template <ValidComponent T, class Child> struct ComponentSerialiser {
-	bool can_serialise(const Entity& entity) { return entity.has_component<T>(); }
+	auto can_serialise(const Entity& entity) -> bool { return entity.has_component<T>(); }
 
 	constexpr std::string_view get_component_name() { return magic_enum::enum_name(serialiser_type_for<T>); }
 	void serialise(const T& component, nlohmann::json& object_for_the_component)
@@ -33,7 +33,7 @@ template <ValidComponent T, class Child> struct ComponentSerialiser {
 };
 
 template <ValidComponent T, class Child> struct ComponentDeserialiser {
-	bool can_serialise(const Entity& entity) { return entity.has_component<T>(); }
+	auto can_serialise(const Entity& entity) -> bool { return entity.has_component<T>(); }
 	constexpr std::string_view get_component_name() { return magic_enum::enum_name(serialiser_type_for<T>); }
 
 	bool should_add_component(const nlohmann::json& object_for_the_component)

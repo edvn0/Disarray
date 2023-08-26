@@ -2,12 +2,13 @@
 
 #include "vulkan/Window.hpp"
 
+#include <GLFW/glfw3.h>
 #include <graphics/ImageLoader.hpp>
 
 #include <string>
 
-#include "GLFW/glfw3.h"
 #include "core/App.hpp"
+#include "core/Input.hpp"
 #include "core/Log.hpp"
 #include "core/events/ApplicationEvent.hpp"
 #include "core/events/KeyEvent.hpp"
@@ -22,6 +23,7 @@ void Window::register_event_handler(Disarray::App& app)
 {
 	user_data.callback = [&app = app](Event& event) { app.on_event(event); };
 
+	Input::construct(*this);
 	glfwSetFramebufferSizeCallback(window, [](GLFWwindow* win, int, int) {
 		auto& data = *static_cast<UserData*>(glfwGetWindowUserPointer(win));
 		data.was_resized = true;

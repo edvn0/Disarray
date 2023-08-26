@@ -5,6 +5,8 @@
 #include <cstring>
 #include <string>
 
+#include "core/Log.hpp"
+
 namespace Disarray::UI {
 
 void drag_drop(const std::filesystem::path& path)

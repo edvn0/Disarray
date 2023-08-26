@@ -75,7 +75,7 @@ bool DirectoryContentPanel::traverse_up(bool force_reload)
 	return could;
 }
 
-void DirectoryContentPanel::update(float ts, IGraphicsResource&)
+void DirectoryContentPanel::update(float ts)
 {
 	if (changed) {
 		current_directory_content = path_and_content_cache[current];
@@ -155,7 +155,7 @@ void DirectoryContentPanel::interface()
 	ImGui::End();
 }
 
-void DirectoryContentPanel::construct(App&, Renderer&, ThreadPool& pool)
+void DirectoryContentPanel::construct(App&, ThreadPool& pool)
 {
 	using namespace std::chrono_literals;
 	file_watcher = make_scope<FileWatcher>(pool, "Assets", 300ms);
@@ -214,7 +214,5 @@ void DirectoryContentPanel::draw_file_or_directory(const std::filesystem::path& 
 	UI::image(*icon, size);
 	ImGui::PopStyleColor();
 }
-
-void DirectoryContentPanel::render(Renderer& renderer) { }
 
 } // namespace Disarray::Client

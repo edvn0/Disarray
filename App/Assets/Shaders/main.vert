@@ -4,8 +4,14 @@
 #include "UBO.glsl"
 
 layout(set = 0, binding = 0) uniform UniformBlock {
-	Uniform ubo;
+    Uniform ubo;
 } UBO;
+
+layout(push_constant) uniform PushConstantBlock
+{
+    PushConstant pc;
+}
+PC;
 
 layout(location = 0) in vec3 pos;
 layout(location = 1) in vec2 uv;
@@ -18,9 +24,10 @@ layout(location = 2) out vec3 outNormals;
 
 void main() {
     Uniform ubo = UBO.ubo;
+    PushConstant pc = PC.pc;
 
-    gl_Position = ubo.view_projection * PC.object_transform * vec4(pos, 1.0);
-    fragColor = PC.colour;
+    gl_Position = ubo.view_projection * pc.object_transform * vec4(pos, 1.0);
+    fragColor = pc.colour;
     uvs = uv;
     outNormals = normals;
 }

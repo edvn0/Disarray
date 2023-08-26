@@ -7,6 +7,7 @@
 #include <ostream>
 
 #include "core/Formatters.hpp"
+#include "core/Log.hpp"
 
 namespace Disarray::FS {
 

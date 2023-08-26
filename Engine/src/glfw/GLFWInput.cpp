@@ -10,7 +10,7 @@ struct WindowData {
 
 static std::unique_ptr<WindowData> window_data { nullptr };
 
-void Input::construct(UsageBadge<App>, Disarray::Window& window)
+void Input::construct(const Disarray::Window& window)
 {
 	window_data = std::make_unique<WindowData>();
 	window_data->window = static_cast<GLFWwindow*>(window.native());

@@ -25,5 +25,5 @@ enum class MouseCode {
 	ButtonMiddle = Button2
 };
 
-inline std::ostream& operator<<(std::ostream& out, MouseCode code) { return out << std::to_string(static_cast<int>(code)); }
+inline auto operator<<(std::ostream& out, MouseCode code) -> std::ostream& { return out << std::to_string(static_cast<int>(code)); }
 } // namespace Disarray

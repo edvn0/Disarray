@@ -29,14 +29,12 @@ struct ImageProperties {
 using PixelReadData = std::variant<glm::vec4, std::uint32_t, std::monostate>;
 
 class Image : public ReferenceCountable {
-	DISARRAY_OBJECT(Image)
+	DISARRAY_OBJECT_PROPS(Image, ImageProperties)
 public:
-	virtual PixelReadData read_pixel(const glm::vec2&) const = 0;
-	virtual Identifier hash() const = 0;
-	virtual const ImageProperties& get_properties() const = 0;
+	virtual auto read_pixel(const glm::vec2&) const -> PixelReadData = 0;
+	virtual auto hash() const -> Identifier = 0;
 
-	static Ref<Image> construct(const Disarray::Device&, const ImageProperties&);
-
+	static auto construct(const Disarray::Device&, ImageProperties);
 	static void write_to_file(std::string_view path, const Image& image, const void* data);
 };
 
