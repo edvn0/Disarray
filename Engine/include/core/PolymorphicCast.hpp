@@ -9,7 +9,7 @@ namespace Disarray {
 
 template <class To, class From>
 	requires(std::is_base_of_v<From, To>)
-decltype(auto) polymorphic_cast(From&& object)
+auto polymorphic_cast(From&& object) -> decltype(auto)
 {
 #ifdef IS_DEBUG
 	return dynamic_cast<To&>(std::forward<From>(object));
@@ -20,7 +20,7 @@ decltype(auto) polymorphic_cast(From&& object)
 
 template <class To, class From>
 	requires(std::is_base_of_v<From, To>)
-decltype(auto) polymorphic_cast(const From& object)
+auto polymorphic_cast(const From& object) -> decltype(auto)
 {
 #ifdef IS_DEBUG
 	return dynamic_cast<const To&>(object);
@@ -31,7 +31,7 @@ decltype(auto) polymorphic_cast(const From& object)
 
 template <class To, class From>
 	requires(std::is_base_of_v<From, To>)
-decltype(auto) polymorphic_cast(From& object)
+auto polymorphic_cast(From& object) -> decltype(auto)
 {
 #ifdef IS_DEBUG
 	return dynamic_cast<To&>(object);

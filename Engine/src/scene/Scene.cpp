@@ -169,7 +169,9 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 		{ ElementType::Float4, "colour" },
 		{ ElementType::Float3, "normals" },
 	};
-	const auto& desc_layout = scene_renderer->get_descriptor_set_layouts();
+	const auto& resources = scene_renderer->get_graphics_resource();
+
+	const auto& desc_layout = resources.get_descriptor_set_layouts();
 	PipelineProperties props = {
 		.framebuffer = identity_framebuffer,
 		.layout = layout,
@@ -227,7 +229,7 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 			.debug_name = "white_tex",
 		};
 		Ref<Texture> white_tex = Texture::construct(device, white_tex_props);
-		scene_renderer->expose_to_shaders(*white_tex);
+		scene_renderer->get_graphics_resource().expose_to_shaders(*white_tex);
 	}
 
 #endif
@@ -245,9 +247,9 @@ void Scene::begin_frame(const Camera& camera) { scene_renderer->begin_frame(came
 
 void Scene::end_frame() { scene_renderer->end_frame(); }
 
-void Scene::update(float)
+void Scene::update(float /*unused*/)
 {
-	auto& editable_ubo = scene_renderer->get_editable_ubo();
+	auto& editable_ubo = scene_renderer->get_graphics_resource().get_editable_ubo();
 	auto sun_component_view = registry.view<const Components::DirectionalLight, const Components::Texture>();
 
 	ensure(sun_component_view.size_hint() == 1, "More than one 'sun' registered.");
@@ -333,7 +335,7 @@ void Scene::render()
 				{
 					.position = begin,
 					.to_position = end,
-					.colour = glm::vec4 { 1.0f, 0.0f, 1.0f, 1.0f },
+					.colour = glm::vec4 { 1.0F, 0.0F, 1.0F, 1.0F },
 					.identifier = static_cast<std::uint32_t>(entity),
 				});
 		}
@@ -371,7 +373,7 @@ void Scene::recreate(const Extent& new_ex)
 
 void Scene::destruct() { command_executor.reset(); }
 
-Entity Scene::create(std::string_view name)
+auto Scene::create(std::string_view name) -> Entity
 {
 	auto entity = Entity(*this, name);
 	return entity;
@@ -381,7 +383,7 @@ void Scene::delete_entity(entt::entity entity) { registry.destroy(entity); }
 
 void Scene::delete_entity(const Entity& entity) { delete_entity(entity.get_identifier()); }
 
-Scope<Scene> Scene::deserialise(const Device& device, std::string_view name, const std::filesystem::path& filename)
+auto Scene::deserialise(const Device& device, std::string_view name, const std::filesystem::path& filename) -> Scope<Scene>
 {
 	Scope<Scene> created = make_scope<Scene>(device, name);
 	SceneDeserialiser deserialiser { *created, device, filename };
@@ -430,11 +432,12 @@ void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoTyp
 	}
 }
 
-std::optional<Entity> Scene::get_by_identifier(Identifier identifier)
+auto Scene::get_by_identifier(Identifier identifier) -> std::optional<Entity>
 {
 	for (const auto [entity, id] : registry.view<Components::ID>().each()) {
-		if (id.identifier == identifier)
+		if (id.identifier == identifier) {
 			return Entity { *this, entity };
+		}
 	}
 
 	return std::nullopt;

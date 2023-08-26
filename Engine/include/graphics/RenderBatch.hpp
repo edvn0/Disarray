@@ -106,7 +106,9 @@ struct LineIdVertexBatch final : public RenderBatchFor<LineIdVertex, LineIdVerte
 	void flush_impl(Disarray::Renderer&, Disarray::CommandExecutor&);
 };
 
-template <std::size_t Objects = 1> struct BatchRenderer {
+struct BatchRenderer {
+	static constexpr auto Objects = batch_renderer_size;
+
 	using Quads = QuadVertexBatch;
 	using Lines = LineVertexBatch;
 	using LinesWithIdentifiers = LineVertexBatch;
@@ -128,7 +130,7 @@ template <std::size_t Objects = 1> struct BatchRenderer {
 		Tuple::static_for(objects, [&renderer, &device](std::size_t index, auto& batch) { batch.construct(renderer, device); });
 	}
 
-	bool would_be_full()
+	auto would_be_full() -> bool
 	{
 		bool batch_would_be_full = false;
 		Tuple::static_for(objects, [&batch_would_be_full](std::size_t index, auto& batch) {

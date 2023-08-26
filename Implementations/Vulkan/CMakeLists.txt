@@ -15,6 +15,7 @@ set(SOURCES
         include/vulkan/Allocator.hpp
         include/vulkan/exceptions/VulkanExceptions.hpp
         include/vulkan/Window.hpp
+        include/vulkan/GraphicsResource.hpp
         include/vulkan/Device.hpp
         include/vulkan/Material.hpp
         include/vulkan/Surface.hpp
@@ -45,9 +46,9 @@ set(SOURCES
         src/vulkan/PhysicalDevice.cpp
         src/vulkan/Mesh.cpp
         src/vulkan/ExtensionSupport.cpp
+        src/vulkan/GraphicsResource.cpp
         src/vulkan/Framebuffer.cpp
         src/vulkan/renderer/GraphicsRenderer.cpp
-        src/vulkan/renderer/ResourceRenderer.cpp
         src/vulkan/renderer/Renderer.cpp
         src/vulkan/RenderBatchImplementation.cpp
         src/vulkan/VertexBuffer.cpp

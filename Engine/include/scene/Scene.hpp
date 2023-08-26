@@ -17,18 +17,18 @@
 
 namespace Disarray {
 
-enum class GizmoType {
-	TranslateX = (1u << 0),
-	Translate_Y = (1u << 1),
-	TranslateZ = (1u << 2),
-	RotateX = (1u << 3),
-	RotateY = (1u << 4),
-	RotateZ = (1u << 5),
-	RotateScreen = (1u << 6),
-	ScaleX = (1u << 7),
-	ScaleY = (1u << 8),
-	ScaleZ = (1u << 9),
-	Bounds = (1u << 10),
+enum class GizmoType : std::uint16_t {
+	TranslateX = (1U << 0),
+	Translate_Y = (1U << 1),
+	TranslateZ = (1U << 2),
+	RotateX = (1U << 3),
+	RotateY = (1U << 4),
+	RotateZ = (1U << 5),
+	RotateScreen = (1U << 6),
+	ScaleX = (1U << 7),
+	ScaleY = (1U << 8),
+	ScaleZ = (1U << 9),
+	Bounds = (1U << 10),
 	Translate = TranslateX | Translate_Y | TranslateZ,
 	Rotate = RotateX | RotateY | RotateZ | RotateScreen,
 	Scale = ScaleX | ScaleY | ScaleZ
@@ -59,41 +59,41 @@ public:
 
 	FloatExtent get_viewport_bounds() const { return { vp_max.x - vp_min.x, vp_max.y - vp_min.y }; }
 
-	Entity create(std::string_view = "Unnamed");
+	auto create(std::string_view = "Unnamed") -> Entity;
 	void delete_entity(entt::entity);
 	void delete_entity(const Entity& entity);
 
-	Disarray::Image& get_image(std::uint32_t index)
+	auto get_image(std::uint32_t index) -> Disarray::Image&
 	{
-		if (index == 0)
+		if (index == 0) {
 			return identity_framebuffer->get_image(0);
-		else if (index == 1)
+		} else if (index == 1)
 			return identity_framebuffer->get_image(1);
 		else
 			return identity_framebuffer->get_depth_image();
 	}
 
-	const CommandExecutor& get_command_executor() const { return *command_executor; };
+	auto get_command_executor() const -> const CommandExecutor& { return *command_executor; };
 
-	entt::registry& get_registry() { return registry; };
-	const auto& get_selected_entity() const { return selected_entity; }
-	const entt::registry& get_registry() const { return registry; };
-	const std::string& get_name() const { return scene_name; };
+	auto get_registry() -> entt::registry& { return registry; };
+	auto get_selected_entity() const -> const auto& { return selected_entity; }
+	auto get_registry() const -> const entt::registry& { return registry; };
+	auto get_name() const -> const std::string& { return scene_name; };
 
-	std::optional<Entity> get_by_identifier(Identifier);
+	auto get_by_identifier(Identifier) -> std::optional<Entity>;
 
 	void update_picked_entity(std::uint32_t handle);
-	void manipulate_entity_transform(Entity&, Camera&, GizmoType);
+	static void manipulate_entity_transform(Entity&, Camera&, GizmoType);
 
 	template <class Func> constexpr void for_all_entities(Func&& func)
 	{
 		const auto view = get_registry().storage<entt::entity>().each();
 		for (const auto& [entity] : view) {
-			func(entity);
+			std::forward<Func>(func)(entity);
 		}
 	}
 
-	static Scope<Scene> deserialise(const Device&, std::string_view, const std::filesystem::path&);
+	static auto deserialise(const Device&, std::string_view, const std::filesystem::path&) -> Scope<Scene>;
 
 private:
 	const Disarray::Device& device;
@@ -115,7 +115,7 @@ private:
 
 	using FuncPtr = void (*)(Disarray::Scene&);
 	struct ThreadPoolCallback {
-		FuncPtr func;
+		FuncPtr func { nullptr };
 		bool parallel { false };
 	};
 	std::queue<ThreadPoolCallback> thread_pool_callbacks {};

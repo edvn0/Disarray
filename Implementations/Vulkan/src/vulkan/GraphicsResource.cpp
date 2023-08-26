@@ -1,5 +1,7 @@
 #include "DisarrayPCH.hpp"
 
+#include "vulkan/GraphicsResource.hpp"
+
 // clang-format off
 #include "vulkan/Renderer.hpp"
 // clang-format on
@@ -25,7 +27,24 @@
 
 namespace Disarray::Vulkan {
 
-void Renderer::initialise_descriptors()
+GraphicsResource::GraphicsResource(const Disarray::Device& dev, const Disarray::Swapchain& sc)
+	: device(dev)
+	, swapchain(sc)
+	, pipeline_cache(dev, "Assets/Shaders")
+	, texture_cache(dev, "Assets/Textures")
+{
+	for (std::size_t i = 0; i < sc.image_count(); i++) {
+		frame_ubos.emplace_back(make_scope<Vulkan::UniformBuffer>(device,
+			BufferProperties {
+				.size = sizeof(UBO),
+				.count = 1,
+				.binding = 0,
+			}));
+	}
+	initialise_descriptors();
+}
+
+void GraphicsResource::initialise_descriptors()
 {
 	auto vk_device = supply_cast<Vulkan::Device>(device);
 
@@ -50,8 +69,8 @@ void Renderer::initialise_descriptors()
 	layout_create_info.bindingCount = 1;
 	layout_create_info.pBindings = &default_binding;
 
-	VkDescriptorSetLayout default_layout;
-	VkDescriptorSetLayout image_layout;
+	VkDescriptorSetLayout default_layout = nullptr;
+	VkDescriptorSetLayout image_layout = nullptr;
 	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &default_layout));
 
 	layout_create_info.pBindings = &image_binding;
@@ -121,7 +140,7 @@ void Renderer::initialise_descriptors()
 	}
 }
 
-void Renderer::expose_to_shaders(Disarray::Image& image)
+void GraphicsResource::expose_to_shaders(Disarray::Image& image)
 {
 	// const auto& descriptor_info = cast_to<Vulkan::Image>(image).get_descriptor_info();
 	// Check if we can just add it to the descriptor sets
@@ -129,6 +148,21 @@ void Renderer::expose_to_shaders(Disarray::Image& image)
 	// If not, reallocate
 	// Else, add it
 	// update descriptor sets?
+}
+
+void GraphicsResource::update_ubo()
+{
+	auto& current_uniform = frame_ubos[swapchain.get_current_frame()];
+	current_uniform->set_data(&uniform, sizeof(UBO));
+}
+
+GraphicsResource::~GraphicsResource()
+{
+
+	const auto& vk_device = supply_cast<Vulkan::Device>(device);
+	Collections::for_each(layouts, [&vk_device](VkDescriptorSetLayout& layout) { vkDestroyDescriptorSetLayout(vk_device, layout, nullptr); });
+
+	vkDestroyDescriptorPool(vk_device, pool, nullptr);
 }
 
 } // namespace Disarray::Vulkan

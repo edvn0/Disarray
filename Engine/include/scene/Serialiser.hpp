@@ -59,7 +59,6 @@ namespace {
 			}
 
 			output << std::setw(2) << serialised_object;
-			Log::info("Scene Serialiser", "Successfully serialised scene!");
 		};
 
 		std::tuple<Serialisers...> serialisers;
@@ -102,7 +101,7 @@ namespace {
 
 			root["entities"] = entities;
 
-			Log::info("Serialiser", "Serialising took {}s", elapsed);
+			Log::debug("Serialiser", "Serialising took {}s", elapsed);
 
 			return root;
 		}

@@ -91,7 +91,9 @@ void QuadVertexBatch::submit_impl(Renderer& renderer, CommandExecutor& command_e
 
 	prepare_data();
 
-	renderer.get_editable_push_constant().max_identifiers = submitted_objects;
+	auto& resources = renderer.get_graphics_resource();
+
+	resources.get_editable_push_constant().max_identifiers = submitted_objects;
 
 	auto command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
 
@@ -100,13 +102,13 @@ void QuadVertexBatch::submit_impl(Renderer& renderer, CommandExecutor& command_e
 	const auto index_count = submitted_indices;
 	const auto& vk_pipeline = cast_to<Vulkan::Pipeline>(*pipeline);
 
-	const std::array<VkDescriptorSet, 1> desc { renderer.get_descriptor_set() };
+	const std::array<VkDescriptorSet, 1> desc { resources.get_descriptor_set() };
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.get_layout(), 0, 1, desc.data(), 0, nullptr);
 
 	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.supply());
 
 	vkCmdPushConstants(command_buffer, vk_pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),
-		renderer.get_push_constant());
+		resources.get_push_constant());
 
 	const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vb) };
 	constexpr VkDeviceSize offsets { 0 };
@@ -182,7 +184,9 @@ void LineVertexBatch::submit_impl(Disarray::Renderer& renderer, Disarray::Comman
 
 	prepare_data();
 
-	renderer.get_editable_push_constant().max_identifiers = this->submitted_objects;
+	auto& resources = renderer.get_graphics_resource();
+
+	resources.get_editable_push_constant().max_identifiers = this->submitted_objects;
 
 	auto command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
 
@@ -194,9 +198,9 @@ void LineVertexBatch::submit_impl(Disarray::Renderer& renderer, Disarray::Comman
 	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.supply());
 
 	vkCmdPushConstants(command_buffer, vk_pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),
-		renderer.get_push_constant());
+		resources.get_push_constant());
 
-	const std::array<VkDescriptorSet, 1> desc { renderer.get_descriptor_set() };
+	const std::array<VkDescriptorSet, 1> desc { resources.get_descriptor_set() };
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.get_layout(), 0, 1, desc.data(), 0, nullptr);
 
 	const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vb) };
@@ -278,7 +282,9 @@ void LineIdVertexBatch::submit_impl(Renderer& renderer, CommandExecutor& command
 
 	prepare_data();
 
-	renderer.get_editable_push_constant().max_identifiers = this->submitted_objects;
+	auto& resources = renderer.get_graphics_resource();
+
+	resources.get_editable_push_constant().max_identifiers = this->submitted_objects;
 
 	auto command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
 
@@ -290,9 +296,9 @@ void LineIdVertexBatch::submit_impl(Renderer& renderer, CommandExecutor& command
 	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.supply());
 
 	vkCmdPushConstants(command_buffer, vk_pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),
-		renderer.get_push_constant());
+		resources.get_push_constant());
 
-	const std::array<VkDescriptorSet, 1> desc { renderer.get_descriptor_set() };
+	const std::array<VkDescriptorSet, 1> desc { resources.get_descriptor_set() };
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.get_layout(), 0, 1, desc.data(), 0, nullptr);
 
 	const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vb) };

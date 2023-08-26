@@ -20,12 +20,8 @@
 
 namespace Disarray::Vulkan {
 
-static constexpr auto max_batch_renderer_objects = 1000;
-
-// TODO: Make this dynamic
-static constexpr auto set_count = 2;
-
 class Renderer : public Disarray::Renderer {
+	DISARRAY_MAKE_NONCOPYABLE(Renderer)
 public:
 	Renderer(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&);
 	~Renderer() override;
@@ -50,20 +46,9 @@ public:
 	void flush_batch(Disarray::CommandExecutor&) override;
 	// End IGraphics
 
-	// IGraphicsResource
-	void expose_to_shaders(Disarray::Image&) override;
-	void expose_to_shaders(Disarray::Texture& tex) override { expose_to_shaders(tex.get_image()); };
-	VkDescriptorSet get_descriptor_set(std::uint32_t frame_index, std::uint32_t set) override
-	{
-		return descriptor_sets[(frame_index * set_count) + set];
-	}
-	VkDescriptorSet get_descriptor_set() override { return get_descriptor_set(swapchain.get_current_frame(), 0); };
-	const std::vector<VkDescriptorSetLayout>& get_descriptor_set_layouts() override { return layouts; }
-	// End IGraphicsResource
-
 	void on_resize() override;
-	PipelineCache& get_pipeline_cache() override { return pipeline_cache; }
-	TextureCache& get_texture_cache() override { return texture_cache; }
+	auto get_pipeline_cache() -> PipelineCache& override { return get_graphics_resource().get_pipeline_cache(); }
+	auto get_texture_cache() -> TextureCache& override { return get_graphics_resource().get_texture_cache(); }
 
 	void begin_frame(const Camera&) override;
 	void begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_projection) override;
@@ -71,41 +56,21 @@ public:
 
 	void force_recreation() override;
 
-	const PushConstant* get_push_constant() const override { return &pc; }
-	PushConstant& get_editable_push_constant() override { return pc; }
-
-	const UBO* get_ubo() const override { return &uniform; }
-	UBO& get_editable_ubo() override { return uniform; }
-
 private:
 	void add_geometry_to_batch(Geometry, const GeometryProperties&);
 
 	const Disarray::Device& device;
 	const Disarray::Swapchain& swapchain;
 
-	Disarray::PipelineCache pipeline_cache;
-	Disarray::TextureCache texture_cache;
-
-	BatchRenderer<max_batch_renderer_objects> batch_renderer;
+	BatchRenderer batch_renderer;
 
 	Ref<Disarray::Framebuffer> geometry_framebuffer;
 	Ref<Disarray::Framebuffer> quad_framebuffer;
 
 	std::function<void(Disarray::Renderer&)> on_batch_full_func = [](auto&) {};
 
-	VkDescriptorPool pool;
-	// For every frame, we have a vector of descriptor sets
-
-	std::vector<VkDescriptorSet> descriptor_sets;
-	std::vector<VkDescriptorSetLayout> layouts;
-	void initialise_descriptors();
-
-	UBO uniform {};
-	std::vector<Ref<UniformBuffer>> frame_ubos;
-
 	RendererProperties props;
 	Extent extent;
-	PushConstant pc {};
 };
 
 } // namespace Disarray::Vulkan

@@ -75,8 +75,9 @@ void App::run()
 		float time_step = Clock::ms() - current_time;
 
 		for (auto& layer : layers) {
-			if (needs_recreation)
+			if (needs_recreation) {
 				layer->handle_swapchain_recreation(*swapchain);
+			}
 			layer->update(time_step);
 			layer->render();
 		}
@@ -99,7 +100,6 @@ void App::run()
 	wait_for_cleanup(*device);
 
 	UI::DescriptorCache::destruct();
-
 	for (auto& layer : layers) {
 		layer->destruct();
 	}
@@ -108,7 +108,7 @@ void App::run()
 	on_detach();
 }
 
-bool App::could_prepare_frame()
+auto App::could_prepare_frame() -> bool
 {
 	const auto could_prepare = swapchain->prepare_frame();
 	if (could_prepare)

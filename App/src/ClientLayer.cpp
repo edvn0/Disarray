@@ -7,7 +7,9 @@
 
 #include <array>
 #include <filesystem>
+#include <memory>
 #include <type_traits>
+#include <utility>
 
 #include "graphics/Renderer.hpp"
 #include "panels/DirectoryContentPanel.hpp"
@@ -20,7 +22,7 @@ namespace Disarray::Client {
 
 ClientLayer::ClientLayer(Device& device, Window& win, Swapchain& swapchain)
 	: device(device)
-	, camera(60.f, static_cast<float>(swapchain.get_extent().width), static_cast<float>(swapchain.get_extent().height), 0.1f, 1000.f, nullptr)
+	, camera(60.F, static_cast<float>(swapchain.get_extent().width), static_cast<float>(swapchain.get_extent().height), 0.1F, 1000.F, nullptr)
 {
 }
 
@@ -28,7 +30,7 @@ ClientLayer::~ClientLayer() = default;
 
 void ClientLayer::construct(App& app, ThreadPool& pool)
 {
-	scene.reset(new Scene { device, "Default scene" });
+	scene = std::make_unique<Scene>(device, "Default scene");
 
 	ensure(scene != nullptr, "Forgot to initialise scene");
 	scene->construct(app, pool);
@@ -84,12 +86,12 @@ void ClientLayer::interface()
 
 		auto viewport_offset = ImGui::GetCursorPos(); // includes tab bar
 		auto viewport_size = ImGui::GetContentRegionAvail();
-		camera.set_viewport_size<FloatExtent>({ viewport_size.x, viewport_size.y });
+		// camera.set_viewport_size<FloatExtent>({ viewport_size.x, viewport_size.y });
 
 		auto& image = scene->get_image(0);
 		UI::image(image, { viewport_size.x, viewport_size.y });
 
-		if (auto& entity = scene->get_selected_entity(); entity->is_valid()) {
+		if (const auto& entity = scene->get_selected_entity(); entity->is_valid()) {
 			scene->manipulate_entity_transform(*entity, camera, gizmo_type);
 		}
 
@@ -145,7 +147,6 @@ void ClientLayer::on_event(Event& event)
 			return;
 		}
 	});
-
 	dispatcher.dispatch<MouseButtonReleasedEvent>([this](MouseButtonReleasedEvent& pressed) {
 		if (ImGuizmo::IsUsing())
 			return true;
@@ -198,21 +199,22 @@ void ClientLayer::destruct() { scene->destruct(); }
 
 template <typename Child> class FileHandlerBase {
 protected:
-	explicit FileHandlerBase(const Device& dev, Scene& s, const std::filesystem::path& p, std::string_view ext)
+	explicit FileHandlerBase(const Device& dev, Scene& s, std::filesystem::path p, std::string_view ext)
 		: device(dev)
 		, base_scene(s)
-		, file_path(p)
+		, file_path(std::move(p))
 		, extension(ext)
 	{
 		Log::info("FileHandler", "Running file handler for ext: {}. The dropped file had extension: {}", extension, file_path.extension());
 		valid = file_path.extension() == extension;
-		if (valid)
+		if (valid) {
 			handle();
+		}
 	}
-	auto& child() { return static_cast<Child&>(*this); }
-	auto& get_scene() { return base_scene; }
-	const auto& get_device() const { return device; }
-	const auto& get_path() const { return file_path; }
+	auto child() -> auto& { return static_cast<Child&>(*this); }
+	auto get_scene() -> auto& { return base_scene; }
+	auto get_device() const -> const auto& { return device; }
+	auto get_path() const -> const auto& { return file_path; }
 
 private:
 	void handle() { return child().handle_impl(); }
@@ -250,8 +252,9 @@ private:
 
 void ClientLayer::handle_file_drop(const std::filesystem::path& path)
 {
-	if (!std::filesystem::exists(path))
+	if (!std::filesystem::exists(path)) {
 		return;
+	}
 
 	PNGHandler png_handler { device, *scene, path };
 }

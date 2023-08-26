@@ -49,7 +49,7 @@ public:
 	virtual void on_detach() = 0;
 
 	template <typename T, typename... Args>
-	decltype(auto) add_layer(Args&&... args)
+	auto add_layer(Args&&... args) -> decltype(auto)
 		requires(
 			std::is_base_of_v<Layer, T> && requires(Disarray::Device& dev, Disarray::Window& win, Disarray::Swapchain& swap) { T(dev, win, swap); })
 	{
@@ -60,16 +60,17 @@ public:
 		requires(std::is_base_of_v<Panel, T>
 			&& requires(Disarray::Device& dev, Disarray::Window& win, Disarray::Swapchain& swap,
 				Args&&... args) { T(dev, win, swap, std::forward<Args>(args)...); })
-	auto& add_panel(Args&&... args)
+	auto add_panel(Args&&... args) -> auto&
 	{
 		std::shared_ptr<Layer> interface {
 			nullptr
 		};
-		for (const auto& layer : layers)
+		for (const auto& layer : layers) {
 			if (layer->is_interface_layer()) {
 				interface = layer;
 				break;
 			}
+		}
 
 		auto interface_layer = std::dynamic_pointer_cast<UI::InterfaceLayer>(interface);
 		return interface_layer->template add_panel<T>(std::forward<Args>(args)...);
@@ -77,11 +78,11 @@ public:
 
 	void on_event(Event& event);
 
-	const auto& get_statistics() const { return statistics; }
-	const auto& get_swapchain() const { return *swapchain; }
+	auto get_statistics() const -> const auto& { return statistics; }
+	auto get_swapchain() const -> const auto& { return *swapchain; }
 
 private:
-	bool could_prepare_frame();
+	auto could_prepare_frame() -> bool;
 
 	Scope<Window> window { nullptr };
 	Scope<Device> device { nullptr };
@@ -90,6 +91,6 @@ private:
 	ApplicationStatistics statistics;
 };
 
-extern std::unique_ptr<Disarray::App> create_application(const Disarray::ApplicationProperties&);
+extern auto create_application(const Disarray::ApplicationProperties&) -> std::unique_ptr<Disarray::App>;
 
 } // namespace Disarray

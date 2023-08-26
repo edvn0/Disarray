@@ -33,6 +33,6 @@ protected:                                                                      
 		: props(std::move(properties))                                                                                                               \
 	{                                                                                                                                                \
 	}                                                                                                                                                \
-	p props;
+	p props; // NOLINT
 
 } // namespace Disarray

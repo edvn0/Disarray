@@ -11,16 +11,11 @@
 
 namespace Disarray::FS {
 
-void write_to_file(std::string_view path_sv, std::size_t size, const void* data)
-{
-	std::filesystem::path path { path_sv };
-	std::ofstream stream { path };
-	if (!stream) {
-		Log::empty_error("Could not open file: {}", path);
-		return;
-	}
-
-	stream.write(Disarray::bit_cast<const char*>(data), size);
-}
+template <> struct detail::GenericFileWriter<const void*>;
+template <> struct detail::GenericFileWriter<const char*>;
+template <> struct detail::GenericFileWriter<const unsigned*>;
+template <> struct detail::GenericFileWriter<const void>;
+template <> struct detail::GenericFileWriter<const char>;
+template <> struct detail::GenericFileWriter<const unsigned>;
 
 } // namespace Disarray::FS

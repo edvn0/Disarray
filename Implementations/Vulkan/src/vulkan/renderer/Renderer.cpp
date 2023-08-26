@@ -13,6 +13,7 @@
 #include "graphics/Swapchain.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Framebuffer.hpp"
+#include "vulkan/GraphicsResource.hpp"
 #include "vulkan/IndexBuffer.hpp"
 #include "vulkan/Mesh.hpp"
 #include "vulkan/RenderPass.hpp"
@@ -22,24 +23,12 @@
 namespace Disarray::Vulkan {
 
 Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, const Disarray::RendererProperties& properties)
-	: device(dev)
+	: Disarray::Renderer(std::make_unique<GraphicsResource>(dev, sc))
+	, device(dev)
 	, swapchain(sc)
-	, pipeline_cache(dev, "Assets/Shaders")
-	, texture_cache(dev, "Assets/Textures")
 	, props(properties)
 	, extent(swapchain.get_extent())
 {
-	frame_ubos.resize(swapchain.image_count());
-	for (auto& ubo : frame_ubos) {
-		ubo = UniformBuffer::construct(device,
-			BufferProperties {
-				.size = sizeof(UBO),
-				.binding = 0,
-			});
-	}
-
-	initialise_descriptors();
-
 	FramebufferProperties geometry_props { .extent = swapchain.get_extent(),
 		.attachments = { { ImageFormat::SBGR }, { ImageFormat::Depth } },
 		.clear_colour_on_load = false,
@@ -61,12 +50,12 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 			{ ElementType::Float4, "colour" }, { ElementType::Uint, "identifier" } },
 		.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, sizeof(PushConstant) } },
 		.extent = swapchain.get_extent(),
-		.descriptor_set_layouts = layouts,
+		.descriptor_set_layouts = get_graphics_resource().get_descriptor_set_layouts(),
 	};
 	{
 		// Quad
 		pipeline_properties.framebuffer = quad_framebuffer;
-		pipeline_cache.put(pipeline_properties);
+		get_pipeline_cache().put(pipeline_properties);
 	}
 	{
 		// Line
@@ -77,7 +66,7 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 		pipeline_properties.line_width = 8.0f;
 		pipeline_properties.polygon_mode = PolygonMode::Line;
 		pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" } };
-		pipeline_cache.put(pipeline_properties);
+		get_pipeline_cache().put(pipeline_properties);
 	}
 	{
 		// Line
@@ -86,27 +75,21 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 		pipeline_properties.vertex_shader_key = "line_id.vert";
 		pipeline_properties.fragment_shader_key = "line_id.frag";
 		pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" }, { ElementType::Uint, "id" } };
-		pipeline_cache.put(pipeline_properties);
+		get_pipeline_cache().put(pipeline_properties);
 	}
 
 	batch_renderer.construct(*this, device);
 }
 
-Renderer::~Renderer()
-{
-	const auto& vk_device = supply_cast<Vulkan::Device>(device);
-	Collections::for_each(layouts, [&vk_device](VkDescriptorSetLayout& layout) { vkDestroyDescriptorSetLayout(vk_device, layout, nullptr); });
-
-	vkDestroyDescriptorPool(vk_device, pool, nullptr);
-}
+Renderer::~Renderer() = default;
 
 void Renderer::on_resize()
 {
 	extent = swapchain.get_extent();
 	geometry_framebuffer->recreate(true, extent);
 	quad_framebuffer->recreate(true, extent);
-	texture_cache.force_recreate(extent);
-	pipeline_cache.force_recreate(extent);
+	get_texture_cache().force_recreate(extent);
+	get_pipeline_cache().force_recreate(extent);
 }
 
 void Renderer::begin_frame(const Camera& camera)
@@ -119,19 +102,20 @@ void Renderer::begin_frame(const glm::mat4& view, const glm::mat4& proj, const g
 	// TODO: Move to some kind of scene scope?
 	batch_renderer.reset();
 
-	uniform.view = view;
-	uniform.proj = proj;
-	uniform.view_projection = view_projection;
+	auto& ubo = get_graphics_resource().get_editable_ubo();
 
-	auto& current_uniform = frame_ubos[swapchain.get_current_frame()];
-	current_uniform->set_data<UBO>(&uniform);
+	ubo.view = view;
+	ubo.proj = proj;
+	ubo.view_projection = view_projection;
+
+	get_graphics_resource().update_ubo();
 
 	if (swapchain.needs_recreation()) {
 		force_recreation();
 	}
 }
 
-void Renderer::end_frame() { std::memset(&uniform, 0, sizeof(UBO)); }
+void Renderer::end_frame() { std::memset(&get_graphics_resource().get_editable_ubo(), 0, sizeof(UBO)); }
 
 void Renderer::force_recreation() { on_resize(); }
 

@@ -159,7 +159,7 @@ void Pipeline::construct_layout(const Extent& extent)
 	VkPipelineVertexInputStateCreateInfo vertex_input_info {};
 	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-	const auto bindings = get_properties().layout.construct_binding();
+	const auto bindings = props.layout.construct_binding();
 	VkVertexInputBindingDescription binding_description {};
 	binding_description.binding = bindings.binding;
 	binding_description.stride = bindings.stride;
@@ -167,7 +167,7 @@ void Pipeline::construct_layout(const Extent& extent)
 
 	std::vector<VkVertexInputAttributeDescription> attribute_descriptions {};
 	std::uint32_t location = 0;
-	for (const auto& attribute : get_properties().layout.elements) {
+	for (const auto& attribute : props.layout.elements) {
 		auto& new_attribute = attribute_descriptions.emplace_back();
 		new_attribute.binding = 0;
 		new_attribute.format = Detail::to_vulkan_format(attribute.type);
@@ -182,12 +182,12 @@ void Pipeline::construct_layout(const Extent& extent)
 
 	VkPipelineInputAssemblyStateCreateInfo input_assembly {};
 	input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	input_assembly.topology = Detail::vk_polygon_topology(get_properties().polygon_mode);
+	input_assembly.topology = Detail::vk_polygon_topology(props.polygon_mode);
 	input_assembly.primitiveRestartEnable = static_cast<VkBool32>(false);
 
-	// Prefer extent over get_properties() (due to resizing API)
-	std::uint32_t width { get_properties().extent.width };
-	std::uint32_t height { get_properties().extent.height };
+	// Prefer extent over props (due to resizing API)
+	std::uint32_t width { props.extent.width };
+	std::uint32_t height { props.extent.height };
 	if (extent.valid()) {
 		width = extent.width;
 		height = extent.height;
@@ -216,19 +216,19 @@ void Pipeline::construct_layout(const Extent& extent)
 	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterizer.depthClampEnable = static_cast<VkBool32>(false);
 	rasterizer.rasterizerDiscardEnable = static_cast<VkBool32>(false);
-	rasterizer.polygonMode = Detail::vk_polygon_mode(get_properties().polygon_mode);
-	rasterizer.lineWidth = get_properties().line_width;
-	rasterizer.cullMode = Detail::to_vulkan_cull_mode(get_properties().cull_mode);
-	rasterizer.frontFace = Detail::to_vulkan_face_mode(get_properties().face_mode);
+	rasterizer.polygonMode = Detail::vk_polygon_mode(props.polygon_mode);
+	rasterizer.lineWidth = props.line_width;
+	rasterizer.cullMode = Detail::to_vulkan_cull_mode(props.cull_mode);
+	rasterizer.frontFace = Detail::to_vulkan_face_mode(props.face_mode);
 	rasterizer.depthBiasEnable = static_cast<VkBool32>(false);
 	rasterizer.depthBiasConstantFactor = 0.0F; // Optional
 	rasterizer.depthBiasClamp = 0.0F; // Optional
 	rasterizer.depthBiasSlopeFactor = 0.0F; // Optional
 
 	auto depth_stencil_state_create_info = vk_structures<VkPipelineDepthStencilStateCreateInfo> {}();
-	depth_stencil_state_create_info.depthTestEnable = static_cast<VkBool32>(get_properties().test_depth);
-	depth_stencil_state_create_info.depthWriteEnable = static_cast<VkBool32>(get_properties().write_depth);
-	depth_stencil_state_create_info.depthCompareOp = Detail::to_vulkan_comparison(get_properties().depth_comparison_operator);
+	depth_stencil_state_create_info.depthTestEnable = static_cast<VkBool32>(props.test_depth);
+	depth_stencil_state_create_info.depthWriteEnable = static_cast<VkBool32>(props.write_depth);
+	depth_stencil_state_create_info.depthCompareOp = Detail::to_vulkan_comparison(props.depth_comparison_operator);
 	depth_stencil_state_create_info.depthBoundsTestEnable = static_cast<VkBool32>(false);
 	depth_stencil_state_create_info.back.compareOp = VK_COMPARE_OP_ALWAYS;
 	depth_stencil_state_create_info.back.failOp = VK_STENCIL_OP_KEEP;
@@ -239,15 +239,15 @@ void Pipeline::construct_layout(const Extent& extent)
 	VkPipelineMultisampleStateCreateInfo multisampling {};
 	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisampling.sampleShadingEnable = static_cast<VkBool32>(false);
-	multisampling.rasterizationSamples = to_vulkan_samples(get_properties().samples);
+	multisampling.rasterizationSamples = to_vulkan_samples(props.samples);
 	multisampling.minSampleShading = 1.0F; // Optional
 	multisampling.pSampleMask = nullptr; // Optional
 	multisampling.alphaToCoverageEnable = static_cast<VkBool32>(false); // Optional
 	multisampling.alphaToOneEnable = static_cast<VkBool32>(false); // Optional
 
-	const auto& fb_props = get_properties().framebuffer->get_properties();
+	const auto& fb_props = props.framebuffer->get_properties();
 	const auto should_present = fb_props.should_present;
-	size_t color_attachment_count = should_present ? 1 : get_properties().framebuffer->get_colour_attachment_count();
+	size_t color_attachment_count = should_present ? 1 : props.framebuffer->get_colour_attachment_count();
 	std::vector<VkPipelineColorBlendAttachmentState> blend_attachment_states(color_attachment_count);
 	static constexpr auto blend_all_factors
 		= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -313,12 +313,12 @@ void Pipeline::construct_layout(const Extent& extent)
 
 	VkPipelineLayoutCreateInfo pipeline_layout_info {};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipeline_layout_info.setLayoutCount = static_cast<std::uint32_t>(get_properties().descriptor_set_layouts.size()); // Optional
-	pipeline_layout_info.pSetLayouts = get_properties().descriptor_set_layouts.data(); // Optional
+	pipeline_layout_info.setLayoutCount = static_cast<std::uint32_t>(props.descriptor_set_layouts.size()); // Optional
+	pipeline_layout_info.pSetLayouts = props.descriptor_set_layouts.data(); // Optional
 
-	pipeline_layout_info.pushConstantRangeCount = static_cast<std::uint32_t>(get_properties().push_constant_layout.size()); // Optional
+	pipeline_layout_info.pushConstantRangeCount = static_cast<std::uint32_t>(props.push_constant_layout.size()); // Optional
 	std::vector<VkPushConstantRange> result;
-	for (const auto& pc_layout : get_properties().push_constant_layout.get_input_ranges()) {
+	for (const auto& pc_layout : props.push_constant_layout.get_input_ranges()) {
 		auto& out = result.emplace_back();
 		VkShaderStageFlags flags {};
 		if (pc_layout.flags == PushConstantKind::Fragment) {
@@ -342,7 +342,7 @@ void Pipeline::construct_layout(const Extent& extent)
 
 	VkGraphicsPipelineCreateInfo pipeline_create_info {};
 	pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	auto stages = retrieve_shader_stages(get_properties().vertex_shader, get_properties().fragment_shader);
+	auto stages = retrieve_shader_stages(props.vertex_shader, props.fragment_shader);
 	std::vector<VkPipelineShaderStageCreateInfo> stage_data { stages.first, stages.second };
 	pipeline_create_info.pStages = stage_data.data();
 	pipeline_create_info.stageCount = static_cast<std::uint32_t>(stage_data.size());
@@ -355,7 +355,7 @@ void Pipeline::construct_layout(const Extent& extent)
 	pipeline_create_info.pColorBlendState = &color_blending;
 	pipeline_create_info.pDynamicState = &dynamic_state;
 	pipeline_create_info.layout = layout;
-	pipeline_create_info.renderPass = supply_cast<Vulkan::RenderPass>(get_properties().framebuffer->get_render_pass());
+	pipeline_create_info.renderPass = supply_cast<Vulkan::RenderPass>(props.framebuffer->get_render_pass());
 	pipeline_create_info.subpass = 0;
 	pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipeline_create_info.basePipelineIndex = -1; // Optional
@@ -368,8 +368,8 @@ Pipeline::~Pipeline()
 	vkDestroyPipelineLayout(supply_cast<Vulkan::Device>(device), layout, nullptr);
 	vkDestroyPipeline(supply_cast<Vulkan::Device>(device), pipeline, nullptr);
 
-	get_properties().vertex_shader->destroy_module();
-	get_properties().fragment_shader->destroy_module();
+	props.vertex_shader->destroy_module();
+	props.fragment_shader->destroy_module();
 
 	if (cache == nullptr) {
 		return;
@@ -382,10 +382,10 @@ Pipeline::~Pipeline()
 	data.resize(size);
 	vkGetPipelineCacheData(supply_cast<Vulkan::Device>(device), cache, &size, data.data());
 
-	const auto pipeline_name = fmt::format("Pipeline-{}-{}", get_properties().vertex_shader->get_properties().path.filename(),
-		get_properties().fragment_shader->get_properties().path.filename());
+	const auto pipeline_name = fmt::format(
+		"Pipeline-{}-{}", props.vertex_shader->get_properties().path.filename(), props.fragment_shader->get_properties().path.filename());
 
-	const auto name = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", pipeline_name, get_properties().hash());
+	const auto name = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", pipeline_name, props.hash());
 	FS::write_to_file(name, size, std::span { data });
 
 	vkDestroyPipelineCache(supply_cast<Vulkan::Device>(device), cache, nullptr);
@@ -409,15 +409,15 @@ void Pipeline::recreate_pipeline(bool should_clean, const Extent& extent)
 	construct_layout(extent);
 }
 
-auto Pipeline::get_framebuffer() -> Disarray::Framebuffer& { return *get_properties().framebuffer; }
+auto Pipeline::get_framebuffer() -> Disarray::Framebuffer& { return *props.framebuffer; }
 
-auto Pipeline::get_render_pass() -> Disarray::RenderPass& { return get_properties().framebuffer->get_render_pass(); }
+auto Pipeline::get_render_pass() -> Disarray::RenderPass& { return props.framebuffer->get_render_pass(); }
 
 void Pipeline::try_find_or_recreate_cache()
 {
-	const auto hash = get_properties().hash();
-	const auto name = fmt::format("Assets/Pipelines/Pipeline-{}-{}-Cache-{}.pipe-bin",
-		get_properties().vertex_shader->get_properties().path.filename(), get_properties().fragment_shader->get_properties().path.filename(), hash);
+	const auto hash = props.hash();
+	const auto name = fmt::format("Assets/Pipelines/Pipeline-{}-{}-Cache-{}.pipe-bin", props.vertex_shader->get_properties().path.filename(),
+		props.fragment_shader->get_properties().path.filename(), hash);
 
 	std::ifstream input_stream { name, std::fstream::ate | std::fstream::binary };
 	if (!input_stream) {

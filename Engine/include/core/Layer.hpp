@@ -7,8 +7,6 @@
 
 namespace Disarray {
 
-class Renderer;
-class IGraphicsResource;
 class App;
 class Swapchain;
 

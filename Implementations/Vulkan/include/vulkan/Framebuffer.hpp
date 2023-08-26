@@ -17,7 +17,7 @@ namespace Disarray::Vulkan {
 
 class Framebuffer : public Disarray::Framebuffer, public PropertySupplier<VkFramebuffer> {
 public:
-	Framebuffer(const Disarray::Device&, const FramebufferProperties&);
+	Framebuffer(const Disarray::Device&, FramebufferProperties);
 	~Framebuffer() override;
 
 	void force_recreation() override;
@@ -37,9 +37,6 @@ public:
 	Disarray::RenderPass& get_render_pass() override { return *render_pass; };
 	const auto& get_clear_values() const { return clear_values; }
 
-	const FramebufferProperties& get_properties() const override { return props; }
-	FramebufferProperties& get_properties() override { return props; }
-
 private:
 	void recreate_framebuffer(bool should_clean = true);
 
@@ -51,8 +48,6 @@ private:
 	std::uint32_t colour_count {};
 	std::vector<Scope<Vulkan::Image>> attachments;
 	Scope<Vulkan::Image> depth_attachment;
-
-	FramebufferProperties props;
 };
 
 } // namespace Disarray::Vulkan
