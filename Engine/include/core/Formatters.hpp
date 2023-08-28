@@ -3,8 +3,19 @@
 #include <glm/glm.hpp>
 
 #include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <filesystem>
+
+#include "graphics/ImageProperties.hpp"
+
+template <> struct fmt::formatter<Disarray::Extent> : fmt::formatter<std::string_view> {
+	auto format(const Disarray::Extent& ext, format_context& ctx) -> decltype(ctx.out());
+};
+
+template <> struct fmt::formatter<Disarray::FloatExtent> : fmt::formatter<std::string_view> {
+	auto format(const Disarray::FloatExtent& ext, format_context& ctx) -> decltype(ctx.out());
+};
 
 template <> struct fmt::formatter<glm::vec2> : fmt::formatter<std::string_view> {
 	auto format(const glm::vec2& format, format_context& ctx) -> decltype(ctx.out());

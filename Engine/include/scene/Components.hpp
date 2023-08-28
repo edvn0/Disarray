@@ -6,10 +6,12 @@
 
 #include <entt/entt.hpp>
 
+#include <memory>
 #include <unordered_set>
 
 #include "Forward.hpp"
 #include "core/Concepts.hpp"
+#include "core/Log.hpp"
 #include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
 #include "graphics/Material.hpp"
@@ -107,8 +109,37 @@ struct DirectionalLight {
 };
 
 struct PointLight {
-	glm::vec3 direction;
+	glm::vec3 direction { 0.f };
 	float intensity { .8f };
+};
+
+struct Script {
+private:
+	friend class Disarray::Entity;
+	using ScriptPtr = std::shared_ptr<CppScript>;
+
+	static void delete_script(ScriptPtr&);
+	static void create_script(ScriptPtr&);
+	static void set_entity_for_instance(ScriptPtr&, Entity&);
+
+	ScriptPtr instance_slot { nullptr };
+
+public:
+	Script() = default;
+	~Script();
+
+	template <class ChildScript>
+		requires std::is_base_of_v<CppScript, ChildScript> && requires(Entity& entity) { ChildScript(entity); }
+	void bind(Entity& entity)
+	{
+		instance_slot = std::make_shared<ChildScript>(entity);
+		create_script(instance_slot);
+	}
+
+	void destroy() { delete_script(instance_slot); }
+
+	auto get_script() -> auto& { return *instance_slot; }
+	[[nodiscard]] auto get_script() const -> const auto& { return *instance_slot; }
 };
 
 struct Inheritance {
@@ -116,6 +147,8 @@ struct Inheritance {
 	Identifier parent {};
 
 	void add_child(Entity&);
+
+	auto has_parent() const -> bool { return parent != 0; }
 };
 
 } // namespace Disarray::Components

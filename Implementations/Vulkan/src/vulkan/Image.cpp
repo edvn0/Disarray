@@ -4,11 +4,11 @@
 
 #include <vulkan/vulkan.h>
 
-#include <core/ThreadPool.hpp>
-
 #include <span>
 
 #include "core/Ensure.hpp"
+#include "core/Formatters.hpp"
+#include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/ImageProperties.hpp"
@@ -50,7 +50,9 @@ void Image::destroy_resources()
 
 void Image::recreate(bool should_clean, const Extent& extent)
 {
+	Log::info("Image", "OLD SIZE!!! {}", get_properties().extent);
 	get_properties().extent = extent;
+	Log::info("Image", "SET SIZE!!! {}", get_properties().extent);
 	recreate_image(should_clean);
 }
 
@@ -82,7 +84,9 @@ auto Image::read_pixel(const glm::vec2& pos) const -> PixelReadData
 			immediate->supply(), staging_image->supply(), descriptor_info.imageLayout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
 
 		auto create_info = vk_structures<VkBufferCreateInfo>()();
-		VkDeviceSize size = get_properties().data.is_valid() ? get_properties().data.get_size() : get_properties().extent.get_size() * sizeof(float);
+		const auto& img_props = get_properties();
+		const auto img_size = img_props.data.get_size();
+		VkDeviceSize size = get_properties().data.is_valid() ? img_size : img_props.extent.get_size() * sizeof(float);
 		create_info.size = size;
 		create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 		allocation = allocator.allocate_buffer(

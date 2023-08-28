@@ -66,45 +66,58 @@ ScenePanel::ScenePanel(Device& dev, Window&, Swapchain&, Scene& s)
 	selected_entity = std::make_unique<entt::entity>(entt::null);
 }
 
-void ScenePanel::draw_entity_node(Disarray::Entity& entity)
+void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_parent, std::uint32_t depth)
 {
+	static constexpr auto max_recursion = 4;
+	const auto has_inheritance = entity.has_component<Components::Inheritance>();
+	const auto has_hit_max_recursion = depth >= 4;
+	if (!has_hit_max_recursion && check_if_has_parent && has_inheritance) {
+		auto inheritance = entity.get_components<Components::Inheritance>();
+		if (inheritance.has_parent()) {
+			return;
+		}
+	}
 	const auto& tag = entity.get_components<Components::Tag>().name;
 
 	const auto is_same = (*selected_entity == entity.get_identifier());
 	ImGuiTreeNodeFlags flags = (is_same ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
 	flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
-	const auto& id = entity.get_components<Components::ID>();
-	bool opened = ImGui::TreeNodeEx(Disarray::bit_cast<const void*>(id.identifier), flags, "%s", tag.c_str());
+	const auto& id_component = entity.get_components<Components::ID>();
+	bool opened = ImGui::TreeNodeEx(Disarray::bit_cast<const void*>(id_component.identifier), flags, "%s", tag.c_str());
 	if (ImGui::IsItemClicked()) {
 		*selected_entity = entity.get_identifier();
 	}
 
 	bool entity_deleted = false;
-	if (ImGui::BeginPopupContextWindow("##testtest")) {
-		if (ImGui::MenuItem("Delete Entity"))
+	if (ImGui::BeginPopupContextWindow("##DeleteEntityPopup")) {
+		if (ImGui::MenuItem("Delete Entity")) {
 			entity_deleted = true;
-
+		}
 		ImGui::EndPopup();
 	}
 
 	if (opened) {
-		if (entity.has_component<Components::Inheritance>()) {
-			const auto children = entity.get_components<Components::Inheritance>();
-			for (const auto& child : children.children) {
-				const auto child_entity = scene.get_by_identifier(child);
-				if (!child_entity)
-					continue;
-				const auto& t = (*child_entity).get_components<Components::Tag>();
-				ImGui::Text("%s", t.name.c_str());
+		if (!has_inheritance) {
+			ImGui::TreePop();
+			return;
+		}
+
+		const auto children = entity.get_components<Components::Inheritance>();
+		for (const auto& child : children.children) {
+			auto child_entity = scene.get_by_identifier(child);
+			if (!child_entity) {
+				continue;
 			}
+			draw_entity_node(*child_entity, false, depth + 1);
 		}
 		ImGui::TreePop();
 	}
 
 	if (entity_deleted) {
 		scene.delete_entity(entity);
-		if (*selected_entity == entity.get_identifier())
+		if (*selected_entity == entity.get_identifier()) {
 			*selected_entity = {};
+		}
 	}
 }
 
@@ -113,7 +126,7 @@ void ScenePanel::interface()
 	UI::begin("Scene");
 	scene.for_all_entities([this](entt::entity entity_id) {
 		Entity entity { scene, entity_id };
-		draw_entity_node(entity);
+		draw_entity_node(entity, true);
 	});
 
 	if (ImGui::BeginPopupContextWindow("EmptyEntityId", 1)) {

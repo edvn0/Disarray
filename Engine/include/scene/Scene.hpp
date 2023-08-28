@@ -60,6 +60,11 @@ public:
 	FloatExtent get_viewport_bounds() const { return { vp_max.x - vp_min.x, vp_max.y - vp_min.y }; }
 
 	auto create(std::string_view = "Unnamed") -> Entity;
+
+	template <typename... Args> auto create(fmt::format_string<Args...> format, Args&&... args) -> Entity
+	{
+		return create(fmt::format(format, std::forward<Args>(args)...));
+	}
 	void delete_entity(entt::entity);
 	void delete_entity(const Entity& entity);
 
@@ -124,6 +129,8 @@ private:
 	std::atomic_bool should_run_callbacks { true };
 	std::condition_variable callback_cv {};
 	std::mutex callback_mutex {};
+
+	friend class CppScript;
 };
 
 } // namespace Disarray

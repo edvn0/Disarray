@@ -12,7 +12,7 @@ namespace {
 	template <class T>
 	concept IsInAllowedComponents = AnyOf<T, Components::Tag, Components::Transform, Components::ID, Components::Inheritance,
 		Components::LineGeometry, Components::QuadGeometry, Components::Mesh, Components::Material, Components::Pipeline, Components::Texture,
-		Components::DirectionalLight>;
+		Components::DirectionalLight, Components::PointLight, Components::Script>;
 }
 
 template <class T>

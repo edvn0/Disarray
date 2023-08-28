@@ -30,6 +30,23 @@ class Window;
 class PipelineCache;
 class TextureCache;
 
+class CppScript;
 class Camera;
+
+namespace Components {
+	struct Tag;
+	struct Transform;
+	struct ID;
+	struct Inheritance;
+	struct LineGeometry;
+	struct QuadGeometry;
+	struct Mesh;
+	struct Material;
+	struct Pipeline;
+	struct Texture;
+	struct DirectionalLight;
+	struct PointLight;
+	struct Script;
+} // namespace Components
 
 } // namespace Disarray

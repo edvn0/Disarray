@@ -44,7 +44,7 @@ static constexpr auto to_vulkan_format(ImageFormat format)
 
 static constexpr auto is_depth_format = [](ImageFormat format) { return format == ImageFormat::Depth || format == ImageFormat::DepthStencil; };
 
-constexpr VkImageLayout to_vulkan_layout(ImageFormat format)
+constexpr auto to_vulkan_layout(ImageFormat format) -> VkImageLayout
 {
 	switch (format) {
 	case ImageFormat::SRGB:
@@ -70,7 +70,7 @@ constexpr VkImageLayout to_vulkan_layout(ImageFormat format)
 	}
 }
 
-constexpr VkSampleCountFlagBits to_vulkan_samples(SampleCount format)
+constexpr auto to_vulkan_samples(SampleCount format) -> VkSampleCountFlagBits
 {
 	switch (format) {
 	case SampleCount::One:

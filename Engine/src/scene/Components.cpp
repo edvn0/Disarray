@@ -2,8 +2,11 @@
 
 #include "scene/Components.hpp"
 
+#include "core/Log.hpp"
 #include "graphics/Mesh.hpp"
+#include "scene/CppScript.hpp"
 #include "scene/Entity.hpp"
+#include "scene/Scene.hpp"
 
 namespace Disarray::Components {
 
@@ -59,5 +62,25 @@ Texture::Texture(const glm::vec4& colour)
 	: colour(colour)
 {
 }
+
+void Script::delete_script(ScriptPtr& script)
+{
+	Log::info("Script Component", "Deleted script pointer: {}", static_cast<const void*>(script.get()));
+	if (script != nullptr) {
+		script->on_destroy();
+		script.reset();
+	}
+}
+
+void Script::create_script(ScriptPtr& script)
+{
+	auto name = script->identifier();
+	Log::info("Script Component", "Created script pointer with name {}: {}", name, static_cast<const void*>(script.get()));
+	if (script != nullptr) {
+		script->on_create();
+	}
+}
+
+Script::~Script() { Log::info("Script Component", "Destructor for {} called.", static_cast<const void*>(this)); }
 
 } // namespace Disarray::Components

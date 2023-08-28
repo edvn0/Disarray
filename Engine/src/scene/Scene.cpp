@@ -8,6 +8,7 @@
 #include <ImGuizmo.h>
 #include <entt/entt.hpp>
 
+#include <array>
 #include <mutex>
 #include <thread>
 
@@ -28,9 +29,20 @@
 #include "graphics/TextureCache.hpp"
 #include "scene/Camera.hpp"
 #include "scene/Components.hpp"
+#include "scene/CppScript.hpp"
 #include "scene/Deserialiser.hpp"
 #include "scene/Entity.hpp"
 #include "scene/Serialiser.hpp"
+
+template <std::size_t Count> static consteval auto generate_colours() -> std::array<glm::vec4, Count>
+{
+	std::array<glm::vec4, Count> colours {};
+	constexpr auto division = 1.F / static_cast<float>(Count);
+	for (auto i = 0; i < Count; i++) {
+		colours[i] = glm::vec4 { division * i, division * i, 0.3, 1 };
+	}
+	return colours;
+}
 
 static auto rotate_by(const glm::vec3& axis_radians)
 {
@@ -79,43 +91,38 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 	extent = app.get_swapchain().get_extent();
 	command_executor = CommandExecutor::construct(device, app.get_swapchain(), { .count = 3, .is_primary = true, .record_stats = true });
 
-	int rects { 20 };
-	auto parent = create("Grid");
-	for (auto j = -rects / 2; j < rects / 2; j++) {
-		for (auto i = -rects / 2; i < rects / 2; i++) {
-			auto rect = create(fmt::format("Rect{}-{}", i, j));
-			parent.add_child(rect);
-			auto& transform = rect.get_components<Components::Transform>();
-			transform.position = { 2 * static_cast<float>(i) + 0.5f, -1, 2 * static_cast<float>(j) + 0.5f };
-			transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
-			float col_x = (i + (static_cast<float>(rects) / 2)) / static_cast<float>(rects);
-			float col_y = (j + (static_cast<float>(rects) / 2)) / static_cast<float>(rects);
-			if (col_x == 0) {
-				col_x += 0.2f;
-			}
+	{
+		int rects { 20 };
+		const auto parent = [](auto rects, auto& renderer, auto& scene) -> Entity {
+			auto parent = scene.create("Grid");
+			for (auto j = -rects / 2; j < rects / 2; j++) {
+				for (auto i = -rects / 2; i < rects / 2; i++) {
+					auto rect = scene.create(fmt::format("Rect{}-{}", i, j));
+					parent.add_child(rect);
+					auto& transform = rect.template get_components<Components::Transform>();
+					transform.position = { 2 * static_cast<float>(i) + 0.5f, -1, 2 * static_cast<float>(j) + 0.5f };
+					transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
+					float col_x = (i + (static_cast<float>(rects) / 2)) / static_cast<float>(rects);
+					float col_y = (j + (static_cast<float>(rects) / 2)) / static_cast<float>(rects);
+					if (col_x == 0) {
+						col_x += 0.2f;
+					}
 
-			if (col_y == 0) {
-				col_y += 0.2f;
+					if (col_y == 0) {
+						col_y += 0.2f;
+					}
+					glm::vec4 colour { col_x, 0, col_y, 1 };
+					rect.template add_component<Components::QuadGeometry>();
+					rect.template add_component<Components::Texture>(colour);
+					rect.template add_component<Components::Pipeline>(renderer.get_pipeline_cache().get("quad"));
+				}
 			}
-			glm::vec4 colour { col_x, 0, col_y, 1 };
-			rect.add_component<Components::QuadGeometry>();
-			rect.add_component<Components::Texture>(colour);
-			rect.add_component<Components::Pipeline>(scene_renderer->get_pipeline_cache().get("quad"));
-		}
+			return parent;
+		}(rects, *scene_renderer, *this);
 	}
 
-#ifdef FLOOR
-	auto floor = create("Floor");
-	floor.add_component<Components::Geometry>();
-	floor.add_component<Components::Texture>(glm::vec4 { 0.2, 0.2, 0.8, 1.0f });
-	floor.add_component<QuadGeometry>();
-	auto& floor_transform = floor.get_components<Transform>();
-	floor_transform.scale = { 100, 100, 1 };
-	floor_transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
-#endif
-
-	auto unit_vectors = create("UnitVectors");
 	{
+		auto unit_vectors = create("UnitVectors");
 		const glm::vec3 base_pos { 0, 0, 0 };
 		{
 			auto axis = create("XAxis");
@@ -151,6 +158,7 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 			.attachments = { { Disarray::ImageFormat::SBGR }, { ImageFormat::Depth } },
 			.clear_colour_on_load = false,
 			.clear_depth_on_load = false,
+			.blend_mode = FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha,
 			.debug_name = "FirstFramebuffer",
 		});
 
@@ -160,6 +168,7 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 			.attachments = { { ImageFormat::SBGR }, { ImageFormat::Uint, false }, { ImageFormat::Depth } },
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
+			.blend_mode = FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha,
 			.debug_name = "IdentityFramebuffer",
 		});
 
@@ -172,29 +181,31 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 	const auto& resources = scene_renderer->get_graphics_resource();
 
 	const auto& desc_layout = resources.get_descriptor_set_layouts();
-	PipelineProperties props = {
-		.framebuffer = identity_framebuffer,
-		.layout = layout,
-		.push_constant_layout = { { PushConstantKind::Both, 92 } },
-		.extent = extent,
-		.depth_comparison_operator = DepthCompareOperator::GreaterOrEqual,
-		.cull_mode = CullMode::Back,
-		.descriptor_set_layouts = desc_layout,
-	};
 
 	{
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("main.vert");
 		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("main.frag");
-		props.vertex_shader = vert;
-		props.fragment_shader = frag;
+
 		auto viking_rotation = rotate_by(glm::radians(glm::vec3 { 0, 0, 90 }));
 		auto v_mesh = create("Viking");
-		v_mesh.add_component<Components::Mesh>(Mesh::construct(device,
+		const auto viking = Mesh::construct(device,
 			{
 				.path = "Assets/Models/viking.mesh",
 				.initial_rotation = viking_rotation,
+			});
+		v_mesh.add_component<Components::Mesh>(viking);
+		v_mesh.add_component<Components::Pipeline>(Pipeline::construct(device,
+			{
+				.vertex_shader = vert,
+				.fragment_shader = frag,
+				.framebuffer = identity_framebuffer,
+				.layout = layout,
+				.push_constant_layout = { { PushConstantKind::Both, 92 } },
+				.extent = extent,
+				.depth_comparison_operator = DepthCompareOperator::GreaterOrEqual,
+				.cull_mode = CullMode::Back,
+				.descriptor_set_layouts = desc_layout,
 			}));
-		v_mesh.add_component<Components::Pipeline>(Pipeline::construct(device, props));
 		v_mesh.add_component<Components::Texture>(scene_renderer->get_texture_cache().get("viking_room"));
 		v_mesh.add_component<Components::Material>(Material::construct(device,
 			{
@@ -218,9 +229,77 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 		sun.get_components<Components::Transform>().position = { 5, -5, 5 };
 	}
 
+	{
+		static constexpr auto radius = 8U;
+		static constexpr auto point_lights = 30U;
+		static constexpr auto division = glm::two_pi<float>() / point_lights;
+
+		class CustomScript final : public CppScript {
+		public:
+			~CustomScript() override { Log::info(script_name(), "Deleting this: {}", static_cast<const void*>(this)); };
+			CustomScript(Entity& entity)
+				: CppScript(entity)
+			{
+				Log::info(script_name(), "Constructing this: {}", static_cast<const void*>(this));
+			}
+
+			void on_create() override { Log::info(script_name(), "Calling on_create() for Ptr: {}", static_cast<const void*>(this)); }
+
+			void on_update(float ts) override
+			{
+				auto& [rot, pos, scale] = transform();
+
+				pos.x = pos.x + vel * ts;
+				pos.z = pos.z + vel * ts;
+
+				pos.x = radius * glm::sin(pos.x);
+				pos.z = radius * glm::cos(pos.z);
+			}
+
+		private:
+			auto script_name() const -> std::string_view override { return "MoveInCircle"; }
+			float vel { 1.5F };
+		};
+
+		constexpr auto colours = generate_colours<point_lights>();
+
+		const auto sphere = Mesh::construct(device, { .path = "Assets/Models/sphere.mesh" });
+		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("point_light.vert");
+		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("point_light.frag");
+		auto pipe = Pipeline::construct(device,
+			{
+				.vertex_shader = vert,
+				.fragment_shader = frag,
+				.framebuffer = identity_framebuffer,
+				.layout = layout,
+				.push_constant_layout = { { PushConstantKind::Both, 92 } },
+				.extent = extent,
+				.depth_comparison_operator = DepthCompareOperator::GreaterOrEqual,
+				.cull_mode = CullMode::Back,
+				.descriptor_set_layouts = desc_layout,
+			});
+		auto pl_system = create("PointLightSystem");
+		for (std::uint32_t i = 0; i < colours.size(); i++) {
+			auto point_light = create("PointLight-{}", i);
+			point_light.add_component<Components::PointLight>();
+			auto& transform = point_light.get_components<Components::Transform>();
+			const auto divided = division * static_cast<float>(i);
+			transform.position = { glm::sin(divided), 0, glm::cos(divided) };
+			transform.position *= radius;
+			transform.position.y = -4;
+			transform.scale *= 0.2;
+
+			point_light.add_component<Components::Mesh>(sphere);
+			point_light.add_component<Components::Texture>(colours.at(i));
+			point_light.add_component<Components::Pipeline>(pipe);
+			point_light.add_script<CustomScript>();
+			pl_system.add_child(point_light);
+		}
+	}
+
+	{
 #define TEST_DESCRIPTOR_SETS
 #ifdef TEST_DESCRIPTOR_SETS
-	{
 		std::array<std::uint32_t, 1> white_tex_data = { 1 };
 		DataBuffer pixels { white_tex_data.data(), sizeof(std::uint32_t) };
 		TextureProperties white_tex_props {
@@ -230,9 +309,8 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 		};
 		Ref<Texture> white_tex = Texture::construct(device, white_tex_props);
 		scene_renderer->get_graphics_resource().expose_to_shaders(*white_tex);
-	}
-
 #endif
+	}
 }
 
 Scene::~Scene()
@@ -247,7 +325,7 @@ void Scene::begin_frame(const Camera& camera) { scene_renderer->begin_frame(came
 
 void Scene::end_frame() { scene_renderer->end_frame(); }
 
-void Scene::update(float /*unused*/)
+void Scene::update(float ts)
 {
 	auto& editable_ubo = scene_renderer->get_graphics_resource().get_editable_ubo();
 	auto sun_component_view = registry.view<const Components::DirectionalLight, const Components::Texture>();
@@ -263,6 +341,12 @@ void Scene::update(float /*unused*/)
 		selected_entity.swap(picked_entity);
 		picked_entity = nullptr;
 	}
+
+	auto script_view = registry.view<Components::Script>();
+	script_view.each([ts = ts](const auto entity, auto& script) {
+		CppScript& instantiated = script.get_script();
+		instantiated.on_update(ts);
+	});
 }
 
 void Scene::render()
@@ -285,6 +369,11 @@ void Scene::render()
 	}
 	{
 		scene_renderer->begin_pass(*command_executor, *identity_framebuffer, true);
+
+		auto script_view = registry.view<Components::Script>();
+		for (auto&& [entity, script] : script_view.each()) {
+			script.get_script().on_render(*scene_renderer);
+		}
 
 		auto line_view = registry.view<const Components::LineGeometry, const Components::Texture, const Components::Transform>();
 		for (auto&& [entity, geom, tex, transform] : line_view.each()) {
@@ -371,7 +460,14 @@ void Scene::recreate(const Extent& new_ex)
 	command_executor->recreate(true, extent);
 }
 
-void Scene::destruct() { command_executor.reset(); }
+void Scene::destruct()
+{
+	auto scripts = registry.view<Components::Script>();
+	for (auto&& [entity, script] : scripts.each()) {
+		script.destroy();
+	}
+	command_executor.reset();
+}
 
 auto Scene::create(std::string_view name) -> Entity
 {

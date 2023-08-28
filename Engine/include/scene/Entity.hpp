@@ -61,18 +61,29 @@ public:
 		registry.erase<T>(identifier);
 	}
 
+	template <class ChildScript>
+		requires std::is_base_of_v<CppScript, ChildScript>
+	void add_script()
+	{
+		auto& registry = scene.get_registry();
+		auto& script = registry.emplace<Components::Script>(identifier);
+		script.bind<ChildScript>(*this);
+	}
+
 	void add_child(Entity&);
 	void add_child(Entity* = nullptr);
 
 	auto operator==(const Entity& other) const { return identifier == other.identifier; }
 	auto operator!=(const Entity& other) const { return !operator==(other); }
 
-	const auto& get_identifier() const { return identifier; }
+	auto get_identifier() const -> const auto& { return identifier; }
 
 private:
 	Scene& scene;
 	std::string name;
 	entt::entity identifier;
+
+	friend class CppScript;
 };
 
 } // namespace Disarray

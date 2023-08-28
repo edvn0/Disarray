@@ -19,7 +19,7 @@ public:
 	void on_event(Event&) override;
 
 private:
-	void draw_entity_node(Entity&);
+	void draw_entity_node(Entity&, bool has_parent, std::uint32_t depth = 0);
 
 	Device& device;
 	Scene& scene;

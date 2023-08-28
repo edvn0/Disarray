@@ -4,7 +4,15 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-#include <fmt/format.h>
+auto fmt::formatter<Disarray::Extent>::format(const Disarray::Extent& vec, format_context& ctx) -> decltype(ctx.out())
+{
+	return formatter<std::string_view>::format(fmt::format("[{}, {}]", vec.width, vec.height), ctx);
+}
+
+auto fmt::formatter<Disarray::FloatExtent>::format(const Disarray::FloatExtent& vec, format_context& ctx) -> decltype(ctx.out())
+{
+	return formatter<std::string_view>::format(fmt::format("[{}, {}]", vec.width, vec.height), ctx);
+}
 
 auto fmt::formatter<glm::vec2>::format(const glm::vec2& vec, format_context& ctx) -> decltype(ctx.out())
 {

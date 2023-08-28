@@ -41,8 +41,6 @@ void PipelineSerialiser::serialise_impl(const Components::Pipeline& pipeline, nl
 		properties["write_depth"] = props.write_depth;
 		properties["test_depth"] = props.test_depth;
 		object["properties"] = properties;
-
-		Log::info("PipelineSerialiser", "{}", object.dump());
 	}
 }
 

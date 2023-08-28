@@ -32,6 +32,10 @@ namespace {
 	};
 
 	template <class... Serialisers> struct Serialiser {
+	private:
+		std::tuple<Serialisers...> serialisers;
+
+	public:
 		using json = nlohmann::json;
 
 		explicit Serialiser(Scene& s, const std::filesystem::path& output_path = "Assets/Scene")
@@ -61,13 +65,12 @@ namespace {
 			output << std::setw(2) << serialised_object;
 		};
 
-		std::tuple<Serialisers...> serialisers;
 		struct EntityAndKey {
 			std::string key;
 			json data;
 		};
 
-		json serialise()
+		auto serialise() -> json
 		{
 			json root;
 			root["name"] = "Scene";
@@ -125,7 +128,7 @@ namespace {
 			});
 		}
 
-		const auto& get_as_json() const { return serialised_object; }
+		auto get_as_json() const -> const auto& { return serialised_object; }
 
 	private:
 		Scene& scene;
@@ -134,7 +137,7 @@ namespace {
 	};
 } // namespace
 
-using SceneSerialiser
-	= Serialiser<TextureSerialiser, MeshSerialiser, TransformSerialiser, InheritanceSerialiser, LineGeometrySerialiser, QuadGeometrySerialiser>;
+using SceneSerialiser = Serialiser<PipelineSerialiser, TextureSerialiser, MeshSerialiser, TransformSerialiser, InheritanceSerialiser,
+	LineGeometrySerialiser, QuadGeometrySerialiser>;
 
 } // namespace Disarray

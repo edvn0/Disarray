@@ -11,11 +11,4 @@
 
 namespace Disarray::FS {
 
-template <> struct detail::GenericFileWriter<const void*>;
-template <> struct detail::GenericFileWriter<const char*>;
-template <> struct detail::GenericFileWriter<const unsigned*>;
-template <> struct detail::GenericFileWriter<const void>;
-template <> struct detail::GenericFileWriter<const char>;
-template <> struct detail::GenericFileWriter<const unsigned>;
-
 } // namespace Disarray::FS
