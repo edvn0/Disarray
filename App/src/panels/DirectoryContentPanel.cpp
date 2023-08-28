@@ -75,7 +75,7 @@ bool DirectoryContentPanel::traverse_up(bool force_reload)
 	return could;
 }
 
-void DirectoryContentPanel::update(float ts)
+void DirectoryContentPanel::update(float time_step)
 {
 	if (changed) {
 		current_directory_content = path_and_content_cache[current];

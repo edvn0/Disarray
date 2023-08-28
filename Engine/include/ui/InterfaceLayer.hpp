@@ -21,7 +21,7 @@ public:
 	void handle_swapchain_recreation(Swapchain&) override;
 	void on_event(Event&) override;
 	void interface() override;
-	void update(float ts) override;
+	void update(float time_step) override;
 	void destruct() override;
 	void render() override;
 	bool is_interface_layer() const override { return true; }

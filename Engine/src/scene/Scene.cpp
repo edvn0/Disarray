@@ -60,8 +60,8 @@ Scene::Scene(const Device& dev, std::string_view name)
 	, scene_name(name)
 	, registry(entt::basic_registry())
 {
-	picked_entity = make_scope<Entity>(*this);
-	selected_entity = make_scope<Entity>(*this);
+	picked_entity = make_scope<Entity>(this);
+	selected_entity = make_scope<Entity>(this);
 }
 
 void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
@@ -78,12 +78,12 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 				if (front.parallel)
 					parallels.push_back(std::move(front));
 				else
-					front.func(*this);
+					front.func(this);
 				thread_pool_callbacks.pop();
 			}
 
-			auto& scene = *this;
-			Collections::parallel_for_each(parallels, [&scene](auto& f) { f.func(scene); });
+			auto* scene = this;
+			Collections::parallel_for_each(parallels, [scene](auto& f) { f.func(scene); });
 			callback_cv.wait_for(lock, 10s);
 		}
 	});
@@ -230,27 +230,28 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 	}
 
 	{
-		static constexpr auto radius = 8U;
+		static constexpr auto max_radius = 8U;
 		static constexpr auto point_lights = 30U;
 		static constexpr auto division = glm::two_pi<float>() / point_lights;
 
 		class CustomScript final : public CppScript {
 		public:
 			~CustomScript() override { Log::info(script_name(), "Deleting this: {}", static_cast<const void*>(this)); };
-			CustomScript(Entity& entity)
-				: CppScript(entity)
+			CustomScript(auto local_radius, auto count)
+				: radius(local_radius)
+				, total_count(count)
 			{
 				Log::info(script_name(), "Constructing this: {}", static_cast<const void*>(this));
 			}
 
 			void on_create() override { Log::info(script_name(), "Calling on_create() for Ptr: {}", static_cast<const void*>(this)); }
 
-			void on_update(float ts) override
+			void on_update(float time_step) override
 			{
 				auto& [rot, pos, scale] = transform();
 
-				pos.x = pos.x + vel * ts;
-				pos.z = pos.z + vel * ts;
+				pos.x = pos.x + vel * time_step;
+				pos.z = pos.z + vel * time_step;
 
 				pos.x = radius * glm::sin(pos.x);
 				pos.z = radius * glm::cos(pos.z);
@@ -258,6 +259,8 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 
 		private:
 			auto script_name() const -> std::string_view override { return "MoveInCircle"; }
+			std::uint32_t radius {};
+			std::uint32_t total_count {};
 			float vel { 1.5F };
 		};
 
@@ -285,14 +288,14 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 			auto& transform = point_light.get_components<Components::Transform>();
 			const auto divided = division * static_cast<float>(i);
 			transform.position = { glm::sin(divided), 0, glm::cos(divided) };
-			transform.position *= radius;
+			transform.position *= max_radius;
 			transform.position.y = -4;
 			transform.scale *= 0.2;
 
 			point_light.add_component<Components::Mesh>(sphere);
 			point_light.add_component<Components::Texture>(colours.at(i));
 			point_light.add_component<Components::Pipeline>(pipe);
-			point_light.add_script<CustomScript>();
+			point_light.add_script<CustomScript>(max_radius, point_lights);
 			pl_system.add_child(point_light);
 		}
 	}
@@ -318,14 +321,14 @@ Scene::~Scene()
 	std::lock_guard<std::mutex> guard(callback_mutex);
 	should_run_callbacks = false;
 	callback_cv.notify_all();
-	SceneSerialiser scene_serialiser(*this);
+	SceneSerialiser scene_serialiser(this);
 }
 
 void Scene::begin_frame(const Camera& camera) { scene_renderer->begin_frame(camera); }
 
 void Scene::end_frame() { scene_renderer->end_frame(); }
 
-void Scene::update(float ts)
+void Scene::update(float time_step)
 {
 	auto& editable_ubo = scene_renderer->get_graphics_resource().get_editable_ubo();
 	auto sun_component_view = registry.view<const Components::DirectionalLight, const Components::Texture>();
@@ -343,9 +346,14 @@ void Scene::update(float ts)
 	}
 
 	auto script_view = registry.view<Components::Script>();
-	script_view.each([ts = ts](const auto entity, auto& script) {
-		CppScript& instantiated = script.get_script();
-		instantiated.on_update(ts);
+	script_view.each([scene = this, step = time_step](const auto entity, Components::Script& script) {
+		if (script.has_been_bound()) {
+			script.instantiate();
+		}
+
+		auto& instantiated = script.get_script();
+		instantiated.update_entity(Entity { scene, entity });
+		instantiated.on_update(step);
 	});
 }
 
@@ -443,7 +451,7 @@ void Scene::on_event(Event& event)
 	dispatcher.dispatch<KeyPressedEvent>([this](KeyPressedEvent&) {
 		if (Input::all<KeyCode::LeftControl, KeyCode::LeftShift, KeyCode::S>()) {
 			thread_pool_callbacks.push({
-				.func = [](Scene& scene) { SceneSerialiser scene_serialiser(scene); },
+				.func = [](const Scene* scene) { SceneSerialiser scene_serialiser(scene); },
 				.parallel = false,
 			});
 		}
@@ -471,7 +479,7 @@ void Scene::destruct()
 
 auto Scene::create(std::string_view name) -> Entity
 {
-	auto entity = Entity(*this, name);
+	auto entity = Entity(this, name);
 	return entity;
 }
 
@@ -486,7 +494,7 @@ auto Scene::deserialise(const Device& device, std::string_view name, const std::
 	return created;
 }
 
-void Scene::update_picked_entity(std::uint32_t handle) { picked_entity = make_scope<Entity>(*this, handle == 0 ? entt::null : handle); }
+void Scene::update_picked_entity(std::uint32_t handle) { picked_entity = make_scope<Entity>(this, handle == 0 ? entt::null : handle); }
 
 void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoType gizmo_type)
 {
@@ -532,7 +540,7 @@ auto Scene::get_by_identifier(Identifier identifier) -> std::optional<Entity>
 {
 	for (const auto [entity, id] : registry.view<Components::ID>().each()) {
 		if (id.identifier == identifier) {
-			return Entity { *this, entity };
+			return Entity { this, entity };
 		}
 	}
 

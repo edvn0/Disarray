@@ -80,8 +80,8 @@ public:
 
 	auto get_command_executor() const -> const CommandExecutor& { return *command_executor; };
 
-	auto get_registry() -> entt::registry& { return registry; };
 	auto get_selected_entity() const -> const auto& { return selected_entity; }
+	auto get_registry() -> entt::registry& { return registry; };
 	auto get_registry() const -> const entt::registry& { return registry; };
 	auto get_name() const -> const std::string& { return scene_name; };
 
@@ -118,7 +118,7 @@ private:
 
 	entt::registry registry;
 
-	using FuncPtr = void (*)(Disarray::Scene&);
+	using FuncPtr = void (*)(const Disarray::Scene*);
 	struct ThreadPoolCallback {
 		FuncPtr func { nullptr };
 		bool parallel { false };

@@ -6,9 +6,9 @@
 
 namespace Disarray {
 
-auto CppScript::get_scene() const -> const Scene& { return current_entity.scene; }
+auto CppScript::get_scene() const -> const Scene& { return *current_entity.scene; }
 
-auto CppScript::get_scene() -> Scene& { return current_entity.scene; }
+auto CppScript::get_scene() -> Scene& { return *current_entity.scene; }
 
 auto CppScript::transform() -> Components::Transform& { return get_entity().get_components<Components::Transform>(); }
 

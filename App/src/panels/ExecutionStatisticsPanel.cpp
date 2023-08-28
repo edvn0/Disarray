@@ -2,12 +2,12 @@
 
 namespace Disarray::Client {
 
-void ExecutionStatisticsPanel::update(float ts)
+void ExecutionStatisticsPanel::update(float time_step)
 {
 	if (!has_stats)
 		return;
 
-	should_update_counter += ts;
+	should_update_counter += time_step;
 	if (should_update_counter > update_interval_ms) {
 		should_update_counter = 0;
 		const PipelineStatistics& pipeline_stats = executor.get_pipeline_statistics(swapchain.get_current_frame());

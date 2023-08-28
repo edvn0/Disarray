@@ -37,7 +37,7 @@ void ClientLayer::construct(App& app, ThreadPool& pool)
 
 	auto stats_panel = app.add_panel<StatisticsPanel>(app.get_statistics());
 	auto content_panel = app.add_panel<DirectoryContentPanel>("Assets");
-	auto scene_panel = app.add_panel<ScenePanel>(*scene);
+	auto scene_panel = app.add_panel<ScenePanel>(scene.get());
 	auto execution_stats_panel = app.add_panel<ExecutionStatisticsPanel>(scene->get_command_executor());
 
 	stats_panel->construct(app, pool);
@@ -179,13 +179,14 @@ void ClientLayer::on_event(Event& event)
 		scene->update_picked_entity(0);
 		return false;
 	});
+	camera.on_event(event);
 	scene->on_event(event);
 }
 
-void ClientLayer::update(float ts)
+void ClientLayer::update(float time_step)
 {
-	camera.on_update(ts);
-	scene->update(ts);
+	camera.on_update(time_step);
+	scene->update(time_step);
 }
 
 void ClientLayer::render()

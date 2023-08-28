@@ -24,8 +24,8 @@
 namespace Disarray::Components {
 
 namespace {
-	static const auto default_rotation = glm::angleAxis(0.f, glm::vec3 { 0.f, 0.f, 1.0f });
-	static constexpr auto identity = glm::identity<glm::mat4>();
+	const auto default_rotation = glm::angleAxis(0.f, glm::vec3 { 0.f, 0.f, 1.0f });
+	constexpr auto identity = glm::identity<glm::mat4>();
 	inline auto scale_matrix(const auto& vec) { return glm::scale(identity, vec); }
 	inline auto translate_matrix(const auto& vec) { return glm::translate(identity, vec); }
 } // namespace
@@ -43,7 +43,7 @@ struct Transform {
 	{
 	}
 
-	auto compute() const { return translate_matrix(position) * glm::mat4_cast(rotation) * scale_matrix(scale); }
+	[[nodiscard]] auto compute() const { return translate_matrix(position) * glm::mat4_cast(rotation) * scale_matrix(scale); }
 };
 
 struct Mesh {
@@ -94,7 +94,7 @@ struct QuadGeometry {
 struct ID {
 	Identifier identifier {};
 
-	template <std::integral T> T get_id() const { return static_cast<T>(identifier); }
+	template <std::integral T> [[nodiscard]] T get_id() const { return static_cast<T>(identifier); }
 };
 
 struct Tag {
@@ -105,7 +105,7 @@ struct DirectionalLight {
 	glm::vec3 direction { 1, 1, 1 };
 	float intensity { .8f };
 
-	glm::vec4 compute() const { return { glm::normalize(direction), intensity }; }
+	[[nodiscard]] auto compute() const -> glm::vec4 { return { glm::normalize(direction), intensity }; }
 };
 
 struct PointLight {
@@ -116,30 +116,40 @@ struct PointLight {
 struct Script {
 private:
 	friend class Disarray::Entity;
-	using ScriptPtr = std::shared_ptr<CppScript>;
+	using ScriptPtr = CppScript*;
 
-	static void delete_script(ScriptPtr&);
-	static void create_script(ScriptPtr&);
-	static void set_entity_for_instance(ScriptPtr&, Entity&);
+	void setup_entity_destruction();
+	void setup_entity_creation();
 
 	ScriptPtr instance_slot { nullptr };
 
+	std::function<void(Script&)> create_script_functor;
+	std::function<void(Script&)> destroy_script_functor;
+
+	bool bound { false };
+
 public:
 	Script() = default;
-	~Script();
 
-	template <class ChildScript>
-		requires std::is_base_of_v<CppScript, ChildScript> && requires(Entity& entity) { ChildScript(entity); }
-	void bind(Entity& entity)
+	template <class ChildScript, typename... Args>
+		requires std::is_base_of_v<CppScript, ChildScript>
+	void bind(Args&&... args)
 	{
-		instance_slot = std::make_shared<ChildScript>(entity);
-		create_script(instance_slot);
+		create_script_functor = [... arg = std::forward<Args>(args), this](Script& script) {
+			script.instance_slot = static_cast<CppScript*>(new ChildScript(std::forward<Args>(arg)...));
+			setup_entity_creation();
+		};
+		setup_entity_destruction();
+		bound = true;
 	}
 
-	void destroy() { delete_script(instance_slot); }
+	void destroy() { destroy_script_functor(*this); }
+	void instantiate() { create_script_functor(*this); }
 
 	auto get_script() -> auto& { return *instance_slot; }
 	[[nodiscard]] auto get_script() const -> const auto& { return *instance_slot; }
+
+	[[nodiscard]] auto has_been_bound() const -> bool { return bound; }
 };
 
 struct Inheritance {
@@ -148,7 +158,7 @@ struct Inheritance {
 
 	void add_child(Entity&);
 
-	auto has_parent() const -> bool { return parent != 0; }
+	[[nodiscard]] auto has_parent() const -> bool { return parent != invalid_identifier; }
 };
 
 } // namespace Disarray::Components

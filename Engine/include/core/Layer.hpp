@@ -18,7 +18,7 @@ public:
 	virtual void handle_swapchain_recreation(Swapchain&);
 	virtual void on_event(Event&);
 	virtual void interface();
-	virtual void update(float ts);
+	virtual void update(float time_step);
 	virtual void render();
 	virtual void destruct();
 	virtual bool is_interface_layer() const;

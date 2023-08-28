@@ -38,8 +38,8 @@ namespace {
 	public:
 		using json = nlohmann::json;
 
-		explicit Serialiser(Scene& s, const std::filesystem::path& output_path = "Assets/Scene")
-			: scene(s)
+		explicit Serialiser(const Scene* input_scene, const std::filesystem::path& output_path = "Assets/Scene")
+			: scene(input_scene)
 			, path(output_path)
 		{
 			try {
@@ -50,7 +50,7 @@ namespace {
 			}
 
 			namespace ch = std::chrono;
-			auto name = scene.get_name();
+			auto name = scene->get_name();
 			std::replace(name.begin(), name.end(), ' ', '_');
 			std::replace(name.begin(), name.end(), '+', '_');
 
@@ -75,14 +75,14 @@ namespace {
 			json root;
 			root["name"] = "Scene";
 
-			const auto& registry = scene.get_registry();
+			const auto& registry = scene->get_registry();
 			const auto view = registry.template view<const Components::ID, const Components::Tag>();
 
 			MSTimer timer {};
 			std::vector<EntityAndKey> output;
 			output.reserve(view.size_hint());
 			view.each([&](const auto handle, const auto& id, const auto& tag) {
-				Entity entity { scene, handle, tag.name };
+				ImmutableEntity entity { scene, handle, tag.name };
 				auto key = fmt::format("{}__disarray__{}", id.identifier, tag.name);
 				json entity_object;
 				json components;
@@ -109,7 +109,7 @@ namespace {
 			return root;
 		}
 
-		template <class T> void serialise_component(Entity& entity, json& components)
+		template <class T> void serialise_component(auto& entity, json& components)
 		{
 			static constexpr auto type = serialiser_type_for<T>;
 			auto result = std::apply(
@@ -120,7 +120,7 @@ namespace {
 			Tuple::static_for(result, [&entity, &components](auto, auto& serialiser) {
 				if (serialiser.can_serialise(entity)) {
 					json object;
-					auto& component = entity.get_components<T>();
+					auto& component = entity.template get_components<T>();
 					auto key = serialiser.get_component_name();
 					serialiser.serialise(component, object);
 					components[key] = object;
@@ -131,7 +131,7 @@ namespace {
 		auto get_as_json() const -> const auto& { return serialised_object; }
 
 	private:
-		Scene& scene;
+		const Scene* scene;
 		std::filesystem::path path;
 		json serialised_object;
 	};

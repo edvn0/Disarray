@@ -26,7 +26,7 @@ public:
 	bool can_traverse_up() const;
 
 	void construct(App&, ThreadPool&) override;
-	void update(float ts) override;
+	void update(float time_step) override;
 	void interface() override;
 	void destruct() override;
 

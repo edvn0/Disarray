@@ -24,7 +24,7 @@ public:
 
 		};
 
-	void update(float ts) override;
+	void update(float time_step) override;
 
 	void interface() override;
 

@@ -117,10 +117,10 @@ void InterfaceLayer::on_event(Event& event)
 	}
 }
 
-void InterfaceLayer::update(float ts)
+void InterfaceLayer::update(float time_step)
 {
 	for (auto& panel : panels) {
-		panel->update(ts);
+		panel->update(time_step);
 	}
 }
 

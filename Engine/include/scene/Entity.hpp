@@ -7,31 +7,38 @@
 #include <string_view>
 
 #include "scene/Component.hpp"
-#include "scene/Scene.hpp"
 
 namespace Disarray {
 
+class Scene;
+
 class Entity {
 public:
-	Entity(Scene&, std::string_view);
-	Entity(Scene&, entt::entity, std::string_view);
-	Entity(Scene&, entt::entity);
-	Entity(Scene& s, entt::id_type id)
+	Entity()
+		: scene(nullptr)
+	{
+	}
+	Entity(Scene*, std::string_view);
+	Entity(Scene*, entt::entity, std::string_view);
+	Entity(Scene*, entt::entity);
+	Entity(Scene* s, entt::id_type id)
 		: Entity(s, static_cast<entt::entity>(id)) {};
-	Entity(Scene&);
+	Entity(Scene*);
 
 	static Entity deserialise(Scene&, entt::entity, Identifier, std::string_view = "Empty");
 
-	bool is_valid() const { return scene.get_registry().valid(identifier); }
+	auto get_registry() -> entt::registry&;
+	auto get_registry() const -> const entt::registry&;
 
-	template <ValidComponent... T> decltype(auto) has_any() { return scene.get_registry().any_of<T...>(identifier); }
-	template <ValidComponent... T> decltype(auto) has_all() { return scene.get_registry().all_of<T...>(identifier); }
-	template <ValidComponent... T> decltype(auto) has_any() const { return scene.get_registry().any_of<T...>(identifier); }
-	template <ValidComponent... T> decltype(auto) has_all() const { return scene.get_registry().all_of<T...>(identifier); }
-	template <ValidComponent... T> decltype(auto) get_components() { return scene.get_registry().get<T...>(identifier); }
-	template <ValidComponent... T> decltype(auto) get_components() const { return scene.get_registry().get<T...>(identifier); }
-	template <ValidComponent T> decltype(auto) has_component() { return scene.get_registry().any_of<T>(identifier); }
-	template <ValidComponent T> decltype(auto) has_component() const { return scene.get_registry().any_of<T>(identifier); }
+	bool is_valid() const { return get_registry().valid(identifier); }
+	template <ValidComponent... T> decltype(auto) has_any() { return get_registry().any_of<T...>(identifier); }
+	template <ValidComponent... T> decltype(auto) has_all() { return get_registry().all_of<T...>(identifier); }
+	template <ValidComponent... T> decltype(auto) has_any() const { return get_registry().any_of<T...>(identifier); }
+	template <ValidComponent... T> decltype(auto) has_all() const { return get_registry().all_of<T...>(identifier); }
+	template <ValidComponent... T> decltype(auto) get_components() { return get_registry().get<T...>(identifier); }
+	template <ValidComponent... T> decltype(auto) get_components() const { return get_registry().get<T...>(identifier); }
+	template <ValidComponent T> decltype(auto) has_component() { return get_registry().any_of<T>(identifier); }
+	template <ValidComponent T> decltype(auto) has_component() const { return get_registry().any_of<T>(identifier); }
 
 	template <ValidComponent T, typename... Args> decltype(auto) add_component(Args&&... args)
 	{
@@ -49,7 +56,7 @@ public:
 
 	template <ValidComponent T, typename... Args> decltype(auto) emplace_component(Args&&... args)
 	{
-		auto& registry = scene.get_registry();
+		auto& registry = get_registry();
 		return registry.emplace<T>(identifier, std::forward<Args>(args)...);
 	}
 
@@ -57,17 +64,17 @@ public:
 	{
 		if (!has_component<T>())
 			return;
-		auto& registry = scene.get_registry();
+		auto& registry = get_registry();
 		registry.erase<T>(identifier);
 	}
 
-	template <class ChildScript>
+	template <class ChildScript, typename... Args>
 		requires std::is_base_of_v<CppScript, ChildScript>
-	void add_script()
+	void add_script(Args&&... args)
 	{
-		auto& registry = scene.get_registry();
+		auto& registry = get_registry();
 		auto& script = registry.emplace<Components::Script>(identifier);
-		script.bind<ChildScript>(*this);
+		script.bind<ChildScript>(std::forward<Args>(args)...);
 	}
 
 	void add_child(Entity&);
@@ -79,7 +86,36 @@ public:
 	auto get_identifier() const -> const auto& { return identifier; }
 
 private:
-	Scene& scene;
+	Scene* scene;
+	std::string name;
+	entt::entity identifier;
+
+	friend class CppScript;
+};
+
+class ImmutableEntity {
+public:
+	ImmutableEntity(const Scene*, entt::entity, std::string_view);
+	ImmutableEntity(const Scene*, entt::entity);
+	ImmutableEntity(const Scene* s, entt::id_type id)
+		: ImmutableEntity(s, static_cast<entt::entity>(id)) {};
+	ImmutableEntity(const Scene*);
+
+	auto get_registry() const -> const entt::registry&;
+
+	bool is_valid() const { return get_registry().valid(identifier); }
+	template <ValidComponent... T> decltype(auto) has_any() const { return get_registry().any_of<T...>(identifier); }
+	template <ValidComponent... T> decltype(auto) has_all() const { return get_registry().all_of<T...>(identifier); }
+	template <ValidComponent... T> decltype(auto) get_components() const { return get_registry().get<T...>(identifier); }
+	template <ValidComponent T> decltype(auto) has_component() const { return get_registry().any_of<T>(identifier); }
+
+	auto operator==(const ImmutableEntity& other) const { return identifier == other.identifier; }
+	auto operator!=(const ImmutableEntity& other) const { return !operator==(other); }
+
+	auto get_identifier() const -> const auto& { return identifier; }
+
+private:
+	const Scene* scene;
 	std::string name;
 	entt::entity identifier;
 

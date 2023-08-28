@@ -63,24 +63,15 @@ Texture::Texture(const glm::vec4& colour)
 {
 }
 
-void Script::delete_script(ScriptPtr& script)
+void Script::setup_entity_destruction()
 {
-	Log::info("Script Component", "Deleted script pointer: {}", static_cast<const void*>(script.get()));
-	if (script != nullptr) {
-		script->on_destroy();
-		script.reset();
-	}
+	destroy_script_functor = [](Script& script) {
+		script.instance_slot->on_destroy();
+		delete script.instance_slot;
+		script.instance_slot = nullptr;
+	};
 }
 
-void Script::create_script(ScriptPtr& script)
-{
-	auto name = script->identifier();
-	Log::info("Script Component", "Created script pointer with name {}: {}", name, static_cast<const void*>(script.get()));
-	if (script != nullptr) {
-		script->on_create();
-	}
-}
-
-Script::~Script() { Log::info("Script Component", "Destructor for {} called.", static_cast<const void*>(this)); }
+void Script::setup_entity_creation() { get_script().on_create(); }
 
 } // namespace Disarray::Components

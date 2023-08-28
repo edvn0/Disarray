@@ -23,9 +23,9 @@ enum class SerialiserType : std::uint8_t { Faulty, Pipeline, Texture, Mesh, Tran
 template <class T> inline constexpr SerialiserType serialiser_type_for = SerialiserType::Faulty;
 
 template <ValidComponent T, class Child> struct ComponentSerialiser {
-	auto can_serialise(const Entity& entity) -> bool { return entity.has_component<T>(); }
+	auto can_serialise(const ImmutableEntity& entity) -> bool { return entity.has_component<T>(); }
 
-	constexpr std::string_view get_component_name() { return magic_enum::enum_name(serialiser_type_for<T>); }
+	constexpr auto get_component_name() -> std::string_view { return magic_enum::enum_name(serialiser_type_for<T>); }
 	void serialise(const T& component, nlohmann::json& object_for_the_component)
 	{
 		static_cast<Child&>(*this).serialise_impl(component, object_for_the_component);
@@ -34,9 +34,9 @@ template <ValidComponent T, class Child> struct ComponentSerialiser {
 
 template <ValidComponent T, class Child> struct ComponentDeserialiser {
 	auto can_serialise(const Entity& entity) -> bool { return entity.has_component<T>(); }
-	constexpr std::string_view get_component_name() { return magic_enum::enum_name(serialiser_type_for<T>); }
+	constexpr auto get_component_name() -> std::string_view { return magic_enum::enum_name(serialiser_type_for<T>); }
 
-	bool should_add_component(const nlohmann::json& object_for_the_component)
+	auto should_add_component(const nlohmann::json& object_for_the_component) -> bool
 	{
 		return static_cast<Child&>(*this).should_add_component_impl(object_for_the_component);
 	};

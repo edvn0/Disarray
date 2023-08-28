@@ -6,6 +6,7 @@
 
 #include "core/Log.hpp"
 #include "scene/Components.hpp"
+#include "scene/Scene.hpp"
 #include "util/FormattingUtilities.hpp"
 
 auto fmt::formatter<entt::entity>::format(entt::entity c, fmt::format_context& ctx) const -> decltype(ctx.out())
@@ -25,37 +26,57 @@ namespace Disarray {
 // TODO: ID will need some UUID, for now, lets just increase by one
 static Identifier global_identifier { 1 };
 
-Entity::Entity(Scene& s, std::string_view n)
-	: scene(s)
-	, name(n)
-	, identifier(scene.get_registry().create())
+Entity::Entity(Scene* input_scene, std::string_view input_name)
+	: scene(input_scene)
+	, name(input_name)
+	, identifier(scene->get_registry().create())
 {
 	try_add_component<Components::Transform>();
 	try_add_component<Components::ID>(global_identifier++);
 	try_add_component<Components::Tag>(name);
 }
 
-Entity::Entity(Scene& scene, entt::entity handle)
+Entity::Entity(Scene* scene, entt::entity handle)
 	: Entity(scene, handle, "Empty")
 {
 }
 
-Entity::Entity(Scene& scene)
+Entity::Entity(Scene* scene)
 	: Entity(scene, entt::null, "Empty")
 {
 }
 
-Entity::Entity(Scene& s, entt::entity entity, std::string_view n)
+Entity::Entity(Scene* s, entt::entity entity, std::string_view n)
 	: scene(s)
 	, name(n)
 	, identifier(entity)
 {
 }
 
-Entity Entity::deserialise(Disarray::Scene& scene, entt::entity handle, Disarray::Identifier id, std::string_view name)
+ImmutableEntity::ImmutableEntity(const Scene* scene, entt::entity handle)
+	: ImmutableEntity(scene, handle, "Empty")
 {
-	Entity entity { scene, name };
-	entity.get_components<Components::ID>().identifier = id;
+}
+
+ImmutableEntity::ImmutableEntity(const Scene* scene)
+	: ImmutableEntity(scene, entt::null, "Empty")
+{
+}
+
+ImmutableEntity::ImmutableEntity(const Scene* input_scene, entt::entity entity, std::string_view input_name)
+	: scene(input_scene)
+	, name(input_name)
+	, identifier(entity)
+{
+}
+auto ImmutableEntity::get_registry() const -> const entt::registry& { return scene->get_registry(); }
+auto Entity::get_registry() -> entt::registry& { return scene->get_registry(); }
+auto Entity::get_registry() const -> const entt::registry& { return scene->get_registry(); }
+
+Entity Entity::deserialise(Disarray::Scene& scene, entt::entity handle, Disarray::Identifier entity_id, std::string_view name)
+{
+	Entity entity { &scene, handle, name };
+	entity.get_components<Components::ID>().identifier = entity_id;
 	return entity;
 }
 
