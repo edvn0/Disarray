@@ -86,7 +86,7 @@ namespace Log {
 		Logging::Logger::logger().error(formatted_error);
 	}
 
-	auto format(const char* const format, ...) -> std::string;
+	auto format(const char* format, ...) -> std::string;
 
 } // namespace Log
 

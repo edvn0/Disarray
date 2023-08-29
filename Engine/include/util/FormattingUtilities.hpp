@@ -3,17 +3,17 @@
 #include <sstream>
 #include <string>
 
+#include "fmt/core.h"
+#include "util/BitCast.hpp"
+
 namespace Disarray::FormattingUtilities {
 
-template <typename T> static auto pointer_to_string(T* t) -> std::string
+template <typename T> inline auto pointer_to_string(T* value) -> std::string
 {
-	if (t == nullptr)
+	if (value == nullptr) {
 		return "nullptr";
-	static std::string prefix = "0x";
-	std::ostringstream address;
-	address << (static_cast<const void*>(t));
-	std::string name = address.str();
-	return prefix + name;
+	}
+	return fmt::format("{}", fmt::ptr(value));
 }
 
 } // namespace Disarray::FormattingUtilities

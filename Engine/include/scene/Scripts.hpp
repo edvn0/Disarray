@@ -17,11 +17,11 @@ public:
 	void on_update(float time_step) override;
 
 private:
-	auto script_name() const -> std::string_view override { return "MoveInCircle"; }
+	[[nodiscard]] auto script_name() const -> std::string_view override { return "MoveInCircle"; }
 	std::uint32_t radius {};
 	std::uint32_t total_count {};
 	float angle {};
-	float vel { 1.5F };
+	float vel { 0.03F };
 	float rad { glm::radians(1.5F) };
 };
 

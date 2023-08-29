@@ -179,7 +179,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		any_changed |= ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale));
 
 		if (any_changed) {
-			transform.rotation = glm::quat(glm::vec3(euler_angles.x, euler_angles.y, euler_angles.z));
+			transform.rotation = glm::quat(euler_angles);
 		}
 	});
 

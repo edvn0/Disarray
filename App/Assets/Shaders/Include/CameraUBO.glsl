@@ -1,4 +1,4 @@
 struct CameraUBO {
-    vec4 pos;
+    vec4 position;
     vec4 direction;
 };

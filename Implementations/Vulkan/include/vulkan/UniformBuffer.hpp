@@ -1,8 +1,7 @@
 #pragma once
 
-#include "Allocator.hpp"
-#include "BaseBuffer.hpp"
 #include "graphics/UniformBuffer.hpp"
+#include "vulkan/BaseBuffer.hpp"
 #include "vulkan/MemoryAllocator.hpp"
 #include "vulkan/PropertySupplier.hpp"
 

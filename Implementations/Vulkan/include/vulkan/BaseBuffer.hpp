@@ -12,35 +12,38 @@ namespace Disarray::Vulkan {
 
 #define MAKE_SUB_BUFFER(x)                                                                                                                           \
 public:                                                                                                                                              \
-	VkBuffer supply() const override { return BaseBuffer::supply(); }                                                                                \
+	auto supply() const->VkBuffer override { return BaseBuffer::supply(); }                                                                          \
 	void set_data(const void* data, std::uint32_t size) override { BaseBuffer::set_data(data, size); }                                               \
-	std::size_t size() const override { return BaseBuffer::size(); }                                                                                 \
+	auto size() const->std::size_t override { return BaseBuffer::size(); }                                                                           \
 	~x() override { BaseBuffer::destroy_buffer(); }
 
 class BaseBuffer : public PropertySupplier<VkBuffer> {
+public:
+	~BaseBuffer() override = default;
+
 protected:
 	BaseBuffer(const Disarray::Device&, BufferType type, const Disarray::BufferProperties&);
-	virtual ~BaseBuffer() override = default;
 
-	virtual std::size_t size() const
+	[[nodiscard]] virtual auto size() const -> std::size_t
 	{
-		if (type == BufferType::Uniform)
+		if (type == BufferType::Uniform) {
 			return props.size;
-		else
-			return count;
+		}
+
+		return count;
 	}
 
 	virtual void set_data(const void*, std::uint32_t);
 	void destroy_buffer();
 
-	const auto& get_properties() const { return props; }
+	[[nodiscard]] auto get_properties() const -> const auto& { return props; }
 
-	VkBuffer supply() const override { return buffer; }
+	[[nodiscard]] auto supply() const -> VkBuffer override { return buffer; }
 
 private:
 	void create_with_valid_data();
 	void create_with_empty_data();
-	VkBufferUsageFlags to_vulkan_usage(BufferType type);
+	auto to_vulkan_usage(BufferType type) -> VkBufferUsageFlags;
 
 	const Disarray::Device& device;
 

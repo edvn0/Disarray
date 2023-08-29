@@ -16,12 +16,14 @@ layout(location = 4) in uint inIdentifier;
 layout(location = 0) out vec4 fragColor;
 layout(location = 1) out vec2 uvs;
 layout(location = 2) out vec3 outNormals;
-layout(location = 3) out flat uint outIdentifier;
+layout(location = 3) out vec3 fragPos;
+layout(location = 4) out flat uint outIdentifier;
 
 void main() {
     Uniform ubo = UBO.ubo;
 
     gl_Position = ubo.view_projection * vec4(pos, 1.0);
+    fragPos = vec3(ubo.view_projection * vec4(pos, 1.0));
     fragColor = colour;
     uvs = uv;
     outNormals = normals;

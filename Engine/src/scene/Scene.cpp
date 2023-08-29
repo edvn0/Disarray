@@ -23,6 +23,7 @@
 #include "core/events/MouseEvent.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
+#include "graphics/Maths.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/Texture.hpp"
@@ -52,15 +53,6 @@ template <std::size_t Count> static consteval auto generate_angles() -> std::arr
 		angles.at(i) = glm::two_pi<float>() * division;
 	}
 	return angles;
-}
-
-static auto rotate_by(const glm::vec3& axis_radians)
-{
-	auto identity = glm::identity<glm::mat4>();
-	glm::rotate(identity, axis_radians.x, glm::vec3 { 1, 0, 0 });
-	glm::rotate(identity, axis_radians.y, glm::vec3 { 0, 1, 0 });
-	glm::rotate(identity, axis_radians.z, glm::vec3 { 0, 0, 1 });
-	return identity;
 }
 
 namespace Disarray {
@@ -195,7 +187,7 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("main.vert");
 		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("main.frag");
 
-		auto viking_rotation = rotate_by(glm::radians(glm::vec3 { 0, 0, 90 }));
+		auto viking_rotation = Maths::rotate_by(glm::radians(glm::vec3 { 0, 0, 90 }));
 		auto v_mesh = create("Viking");
 		const auto viking = Mesh::construct(device,
 			{
