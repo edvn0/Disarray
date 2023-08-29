@@ -4,11 +4,10 @@
 
 namespace Disarray::Scripts {
 
-CustomScript::~CustomScript() {};
+CustomScript::~CustomScript() = default;
 
-CustomScript::CustomScript(std::uint32_t local_radius, std::uint32_t count, float initial_angle)
+CustomScript::CustomScript(std::uint32_t local_radius, std::uint32_t, float initial_angle)
 	: radius(local_radius)
-	, total_count(count)
 	, angle(glm::degrees(initial_angle))
 {
 }

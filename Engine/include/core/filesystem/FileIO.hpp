@@ -25,7 +25,7 @@ namespace detail {
 			std::filesystem::path path { path_sv };
 			std::ofstream stream { path };
 			if (!stream) {
-				Log::empty_error("Could not open file: {}", path);
+				Log::empty_error("Could not open file: {}", path.string());
 				return;
 			}
 

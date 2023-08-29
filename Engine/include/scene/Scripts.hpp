@@ -19,7 +19,6 @@ public:
 private:
 	[[nodiscard]] auto script_name() const -> std::string_view override { return "MoveInCircle"; }
 	std::uint32_t radius {};
-	std::uint32_t total_count {};
 	float angle {};
 	float vel { 0.03F };
 	float rad { glm::radians(1.5F) };

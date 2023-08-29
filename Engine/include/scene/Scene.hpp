@@ -15,6 +15,7 @@
 #include "graphics/Mesh.hpp"
 #include "graphics/Texture.hpp"
 #include "scene/Component.hpp"
+#include "scene/Entity.hpp"
 
 namespace Disarray {
 
@@ -34,8 +35,6 @@ enum class GizmoType : std::uint16_t {
 	Rotate = RotateX | RotateY | RotateZ | RotateScreen,
 	Scale = ScaleX | ScaleY | ScaleZ
 };
-
-class Entity;
 
 class Scene {
 public:
