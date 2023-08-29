@@ -127,6 +127,7 @@ private:
 	std::function<void(Script&)> destroy_script_functor;
 
 	bool bound { false };
+	bool instantiated { false };
 
 public:
 	Script() = default;
@@ -144,12 +145,16 @@ public:
 	}
 
 	void destroy() { destroy_script_functor(*this); }
-	void instantiate() { create_script_functor(*this); }
+	void instantiate()
+	{
+		create_script_functor(*this);
+		instantiated = true;
+	}
 
 	auto get_script() -> auto& { return *instance_slot; }
 	[[nodiscard]] auto get_script() const -> const auto& { return *instance_slot; }
 
-	[[nodiscard]] auto has_been_bound() const -> bool { return bound; }
+	[[nodiscard]] auto has_been_bound() const -> bool { return bound && !instantiated; }
 };
 
 struct Inheritance {

@@ -50,9 +50,7 @@ void Image::destroy_resources()
 
 void Image::recreate(bool should_clean, const Extent& extent)
 {
-	Log::info("Image", "OLD SIZE!!! {}", get_properties().extent);
 	get_properties().extent = extent;
-	Log::info("Image", "SET SIZE!!! {}", get_properties().extent);
 	recreate_image(should_clean);
 }
 

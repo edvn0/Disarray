@@ -46,6 +46,7 @@ public:
 
 	void update(float);
 	void render();
+	void interface();
 	void construct(Disarray::App&, Disarray::ThreadPool&);
 	void destruct();
 	void on_event(Disarray::Event&);
@@ -84,6 +85,18 @@ public:
 	auto get_registry() -> entt::registry& { return registry; };
 	auto get_registry() const -> const entt::registry& { return registry; };
 	auto get_name() const -> const std::string& { return scene_name; };
+
+	template <ValidComponent... T> auto entities_with() -> std::vector<Entity>
+	{
+		auto view_for = registry.view<T...>();
+		std::vector<Entity> out;
+		if constexpr (sizeof...(T) == 1)
+			out.reserve(view_for.size());
+		else
+			out.reserve(view_for.size_hint());
+		view_for.each([this, &out](auto entity, auto... ts) { out.push_back(Entity { this, entity }); });
+		return out;
+	}
 
 	auto get_by_identifier(Identifier) -> std::optional<Entity>;
 

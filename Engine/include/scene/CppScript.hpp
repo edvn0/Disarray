@@ -10,10 +10,11 @@ namespace Disarray {
 class CppScript {
 public:
 	virtual ~CppScript() = default;
-	virtual void on_create() {};
-	virtual void on_update(float /*unused*/) {};
-	virtual void on_render(Renderer& /*unused*/) {};
-	virtual void on_destroy() {};
+	virtual void on_create() { }
+	virtual void on_update(float /*unused*/) { }
+	virtual void on_render(Renderer& /*unused*/) { }
+	virtual void on_interface() { }
+	virtual void on_destroy() { }
 
 	[[nodiscard]] auto identifier() const -> std::string_view { return script_name(); }
 

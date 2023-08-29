@@ -108,10 +108,12 @@ void image(Texture& tex, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
 	image(vk_image, size, uvs);
 }
 
+void text(const std::string& formatted) { ImGui::Text("%s", formatted.c_str()); }
+
 void scope(std::string_view name, UIFunction&& func)
 {
 	ImGui::Begin(name.data(), nullptr);
-	func();
+	std::forward<UIFunction>(func)();
 	ImGui::End();
 }
 

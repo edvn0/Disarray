@@ -53,7 +53,8 @@ public:
 		requires(
 			std::is_base_of_v<Layer, T> && requires(Disarray::Device& dev, Disarray::Window& win, Disarray::Swapchain& swap) { T(dev, win, swap); })
 	{
-		return layers.emplace_back(std::shared_ptr<T> { new T(*device, *window, *swapchain, std::forward<Args>(args)...) });
+		auto& constructed = layers.emplace_back(std::shared_ptr<T> { new T(*device, *window, *swapchain, std::forward<Args>(args)...) });
+		return std::dynamic_pointer_cast<T>(constructed);
 	}
 
 	template <typename T, typename... Args>

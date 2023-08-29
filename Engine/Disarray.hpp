@@ -37,8 +37,10 @@
 #include "graphics/Texture.hpp"
 #include "scene/Camera.hpp"
 #include "scene/Components.hpp"
+#include "scene/CppScript.hpp"
 #include "scene/Entity.hpp"
 #include "scene/Scene.hpp"
+#include "scene/Scripts.hpp"
 #include "ui/UI.hpp"
 #include "util/FormattingUtilities.hpp"
 

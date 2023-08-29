@@ -39,9 +39,19 @@ template <std::size_t Count> static consteval auto generate_colours() -> std::ar
 	std::array<glm::vec4, Count> colours {};
 	constexpr auto division = 1.F / static_cast<float>(Count);
 	for (auto i = 0; i < Count; i++) {
-		colours[i] = glm::vec4 { division * i, division * i, 0.3, 1 };
+		colours.at(i) = glm::vec4 { division * i, division * i, 0.3, 1 };
 	}
 	return colours;
+}
+
+template <std::size_t Count> static consteval auto generate_angles() -> std::array<float, Count>
+{
+	std::array<float, Count> angles {};
+	constexpr auto division = 1.F / static_cast<float>(Count);
+	for (auto i = 0; i < Count; i++) {
+		angles.at(i) = glm::two_pi<float>() * division;
+	}
+	return angles;
 }
 
 static auto rotate_by(const glm::vec3& axis_radians)
@@ -234,37 +244,8 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 		static constexpr auto point_lights = 30U;
 		static constexpr auto division = glm::two_pi<float>() / point_lights;
 
-		class CustomScript final : public CppScript {
-		public:
-			~CustomScript() override { Log::info(script_name(), "Deleting this: {}", static_cast<const void*>(this)); };
-			CustomScript(auto local_radius, auto count)
-				: radius(local_radius)
-				, total_count(count)
-			{
-				Log::info(script_name(), "Constructing this: {}", static_cast<const void*>(this));
-			}
-
-			void on_create() override { Log::info(script_name(), "Calling on_create() for Ptr: {}", static_cast<const void*>(this)); }
-
-			void on_update(float time_step) override
-			{
-				auto& [rot, pos, scale] = transform();
-
-				pos.x = pos.x + vel * time_step;
-				pos.z = pos.z + vel * time_step;
-
-				pos.x = radius * glm::sin(pos.x);
-				pos.z = radius * glm::cos(pos.z);
-			}
-
-		private:
-			auto script_name() const -> std::string_view override { return "MoveInCircle"; }
-			std::uint32_t radius {};
-			std::uint32_t total_count {};
-			float vel { 1.5F };
-		};
-
 		constexpr auto colours = generate_colours<point_lights>();
+		constexpr auto angles = generate_angles<point_lights>();
 
 		const auto sphere = Mesh::construct(device, { .path = "Assets/Models/sphere.mesh" });
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("point_light.vert");
@@ -286,7 +267,7 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 			auto point_light = create("PointLight-{}", i);
 			point_light.add_component<Components::PointLight>();
 			auto& transform = point_light.get_components<Components::Transform>();
-			const auto divided = division * static_cast<float>(i);
+			const auto divided = angles.at(i);
 			transform.position = { glm::sin(divided), 0, glm::cos(divided) };
 			transform.position *= max_radius;
 			transform.position.y = -4;
@@ -295,7 +276,6 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 			point_light.add_component<Components::Mesh>(sphere);
 			point_light.add_component<Components::Texture>(colours.at(i));
 			point_light.add_component<Components::Pipeline>(pipe);
-			point_light.add_script<CustomScript>(max_radius, point_lights);
 			pl_system.add_child(point_light);
 		}
 	}
@@ -327,6 +307,14 @@ Scene::~Scene()
 void Scene::begin_frame(const Camera& camera) { scene_renderer->begin_frame(camera); }
 
 void Scene::end_frame() { scene_renderer->end_frame(); }
+
+void Scene::interface()
+{
+	auto script_view = registry.view<Components::Script>();
+	for (auto&& [entity, script] : script_view.each()) {
+		script.get_script().on_interface();
+	}
+}
 
 void Scene::update(float time_step)
 {

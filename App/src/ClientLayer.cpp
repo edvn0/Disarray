@@ -20,6 +20,16 @@
 
 namespace Disarray::Client {
 
+template <std::size_t Count> static consteval auto generate_angles_client() -> std::array<float, Count>
+{
+	std::array<float, Count> angles {};
+	constexpr auto division = 1.F / static_cast<float>(Count);
+	for (std::size_t i = 0; i < Count; i++) {
+		angles.at(i) = glm::two_pi<float>() * static_cast<float>(i) * division;
+	}
+	return angles;
+}
+
 ClientLayer::ClientLayer(Device& device, Window& win, Swapchain& swapchain)
 	: device(device)
 	, camera(60.F, static_cast<float>(swapchain.get_extent().width), static_cast<float>(swapchain.get_extent().height), 0.1F, 1000.F, nullptr)
@@ -44,6 +54,17 @@ void ClientLayer::construct(App& app, ThreadPool& pool)
 	content_panel->construct(app, pool);
 	scene_panel->construct(app, pool);
 	execution_stats_panel->construct(app, pool);
+
+	constexpr auto angles = generate_angles_client<30>();
+
+	auto point_lights = scene->entities_with<Components::PointLight>();
+	std::size_t index { 0 };
+	ensure(angles.size() == point_lights.size());
+	for (auto&& point_light : point_lights) {
+		constexpr auto radius = 8UL;
+		constexpr auto count = 30UL;
+		point_light.add_script<Scripts::CustomScript>(radius, count, angles.at(index++));
+	}
 };
 
 void ClientLayer::interface()
@@ -125,6 +146,8 @@ void ClientLayer::interface()
 	});
 
 	ImGui::End();
+
+	scene->interface();
 }
 
 void ClientLayer::handle_swapchain_recreation(Swapchain& swapchain) { scene->recreate(swapchain.get_extent()); }

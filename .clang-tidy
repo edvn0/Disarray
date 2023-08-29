@@ -1,4 +1,4 @@
-Checks: "-*,cppcoreguidelines-*,performance-*,readability-*,portability-*,modernize-*,clang-analyzer-*,-clang-analyzer-cplusplus*,readability-identifier-naming,cppcoreguidelines-pro-type-cstyle-cast"
+Checks: "-*,-readability-named-parameter,cppcoreguidelines-*,performance-*,readability-*,portability-*,modernize-*,clang-analyzer-*,-clang-analyzer-cplusplus*,readability-identifier-naming,cppcoreguidelines-pro-type-cstyle-cast"
 CheckOptions:
     - { key: readability-identifier-naming.NamespaceCase, value: CamelCase }
     - { key: readability-identifier-naming.ClassCase, value: CamelCase }

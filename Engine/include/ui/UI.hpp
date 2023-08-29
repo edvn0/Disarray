@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 
+#include <fmt/core.h>
 #include <magic_enum.hpp>
 
 #include <array>
@@ -41,6 +42,14 @@ static constexpr std::array<glm::vec2, 2> default_uvs = { glm::vec2 { 0.f, 0.f }
 
 using UIFunction = std::function<void(void)>;
 static constexpr auto default_function = []() {};
+
+void text(const std::string&);
+
+template <typename... Args> void text(fmt::format_string<Args...> fmt_string, Args&&... args)
+{
+	auto formatted = fmt::format(fmt_string, std::forward<Args>(args)...);
+	text(formatted);
+}
 
 void image_button(Image&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
 void image_button(const Image&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
