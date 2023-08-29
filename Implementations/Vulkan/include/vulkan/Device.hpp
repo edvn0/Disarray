@@ -12,20 +12,20 @@ public:
 	Device(Disarray::Window&);
 	~Device() override;
 
-	VkQueue get_graphics_queue() const { return graphics; }
-	VkQueue get_present_queue() const { return present; }
+	auto get_graphics_queue() const -> VkQueue { return graphics; }
+	auto get_present_queue() const -> VkQueue { return present; }
 
-	VkDevice supply() const override { return device; }
+	auto supply() const -> VkDevice override { return device; }
 
-	Disarray::PhysicalDevice& get_physical_device() override { return *physical_device; }
-	const Disarray::PhysicalDevice& get_physical_device() const override { return *physical_device; }
+	auto get_physical_device() -> Disarray::PhysicalDevice& override { return *physical_device; }
+	auto get_physical_device() const -> const Disarray::PhysicalDevice& override { return *physical_device; }
 
 private:
 	Ref<Disarray::PhysicalDevice> physical_device;
 
-	VkDevice device;
-	VkQueue graphics;
-	VkQueue present;
+	VkDevice device {};
+	VkQueue graphics {};
+	VkQueue present {};
 };
 
 } // namespace Disarray::Vulkan

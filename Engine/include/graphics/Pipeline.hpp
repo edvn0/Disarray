@@ -131,7 +131,7 @@ struct PipelineProperties {
 	PolygonMode polygon_mode { PolygonMode::Fill };
 	float line_width { 1.0f };
 	SampleCount samples { SampleCount::One };
-	DepthCompareOperator depth_comparison_operator { DepthCompareOperator::GreaterOrEqual };
+	DepthCompareOperator depth_comparison_operator { DepthCompareOperator::Less };
 	CullMode cull_mode { CullMode::Front };
 	FaceMode face_mode { FaceMode::Clockwise };
 	bool write_depth { true };

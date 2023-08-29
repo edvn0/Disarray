@@ -94,6 +94,10 @@ void Renderer::on_resize()
 
 void Renderer::begin_frame(const Camera& camera)
 {
+	auto [ubo, camera_ubo, lights] = get_graphics_resource().get_editable_ubos();
+	camera_ubo.position = glm::vec4 { camera.get_position(), 1.0F };
+	camera_ubo.direction = glm::vec4 { camera.get_direction(), 1.0F };
+
 	begin_frame(camera.get_view_matrix(), camera.get_projection_matrix(), camera.get_view_projection());
 }
 
@@ -102,20 +106,25 @@ void Renderer::begin_frame(const glm::mat4& view, const glm::mat4& proj, const g
 	// TODO: Move to some kind of scene scope?
 	batch_renderer.reset();
 
-	auto& ubo = get_graphics_resource().get_editable_ubo();
+	auto [ubo, camera, lights] = get_graphics_resource().get_editable_ubos();
 
 	ubo.view = view;
 	ubo.proj = proj;
 	ubo.view_projection = view_projection;
-
-	get_graphics_resource().update_ubo();
 
 	if (swapchain.needs_recreation()) {
 		force_recreation();
 	}
 }
 
-void Renderer::end_frame() { std::memset(&get_graphics_resource().get_editable_ubo(), 0, sizeof(UBO)); }
+void Renderer::end_frame()
+{
+	auto [ubo, camera_ubo, lights] = get_graphics_resource().get_editable_ubos();
+
+	std::memset(&ubo, 0, sizeof(UBO));
+	std::memset(&camera_ubo, 0, sizeof(CameraUBO));
+	lights.fill({});
+}
 
 void Renderer::force_recreation() { on_resize(); }
 

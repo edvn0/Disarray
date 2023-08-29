@@ -7,6 +7,7 @@
 #include <queue>
 #include <type_traits>
 
+#include "core/FileWatcher.hpp"
 #include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
 #include "core/events/Event.hpp"
@@ -117,6 +118,7 @@ private:
 	const Disarray::Device& device;
 	std::string scene_name;
 	Scope<Renderer> scene_renderer { nullptr };
+	Scope<FileWatcher> file_watcher { nullptr };
 
 	Scope<Entity> picked_entity { nullptr };
 	Scope<Entity> selected_entity { nullptr };

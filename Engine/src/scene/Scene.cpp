@@ -56,7 +56,7 @@ template <std::size_t Count> static consteval auto generate_angles() -> std::arr
 
 static auto rotate_by(const glm::vec3& axis_radians)
 {
-	glm::mat4 identity = glm::identity<glm::mat4>();
+	auto identity = glm::identity<glm::mat4>();
 	glm::rotate(identity, axis_radians.x, glm::vec3 { 1, 0, 0 });
 	glm::rotate(identity, axis_radians.y, glm::vec3 { 0, 1, 0 });
 	glm::rotate(identity, axis_radians.z, glm::vec3 { 0, 0, 1 });
@@ -68,7 +68,6 @@ namespace Disarray {
 Scene::Scene(const Device& dev, std::string_view name)
 	: device(dev)
 	, scene_name(name)
-	, registry(entt::basic_registry())
 {
 	picked_entity = make_scope<Entity>(this);
 	selected_entity = make_scope<Entity>(this);
@@ -85,10 +84,11 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 			std::vector<ThreadPoolCallback> parallels {};
 			while (!thread_pool_callbacks.empty()) {
 				ThreadPoolCallback& front = thread_pool_callbacks.front();
-				if (front.parallel)
-					parallels.push_back(std::move(front));
-				else
+				if (front.parallel) {
+					parallels.push_back(front);
+				} else {
 					front.func(this);
+				}
 				thread_pool_callbacks.pop();
 			}
 
@@ -168,7 +168,6 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 			.attachments = { { Disarray::ImageFormat::SBGR }, { ImageFormat::Depth } },
 			.clear_colour_on_load = false,
 			.clear_depth_on_load = false,
-			.blend_mode = FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha,
 			.debug_name = "FirstFramebuffer",
 		});
 
@@ -178,7 +177,7 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 			.attachments = { { ImageFormat::SBGR }, { ImageFormat::Uint, false }, { ImageFormat::Depth } },
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
-			.blend_mode = FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha,
+			.should_blend = false,
 			.debug_name = "IdentityFramebuffer",
 		});
 
@@ -256,7 +255,7 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 				.fragment_shader = frag,
 				.framebuffer = identity_framebuffer,
 				.layout = layout,
-				.push_constant_layout = { { PushConstantKind::Both, 92 } },
+				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 				.extent = extent,
 				.depth_comparison_operator = DepthCompareOperator::GreaterOrEqual,
 				.cull_mode = CullMode::Back,
@@ -304,7 +303,27 @@ Scene::~Scene()
 	SceneSerialiser scene_serialiser(this);
 }
 
-void Scene::begin_frame(const Camera& camera) { scene_renderer->begin_frame(camera); }
+void Scene::begin_frame(const Camera& camera)
+{
+	scene_renderer->begin_frame(camera);
+	auto [ubo, camera_ubo, light_ubos] = scene_renderer->get_graphics_resource().get_editable_ubos();
+
+	auto sun_component_view = registry.view<const Components::DirectionalLight, const Components::Texture>();
+	for (auto&& [entity, sun, texture] : sun_component_view.each()) {
+		ubo.sun_direction_and_intensity = sun.compute();
+		ubo.sun_colour = texture.colour;
+	}
+
+	auto point_light_view = registry.view<const Components::PointLight, const Components::Transform, const Components::Texture>();
+	std::size_t light_index { 0 };
+	for (auto&& [entity, point_light, pos, texture] : point_light_view.each()) {
+		auto& light = light_ubos.at(light_index++);
+		light.position = glm::vec4 { pos.position, 0.F };
+		light.ambient = texture.colour;
+	}
+
+	scene_renderer->get_graphics_resource().update_ubo();
+}
 
 void Scene::end_frame() { scene_renderer->end_frame(); }
 
@@ -318,16 +337,6 @@ void Scene::interface()
 
 void Scene::update(float time_step)
 {
-	auto& editable_ubo = scene_renderer->get_graphics_resource().get_editable_ubo();
-	auto sun_component_view = registry.view<const Components::DirectionalLight, const Components::Texture>();
-
-	ensure(sun_component_view.size_hint() == 1, "More than one 'sun' registered.");
-
-	for (auto&& [entity, sun, texture] : sun_component_view.each()) {
-		editable_ubo.sun_direction_and_intensity = sun.compute();
-		editable_ubo.sun_colour = texture.colour;
-	}
-
 	if (picked_entity) {
 		selected_entity.swap(picked_entity);
 		picked_entity = nullptr;

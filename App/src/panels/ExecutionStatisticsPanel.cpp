@@ -4,8 +4,9 @@ namespace Disarray::Client {
 
 void ExecutionStatisticsPanel::update(float time_step)
 {
-	if (!has_stats)
+	if (!has_stats) {
 		return;
+	}
 
 	should_update_counter += time_step;
 	if (should_update_counter > update_interval_ms) {
@@ -25,7 +26,7 @@ void ExecutionStatisticsPanel::update(float time_step)
 void ExecutionStatisticsPanel::interface()
 {
 	if (!has_stats) {
-		UI::scope("ExecutionStatisticsPanel"sv, []() { ImGui::Text("No GPU stats collected."); });
+		UI::scope("ExecutionStatisticsPanel"sv, []() { UI::text("{}", "No GPU stats collected."); });
 	}
 
 	UI::scope("ExecutionStatisticsPanel"sv, [&]() {

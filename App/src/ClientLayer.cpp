@@ -72,7 +72,7 @@ void ClientLayer::interface()
 	ImGuiIO& io = ImGui::GetIO();
 	ImGuiStyle& style = ImGui::GetStyle();
 
-	io.ConfigWindowsResizeFromEdges = io.BackendFlags & ImGuiBackendFlags_HasMouseCursors;
+	io.ConfigWindowsResizeFromEdges = ((io.BackendFlags & ImGuiBackendFlags_HasMouseCursors) != 0);
 
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
 
@@ -80,14 +80,14 @@ void ClientLayer::interface()
 	ImGui::SetNextWindowPos(viewport->Pos);
 	ImGui::SetNextWindowSize(viewport->Size);
 	ImGui::SetNextWindowViewport(viewport->ID);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0F);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0F);
 	window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
 	window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f, 6.0f));
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 3.0f);
-	ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4 { 0.0f, 0.0f, 0.0f, 0.0f });
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0F, 6.0F));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 3.0F);
+	ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4 { 0.0F, 0.0F, 0.0F, 0.0F });
 	ImGui::Begin("Dockspace", nullptr, window_flags);
 	ImGui::PopStyleColor();
 	ImGui::PopStyleVar(2);
@@ -95,7 +95,7 @@ void ClientLayer::interface()
 	ImGui::PopStyleVar(2);
 
 	float min_win_size_x = style.WindowMinSize.x;
-	style.WindowMinSize.x = 370.0f;
+	style.WindowMinSize.x = 370.0F;
 	ImGui::DockSpace(ImGui::GetID("Dockspace"));
 	style.WindowMinSize.x = min_win_size_x;
 
@@ -171,8 +171,9 @@ void ClientLayer::on_event(Event& event)
 		}
 	});
 	dispatcher.dispatch<MouseButtonReleasedEvent>([this](MouseButtonReleasedEvent& pressed) {
-		if (ImGuizmo::IsUsing())
+		if (ImGuizmo::IsUsing()) {
 			return true;
+		}
 
 		const auto vp_is_focused = viewport_panel_focused && viewport_panel_mouse_over;
 		if (pressed.get_mouse_button() == MouseCode::Left && vp_is_focused) {
@@ -237,8 +238,8 @@ protected:
 	}
 	auto child() -> auto& { return static_cast<Child&>(*this); }
 	auto get_scene() -> auto& { return base_scene; }
-	auto get_device() const -> const auto& { return device; }
-	auto get_path() const -> const auto& { return file_path; }
+	[[nodiscard]] auto get_device() const -> const auto& { return device; }
+	[[nodiscard]] auto get_path() const -> const auto& { return file_path; }
 
 private:
 	void handle() { return child().handle_impl(); }

@@ -12,6 +12,7 @@
 #include <unordered_set>
 
 #include "Forward.hpp"
+#include "core/Collections.hpp"
 #include "core/Concepts.hpp"
 #include "core/Hashes.hpp"
 #include "core/Input.hpp"
@@ -22,20 +23,22 @@
 
 namespace Disarray::UI {
 
-using ExtensionSet = std::unordered_set<std::string, string_hash>;
+using ExtensionSet = Collections::StringSet;
 using ImageIdentifier = std::uint64_t;
 
-class DescriptorCache {
+class InterfaceCaches {
 	using ImageCache = std::unordered_map<ImageIdentifier, std::unique_ptr<ImageIdentifier>>;
 
 public:
 	static void initialise();
 	static void destruct();
 
-	static auto& get_cache() { return cache; }
+	static auto& descriptor_cache() { return image_descriptor_cache; }
+	static auto& font_cache() { return font_map; }
 
 private:
-	inline static ImageCache cache {};
+	inline static ImageCache image_descriptor_cache {};
+	inline static Collections::StringMap<ImFont*> font_map {};
 };
 
 static constexpr std::array<glm::vec2, 2> default_uvs = { glm::vec2 { 0.f, 0.f }, glm::vec2 { 1.f, 1.f } };
@@ -109,6 +112,8 @@ template <IsEnum T> bool combo_choice(std::string name, T& initial_value)
 	initial_value = new_value;
 	return changed;
 }
+
+bool checkbox(const std::string&, bool&);
 
 bool shader_drop_button(Device&, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader);
 Ref<Texture> texture_drop_button(Device&, const Texture& texture);

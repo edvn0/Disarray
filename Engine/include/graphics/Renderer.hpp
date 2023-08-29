@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 
 #include <functional>
+#include <tuple>
 
 #include "Forward.hpp"
 #include "graphics/RendererProperties.hpp"
@@ -32,8 +33,7 @@ public:
 	[[nodiscard]] virtual const PushConstant* get_push_constant() const = 0;
 	virtual PushConstant& get_editable_push_constant() = 0;
 
-	virtual const UBO* get_ubo() const = 0;
-	virtual UBO& get_editable_ubo() = 0;
+	virtual std::tuple<UBO&, CameraUBO&, PointLights&> get_editable_ubos() = 0;
 
 	virtual void update_ubo() = 0;
 };

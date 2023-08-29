@@ -2,10 +2,20 @@
 
 #include "PC.glsl"
 #include "UBO.glsl"
+#include "PointLight.glsl"
+#include "CameraUBO.glsl"
 
 layout(set = 0, binding = 0) uniform UniformBlock {
 	Uniform ubo;
 } UBO;
+
+layout(set = 0, binding = 1) uniform CameraBlock {
+	CameraUBO camera;
+} CBO;
+
+layout(set = 0, binding = 2) uniform PointLightBlock {
+	PointLight[30] lights;
+} PLBO;
 
 layout(location = 0) in vec4 fragColor;
 layout(location = 1) in vec2 uvs;

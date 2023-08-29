@@ -36,8 +36,7 @@ public:
 	const PushConstant* get_push_constant() const override { return &pc; }
 	PushConstant& get_editable_push_constant() override { return pc; }
 
-	const UBO* get_ubo() const override { return &uniform; }
-	UBO& get_editable_ubo() override { return uniform; }
+	std::tuple<UBO&, CameraUBO&, PointLights&> get_editable_ubos() override { return { uniform, camera_ubo, lights }; }
 
 	void update_ubo() override;
 
@@ -48,10 +47,13 @@ private:
 	Disarray::PipelineCache pipeline_cache;
 	Disarray::TextureCache texture_cache;
 
-	VkDescriptorPool pool;
+	VkDescriptorPool pool { nullptr };
 	PushConstant pc {};
+
 	UBO uniform {};
-	std::vector<Scope<Vulkan::UniformBuffer>> frame_ubos;
+	CameraUBO camera_ubo {};
+	PointLights lights {};
+	std::vector<std::array<Scope<Vulkan::UniformBuffer>, 3>> frame_ubos;
 
 	std::vector<VkDescriptorSet> descriptor_sets;
 	std::vector<VkDescriptorSetLayout> layouts;

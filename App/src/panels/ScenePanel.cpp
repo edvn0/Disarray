@@ -222,6 +222,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		any_changed |= UI::combo_choice<PolygonMode>("Polygon mode", std::ref(props.polygon_mode));
 		any_changed |= UI::shader_drop_button(dev, "Vertex Shader", ShaderType::Vertex, std::ref(props.vertex_shader));
 		any_changed |= UI::shader_drop_button(dev, "Fragment Shader", ShaderType::Fragment, std::ref(props.fragment_shader));
+
 		if (any_changed) {
 			pipe->recreate(true, {});
 		}

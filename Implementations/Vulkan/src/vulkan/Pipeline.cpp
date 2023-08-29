@@ -230,10 +230,6 @@ void Pipeline::construct_layout(const Extent& extent)
 	depth_stencil_state_create_info.depthWriteEnable = static_cast<VkBool32>(props.write_depth);
 	depth_stencil_state_create_info.depthCompareOp = Detail::to_vulkan_comparison(props.depth_comparison_operator);
 	depth_stencil_state_create_info.depthBoundsTestEnable = static_cast<VkBool32>(false);
-	depth_stencil_state_create_info.back.compareOp = VK_COMPARE_OP_ALWAYS;
-	depth_stencil_state_create_info.back.failOp = VK_STENCIL_OP_KEEP;
-	depth_stencil_state_create_info.back.passOp = VK_STENCIL_OP_KEEP;
-	depth_stencil_state_create_info.front = depth_stencil_state_create_info.back;
 	depth_stencil_state_create_info.stencilTestEnable = static_cast<VkBool32>(false);
 
 	VkPipelineMultisampleStateCreateInfo multisampling {};
@@ -247,7 +243,7 @@ void Pipeline::construct_layout(const Extent& extent)
 
 	const auto& fb_props = props.framebuffer->get_properties();
 	const auto should_present = fb_props.should_present;
-	size_t color_attachment_count = should_present ? 1 : props.framebuffer->get_colour_attachment_count();
+	std::size_t color_attachment_count = should_present ? 1 : props.framebuffer->get_colour_attachment_count();
 	std::vector<VkPipelineColorBlendAttachmentState> blend_attachment_states(color_attachment_count);
 	static constexpr auto blend_all_factors
 		= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -262,12 +258,12 @@ void Pipeline::construct_layout(const Extent& extent)
 		blend_attachment_states[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 	} else {
 		for (size_t i = 0; i < color_attachment_count; i++) {
+			static constexpr auto full_mask = 0xf;
+			blend_attachment_states[i].colorWriteMask = full_mask;
+
 			if (!fb_props.should_blend) {
 				break;
 			}
-
-			static constexpr auto full_mask = 0xf;
-			blend_attachment_states[i].colorWriteMask = full_mask;
 
 			const auto& attachment_spec = fb_props.attachments.texture_attachments[i];
 			FramebufferBlendMode blend_mode = fb_props.blend_mode == FramebufferBlendMode::None ? attachment_spec.blend_mode : fb_props.blend_mode;
@@ -302,7 +298,7 @@ void Pipeline::construct_layout(const Extent& extent)
 
 	VkPipelineColorBlendStateCreateInfo color_blending {};
 	color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	color_blending.logicOpEnable = static_cast<VkBool32>(true);
+	color_blending.logicOpEnable = static_cast<VkBool32>(fb_props.should_blend);
 	color_blending.logicOp = VK_LOGIC_OP_COPY;
 	color_blending.attachmentCount = static_cast<std::uint32_t>(blend_attachment_states.size());
 	color_blending.pAttachments = blend_attachment_states.data();
@@ -316,7 +312,6 @@ void Pipeline::construct_layout(const Extent& extent)
 	pipeline_layout_info.setLayoutCount = static_cast<std::uint32_t>(props.descriptor_set_layouts.size()); // Optional
 	pipeline_layout_info.pSetLayouts = props.descriptor_set_layouts.data(); // Optional
 
-	pipeline_layout_info.pushConstantRangeCount = static_cast<std::uint32_t>(props.push_constant_layout.size()); // Optional
 	std::vector<VkPushConstantRange> result;
 	for (const auto& pc_layout : props.push_constant_layout.get_input_ranges()) {
 		auto& out = result.emplace_back();
@@ -336,6 +331,7 @@ void Pipeline::construct_layout(const Extent& extent)
 			.size = pc_layout.size,
 		};
 	}
+	pipeline_layout_info.pushConstantRangeCount = static_cast<std::uint32_t>(props.push_constant_layout.size()); // Optional
 	pipeline_layout_info.pPushConstantRanges = result.data(); // Optional
 
 	verify(vkCreatePipelineLayout(supply_cast<Vulkan::Device>(device), &pipeline_layout_info, nullptr, &layout));

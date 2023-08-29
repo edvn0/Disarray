@@ -54,12 +54,11 @@ struct PushConstant {
 };
 
 struct PointLight {
-	glm::vec3 position;
-	glm::vec3 factors { 1, 1, 1 };
-	glm::vec3 ambient;
-	glm::vec3 diffuse;
-	glm::vec3 specular;
-	float dummy {};
+	glm::vec4 position;
+	glm::vec4 factors { 1, 1, 0, 0 };
+	glm::vec4 ambient;
+	glm::vec4 diffuse;
+	glm::vec4 specular;
 };
 
 using PointLights = std::array<PointLight, 30>;
@@ -70,6 +69,11 @@ struct UBO {
 	glm::mat4 view_projection;
 	glm::vec4 sun_direction_and_intensity { 1.0 };
 	glm::vec4 sun_colour { 1.0f };
+};
+
+struct CameraUBO {
+	glm::vec4 position { 0 };
+	glm::vec4 direction { 0 };
 };
 
 } // namespace Disarray

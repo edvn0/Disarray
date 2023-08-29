@@ -20,7 +20,7 @@ Device::Device(Disarray::Window& window)
 	std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
 	std::set<uint32_t> unique_queue_families { queue_family_index.get_graphics_family(), queue_family_index.get_present_family() };
 
-	float prio = 1.0f;
+	float prio = 1.0F;
 	for (uint32_t family : unique_queue_families) {
 		VkDeviceQueueCreateInfo queue_create_info {};
 		queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -32,11 +32,11 @@ Device::Device(Disarray::Window& window)
 
 	VkPhysicalDeviceFeatures features {};
 #ifdef DISARRAY_WINDOWS
-	features.wideLines = true;
-	features.logicOp = true;
-	features.pipelineStatisticsQuery = true;
-	features.fillModeNonSolid = true;
-	features.independentBlend = true;
+	features.wideLines = 1u;
+	features.logicOp = 1u;
+	features.pipelineStatisticsQuery = 1u;
+	features.fillModeNonSolid = 1u;
+	features.independentBlend = 1u;
 #endif
 
 	VkDeviceCreateInfo device_create_info {};

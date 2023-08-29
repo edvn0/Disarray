@@ -47,8 +47,9 @@ CommandExecutor::~CommandExecutor() { destroy_executor(); }
 
 void CommandExecutor::recreate_executor(bool should_clean)
 {
-	if (props.owned_by_swapchain)
+	if (props.owned_by_swapchain) {
 		return;
+	}
 
 	if (should_clean) {
 		destroy_executor();
@@ -60,8 +61,9 @@ void CommandExecutor::recreate_executor(bool should_clean)
 
 void CommandExecutor::create_query_pools()
 {
-	if (!props.record_stats)
+	if (!props.record_stats) {
 		return;
+	}
 
 	const auto& vk_device = supply_cast<Vulkan::Device>(device);
 
@@ -79,12 +81,14 @@ void CommandExecutor::create_query_pools()
 	}
 
 	timestamp_query_results.resize(image_count);
-	for (auto& timestamp_query_result : timestamp_query_results)
+	for (auto& timestamp_query_result : timestamp_query_results) {
 		timestamp_query_result.resize(timestamp_query_count);
+	}
 
 	execution_gpu_times.resize(image_count);
-	for (auto& execution_gpu_time : execution_gpu_times)
+	for (auto& execution_gpu_time : execution_gpu_times) {
 		execution_gpu_time.resize(timestamp_query_count / 2);
+	}
 
 	// Pipeline statistics queries
 	pipeline_query_count = 7;
@@ -96,16 +100,18 @@ void CommandExecutor::create_query_pools()
 		| VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT | VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT;
 
 	pipeline_statistics_query_pools.resize(image_count);
-	for (auto& pipeline_statistics_query_pool : pipeline_statistics_query_pools)
+	for (auto& pipeline_statistics_query_pool : pipeline_statistics_query_pools) {
 		verify(vkCreateQueryPool(vk_device, &query_pool_create_info, nullptr, &pipeline_statistics_query_pool));
+	}
 
 	pipeline_statistics_query_results.resize(image_count);
 }
 
 void CommandExecutor::destroy_executor()
 {
-	if (props.owned_by_swapchain)
+	if (props.owned_by_swapchain) {
 		return;
+	}
 
 	const auto& vk_device = supply_cast<Vulkan::Device>(device);
 
@@ -118,13 +124,14 @@ void CommandExecutor::destroy_executor()
 			vkDestroyQueryPool(vk_device, pool, nullptr);
 		}
 	}
-	for (auto& fence : fences)
+	for (auto& fence : fences) {
 		vkDestroyFence(vk_device, fence, nullptr);
+	}
 }
 
 void CommandExecutor::create_base_structures()
 {
-	const auto vk_device = supply_cast<Vulkan::Device>(device);
+	auto* const vk_device = supply_cast<Vulkan::Device>(device);
 
 	VkCommandPoolCreateInfo pool_info {};
 	pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -134,8 +141,9 @@ void CommandExecutor::create_base_structures()
 	verify(vkCreateCommandPool(vk_device, &pool_info, nullptr, &command_pool));
 
 	auto count = props.count ? *props.count : swapchain.image_count();
-	if (count > Config::max_frames_in_flight)
+	if (count > Config::max_frames_in_flight) {
 		count = Config::max_frames_in_flight;
+	}
 	image_count = count;
 
 	command_buffers.resize(image_count);
@@ -240,8 +248,8 @@ void CommandExecutor::submit_and_end()
 			uint64_t end_time = timestamp_query_results[buffer_index()][i + 1];
 			float ns_time = end_time > start_time
 				? (end_time - start_time) * cast_to<Vulkan::PhysicalDevice>(device.get_physical_device()).get_limits().timestampPeriod
-				: 0.0f;
-			execution_gpu_times[buffer_index()][i / 2] = ns_time * 0.000001f; // Time in ms
+				: 0.0F;
+			execution_gpu_times[buffer_index()][i / 2] = ns_time * 0.000001F; // Time in ms
 		}
 
 		// Retrieve pipeline stats results

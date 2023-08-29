@@ -57,7 +57,7 @@ void App::run()
 
 	auto ui_layer = add_layer<UI::InterfaceLayer>();
 
-	UI::DescriptorCache::initialise();
+	UI::InterfaceCaches::initialise();
 
 	for (auto& layer : layers) {
 		layer->construct(*this, pool);
@@ -98,7 +98,7 @@ void App::run()
 
 	wait_for_cleanup(*device);
 
-	UI::DescriptorCache::destruct();
+	UI::InterfaceCaches::destruct();
 	for (auto& layer : layers) {
 		layer->destruct();
 	}

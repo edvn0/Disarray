@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "Forward.hpp"
+#include "core/Collections.hpp"
 #include "core/Layer.hpp"
 #include "core/Panel.hpp"
 #include "core/UsageBadge.hpp"

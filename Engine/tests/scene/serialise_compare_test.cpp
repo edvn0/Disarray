@@ -58,14 +58,14 @@ TEST(SceneSerialisation, RoundTrip)
 	s.create("TEST1");
 	s.create("TEST2");
 	s.create("TEST3");
-	Disarray::SceneSerialiser serialiser { s };
+	Disarray::SceneSerialiser serialiser { &s };
 	auto out = serialiser.get_as_json();
 
 	std::stringstream stream;
 	stream << out;
 	Disarray::Scene new_scene(device_mock, "Test");
 	Disarray::SceneDeserialiser scene_deserialiser { new_scene, device_mock, stream };
-	Disarray::SceneSerialiser serialiser_new { new_scene };
+	Disarray::SceneSerialiser serialiser_new { &new_scene };
 	auto out_new = serialiser_new.get_as_json();
 
 	EXPECT_EQ(out, out_new);

@@ -1,8 +1,7 @@
 struct PointLight {
-	vec3 position;
-	vec3 factors;
-	vec3 ambient;
-	vec3 diffuse;
-	vec3 specular;
-	float dummy;
-}
+	vec4 position;
+	vec4 factors;
+	vec4 ambient;
+	vec4 diffuse;
+	vec4 specular;
+};

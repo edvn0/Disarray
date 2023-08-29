@@ -23,6 +23,7 @@ public:
 	virtual void on_update(float) {};
 
 	virtual glm::vec3 get_position() const = 0;
+	virtual glm::vec3 get_direction() const = 0;
 
 	virtual const glm::mat4& get_projection_matrix() const { return projection_matrix; }
 	virtual const glm::mat4& get_view_matrix() const { return view_matrix; }
@@ -127,6 +128,7 @@ public:
 	auto get_forward_direction() const -> glm::vec3;
 
 	auto get_position() const -> glm::vec3 override { return position; }
+	auto get_direction() const -> glm::vec3 override { return direction; }
 
 	glm::quat get_orientation() const;
 

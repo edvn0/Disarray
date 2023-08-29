@@ -52,7 +52,7 @@ public:
 	virtual auto get_colour_attachment_count() const -> std::uint32_t = 0;
 	virtual auto has_depth() -> bool = 0;
 
-	static Ref<Framebuffer> construct(const Disarray::Device&, FramebufferProperties);
+	static auto construct(const Disarray::Device&, FramebufferProperties) -> Ref<Framebuffer>;
 };
 
 } // namespace Disarray
