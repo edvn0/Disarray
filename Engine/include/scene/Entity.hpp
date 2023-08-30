@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 
+#include "core/Ensure.hpp"
 #include "scene/Component.hpp"
 
 namespace Disarray {
@@ -72,6 +73,7 @@ public:
 		requires std::is_base_of_v<CppScript, ChildScript>
 	void add_script(Args&&... args)
 	{
+		ensure(!has_component<Components::Script>(), "Can only attach one script!");
 		auto& registry = get_registry();
 		auto& script = registry.emplace<Components::Script>(identifier);
 		script.bind<ChildScript>(std::forward<Args>(args)...);

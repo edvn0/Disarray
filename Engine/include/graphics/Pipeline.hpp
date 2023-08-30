@@ -153,6 +153,19 @@ public:
 	virtual auto get_render_pass() -> Disarray::RenderPass& = 0;
 	virtual auto get_framebuffer() -> Disarray::Framebuffer& = 0;
 
+	[[nodiscard]] auto has_shader_with_name(std::string_view name) const -> bool
+	{
+		auto vert = get_properties().vertex_shader->get_properties().path;
+		auto frag = get_properties().fragment_shader->get_properties().path;
+		return vert.replace_extension().string() == name || frag.replace_extension().string() == name;
+	}
+	[[nodiscard]] auto has_shader_with_name(const std::filesystem::path& name) const -> bool
+	{
+		auto vert = get_properties().vertex_shader->get_properties().path;
+		auto frag = get_properties().fragment_shader->get_properties().path;
+		return vert.replace_extension().string() == name || frag.replace_extension().string() == name;
+	}
+
 	static auto construct(const Disarray::Device&, PipelineProperties) -> Ref<Pipeline>;
 };
 

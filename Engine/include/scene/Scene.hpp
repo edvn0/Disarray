@@ -130,6 +130,7 @@ private:
 	Ref<Disarray::Framebuffer> identity_framebuffer {};
 	Ref<Disarray::CommandExecutor> command_executor {};
 
+	std::mutex registry_access;
 	entt::registry registry;
 
 	using FuncPtr = void (*)(const Disarray::Scene*);
@@ -138,6 +139,7 @@ private:
 		bool parallel { false };
 	};
 	std::queue<ThreadPoolCallback> thread_pool_callbacks {};
+	void setup_filewatcher_and_threadpool(ThreadPool&);
 
 	std::future<void> final_pool_callback {};
 	std::atomic_bool should_run_callbacks { true };

@@ -26,6 +26,7 @@ Texture::Texture(const Disarray::Device& dev, Disarray::TextureProperties proper
 			.format = props.format,
 			.data = DataBuffer { pixels },
 			.mips = *props.mips,
+			.locked_extent = props.locked_extent,
 			.debug_name = props.debug_name,
 		});
 }

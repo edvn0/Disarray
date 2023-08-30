@@ -35,10 +35,21 @@ constexpr auto to_filetype(const auto& extension) -> FileType
 }
 
 FileWatcher::FileWatcher(ThreadPool& pool, const std::filesystem::path& in_path, std::chrono::duration<int, std::milli> in_delay)
+	: FileWatcher(pool, in_path, { "*" }, in_delay)
+{
+}
+
+FileWatcher::FileWatcher(
+	ThreadPool& pool, const std::filesystem::path& in_path, const Collections::StringSet& exts, std::chrono::duration<int, std::milli> in_delay)
 	: root(in_path)
 	, delay(in_delay)
+	, extensions(exts)
 {
 	for (const auto& file : std::filesystem::recursive_directory_iterator { root }) {
+		if (!in_extensions(file)) {
+			continue;
+		}
+
 		const auto path = file.path().string();
 		const auto type_if_not_directory = std::filesystem::is_directory(file) ? FileType::DIRECTORY : to_filetype(file.path().extension());
 
@@ -76,7 +87,11 @@ void FileWatcher::update()
 		}
 	}
 
-	for (auto& file : std::filesystem::recursive_directory_iterator(root)) {
+	for (const auto& file : std::filesystem::recursive_directory_iterator(root)) {
+		if (!in_extensions(file)) {
+			continue;
+		}
+
 		auto current_file_last_write_time = std::filesystem::last_write_time(file);
 		const auto view = file.path().string();
 
@@ -100,8 +115,11 @@ void FileWatcher::update()
 		}
 	}
 
-	for (auto& additional : additional_paths) {
-		for (auto& file : std::filesystem::directory_iterator { root / additional }) {
+	for (const auto& additional : additional_paths) {
+		for (const auto& file : std::filesystem::directory_iterator { root / additional }) {
+			if (!in_extensions(file)) {
+				continue;
+			}
 			auto current_file_last_write_time = std::filesystem::last_write_time(file);
 			const auto view = file.path().string();
 
@@ -133,8 +151,9 @@ static constexpr auto register_callback(FileStatus status, auto& activations, au
 {
 	auto func = [activation = function, status = status](const auto& file) {
 		const auto is_given_status = static_cast<bool>(file.status & status);
-		if (is_given_status)
+		if (is_given_status) {
 			activation(file);
+		}
 	};
 	activations.push_back(func);
 }
@@ -142,6 +161,10 @@ static constexpr auto register_callback(FileStatus status, auto& activations, au
 void FileWatcher::on_created(const std::function<void(const FileInformation&)>& in) { register_callback(FileStatus::Created, activations, in); }
 
 void FileWatcher::on_modified(const std::function<void(const FileInformation&)>& in) { register_callback(FileStatus::Modified, activations, in); }
+void FileWatcher::on_created_or_modified(const std::function<void(const FileInformation&)>& in)
+{
+	register_callback(FileStatus::Modified | FileStatus::Created, activations, in);
+}
 
 void FileWatcher::on_deleted(const std::function<void(const FileInformation&)>& in) { register_callback(FileStatus::Deleted, activations, in); }
 

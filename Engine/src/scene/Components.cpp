@@ -63,12 +63,13 @@ Texture::Texture(const glm::vec4& colour)
 {
 }
 
+void script_deleter(void* script) { delete script; }
+
 void Script::setup_entity_destruction()
 {
 	destroy_script_functor = [](Script& script) {
 		script.instance_slot->on_destroy();
-		delete script.instance_slot;
-		script.instance_slot = nullptr;
+		script.instance_slot.reset();
 	};
 }
 

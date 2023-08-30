@@ -20,23 +20,23 @@ class GraphicsResource : public IGraphicsResource {
 	DISARRAY_MAKE_NONCOPYABLE(GraphicsResource)
 public:
 	GraphicsResource(const Disarray::Device&, const Disarray::Swapchain&);
-	~GraphicsResource();
+	~GraphicsResource() override;
 
-	auto get_pipeline_cache() -> PipelineCache& override { return pipeline_cache; }
-	auto get_texture_cache() -> TextureCache& override { return texture_cache; }
+	[[nodiscard]] auto get_pipeline_cache() -> PipelineCache& override { return pipeline_cache; }
+	[[nodiscard]] auto get_texture_cache() -> TextureCache& override { return texture_cache; }
 
 	void expose_to_shaders(Disarray::Image&) override;
 	void expose_to_shaders(Disarray::Texture& tex) override { expose_to_shaders(tex.get_image()); };
-	VkDescriptorSet get_descriptor_set(std::uint32_t frame_index, std::uint32_t set) const override
+	[[nodiscard]] auto get_descriptor_set(std::uint32_t frame_index, std::uint32_t set) const -> VkDescriptorSet override
 	{
 		return descriptor_sets[(frame_index * set_count) + set];
 	}
-	VkDescriptorSet get_descriptor_set() const override { return get_descriptor_set(swapchain.get_current_frame(), 0); };
-	auto get_descriptor_set_layouts() const -> const std::vector<VkDescriptorSetLayout>& override { return layouts; }
-	const PushConstant* get_push_constant() const override { return &pc; }
-	PushConstant& get_editable_push_constant() override { return pc; }
+	[[nodiscard]] auto get_descriptor_set() const -> VkDescriptorSet override { return get_descriptor_set(swapchain.get_current_frame(), 0); };
+	[[nodiscard]] auto get_descriptor_set_layouts() const -> const std::vector<VkDescriptorSetLayout>& override { return layouts; }
+	[[nodiscard]] auto get_push_constant() const -> const PushConstant* override { return &pc; }
+	auto get_editable_push_constant() -> PushConstant& override { return pc; }
 
-	std::tuple<UBO&, CameraUBO&, PointLights&> get_editable_ubos() override { return { uniform, camera_ubo, lights }; }
+	auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&> override { return { uniform, camera_ubo, lights }; }
 
 	void update_ubo() override;
 

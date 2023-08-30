@@ -209,7 +209,7 @@ void ScenePanel::for_all_components(Entity& entity)
 			direction = glm::vec3(0.0f);
 
 		if (ImGui::DragFloat3("Direction", glm::value_ptr(direction), 0.05f, -glm::pi<float>() / 2.f, glm::pi<float>() / 2.f)) { }
-		if (ImGui::DragFloat("Intensity", &intensity, 0.05f, 0.01f, 1.0f)) { }
+		if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.01f, 0.2f)) { }
 	});
 
 	draw_component<Components::Pipeline>(entity, "Pipeline", [&dev = device](Components::Pipeline& pipeline) {

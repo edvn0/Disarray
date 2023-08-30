@@ -20,30 +20,30 @@ public:
 	Swapchain(Disarray::Window&, Disarray::Device&, Disarray::Swapchain* = nullptr);
 	~Swapchain() override;
 
-	std::uint32_t image_count() const override { return static_cast<std::uint32_t>(swapchain_images.size()); }
-	Disarray::Extent get_extent() const override { return { extent.width, extent.height }; }
-	SampleCount get_samples() const override { return samples; }
+	auto image_count() const -> std::uint32_t override { return static_cast<std::uint32_t>(swapchain_images.size()); }
+	auto get_extent() const -> Disarray::Extent override { return { extent.width, extent.height }; }
+	auto get_samples() const -> SampleCount override { return samples; }
 
-	std::uint32_t get_current_frame() const override { return current_frame; }
-	std::uint32_t advance_frame() override { return current_frame++; }
-	std::uint32_t get_image_index() const override { return image_index; }
+	auto get_current_frame() const -> std::uint32_t override { return current_frame; }
+	auto advance_frame() -> std::uint32_t override { return current_frame++; }
+	auto get_image_index() const -> std::uint32_t override { return image_index; }
 	auto get_framebuffer() { return framebuffers[get_current_frame()]; }
 
-	VkCommandBuffer get_drawbuffer() const { return command_buffers[get_current_frame()].buffer; }
-	VkCommandBuffer get_drawbuffer() { return command_buffers[get_current_frame()].buffer; }
+	auto get_drawbuffer() const -> VkCommandBuffer { return command_buffers[get_current_frame()].buffer; }
+	auto get_drawbuffer() -> VkCommandBuffer { return command_buffers[get_current_frame()].buffer; }
 
-	Disarray::RenderPass& get_render_pass() override;
-	VkFramebuffer get_current_framebuffer() { return framebuffers[get_current_frame()]; };
+	auto get_render_pass() -> Disarray::RenderPass& override;
+	auto get_current_framebuffer() -> VkFramebuffer { return framebuffers[get_current_frame()]; };
 
-	bool prepare_frame() override;
+	auto prepare_frame() -> bool override;
 	void present() override;
 
-	bool needs_recreation() const override { return swapchain_needs_recreation; }
+	auto needs_recreation() const -> bool override { return swapchain_needs_recreation; }
 	void reset_recreation_status() override { swapchain_needs_recreation = false; }
 
-	const auto& get_views() const { return swapchain_image_views; }
+	auto get_views() const -> const auto& { return swapchain_image_views; }
 
-	VkSwapchainKHR supply() const override { return swapchain; }
+	auto supply() const -> VkSwapchainKHR override { return swapchain; }
 
 private:
 	void create_synchronisation_objects();
@@ -56,7 +56,7 @@ private:
 
 	Disarray::Window& window;
 	Disarray::Device& device;
-	VkSwapchainKHR swapchain;
+	VkSwapchainKHR swapchain {};
 
 	std::uint32_t current_frame { 0 };
 	std::uint32_t image_index { 0 };
@@ -78,11 +78,11 @@ private:
 	};
 	std::vector<CommandBuffer> command_buffers;
 
-	VkQueue present_queue;
-	VkQueue graphics_queue;
-	VkSurfaceFormatKHR format;
-	VkPresentModeKHR present_mode;
-	VkExtent2D extent;
-	uint32_t graphics_family;
+	VkQueue present_queue {};
+	VkQueue graphics_queue {};
+	VkSurfaceFormatKHR format {};
+	VkPresentModeKHR present_mode {};
+	VkExtent2D extent {};
+	uint32_t graphics_family {};
 };
 } // namespace Disarray::Vulkan

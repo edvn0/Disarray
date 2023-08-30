@@ -22,6 +22,7 @@ struct ImageProperties {
 	bool should_present { false };
 	SampleCount samples { SampleCount::One };
 	Tiling tiling { Tiling::DeviceOptimal };
+	bool locked_extent { false };
 	std::string debug_name;
 };
 

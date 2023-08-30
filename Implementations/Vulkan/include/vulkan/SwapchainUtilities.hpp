@@ -80,7 +80,7 @@ inline ResolvedSwapchainSupport resolve_swapchain_support(VkPhysicalDevice physi
 	return support;
 }
 
-inline VkSurfaceFormatKHR decide_surface_format(const std::vector<VkSurfaceFormatKHR>& formats)
+inline auto decide_surface_format(const std::vector<VkSurfaceFormatKHR>& formats) -> VkSurfaceFormatKHR
 {
 	for (const auto& format : formats) {
 		if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -92,7 +92,7 @@ inline VkSurfaceFormatKHR decide_surface_format(const std::vector<VkSurfaceForma
 	return formats[0];
 }
 
-inline VkPresentModeKHR decide_present_mode(const std::vector<VkPresentModeKHR>& present_modes)
+inline auto decide_present_mode(const std::vector<VkPresentModeKHR>& present_modes) -> VkPresentModeKHR
 {
 	for (const auto& present_mode : present_modes) {
 		if (present_mode == VK_PRESENT_MODE_MAILBOX_KHR) {

@@ -26,10 +26,10 @@ template <IsNumber T> struct IExtent {
 	T width {};
 	T height {};
 
-	auto get_size() const -> T { return width * height; }
-	auto aspect_ratio() const -> float { return static_cast<float>(width) / static_cast<float>(height); }
+	[[nodiscard]] auto get_size() const -> T { return width * height; }
+	[[nodiscard]] auto aspect_ratio() const -> float { return static_cast<float>(width) / static_cast<float>(height); }
 
-	auto valid() const -> bool { return width > 0 && height > 0; }
+	[[nodiscard]] auto valid() const -> bool { return width > 0 && height > 0; }
 
 	auto operator==(const IExtent<T>& other) const -> bool { return width == other.width && height == other.height; }
 	auto operator!=(const IExtent<T>& other) const -> bool { return width != other.width || height != other.height; }
@@ -45,7 +45,7 @@ template <IsNumber T> struct IExtent {
 
 	template <IsNumber Other>
 		requires(!std::is_same_v<T, Other>)
-	auto cast() const
+	[[nodiscard]] auto cast() const
 	{
 		return std::pair { static_cast<Other>(width), static_cast<Other>(height) };
 	}

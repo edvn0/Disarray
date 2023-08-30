@@ -19,6 +19,7 @@ struct TextureProperties {
 	ImageFormat format;
 	std::optional<std::uint32_t> mips { std::nullopt };
 	std::filesystem::path path {};
+	bool locked_extent { false };
 	std::string debug_name;
 };
 

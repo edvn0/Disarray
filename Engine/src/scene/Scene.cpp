@@ -33,6 +33,7 @@
 #include "scene/CppScript.hpp"
 #include "scene/Deserialiser.hpp"
 #include "scene/Entity.hpp"
+#include "scene/Scripts.hpp"
 #include "scene/Serialiser.hpp"
 
 template <std::size_t Count> static consteval auto generate_colours() -> std::array<glm::vec4, Count>
@@ -65,9 +66,48 @@ Scene::Scene(const Device& dev, std::string_view name)
 	selected_entity = make_scope<Entity>(this);
 }
 
-void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
+void Scene::setup_filewatcher_and_threadpool(ThreadPool& pool)
 {
-	scene_renderer = Renderer::construct_unique(device, app.get_swapchain(), {});
+	file_watcher = make_scope<FileWatcher>(pool, "Assets/Shaders", Collections::StringSet { ".spv", ".vert", ".frag" });
+	file_watcher->on_modified([&dev = device, &reg = registry, &mutex = registry_access](const FileInformation& entry) {
+		std::scoped_lock lock { mutex };
+		const auto view = reg.view<Components::Pipeline>();
+		std::unordered_set<Pipeline*> unique_pipelines_sharing_this_files {};
+		for (auto&& [ent, pipeline] : view.each()) {
+			if (!pipeline.pipeline->has_shader_with_name(entry.to_path())) {
+				continue;
+			}
+			unique_pipelines_sharing_this_files.insert(pipeline.pipeline.get());
+		}
+
+		Log::info("Scene FileWatcher", "Number of pipelines sharing this changed shader: {}", unique_pipelines_sharing_this_files.size());
+		for (auto* pipe : unique_pipelines_sharing_this_files) {
+			// TODO: Runtime shader compilation!
+			Log::info("Scene FileWatcher", "Pipelines {}", fmt::ptr(pipe));
+#if 0
+			ShaderType type = to_shader_type(entry.path);
+			auto& pipe_props = pipe->get_properties();
+			switch (type) {
+			case ShaderType::Vertex: {
+				pipe_props.vertex_shader = Shader::construct(dev,
+					{
+						.path = entry.path,
+						.type = type,
+					});
+			}
+			case ShaderType::Fragment: {
+				pipe_props.fragment_shader = Shader::construct(dev,
+					{
+						.path = entry.path,
+						.type = type,
+					});
+			}
+			case ShaderType::Compute: {
+			}
+			}
+#endif
+		}
+	});
 
 	final_pool_callback = pool.submit([this]() {
 		using namespace std::chrono_literals;
@@ -89,13 +129,24 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 			callback_cv.wait_for(lock, 10s);
 		}
 	});
+}
+
+void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
+{
+	scene_renderer = Renderer::construct_unique(device, app.get_swapchain(), {});
+
+	setup_filewatcher_and_threadpool(pool);
 
 	extent = app.get_swapchain().get_extent();
 	command_executor = CommandExecutor::construct(device, app.get_swapchain(), { .count = 3, .is_primary = true, .record_stats = true });
 
 	{
 		int rects { 20 };
-		const auto parent = [](auto rects, auto& renderer, auto& scene) -> Entity {
+		const auto parent = [](const auto& dev, auto rects, auto& renderer, auto& scene) -> Entity {
+			const auto cube_mesh = Mesh::construct(dev,
+				MeshProperties {
+					.path = "Assets/Models/cube.mesh",
+				});
 			auto parent = scene.create("Grid");
 			for (auto j = -rects / 2; j < rects / 2; j++) {
 				for (auto i = -rects / 2; i < rects / 2; i++) {
@@ -114,13 +165,13 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 						col_y += 0.2f;
 					}
 					glm::vec4 colour { col_x, 0, col_y, 1 };
-					rect.template add_component<Components::QuadGeometry>();
+					rect.template add_component<Components::Mesh>(cube_mesh);
 					rect.template add_component<Components::Texture>(colour);
 					rect.template add_component<Components::Pipeline>(renderer.get_pipeline_cache().get("quad"));
 				}
 			}
 			return parent;
-		}(rects, *scene_renderer, *this);
+		}(device, rects, *scene_renderer, *this);
 	}
 
 	{
@@ -221,6 +272,8 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 		};
 		texture_properties.path = "Assets/Textures/viking_room.png";
 		v_mesh.add_component<Components::Texture>(Texture::construct(device, texture_properties));
+		static constexpr auto val = 10.0F;
+		v_mesh.add_script<Scripts::LinearMovementScript>(-val, val);
 	}
 
 	{
@@ -308,8 +361,9 @@ void Scene::begin_frame(const Camera& camera)
 
 	auto point_light_view = registry.view<const Components::PointLight, const Components::Transform, const Components::Texture>();
 	std::size_t light_index { 0 };
+	auto& lights = light_ubos.lights;
 	for (auto&& [entity, point_light, pos, texture] : point_light_view.each()) {
-		auto& light = light_ubos.at(light_index++);
+		auto& light = lights.at(light_index++);
 		light.position = glm::vec4 { pos.position, 0.F };
 		light.ambient = texture.colour;
 	}
@@ -459,6 +513,7 @@ void Scene::recreate(const Extent& new_ex)
 
 void Scene::destruct()
 {
+	file_watcher.reset();
 	auto scripts = registry.view<Components::Script>();
 	for (auto&& [entity, script] : scripts.each()) {
 		script.destroy();

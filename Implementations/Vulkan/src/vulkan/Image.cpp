@@ -50,7 +50,9 @@ void Image::destroy_resources()
 
 void Image::recreate(bool should_clean, const Extent& extent)
 {
-	get_properties().extent = extent;
+	if (!props.locked_extent) {
+		get_properties().extent = extent;
+	}
 	recreate_image(should_clean);
 }
 

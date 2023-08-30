@@ -61,12 +61,12 @@ GraphicsResource::GraphicsResource(const Disarray::Device& dev, const Disarray::
 
 void GraphicsResource::initialise_descriptors()
 {
-	auto vk_device = supply_cast<Vulkan::Device>(device);
+	auto* vk_device = supply_cast<Vulkan::Device>(device);
 
 	TextureCacheCreationProperties texture_properties { .key = "viking", .debug_name = "viking" };
 	texture_properties.path = "Assets/Textures/viking_room.png";
 	texture_properties.format = ImageFormat::SRGB;
-	auto viking_room = texture_cache.put(texture_properties);
+	const auto& viking_room = texture_cache.put(texture_properties);
 
 	auto default_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
 	default_binding.descriptorCount = 1;
@@ -131,7 +131,7 @@ void GraphicsResource::initialise_descriptors()
 	verify(vkCreateDescriptorPool(vk_device, &pool_create_info, nullptr, &pool));
 
 	std::vector<VkDescriptorSetLayout> desc_layouts(set_count * swapchain.image_count());
-	for (std::size_t i = 0; i < desc_layouts.size() - 1; i += 2) {
+	for (std::size_t i = 0; i < desc_layouts.size() - 1; i += set_count) {
 		desc_layouts[i] = layouts[0];
 		desc_layouts[i + 1] = layouts[1];
 	}
@@ -144,7 +144,7 @@ void GraphicsResource::initialise_descriptors()
 
 	descriptor_sets.resize(set_count * swapchain.image_count());
 	vkAllocateDescriptorSets(vk_device, &alloc_info, descriptor_sets.data());
-	for (std::size_t i = 0; i < descriptor_sets.size() - 1; i += 2) {
+	for (std::size_t i = 0; i < descriptor_sets.size() - 1; i += set_count) {
 		const auto& ubos = frame_ubos[i % swapchain.image_count()];
 
 		VkDescriptorBufferInfo renderer_buffer {};

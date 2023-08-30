@@ -55,9 +55,12 @@ struct FileInformation {
 class FileWatcher {
 public:
 	FileWatcher(ThreadPool&, const std::filesystem::path&, std::chrono::duration<int, std::milli> = std::chrono::milliseconds(2000));
+	FileWatcher(ThreadPool&, const std::filesystem::path&, const Collections::StringSet& extensions,
+		std::chrono::duration<int, std::milli> = std::chrono::milliseconds(2000));
 	~FileWatcher() { stop(); }
 
 	void on_created(const std::function<void(const FileInformation&)>& activation_function);
+	void on_created_or_modified(const std::function<void(const FileInformation&)>& activation_function);
 	void on_modified(const std::function<void(const FileInformation&)>& activation_function);
 	void on_deleted(const std::function<void(const FileInformation&)>& activation_function);
 	void on_created_or_deleted(const std::function<void(const FileInformation&)>& activation_function);
@@ -76,8 +79,21 @@ private:
 	void loop_until();
 	void update();
 
+	auto in_extensions(const auto& entry)
+	{
+		if (extensions.contains("*")) {
+			return true;
+		}
+
+		if (extensions.contains(entry.path().extension().string())) {
+			return true;
+		}
+		return false;
+	}
+
 	std::vector<std::function<void(const FileInformation&)>> activations;
 	std::filesystem::path root;
+	Collections::StringSet extensions {};
 	std::chrono::duration<int, std::milli> delay;
 	std::unordered_map<std::string, FileInformation, StringHash, std::equal_to<>> paths {};
 	std::unordered_set<std::string, StringHash> additional_paths {};

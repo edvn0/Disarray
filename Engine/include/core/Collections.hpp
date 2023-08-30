@@ -17,8 +17,8 @@
 namespace Disarray::Collections {
 
 template <class Value> using StringViewMap = std::unordered_map<std::string_view, Value, StringHash, std::equal_to<>>;
-using StringViewSet = std::unordered_set<std::string_view, StringHash>;
 template <class Value> using StringMap = std::unordered_map<std::string, Value, StringHash, std::equal_to<>>;
+using StringViewSet = std::unordered_set<std::string_view, StringHash>;
 using StringSet = std::unordered_set<std::string, StringHash>;
 
 template <class T>
@@ -30,6 +30,23 @@ concept Iterable = requires(T collection) {
 		std::end(collection)
 	};
 };
+
+template <class T, std::size_t BatchSize> auto split_into_batches(const std::vector<T>& collection)
+{
+	using type = T;
+	std::vector<std::vector<type>> out {};
+	for (auto it = std::begin(collection); it != std::end(collection);) {
+		std::size_t added = 0;
+		std::vector<type> sub_vector {};
+		sub_vector.reserve(BatchSize);
+		while (added++ < BatchSize) {
+			sub_vector.push_back(*it++);
+		}
+		out.push_back(sub_vector);
+		it++;
+	}
+	return out;
+}
 
 constexpr inline void for_each(Iterable auto& collection, auto&& func) { std::for_each(std::begin(collection), std::end(collection), func); }
 

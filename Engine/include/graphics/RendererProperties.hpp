@@ -61,7 +61,14 @@ struct PointLight {
 	glm::vec4 specular;
 };
 
-using PointLights = std::array<PointLight, 30>;
+namespace Detail {
+	template <std::size_t N> struct PointLights {
+		std::array<PointLight, N> lights;
+	};
+} // namespace Detail
+
+static constexpr auto count_point_lights = 30;
+using PointLights = Detail::PointLights<count_point_lights>;
 
 struct UBO {
 	glm::mat4 view;

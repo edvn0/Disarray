@@ -63,7 +63,7 @@ void ClientLayer::construct(App& app, ThreadPool& pool)
 	for (auto&& point_light : point_lights) {
 		constexpr auto radius = 8UL;
 		constexpr auto count = 30UL;
-		point_light.add_script<Scripts::CustomScript>(radius, count, angles.at(index++));
+		point_light.add_script<Scripts::MoveInCircleScript>(radius, count, angles.at(index++));
 	}
 };
 

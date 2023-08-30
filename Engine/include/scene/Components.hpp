@@ -103,25 +103,27 @@ struct Tag {
 
 struct DirectionalLight {
 	glm::vec3 direction { 1, 1, 1 };
-	float intensity { .8f };
+	float intensity { .05f };
 
 	[[nodiscard]] auto compute() const -> glm::vec4 { return { glm::normalize(direction), intensity }; }
 };
 
 struct PointLight {
 	glm::vec3 direction { 0.f };
-	float intensity { .8f };
+	float intensity { .01f };
 };
 
+void script_deleter(void*);
 struct Script {
 private:
 	friend class Disarray::Entity;
-	using ScriptPtr = CppScript*;
+	static constexpr auto deleter = +[](void* script) { script_deleter(script); };
+	using ScriptPtr = std::unique_ptr<CppScript, decltype(deleter)>;
 
 	void setup_entity_destruction();
 	void setup_entity_creation();
 
-	ScriptPtr instance_slot { nullptr };
+	ScriptPtr instance_slot { nullptr, deleter };
 
 	std::function<void(Script&)> create_script_functor;
 	std::function<void(Script&)> destroy_script_functor;
@@ -136,8 +138,8 @@ public:
 		requires std::is_base_of_v<CppScript, ChildScript>
 	void bind(Args&&... args)
 	{
-		create_script_functor = [... arg = std::forward<Args>(args), this](Script& script) {
-			script.instance_slot = static_cast<CppScript*>(new ChildScript(std::forward<Args>(arg)...));
+		create_script_functor = [this, args...](Script& script) {
+			script.instance_slot.reset(new ChildScript(std::forward<Args>(args)...));
 			setup_entity_creation();
 		};
 		setup_entity_destruction();

@@ -57,9 +57,16 @@ DataBuffer::DataBuffer(DataBuffer&& other) noexcept
 {
 }
 
-DataBuffer& DataBuffer::operator=(DataBuffer other)
+auto DataBuffer::operator=(DataBuffer other) -> DataBuffer&
 {
 	swap(*this, other); // (2)
+
+	return *this;
+}
+
+DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept
+{
+	swap(*this, other);
 
 	return *this;
 }

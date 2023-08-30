@@ -47,15 +47,16 @@ public:
 		});
 	}
 
-	Ref<Disarray::Texture> create_from_impl(const TextureCacheCreationProperties& props)
+	auto create_from_impl(const TextureCacheCreationProperties& props) -> Ref<Disarray::Texture>
 	{
 		return Texture::construct(get_device(),
 			TextureProperties {
 				.path = props.path.string(),
+				.locked_extent = true,
 				.debug_name = props.debug_name,
 			});
 	}
 
-	std::string create_key_impl(const TextureCacheCreationProperties& props) { return props.key; }
+	auto create_key_impl(const TextureCacheCreationProperties& props) -> std::string { return props.key; }
 };
 } // namespace Disarray

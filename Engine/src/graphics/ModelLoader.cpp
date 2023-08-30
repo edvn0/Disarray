@@ -10,6 +10,7 @@
 #include <unordered_map>
 
 #include "core/Collections.hpp"
+#include "core/ThreadPool.hpp"
 #include "core/exceptions/GeneralExceptions.hpp"
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -37,27 +38,48 @@ ModelLoader::ModelLoader(const std::filesystem::path& path, const glm::mat4& ini
 
 	std::unordered_map<ModelVertex, uint32_t> unique_vertices {};
 
+	static constexpr std::size_t threads = 8;
+	ThreadPool pool { threads };
+
+	std::vector<std::future<std::vector<ModelVertex>>> tasks {};
+
+	std::mutex attrib_mutex;
 	for (const auto& shape : shapes) {
-		Collections::for_each(shape.mesh.indices, [&](const auto& index) {
-			ModelVertex vertex {};
+		auto split = Collections::split_into_batches<tinyobj::index_t, threads>(shape.mesh.indices);
+		for (auto i = 0ULL; i < threads; i++) {
+			tasks.push_back(pool.submit([&mutex = attrib_mutex, &attrib, vec = std::move(split[i])]() {
+				std::vector<ModelVertex> out {};
+				Collections::for_each(vec, [&](const auto& index) {
+					std::scoped_lock lock { mutex };
+					ModelVertex vertex {};
 
-			vertex.pos = { attrib.vertices[3 * index.vertex_index + 0], attrib.vertices[3 * index.vertex_index + 1],
-				attrib.vertices[3 * index.vertex_index + 2] };
+					vertex.pos = { attrib.vertices[3 * index.vertex_index + 0], attrib.vertices[3 * index.vertex_index + 1],
+						attrib.vertices[3 * index.vertex_index + 2] };
 
-			vertex.uvs = { attrib.texcoords[2 * index.texcoord_index + 0], 1.0f - attrib.texcoords[2 * index.texcoord_index + 1] };
+					vertex.uvs = { attrib.texcoords[2 * index.texcoord_index + 0], 1.0f - attrib.texcoords[2 * index.texcoord_index + 1] };
 
-			vertex.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+					vertex.color = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-			vertex.normals = { attrib.normals[3 * index.normal_index + 0], attrib.normals[3 * index.normal_index + 1],
-				attrib.normals[3 * index.normal_index + 2] };
+					vertex.normals = { attrib.normals[3 * index.normal_index + 0], attrib.normals[3 * index.normal_index + 1],
+						attrib.normals[3 * index.normal_index + 2] };
 
-			if (!unique_vertices.contains(vertex)) {
-				unique_vertices[vertex] = static_cast<uint32_t>(vertices.size());
-				vertices.push_back(vertex);
+					out.push_back(vertex);
+				});
+				return out;
+			}));
+		}
+
+		for (auto& task : tasks) {
+			auto vec = task.get();
+			for (const auto& vertex : vec) {
+				if (!unique_vertices.contains(vertex)) {
+					unique_vertices[vertex] = static_cast<uint32_t>(vertices.size());
+					vertices.push_back(vertex);
+				}
+
+				indices.push_back(unique_vertices[vertex]);
 			}
-
-			indices.push_back(unique_vertices[vertex]);
-		});
+		}
 	}
 
 	if (needs_rotate) {

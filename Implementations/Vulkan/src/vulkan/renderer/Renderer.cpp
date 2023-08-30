@@ -123,7 +123,7 @@ void Renderer::end_frame()
 
 	std::memset(&ubo, 0, sizeof(UBO));
 	std::memset(&camera_ubo, 0, sizeof(CameraUBO));
-	lights.fill({});
+	lights.lights.fill({});
 }
 
 void Renderer::force_recreation() { on_resize(); }
