@@ -155,11 +155,13 @@ void LineVertexBatch::construct_impl(Disarray::Renderer& renderer, const Disarra
 
 void LineVertexBatch::create_new_impl(Geometry geometry, const Disarray::GeometryProperties& props)
 {
-	if (geometry != Geometry::Line)
+	if (geometry != Geometry::Line) {
 		return;
+	}
 
-	if (props.identifier)
+	if (props.identifier) {
 		return;
+	}
 
 	{
 		auto& vertex = emplace();
@@ -188,7 +190,7 @@ void LineVertexBatch::submit_impl(Disarray::Renderer& renderer, Disarray::Comman
 
 	resources.get_editable_push_constant().max_identifiers = this->submitted_objects;
 
-	auto command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
 
 	const auto& vb = vertex_buffer;
 	const auto& ib = index_buffer;
@@ -251,11 +253,13 @@ void LineIdVertexBatch::construct_impl(Disarray::Renderer& renderer, const Disar
 
 void LineIdVertexBatch::create_new_impl(Geometry geometry, const Disarray::GeometryProperties& props)
 {
-	if (geometry != Geometry::Line)
+	if (geometry != Geometry::Line) {
 		return;
+	}
 
-	if (!props.identifier)
+	if (!props.identifier) {
 		return;
+	}
 
 	{
 		LineIdVertex& vertex = this->emplace();
@@ -286,7 +290,7 @@ void LineIdVertexBatch::submit_impl(Renderer& renderer, CommandExecutor& command
 
 	resources.get_editable_push_constant().max_identifiers = this->submitted_objects;
 
-	auto command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
 
 	const auto& vb = vertex_buffer;
 	const auto& ib = index_buffer;

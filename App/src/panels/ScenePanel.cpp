@@ -1,13 +1,16 @@
 #include "panels/ScenePanel.hpp"
 
+#include <glm/common.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/gtx/dual_quaternion.hpp>
+
 #include <fmt/format.h>
+#include <imgui.h>
 #include <imgui_internal.h>
 
 #include "core/Formatters.hpp"
-#include "glm/common.hpp"
-#include "glm/ext/matrix_transform.hpp"
-#include "glm/gtx/dual_quaternion.hpp"
 #include "graphics/CommandExecutor.hpp"
+#include "graphics/Framebuffer.hpp"
 #include "graphics/ImageProperties.hpp"
 #include "graphics/Pipeline.hpp"
 #include "scene/Camera.hpp"
@@ -123,6 +126,31 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_pa
 
 void ScenePanel::interface()
 {
+	UI::begin("Framebuffer");
+	std::size_t id { 1 };
+	auto fbs = scene->get_framebuffers();
+	for (auto& frame_buffer : fbs) {
+		ImGui::PushID(id++);
+		auto& props = frame_buffer->get_properties();
+		UI::text("{}", props.debug_name);
+		bool any_changed = false;
+
+		any_changed |= UI::checkbox("Should blend", props.should_blend);
+		any_changed |= UI::combo_choice<FramebufferBlendMode>("Blend mode", props.blend_mode);
+		any_changed |= ImGui::DragFloat4("Clear colour", glm::value_ptr(props.clear_colour));
+
+		for (auto& attachment : props.attachments.texture_attachments) {
+			any_changed |= UI::checkbox(fmt::format("{}: Should blend", attachment.format), attachment.blend);
+			any_changed |= UI::combo_choice<FramebufferBlendMode>("Blend mode", attachment.blend_mode);
+		}
+
+		if (any_changed) {
+			frame_buffer->force_recreation();
+		}
+		ImGui::NewLine();
+		ImGui::PopID();
+	}
+	UI::end();
 	UI::begin("Scene");
 	scene->for_all_entities([this](entt::entity entity_id) {
 		Entity entity { scene, entity_id };
@@ -208,7 +236,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (glm::all(glm::isnan(direction)))
 			direction = glm::vec3(0.0f);
 
-		if (ImGui::DragFloat3("Direction", glm::value_ptr(direction), 0.05f, -glm::pi<float>() / 2.f, glm::pi<float>() / 2.f)) { }
+		if (ImGui::DragFloat3("Direction", glm::value_ptr(direction), 0.05f, -glm::pi<float>(), glm::pi<float>())) { }
 		if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.01f, 0.2f)) { }
 	});
 
@@ -222,6 +250,8 @@ void ScenePanel::for_all_components(Entity& entity)
 		any_changed |= UI::combo_choice<PolygonMode>("Polygon mode", std::ref(props.polygon_mode));
 		any_changed |= UI::shader_drop_button(dev, "Vertex Shader", ShaderType::Vertex, std::ref(props.vertex_shader));
 		any_changed |= UI::shader_drop_button(dev, "Fragment Shader", ShaderType::Fragment, std::ref(props.fragment_shader));
+		any_changed |= UI::checkbox("Depth test", props.test_depth);
+		any_changed |= UI::checkbox("Depth write", props.write_depth);
 
 		if (any_changed) {
 			pipe->recreate(true, {});

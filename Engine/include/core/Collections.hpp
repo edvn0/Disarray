@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <iterator>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -31,24 +32,54 @@ concept Iterable = requires(T collection) {
 	};
 };
 
-template <class T, std::size_t BatchSize> auto split_into_batches(const std::vector<T>& collection)
+template <class T>
+concept ConstIterable = Iterable<T> && requires(T collection) {
+	{
+		std::cbegin(collection)
+	};
+	{
+		std::cend(collection)
+	};
+};
+
+template <class T, std::size_t BatchSize> auto split_into_batches(Iterable auto& collection)
 {
-	using type = T;
-	std::vector<std::vector<type>> out {};
-	for (auto it = std::begin(collection); it != std::end(collection);) {
-		std::size_t added = 0;
-		std::vector<type> sub_vector {};
-		sub_vector.reserve(BatchSize);
-		while (added++ < BatchSize) {
-			sub_vector.push_back(*it++);
-		}
-		out.push_back(sub_vector);
-		it++;
+	using Vector = std::vector<T>;
+
+	std::vector<Vector> rtn;
+	auto cbegin = std::cbegin(collection);
+	const auto cend = std::cend(collection);
+
+	while (cbegin != cend) {
+		Vector vector {};
+		vector.reserve(BatchSize);
+
+		std::back_insert_iterator<Vector> inserter(vector);
+		const auto distance = static_cast<std::size_t>(std::distance(cbegin, cend));
+		const auto num_to_copy = std::min(distance, BatchSize);
+		std::copy(cbegin, cbegin + num_to_copy, inserter);
+		rtn.push_back(std::move(vector));
+		std::advance(cbegin, num_to_copy);
 	}
-	return out;
+
+	return rtn;
 }
 
-constexpr inline void for_each(Iterable auto& collection, auto&& func) { std::for_each(std::begin(collection), std::end(collection), func); }
+constexpr inline auto for_each(Iterable auto& collection, auto&& func) { std::for_each(std::begin(collection), std::end(collection), func); }
+constexpr inline auto map(Iterable auto& collection, auto&& func)
+{
+	using Type = decltype(func(collection[0]));
+	std::vector<Type> output;
+	const auto elements = std::distance(std::begin(collection), std::end(collection));
+	output.reserve(elements);
+
+	for (auto it = std::begin(collection); it != std::end(collection);) {
+		output.push_back(func(*it));
+		it++;
+	}
+
+	return output;
+}
 
 #ifdef DISARRAY_WINDOWS
 constexpr inline void parallel_for_each(Iterable auto& collection, auto&& func)

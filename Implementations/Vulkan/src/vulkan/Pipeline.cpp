@@ -140,6 +140,11 @@ Pipeline::Pipeline(const Disarray::Device& dev, Disarray::PipelineProperties pro
 	: Disarray::Pipeline(std::move(properties))
 	, device(dev)
 {
+	props.framebuffer->register_on_framebuffer_change([this](Disarray::Framebuffer& frame_buffer) {
+		Log::info("Pipeline - FB Change", "{}", get_properties().hash());
+		recreate_pipeline(true, frame_buffer.get_properties().extent);
+	});
+
 	recreate_pipeline(false, {});
 }
 
@@ -153,7 +158,7 @@ void Pipeline::construct_layout(const Extent& extent)
 
 	VkPipelineDynamicStateCreateInfo dynamic_state {};
 	dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	dynamic_state.dynamicStateCount = static_cast<uint32_t>(dynamic_states.size());
+	dynamic_state.dynamicStateCount = static_cast<std::uint32_t>(dynamic_states.size());
 	dynamic_state.pDynamicStates = dynamic_states.data();
 
 	VkPipelineVertexInputStateCreateInfo vertex_input_info {};
@@ -203,7 +208,10 @@ void Pipeline::construct_layout(const Extent& extent)
 
 	VkRect2D scissor {};
 	scissor.offset = { 0, 0 };
-	scissor.extent = VkExtent2D { .width = static_cast<std::uint32_t>(width), .height = static_cast<std::uint32_t>(height) };
+	scissor.extent = {
+		.width = static_cast<std::uint32_t>(width),
+		.height = static_cast<std::uint32_t>(height),
+	};
 
 	VkPipelineViewportStateCreateInfo viewport_state {};
 	viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -363,9 +371,6 @@ Pipeline::~Pipeline()
 {
 	vkDestroyPipelineLayout(supply_cast<Vulkan::Device>(device), layout, nullptr);
 	vkDestroyPipeline(supply_cast<Vulkan::Device>(device), pipeline, nullptr);
-
-	props.vertex_shader->destroy_module();
-	props.fragment_shader->destroy_module();
 
 	if (cache == nullptr) {
 		return;

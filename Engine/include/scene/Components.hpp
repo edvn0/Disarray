@@ -138,8 +138,8 @@ public:
 		requires std::is_base_of_v<CppScript, ChildScript>
 	void bind(Args&&... args)
 	{
-		create_script_functor = [this, args...](Script& script) {
-			script.instance_slot.reset(new ChildScript(std::forward<Args>(args)...));
+		create_script_functor = [this, ... captured = std::forward<Args>(args)](Script& script) {
+			script.instance_slot.reset(new ChildScript(std::forward<Args>(captured)...));
 			setup_entity_creation();
 		};
 		setup_entity_destruction();

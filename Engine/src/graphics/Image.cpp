@@ -7,8 +7,7 @@
 
 #include "vulkan/Image.hpp"
 
-namespace fmt {
-auto formatter<Disarray::ImageFormat>::format(Disarray::ImageFormat image_format, format_context& ctx) const
+auto fmt::formatter<Disarray::ImageFormat>::format(Disarray::ImageFormat image_format, format_context& ctx) const -> decltype(ctx.out())
 {
 	switch (image_format) {
 	default:
@@ -30,7 +29,8 @@ auto formatter<Disarray::ImageFormat>::format(Disarray::ImageFormat image_format
 	}
 }
 
-auto formatter<Disarray::SampleCount>::format(Disarray::SampleCount samples, format_context& ctx) const
+auto fmt::formatter<Disarray::SampleCount>::format(Disarray::SampleCount samples, format_context& ctx) const -> decltype(ctx.out())
+
 {
 	switch (samples) {
 
@@ -52,8 +52,6 @@ auto formatter<Disarray::SampleCount>::format(Disarray::SampleCount samples, for
 		Disarray::unreachable();
 	}
 }
-
-} // namespace fmt
 
 namespace Disarray {
 

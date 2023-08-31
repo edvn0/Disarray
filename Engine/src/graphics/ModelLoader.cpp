@@ -31,54 +31,45 @@ ModelLoader::ModelLoader(const std::filesystem::path& path, const glm::mat4& ini
 	if (std::string err; !tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.string().c_str())) {
 		if (warn.empty()) {
 			throw CouldNotLoadModelException(fmt::format("Error: {}", err));
-		} else {
-			throw CouldNotLoadModelException(fmt::format("Error: {}, Warning: {}", err, warn));
 		}
+
+		throw CouldNotLoadModelException(fmt::format("Error: {}, Warning: {}", err, warn));
 	}
 
 	std::unordered_map<ModelVertex, uint32_t> unique_vertices {};
 
-	static constexpr std::size_t threads = 8;
-	ThreadPool pool { threads };
-
-	std::vector<std::future<std::vector<ModelVertex>>> tasks {};
+	std::vector<std::vector<ModelVertex>> tasks {};
 
 	std::mutex attrib_mutex;
 	for (const auto& shape : shapes) {
-		auto split = Collections::split_into_batches<tinyobj::index_t, threads>(shape.mesh.indices);
-		for (auto i = 0ULL; i < threads; i++) {
-			tasks.push_back(pool.submit([&mutex = attrib_mutex, &attrib, vec = std::move(split[i])]() {
-				std::vector<ModelVertex> out {};
-				Collections::for_each(vec, [&](const auto& index) {
-					std::scoped_lock lock { mutex };
-					ModelVertex vertex {};
+		auto split = Collections::split_into_batches<tinyobj::index_t, 4>(shape.mesh.indices);
+		for (auto i = 0ULL; i < split.size(); i++) {
+			tasks.emplace_back(Collections::map(split[i], [&attrib, &mutex = attrib_mutex](const auto& index) {
+				std::scoped_lock lock { mutex };
+				ModelVertex vertex {};
 
-					vertex.pos = { attrib.vertices[3 * index.vertex_index + 0], attrib.vertices[3 * index.vertex_index + 1],
-						attrib.vertices[3 * index.vertex_index + 2] };
+				vertex.pos = { attrib.vertices[3 * index.vertex_index + 0], attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2] };
 
-					vertex.uvs = { attrib.texcoords[2 * index.texcoord_index + 0], 1.0f - attrib.texcoords[2 * index.texcoord_index + 1] };
+				vertex.uvs = { attrib.texcoords[2 * index.texcoord_index + 0], 1.0f - attrib.texcoords[2 * index.texcoord_index + 1] };
 
-					vertex.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+				vertex.color = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-					vertex.normals = { attrib.normals[3 * index.normal_index + 0], attrib.normals[3 * index.normal_index + 1],
-						attrib.normals[3 * index.normal_index + 2] };
-
-					out.push_back(vertex);
-				});
-				return out;
+				vertex.normals = { attrib.normals[3 * index.normal_index + 0], attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2] };
+				return vertex;
 			}));
-		}
+		};
+	}
 
-		for (auto& task : tasks) {
-			auto vec = task.get();
-			for (const auto& vertex : vec) {
-				if (!unique_vertices.contains(vertex)) {
-					unique_vertices[vertex] = static_cast<uint32_t>(vertices.size());
-					vertices.push_back(vertex);
-				}
-
-				indices.push_back(unique_vertices[vertex]);
+	for (auto& vec : tasks) {
+		for (const auto& vertex : vec) {
+			if (!unique_vertices.contains(vertex)) {
+				unique_vertices[vertex] = static_cast<uint32_t>(vertices.size());
+				vertices.push_back(vertex);
 			}
+
+			indices.push_back(unique_vertices[vertex]);
 		}
 	}
 

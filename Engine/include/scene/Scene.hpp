@@ -12,6 +12,7 @@
 #include "core/Types.hpp"
 #include "core/events/Event.hpp"
 #include "graphics/CommandExecutor.hpp"
+#include "graphics/Framebuffer.hpp"
 #include "graphics/Mesh.hpp"
 #include "graphics/Texture.hpp"
 #include "scene/Component.hpp"
@@ -111,6 +112,8 @@ public:
 		}
 	}
 
+	auto get_framebuffers() -> std::array<Ref<Disarray::Framebuffer>, 2> { return { framebuffer, identity_framebuffer }; }
+
 	static auto deserialise(const Device&, std::string_view, const std::filesystem::path&) -> Scope<Scene>;
 
 private:
@@ -132,6 +135,7 @@ private:
 
 	std::mutex registry_access;
 	entt::registry registry;
+	void create_entities();
 
 	using FuncPtr = void (*)(const Disarray::Scene*);
 	struct ThreadPoolCallback {

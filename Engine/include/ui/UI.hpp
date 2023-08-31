@@ -88,18 +88,20 @@ void handle_double_click(auto&& handler)
  * @param initial_value reference to value
  * @return true if changed
  */
-template <IsEnum T> bool combo_choice(std::string name, T& initial_value)
+template <IsEnum T> auto combo_choice(std::string_view name, T& initial_value) -> bool
 {
+	const std::string as_string { name };
 	using namespace std::string_view_literals;
 
 	const auto values_for_t = magic_enum::enum_values<T>();
 	const auto& preview_value = initial_value;
 	auto new_value = preview_value;
-	if (begin_combo(name.c_str(), magic_enum::enum_name(preview_value))) {
+	if (begin_combo(as_string.c_str(), magic_enum::enum_name(preview_value))) {
 		for (const auto& value : values_for_t) {
 			const bool is_selected = (value == preview_value);
-			if (is_selectable(magic_enum::enum_name(value), is_selected))
+			if (is_selectable(magic_enum::enum_name(value), is_selected)) {
 				new_value = value;
+			}
 
 			if (is_selected) {
 				set_item_default_focus();
@@ -110,6 +112,34 @@ template <IsEnum T> bool combo_choice(std::string name, T& initial_value)
 
 	const auto changed = new_value != preview_value;
 	initial_value = new_value;
+	return changed;
+}
+
+template <IsEnum T> auto combo_choice(std::string_view name, std::reference_wrapper<T> initial_value) -> bool
+{
+	const std::string as_string { name };
+	using namespace std::string_view_literals;
+
+	const auto values_for_t = magic_enum::enum_values<T>();
+	const auto& preview_value = initial_value.get();
+	auto& base_value = initial_value.get();
+	auto new_value = preview_value;
+	if (begin_combo(as_string.c_str(), magic_enum::enum_name(preview_value))) {
+		for (const auto& value : values_for_t) {
+			const bool is_selected = (value == preview_value);
+			if (is_selectable(magic_enum::enum_name(value), is_selected)) {
+				new_value = value;
+			}
+
+			if (is_selected) {
+				set_item_default_focus();
+			}
+		}
+		end_combo();
+	}
+
+	const auto changed = new_value != preview_value;
+	base_value = new_value;
 	return changed;
 }
 

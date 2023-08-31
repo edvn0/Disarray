@@ -55,10 +55,10 @@ protected:
 
 	void flush_vertex_buffer() { vertex_buffer->set_data(vertices.data(), static_cast<std::uint32_t>(vertex_buffer_size())); }
 
-	std::size_t vertex_buffer_size() { return VertexCount * batch_renderer_size * sizeof(T); }
-	std::size_t index_buffer_size() { return IndexCount * batch_renderer_size * sizeof(std::uint32_t); }
+	auto vertex_buffer_size() -> std::size_t { return VertexCount * batch_renderer_size * sizeof(T); }
+	auto index_buffer_size() -> std::size_t { return IndexCount * batch_renderer_size * sizeof(std::uint32_t); }
 
-	T& emplace() { return vertices[submitted_vertices++]; }
+	auto emplace() -> T& { return vertices[submitted_vertices++]; }
 };
 
 #define MAKE_BATCH_RENDERER(Type, Child)                                                                                                             \
@@ -111,7 +111,7 @@ struct BatchRenderer {
 
 	using Quads = QuadVertexBatch;
 	using Lines = LineVertexBatch;
-	using LinesWithIdentifiers = LineVertexBatch;
+	using LinesWithIdentifiers = LineIdVertexBatch;
 
 	std::tuple<Quads, Lines, LinesWithIdentifiers> objects {};
 
@@ -140,7 +140,7 @@ struct BatchRenderer {
 		return batch_would_be_full;
 	}
 
-	bool is_full()
+	auto is_full() -> bool
 	{
 		bool batch_would_be_full = false;
 		Tuple::static_for(objects, [&batch_would_be_full](std::size_t index, auto& batch) {
@@ -150,7 +150,7 @@ struct BatchRenderer {
 		return batch_would_be_full;
 	}
 
-	bool should_submit()
+	auto should_submit() -> bool
 	{
 		bool should_submit_batch = false;
 		Tuple::static_for(objects, [&should_submit_batch](std::size_t index, auto& batch) {

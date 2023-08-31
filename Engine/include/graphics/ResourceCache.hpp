@@ -26,10 +26,13 @@ template <CacheableResource Resource, class Props, class Child, class Key = std:
 public:
 	~ResourceCache() { storage.clear(); };
 
-	const Resource& get(const Key& key) const { return storage[key]; }
-	Resource& get(const Key& key) { return storage[key]; }
+	auto get(const Key& key) -> Resource&
+	{
+		ensure(storage.contains(key), "Key missing from the resource cache.");
+		return storage[key];
+	}
 
-	const Resource& put(const Props& props)
+	auto put(const Props& props) -> const Resource&
 	{
 		const auto key = create_key(props);
 		auto resource = create_from(props);
@@ -39,18 +42,18 @@ public:
 		return pair->second;
 	}
 
-	template <class Func> void for_each_in_storage(Func&& f) { Collections::for_each(storage, std::forward<Func>(f)); }
+	template <class Func> void for_each_in_storage(Func&& func) { Collections::for_each(storage, std::forward<Func>(func)); }
 
 	void force_recreate(const Extent& extent) { return get_child().force_recreate_impl(extent); };
-	Resource create_from(const Props& props) { return get_child().create_from_impl(props); }
-	Key create_key(const Props& props)
+	auto create_from(const Props& props) -> Resource { return get_child().create_from_impl(props); }
+	auto create_key(const Props& props) -> Key
 	{
-		auto key = get_child().create_key_impl(props);
+		auto key = Child::create_key(props);
 		ensure(!storage.contains(key), fmt::format("Storage already contains key: {}", key));
 		return key;
 	}
 
-	const auto& get_device() const { return device; }
+	auto get_device() const -> const auto& { return device; }
 
 protected:
 	ResourceCache(
@@ -61,7 +64,7 @@ protected:
 	{
 	}
 
-	UniquePathSet get_unique_files_recursively() const
+	[[nodiscard]] auto get_unique_files_recursively() const -> UniquePathSet
 	{
 		UniquePathSet paths;
 		if (!std::filesystem::exists(path)) {
@@ -71,8 +74,9 @@ protected:
 
 		for (const auto& current : std::filesystem::recursive_directory_iterator { path }) {
 			const auto has_correct_extension = extensions.contains(current.path().extension().string());
-			if (!current.is_regular_file() || !has_correct_extension)
+			if (!current.is_regular_file() || !has_correct_extension) {
 				continue;
+			}
 
 			paths.insert(current);
 		}
@@ -80,7 +84,7 @@ protected:
 	}
 
 private:
-	auto& get_child() { return static_cast<Child&>(*this); }
+	auto get_child() -> auto& { return static_cast<Child&>(*this); }
 
 	const Disarray::Device& device;
 	ResourceMap storage {};

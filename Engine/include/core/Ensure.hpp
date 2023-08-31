@@ -10,8 +10,7 @@ static constexpr auto ensure(bool to_ensure_is_truthy, std::string_view message 
 	// To be called like ensure(some_ptr != nullptr, "some message")
 #ifdef IS_DEBUG
 	if (!to_ensure_is_truthy) {
-		Log::error("Ensure", "{}", message);
-		unreachable();
+		unreachable(fmt::format("{}", message));
 	}
 #endif
 }

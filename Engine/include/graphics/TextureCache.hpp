@@ -57,6 +57,6 @@ public:
 			});
 	}
 
-	auto create_key_impl(const TextureCacheCreationProperties& props) -> std::string { return props.key; }
+	static auto create_key(const TextureCacheCreationProperties& props) -> std::string { return props.key; }
 };
 } // namespace Disarray

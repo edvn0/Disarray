@@ -58,14 +58,10 @@ enum class ImageFormat { SRGB, RGB, SBGR, BGR, SRGB32, RGB32, Depth, DepthStenci
 
 } // namespace Disarray
 
-namespace fmt {
-
-template <> struct formatter<Disarray::SampleCount> : formatter<std::string_view> {
-	auto format(Disarray::SampleCount samples, format_context& ctx) const;
+template <> struct fmt::formatter<Disarray::SampleCount> : fmt::formatter<std::string_view> {
+	auto format(Disarray::SampleCount samples, format_context& ctx) const -> decltype(ctx.out());
 };
 
-template <> struct formatter<Disarray::ImageFormat> : formatter<std::string_view> {
-	auto format(Disarray::ImageFormat format, format_context& ctx) const;
+template <> struct fmt::formatter<Disarray::ImageFormat> : fmt::formatter<std::string_view> {
+	auto format(Disarray::ImageFormat format, format_context& ctx) const -> decltype(ctx.out());
 };
-
-} // namespace fmt

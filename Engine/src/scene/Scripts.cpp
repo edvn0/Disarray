@@ -1,5 +1,6 @@
 #include "scene/Scripts.hpp"
 
+#include "graphics/RendererProperties.hpp"
 #include "ui/UI.hpp"
 
 namespace Disarray::Scripts {
@@ -33,6 +34,17 @@ LinearMovementScript::LinearMovementScript(float min_axis, float max_axis, Axis 
 	, min(min_axis)
 	, max(max_axis)
 {
+	switch (axis) {
+	case Axis::X:
+		direction = { -1, 0, 0 };
+		break;
+	case Axis::Y:
+		direction = { 0, -1, 0 };
+		break;
+	case Axis::Z:
+		direction = { 0, 0, -1 };
+		break;
+	}
 }
 
 void LinearMovementScript::on_create() { }
@@ -40,27 +52,31 @@ void LinearMovementScript::on_create() { }
 void LinearMovementScript::on_update(float time_step)
 {
 	auto& [rot, pos, scale] = transform();
+	pos = pos + vel * direction;
 	switch (axis) {
 	case Axis::X:
-		pos.x += direction * vel * time_step;
-		if (pos.x >= max)
-			direction = -1;
-		if (pos.x <= min)
-			direction = 1;
+		if (pos.x <= min) {
+			direction = glm::vec3 { 1, 0, 0 };
+		}
+		if (pos.x >= max) {
+			direction = glm::vec3 { -1, 0, 0 };
+		}
 		break;
 	case Axis::Y:
-		pos.y += direction * vel * time_step;
-		if (pos.x >= max)
-			direction = -1;
-		if (pos.x <= min)
-			direction = 1;
+		if (pos.y >= max) {
+			direction = glm::vec3 { 0, 1, 0 };
+		}
+		if (pos.y <= min) {
+			direction = glm::vec3 { 0, -1, 0 };
+		}
 		break;
 	case Axis::Z:
-		pos.z += direction * vel * time_step;
-		if (pos.x >= max)
-			direction = -1;
-		if (pos.x <= min)
-			direction = 1;
+		if (pos.z >= max) {
+			direction = glm::vec3 { 0, 0, 1 };
+		}
+		if (pos.z <= min) {
+			direction = glm::vec3 { 0, 0, -1 };
+		}
 		break;
 	default:
 		return;
@@ -68,5 +84,19 @@ void LinearMovementScript::on_update(float time_step)
 }
 
 void LinearMovementScript::on_interface() { }
+
+void LinearMovementScript::on_render(Renderer& renderer)
+{
+	auto& [rot, pos, scale] = transform();
+
+	const auto end = pos + direction * 2.F;
+	renderer.draw_planar_geometry(Geometry::Line,
+		{
+			.position = pos,
+			.to_position = end,
+			.colour = { 0.6, 0.3, 0.9, 1.0 },
+			.identifier = static_cast<std::uint32_t>(get_entity().get_identifier()),
+		});
+}
 
 } // namespace Disarray::Scripts

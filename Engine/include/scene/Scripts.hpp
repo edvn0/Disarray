@@ -34,6 +34,7 @@ public:
 
 	void on_create() override;
 	void on_interface() override;
+	void on_render(Disarray::Renderer&) override;
 	void on_update(float time_step) override;
 
 private:
@@ -42,7 +43,7 @@ private:
 	Axis axis { Axis::X };
 	float min {};
 	float max {};
-	int direction { 1 };
+	glm::vec3 direction;
 };
 
 } // namespace Disarray::Scripts

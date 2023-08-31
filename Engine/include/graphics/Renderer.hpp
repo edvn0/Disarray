@@ -26,14 +26,14 @@ public:
 
 	virtual void expose_to_shaders(Image&) = 0;
 	virtual void expose_to_shaders(Texture&) = 0;
-	[[nodiscard]] virtual VkDescriptorSet get_descriptor_set(std::uint32_t, std::uint32_t) const = 0;
-	[[nodiscard]] virtual VkDescriptorSet get_descriptor_set() const = 0;
-	virtual const std::vector<VkDescriptorSetLayout>& get_descriptor_set_layouts() const = 0;
+	[[nodiscard]] virtual auto get_descriptor_set(std::uint32_t, std::uint32_t) const -> VkDescriptorSet = 0;
+	[[nodiscard]] virtual auto get_descriptor_set() const -> VkDescriptorSet = 0;
+	[[nodiscard]] virtual auto get_descriptor_set_layouts() const -> const std::vector<VkDescriptorSetLayout>& = 0;
 
-	[[nodiscard]] virtual const PushConstant* get_push_constant() const = 0;
-	virtual PushConstant& get_editable_push_constant() = 0;
+	[[nodiscard]] virtual auto get_push_constant() const -> const PushConstant* = 0;
+	virtual auto get_editable_push_constant() -> PushConstant& = 0;
 
-	virtual std::tuple<UBO&, CameraUBO&, PointLights&> get_editable_ubos() = 0;
+	virtual auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&> = 0;
 
 	virtual void update_ubo() = 0;
 };

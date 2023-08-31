@@ -8,7 +8,7 @@
 
 namespace Disarray {
 
-enum class FramebufferBlendMode : std::uint8_t { None = 0, OneZero, SrcAlphaOneMinusSrcAlpha, Additive, Zero_SrcColor };
+enum class FramebufferBlendMode { None, OneZero, SrcAlphaOneMinusSrcAlpha, Additive, Zero_SrcColor };
 
 struct FramebufferTextureSpecification {
 	ImageFormat format { ImageFormat::SBGR };
@@ -39,6 +39,8 @@ struct FramebufferProperties {
 	std::string debug_name { "UnknownFramebuffer" };
 };
 
+using FramebufferChangeCallback = std::function<void(Framebuffer&)>;
+
 class Framebuffer : public ReferenceCountable {
 	DISARRAY_OBJECT_PROPS(Framebuffer, FramebufferProperties)
 public:
@@ -52,7 +54,15 @@ public:
 	virtual auto get_colour_attachment_count() const -> std::uint32_t = 0;
 	virtual auto has_depth() -> bool = 0;
 
+	template <class Func> void register_on_framebuffer_change(Func&& func) { change_callbacks.emplace_back(std::move(func)); };
+
 	static auto construct(const Disarray::Device&, FramebufferProperties) -> Ref<Framebuffer>;
+
+protected:
+	auto get_callbacks() { return change_callbacks; }
+
+private:
+	std::vector<FramebufferChangeCallback> change_callbacks {};
 };
 
 } // namespace Disarray

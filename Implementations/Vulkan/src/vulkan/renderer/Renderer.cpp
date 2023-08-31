@@ -52,10 +52,13 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 		.extent = swapchain.get_extent(),
 		.descriptor_set_layouts = get_graphics_resource().get_descriptor_set_layouts(),
 	};
+
+	auto& resource = get_graphics_resource();
 	{
 		// Quad
 		pipeline_properties.framebuffer = quad_framebuffer;
-		get_pipeline_cache().put(pipeline_properties);
+
+		resource.get_pipeline_cache().put(pipeline_properties);
 	}
 	{
 		// Line
@@ -66,7 +69,7 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 		pipeline_properties.line_width = 8.0f;
 		pipeline_properties.polygon_mode = PolygonMode::Line;
 		pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" } };
-		get_pipeline_cache().put(pipeline_properties);
+		resource.get_pipeline_cache().put(pipeline_properties);
 	}
 	{
 		// Line
@@ -75,7 +78,7 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 		pipeline_properties.vertex_shader_key = "line_id.vert";
 		pipeline_properties.fragment_shader_key = "line_id.frag";
 		pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" }, { ElementType::Uint, "id" } };
-		get_pipeline_cache().put(pipeline_properties);
+		resource.get_pipeline_cache().put(pipeline_properties);
 	}
 
 	batch_renderer.construct(*this, device);

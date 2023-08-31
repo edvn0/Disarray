@@ -26,16 +26,19 @@ public:
 	{
 		props.extent = extent;
 		recreate_framebuffer(should_clean);
+		for (auto& registered_callback : get_callbacks()) {
+			registered_callback(*this);
+		}
 	}
 
-	VkFramebuffer supply() const override { return framebuffer; }
-	Image& get_image(std::uint32_t index) override { return *attachments.at(index); }
-	Disarray::Image& get_depth_image() override { return *depth_attachment; }
+	auto supply() const -> VkFramebuffer override { return framebuffer; }
+	auto get_image(std::uint32_t index) -> Image& override { return *attachments.at(index); }
+	auto get_depth_image() -> Disarray::Image& override { return *depth_attachment; }
 
-	bool has_depth() override { return static_cast<bool>(depth_attachment); }
-	std::uint32_t get_colour_attachment_count() const override { return colour_count; }
-	Disarray::RenderPass& get_render_pass() override { return *render_pass; };
-	const auto& get_clear_values() const { return clear_values; }
+	auto has_depth() -> bool override { return static_cast<bool>(depth_attachment); }
+	auto get_colour_attachment_count() const -> std::uint32_t override { return colour_count; }
+	auto get_render_pass() -> Disarray::RenderPass& override { return *render_pass; };
+	auto get_clear_values() const -> const auto& { return clear_values; }
 
 private:
 	void recreate_framebuffer(bool should_clean = true);
