@@ -42,8 +42,8 @@ FileWatcher::FileWatcher(ThreadPool& pool, const std::filesystem::path& in_path,
 FileWatcher::FileWatcher(
 	ThreadPool& pool, const std::filesystem::path& in_path, const Collections::StringSet& exts, std::chrono::duration<int, std::milli> in_delay)
 	: root(in_path)
-	, delay(in_delay)
 	, extensions(exts)
+	, delay(in_delay)
 {
 	for (const auto& file : std::filesystem::recursive_directory_iterator { root }) {
 		if (!in_extensions(file)) {

@@ -7,6 +7,7 @@
 #include <entt/entt.hpp>
 
 #include <memory>
+#include <string_view>
 #include <unordered_set>
 
 #include "Forward.hpp"
@@ -113,15 +114,20 @@ struct PointLight {
 	float intensity { .01f };
 };
 
-void script_deleter(void*);
+void script_deleter(CppScript*);
 struct Script {
 private:
 	friend class Disarray::Entity;
-	static constexpr auto deleter = +[](void* script) { script_deleter(script); };
+	static constexpr auto deleter = +[](CppScript* script) { script_deleter(script); };
 	using ScriptPtr = std::unique_ptr<CppScript, decltype(deleter)>;
 
 	void setup_entity_destruction();
 	void setup_entity_creation();
+
+	template <class ChildScript, typename... Args> auto construct_script(Args&&... args) -> ChildScript*
+	{
+		return new ChildScript(std::forward<Args>(args)...);
+	}
 
 	ScriptPtr instance_slot { nullptr, deleter };
 
@@ -138,8 +144,9 @@ public:
 		requires std::is_base_of_v<CppScript, ChildScript>
 	void bind(Args&&... args)
 	{
-		create_script_functor = [this, ... captured = std::forward<Args>(args)](Script& script) {
-			script.instance_slot.reset(new ChildScript(std::forward<Args>(captured)...));
+		auto* constructed_script = construct_script<ChildScript, Args...>(std::forward<Args>(args)...);
+		create_script_functor = [&](Script& script) {
+			script.instance_slot.reset(std::move(constructed_script));
 			setup_entity_creation();
 		};
 		setup_entity_destruction();

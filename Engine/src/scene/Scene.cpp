@@ -10,6 +10,7 @@
 
 #include <array>
 #include <mutex>
+#include <string_view>
 #include <thread>
 
 #include "core/App.hpp"
@@ -70,7 +71,7 @@ Scene::Scene(const Device& dev, std::string_view name)
 void Scene::setup_filewatcher_and_threadpool(ThreadPool& pool)
 {
 	file_watcher = make_scope<FileWatcher>(pool, "Assets/Shaders", Collections::StringSet { ".spv", ".vert", ".frag" });
-	file_watcher->on_modified([&dev = device, &reg = registry, &mutex = registry_access](const FileInformation& entry) {
+	file_watcher->on_modified([&reg = registry, &mutex = registry_access](const FileInformation& entry) {
 		std::scoped_lock lock { mutex };
 		const auto view = reg.view<Components::Pipeline>();
 		std::unordered_set<Pipeline*> unique_pipelines_sharing_this_files {};

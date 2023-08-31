@@ -63,7 +63,7 @@ Texture::Texture(const glm::vec4& colour)
 {
 }
 
-void script_deleter(void* script) { delete script; }
+void script_deleter(CppScript* script) { delete script; }
 
 void Script::setup_entity_destruction()
 {

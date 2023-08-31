@@ -9,6 +9,7 @@
 
 #include "core/DataBuffer.hpp"
 #include "core/Ensure.hpp"
+#include "core/Formatters.hpp"
 #include "core/Log.hpp"
 
 namespace Disarray {
@@ -18,7 +19,7 @@ ImageLoader::ImageLoader(const std::filesystem::path& path, Disarray::DataBuffer
 	int tex_width, tex_height, tex_channels;
 
 	if (!std::filesystem::exists(path)) {
-		Log::error("ImageLoader", "File does not exist.");
+		Log::error("ImageLoader", "File {} does not exist.", path);
 		data = nullptr;
 		return;
 	}
