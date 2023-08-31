@@ -75,4 +75,16 @@ void Script::setup_entity_destruction()
 
 void Script::setup_entity_creation() { get_script().on_create(); }
 
+void Script::destroy() { destroy_script_functor(*this); }
+void Script::instantiate()
+{
+	// create_script_functor(*this);
+	instantiated = true;
+}
+
+auto Script::get_script() -> CppScript& { return *instance_slot; }
+[[nodiscard]] auto Script::get_script() const -> const CppScript& { return *instance_slot; }
+
+[[nodiscard]] auto Script::has_been_bound() const -> bool { return bound && !instantiated; }
+
 } // namespace Disarray::Components

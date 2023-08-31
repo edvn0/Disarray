@@ -116,54 +116,41 @@ struct PointLight {
 
 void script_deleter(CppScript*);
 struct Script {
-private:
-	friend class Disarray::Entity;
-	static constexpr auto deleter = +[](CppScript* script) { script_deleter(script); };
-	using ScriptPtr = std::unique_ptr<CppScript, decltype(deleter)>;
-
-	void setup_entity_destruction();
-	void setup_entity_creation();
-
-	template <class ChildScript, typename... Args> auto construct_script(Args&&... args) -> ChildScript*
-	{
-		return new ChildScript(std::forward<Args>(args)...);
-	}
-
-	ScriptPtr instance_slot { nullptr, deleter };
-
-	std::function<void(Script&)> create_script_functor;
-	std::function<void(Script&)> destroy_script_functor;
-
-	bool bound { false };
-	bool instantiated { false };
-
-public:
 	Script() = default;
 
 	template <class ChildScript, typename... Args>
 		requires std::is_base_of_v<CppScript, ChildScript>
 	void bind(Args&&... args)
 	{
-		auto* constructed_script = construct_script<ChildScript, Args...>(std::forward<Args>(args)...);
-		create_script_functor = [&](Script& script) {
-			script.instance_slot.reset(std::move(constructed_script));
-			setup_entity_creation();
-		};
+		instance_slot = ScriptPtr { new ChildScript { std::forward<Args>(args)... } };
+		setup_entity_creation();
 		setup_entity_destruction();
 		bound = true;
 	}
 
-	void destroy() { destroy_script_functor(*this); }
-	void instantiate()
-	{
-		create_script_functor(*this);
-		instantiated = true;
-	}
+	void destroy();
+	void instantiate();
+	auto get_script() -> CppScript&;
+	[[nodiscard]] auto get_script() const -> const CppScript&;
+	[[nodiscard]] auto has_been_bound() const -> bool;
 
-	auto get_script() -> auto& { return *instance_slot; }
-	[[nodiscard]] auto get_script() const -> const auto& { return *instance_slot; }
+private:
+	friend class Disarray::Entity;
+	struct Deleter {
+		void operator()(CppScript* ptr) { script_deleter(ptr); }
+	};
+	using ScriptPtr = std::unique_ptr<CppScript, Deleter>;
 
-	[[nodiscard]] auto has_been_bound() const -> bool { return bound && !instantiated; }
+	void setup_entity_destruction();
+	void setup_entity_creation();
+
+	ScriptPtr instance_slot { nullptr };
+
+	std::function<void(Script&)> create_script_functor;
+	std::function<void(Script&)> destroy_script_functor;
+
+	bool bound { false };
+	bool instantiated { false };
 };
 
 struct Inheritance {

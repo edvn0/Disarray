@@ -31,3 +31,9 @@
 [submodule "ThirdParty/magic_enum"]
 	path = ThirdParty/magic_enum
 	url = https://github.com/Neargye/magic_enum
+[submodule "ThirdParty/SPIRV-Cross"]
+	path = ThirdParty/SPIRV-Cross
+	url = git@github.com:edvn0/SPIRV-Cross.git
+[submodule "ThirdParty/glslang"]
+	path = ThirdParty/glslang
+	url = https://github.com/edvn0/glslang

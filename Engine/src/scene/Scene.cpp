@@ -157,7 +157,6 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 			.attachments = { { ImageFormat::SBGR }, { ImageFormat::Uint, false }, { ImageFormat::Depth } },
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
-			.should_blend = false,
 			.debug_name = "IdentityFramebuffer",
 		});
 
@@ -372,6 +371,7 @@ void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoTyp
 	const auto& camera_view = camera.get_view_matrix();
 	const auto& camera_projection = camera.get_projection_matrix();
 	auto copy = camera_projection;
+	copy[1][1] *= -1;
 
 	auto& entity_transform = entity.get_components<Components::Transform>();
 	auto transform = entity_transform.compute();
