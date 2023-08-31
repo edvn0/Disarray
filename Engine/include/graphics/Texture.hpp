@@ -1,5 +1,9 @@
 #pragma once
 
+#include <filesystem>
+#include <optional>
+#include <string>
+
 #include "Forward.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
@@ -15,19 +19,17 @@ struct TextureProperties {
 	ImageFormat format;
 	std::optional<std::uint32_t> mips { std::nullopt };
 	std::filesystem::path path {};
+	bool locked_extent { false };
 	std::string debug_name;
 };
 
 class Texture : public ReferenceCountable {
-	DISARRAY_OBJECT(Texture)
+	DISARRAY_OBJECT_PROPS(Texture, TextureProperties)
 public:
-	virtual Image& get_image() = 0;
-	virtual const Image& get_image() const = 0;
+	virtual auto get_image() -> Image& = 0;
+	virtual auto get_image() const -> const Image& = 0;
 
-	virtual const TextureProperties& get_properties() const = 0;
-	virtual TextureProperties& get_properties() = 0;
-
-	static Ref<Texture> construct(const Disarray::Device&, const TextureProperties&);
+	static auto construct(const Disarray::Device&, TextureProperties) -> Ref<Texture>;
 };
 
 } // namespace Disarray

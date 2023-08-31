@@ -6,39 +6,65 @@
 #include <fmt/format.h>
 
 #include <array>
+#include <filesystem>
+#include <memory>
+#include <type_traits>
+#include <utility>
 
 #include "graphics/Renderer.hpp"
 #include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
 #include "panels/ScenePanel.hpp"
 #include "panels/StatisticsPanel.hpp"
+#include "ui/UI.hpp"
 
 namespace Disarray::Client {
 
+template <std::size_t Count> static consteval auto generate_angles_client() -> std::array<float, Count>
+{
+	std::array<float, Count> angles {};
+	constexpr auto division = 1.F / static_cast<float>(Count);
+	for (std::size_t i = 0; i < Count; i++) {
+		angles.at(i) = glm::two_pi<float>() * static_cast<float>(i) * division;
+	}
+	return angles;
+}
+
 ClientLayer::ClientLayer(Device& device, Window& win, Swapchain& swapchain)
 	: device(device)
-	, camera(60.f, static_cast<float>(swapchain.get_extent().width), static_cast<float>(swapchain.get_extent().height), 0.1f, 1000.f, nullptr)
+	, camera(60.F, static_cast<float>(swapchain.get_extent().width), static_cast<float>(swapchain.get_extent().height), 0.1F, 1000.F, nullptr)
 {
 }
 
 ClientLayer::~ClientLayer() = default;
 
-void ClientLayer::construct(App& app, Renderer& renderer, ThreadPool& pool)
+void ClientLayer::construct(App& app, ThreadPool& pool)
 {
-	scene.reset(new Scene { device, "Default scene" });
+	scene = std::make_unique<Scene>(device, "Default scene");
 
 	ensure(scene != nullptr, "Forgot to initialise scene");
-	scene->construct(app, renderer, pool);
+	scene->construct(app, pool);
 
 	auto stats_panel = app.add_panel<StatisticsPanel>(app.get_statistics());
 	auto content_panel = app.add_panel<DirectoryContentPanel>("Assets");
-	auto scene_panel = app.add_panel<ScenePanel>(*scene);
+	auto scene_panel = app.add_panel<ScenePanel>(scene.get());
 	auto execution_stats_panel = app.add_panel<ExecutionStatisticsPanel>(scene->get_command_executor());
 
-	stats_panel->construct(app, renderer, pool);
-	content_panel->construct(app, renderer, pool);
-	scene_panel->construct(app, renderer, pool);
-	execution_stats_panel->construct(app, renderer, pool);
+	stats_panel->construct(app, pool);
+	content_panel->construct(app, pool);
+	scene_panel->construct(app, pool);
+	execution_stats_panel->construct(app, pool);
+
+	constexpr auto angles = generate_angles_client<30>();
+
+	auto point_lights = scene->entities_with<Components::PointLight>();
+	std::size_t index { 0 };
+	ensure(angles.size() == point_lights.size());
+	for (auto&& point_light : point_lights) {
+		constexpr auto radius = 8UL;
+		constexpr auto count = 30UL;
+		point_light.add_script<Scripts::MoveInCircleScript>(radius, count, angles.at(index++));
+	}
 };
 
 void ClientLayer::interface()
@@ -46,7 +72,7 @@ void ClientLayer::interface()
 	ImGuiIO& io = ImGui::GetIO();
 	ImGuiStyle& style = ImGui::GetStyle();
 
-	io.ConfigWindowsResizeFromEdges = io.BackendFlags & ImGuiBackendFlags_HasMouseCursors;
+	io.ConfigWindowsResizeFromEdges = ((io.BackendFlags & ImGuiBackendFlags_HasMouseCursors) != 0);
 
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
 
@@ -54,14 +80,14 @@ void ClientLayer::interface()
 	ImGui::SetNextWindowPos(viewport->Pos);
 	ImGui::SetNextWindowSize(viewport->Size);
 	ImGui::SetNextWindowViewport(viewport->ID);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0F);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0F);
 	window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
 	window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f, 6.0f));
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 3.0f);
-	ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4 { 0.0f, 0.0f, 0.0f, 0.0f });
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0F, 6.0F));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 3.0F);
+	ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4 { 0.0F, 0.0F, 0.0F, 0.0F });
 	ImGui::Begin("Dockspace", nullptr, window_flags);
 	ImGui::PopStyleColor();
 	ImGui::PopStyleVar(2);
@@ -69,7 +95,7 @@ void ClientLayer::interface()
 	ImGui::PopStyleVar(2);
 
 	float min_win_size_x = style.WindowMinSize.x;
-	style.WindowMinSize.x = 370.0f;
+	style.WindowMinSize.x = 370.0F;
 	ImGui::DockSpace(ImGui::GetID("Dockspace"));
 	style.WindowMinSize.x = min_win_size_x;
 
@@ -86,12 +112,17 @@ void ClientLayer::interface()
 		auto& image = scene->get_image(0);
 		UI::image(image, { viewport_size.x, viewport_size.y });
 
-		if (auto& entity = scene->get_selected_entity(); entity->is_valid()) {
+		if (const auto& entity = scene->get_selected_entity(); entity->is_valid()) {
 			scene->manipulate_entity_transform(*entity, camera, gizmo_type);
 		}
 
 		auto window_size = ImGui::GetWindowSize();
 		ImVec2 min_bound = ImGui::GetWindowPos();
+
+		const auto drag_dropped = UI::accept_drag_drop("Disarray::DragDropItem");
+		if (drag_dropped) {
+			handle_file_drop(*drag_dropped);
+		}
 
 		min_bound.x -= viewport_offset.x;
 		min_bound.y -= viewport_offset.y;
@@ -115,6 +146,8 @@ void ClientLayer::interface()
 	});
 
 	ImGui::End();
+
+	scene->interface();
 }
 
 void ClientLayer::handle_swapchain_recreation(Swapchain& swapchain) { scene->recreate(swapchain.get_extent()); }
@@ -132,16 +165,15 @@ void ClientLayer::on_event(Event& event)
 			} else {
 				gizmo_type = GizmoType::Translate;
 			}
-			return false;
 		}
 		default:
-			return false;
+			return;
 		}
 	});
-
 	dispatcher.dispatch<MouseButtonReleasedEvent>([this](MouseButtonReleasedEvent& pressed) {
-		if (ImGuizmo::IsUsing())
+		if (ImGuizmo::IsUsing()) {
 			return true;
+		}
 
 		const auto vp_is_focused = viewport_panel_focused && viewport_panel_mouse_over;
 		if (pressed.get_mouse_button() == MouseCode::Left && vp_is_focused) {
@@ -171,22 +203,85 @@ void ClientLayer::on_event(Event& event)
 		scene->update_picked_entity(0);
 		return false;
 	});
+	camera.on_event(event);
 	scene->on_event(event);
 }
 
-void ClientLayer::update(float ts, IGraphicsResource& resource_renderer)
+void ClientLayer::update(float time_step)
 {
-	scene->update(ts, resource_renderer);
-	camera.on_update(ts);
+	camera.on_update(time_step);
+	scene->update(time_step);
 }
 
-void ClientLayer::render(Disarray::Renderer& renderer)
+void ClientLayer::render()
 {
-	renderer.begin_frame(camera);
-	scene->render(renderer);
-	renderer.end_frame();
+	scene->begin_frame(camera);
+	scene->render();
+	scene->end_frame();
 }
 
 void ClientLayer::destruct() { scene->destruct(); }
+
+template <typename Child> class FileHandlerBase {
+protected:
+	explicit FileHandlerBase(const Device& dev, Scene& s, std::filesystem::path p, std::string_view ext)
+		: device(dev)
+		, base_scene(s)
+		, file_path(std::move(p))
+		, extension(ext)
+	{
+		Log::info("FileHandler", "Running file handler for ext: {}. The dropped file had extension: {}", extension, file_path.extension());
+		valid = file_path.extension() == extension;
+		if (valid) {
+			handle();
+		}
+	}
+	auto child() -> auto& { return static_cast<Child&>(*this); }
+	auto get_scene() -> auto& { return base_scene; }
+	[[nodiscard]] auto get_device() const -> const auto& { return device; }
+	[[nodiscard]] auto get_path() const -> const auto& { return file_path; }
+
+private:
+	void handle() { return child().handle_impl(); }
+	const Device& device;
+	Scene& base_scene;
+	std::filesystem::path file_path {};
+	std::string extension {};
+	bool valid { false };
+};
+
+class PNGHandler : public FileHandlerBase<PNGHandler> {
+public:
+	explicit PNGHandler(const Device& device, Scene& scene, const std::filesystem::path& path)
+		: FileHandlerBase(device, scene, path, ".png")
+	{
+	}
+
+private:
+	void handle_impl()
+	{
+		auto& scene = get_scene();
+		const auto& path = get_path();
+		auto entity = scene.create(path.filename().string());
+		auto texture = Texture::construct(get_device(),
+			{
+				.path = path,
+				.debug_name = path.filename().string(),
+			});
+
+		entity.add_component<Components::Texture>(texture);
+	}
+
+	friend class FileHandlerBase<PNGHandler>;
+};
+
+void ClientLayer::handle_file_drop(const std::filesystem::path& path)
+{
+	if (!std::filesystem::exists(path)) {
+		return;
+	}
+
+	PNGHandler png_handler { device, *scene, path };
+}
 
 } // namespace Disarray::Client

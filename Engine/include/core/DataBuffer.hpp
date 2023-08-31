@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 #include <vector>
 
 #include "util/BitCast.hpp"
@@ -17,7 +18,8 @@ public:
 
 	DataBuffer(const DataBuffer&);
 	DataBuffer(DataBuffer&&) noexcept;
-	DataBuffer& operator=(DataBuffer);
+	auto operator=(DataBuffer) -> DataBuffer&;
+	auto operator=(DataBuffer&&) noexcept -> DataBuffer&;
 	~DataBuffer();
 
 	void allocate(std::size_t);
@@ -27,22 +29,39 @@ public:
 
 	template <typename T>
 		requires(!std::is_same_v<T, bool>)
-	T& read(std::size_t element_offset = 0)
+	auto read(std::size_t element_offset = 0) -> T&
 	{
-		return *bit_cast<T*>(data + element_offset * sizeof(T));
+		return *bit_cast<T*>(*data + element_offset * sizeof(T));
 	}
 
 	friend void swap(DataBuffer& first, DataBuffer& second) noexcept;
 
-	auto get_size() const { return size; }
-	auto* get_data() const { return data; }
+	[[nodiscard]] auto get_size() const -> std::size_t { return size; }
+	[[nodiscard]] auto get_data() const { return *data; }
 
 	explicit(false) operator bool() const { return is_valid(); }
-	bool is_valid() const { return size == 0 && data == nullptr; }
+	[[nodiscard]] auto is_valid() const -> bool { return size != 0 && data != nullptr; }
 
 private:
-	std::byte* data { nullptr };
+	std::unique_ptr<std::byte*> data { nullptr };
 	std::size_t size { 0 };
+};
+
+template <typename T> class GenericDataBuffer {
+	static constexpr auto TSize = sizeof(T);
+
+public:
+	GenericDataBuffer()
+		: buffer(nullptr, TSize)
+	{
+	}
+	explicit GenericDataBuffer(const T* data)
+		: buffer(static_cast<const void*>(data), TSize)
+	{
+	}
+
+private:
+	DataBuffer buffer;
 };
 
 } // namespace Disarray

@@ -9,14 +9,14 @@ namespace Disarray::Client {
 
 using namespace std::string_view_literals;
 
-DirectoryContentPanel::DirectoryContentPanel(Device& dev, Window&, Swapchain& sc, const std::filesystem::path& initial)
+DirectoryContentPanel::DirectoryContentPanel(Device& dev, Window&, Swapchain&, const std::filesystem::path& initial)
 	: device(dev)
 	, initial(initial)
 	, current(initial)
 {
 }
 
-bool DirectoryContentPanel::traverse_down(const std::filesystem::path& into_directory, bool force_reload)
+auto DirectoryContentPanel::traverse_down(const std::filesystem::path& into_directory, bool force_reload) -> bool
 {
 	bool could = true;
 
@@ -39,12 +39,13 @@ bool DirectoryContentPanel::traverse_down(const std::filesystem::path& into_dire
 		}
 	}
 
-	if (could)
+	if (could) {
 		depth_from_initial++;
+	}
 	return could;
 }
 
-bool DirectoryContentPanel::traverse_up(bool force_reload)
+auto DirectoryContentPanel::traverse_up(bool force_reload) -> bool
 {
 	bool could = true;
 
@@ -70,12 +71,13 @@ bool DirectoryContentPanel::traverse_up(bool force_reload)
 		}
 	}
 
-	if (could)
+	if (could) {
 		depth_from_initial--;
+	}
 	return could;
 }
 
-void DirectoryContentPanel::update(float ts, IGraphicsResource&)
+void DirectoryContentPanel::update(float time_step)
 {
 	if (changed) {
 		current_directory_content = path_and_content_cache[current];
@@ -83,7 +85,7 @@ void DirectoryContentPanel::update(float ts, IGraphicsResource&)
 	}
 }
 
-bool DirectoryContentPanel::can_traverse_up() const { return current != initial && depth_from_initial > 0; }
+auto DirectoryContentPanel::can_traverse_up() const -> bool { return current != initial && depth_from_initial > 0; }
 
 void DirectoryContentPanel::interface()
 {
@@ -99,8 +101,8 @@ void DirectoryContentPanel::interface()
 		traverse_up(force_reload);
 	}
 
-	static float padding = 16.0f;
-	static float thumbnail_size = 128.0f;
+	static float padding = 16.0F;
+	static float thumbnail_size = 64.0F;
 	float cell_size = thumbnail_size + padding;
 
 	float panel_width = ImGui::GetContentRegionAvail().x;
@@ -155,7 +157,7 @@ void DirectoryContentPanel::interface()
 	ImGui::End();
 }
 
-void DirectoryContentPanel::construct(App&, Renderer&, ThreadPool& pool)
+void DirectoryContentPanel::construct(App&, ThreadPool& pool)
 {
 	using namespace std::chrono_literals;
 	file_watcher = make_scope<FileWatcher>(pool, "Assets", 300ms);
@@ -214,7 +216,5 @@ void DirectoryContentPanel::draw_file_or_directory(const std::filesystem::path& 
 	UI::image(*icon, size);
 	ImGui::PopStyleColor();
 }
-
-void DirectoryContentPanel::render(Renderer& renderer) { }
 
 } // namespace Disarray::Client

@@ -7,8 +7,7 @@
 
 #include "vulkan/Image.hpp"
 
-namespace fmt {
-auto formatter<Disarray::ImageFormat>::format(Disarray::ImageFormat image_format, format_context& ctx) const
+auto fmt::formatter<Disarray::ImageFormat>::format(Disarray::ImageFormat image_format, format_context& ctx) const -> decltype(ctx.out())
 {
 	switch (image_format) {
 	default:
@@ -30,7 +29,8 @@ auto formatter<Disarray::ImageFormat>::format(Disarray::ImageFormat image_format
 	}
 }
 
-auto formatter<Disarray::SampleCount>::format(Disarray::SampleCount samples, format_context& ctx) const
+auto fmt::formatter<Disarray::SampleCount>::format(Disarray::SampleCount samples, format_context& ctx) const -> decltype(ctx.out())
+
 {
 	switch (samples) {
 
@@ -53,14 +53,9 @@ auto formatter<Disarray::SampleCount>::format(Disarray::SampleCount samples, for
 	}
 }
 
-} // namespace fmt
-
 namespace Disarray {
 
-Ref<Image> Image::construct(const Device& device, const ImageProperties& image_properties)
-{
-	return make_ref<Vulkan::Image>(device, image_properties);
-}
+auto Image::construct(const Device& device, ImageProperties image_properties) { return make_ref<Vulkan::Image>(device, std::move(image_properties)); }
 
 void Image::write_to_file(std::string_view path, const Image& image, const void* data)
 {

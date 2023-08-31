@@ -13,14 +13,16 @@ public:
 
 	void interface() override;
 
-	void construct(App&, Renderer&, ThreadPool&) override;
-	void handle_swapchain_recreation(Swapchain&) override;
-	void on_event(Event&) override;
-	void update(float, IGraphicsResource&) override;
-	void render(Renderer&) override;
+	void construct(App& /*unused*/, ThreadPool& /*unused*/) override;
+	void handle_swapchain_recreation(Swapchain& /*unused*/) override;
+	void on_event(Event& /*unused*/) override;
+	void update(float /*time_step*/) override;
+	void render() override;
 	void destruct() override;
 
 private:
+	void handle_file_drop(const std::filesystem::path&);
+
 	Scope<Scene> scene;
 	Device& device;
 

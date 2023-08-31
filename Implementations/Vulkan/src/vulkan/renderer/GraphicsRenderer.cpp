@@ -5,24 +5,18 @@
 #include "vulkan/Renderer.hpp"
 // clang-format on
 
-#include <glm/ext/matrix_transform.hpp>
 #include <vulkan/vulkan.h>
 
 #include <array>
 
-#include "core/Clock.hpp"
 #include "core/Types.hpp"
 #include "graphics/Pipeline.hpp"
-#include "graphics/PipelineCache.hpp"
 #include "vulkan/CommandExecutor.hpp"
-#include "vulkan/Device.hpp"
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/IndexBuffer.hpp"
 #include "vulkan/Mesh.hpp"
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/RenderPass.hpp"
-#include "vulkan/Swapchain.hpp"
-#include "vulkan/UniformBuffer.hpp"
 #include "vulkan/VertexBuffer.hpp"
 
 namespace Disarray::Vulkan {
@@ -46,24 +40,27 @@ void Renderer::draw_mesh(
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
 	const glm::mat4& transform, const std::uint32_t identifier)
 {
-	auto command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
 	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+
+	auto& pc = get_graphics_resource().get_editable_push_constant();
 
 	pc.object_transform = transform;
 	pc.current_identifier = identifier;
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &pc);
 
-	const std::array<VkDescriptorSet, 2> desc { get_descriptor_set(swapchain.get_current_frame(), 0),
-		get_descriptor_set(swapchain.get_current_frame(), 1) };
+	// material.get_descriptor_sets();
+	auto* second_desc = get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1);
+	const std::array<VkDescriptorSet, 2> desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0), second_desc };
 	vkCmdBindDescriptorSets(
 		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
 
 	std::array<VkBuffer, 1> arr {};
 	arr[0] = supply_cast<Vulkan::VertexBuffer>(mesh.get_vertices());
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets);
+	std::array<VkDeviceSize, 1> offsets = { 0 };
+	vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets.data());
 
 	if (pipeline.get_properties().polygon_mode == PolygonMode::Line) {
 		vkCmdSetLineWidth(command_buffer, pipeline.get_properties().line_width);
@@ -77,17 +74,18 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
 	const Disarray::Texture& texture, const glm::mat4& transform, const std::uint32_t identifier)
 {
-	draw_mesh(executor, mesh, mesh_pipeline, texture, glm::vec4 { 1.0f }, transform, identifier);
+	draw_mesh(executor, mesh, mesh_pipeline, texture, glm::vec4 { 1.0F }, transform, identifier);
 }
 
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
 	const Disarray::Texture& texture, const glm::vec4& colour, const glm::mat4& transform, const std::uint32_t identifier)
 {
-	auto command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
 	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 
 	(void)texture;
+	auto& pc = get_graphics_resource().get_editable_push_constant();
 
 	pc.object_transform = transform;
 	pc.colour = colour;
@@ -95,8 +93,8 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &pc);
 
-	const std::array<VkDescriptorSet, 2> desc { get_descriptor_set(swapchain.get_current_frame(), 0),
-		get_descriptor_set(swapchain.get_current_frame(), 1) };
+	const std::array<VkDescriptorSet, 2> desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0),
+		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1) };
 	vkCmdBindDescriptorSets(
 		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
 

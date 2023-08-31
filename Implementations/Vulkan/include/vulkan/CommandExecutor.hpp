@@ -79,11 +79,11 @@ private:
 
 	std::uint32_t current { 0 };
 	std::uint32_t image_count { 0 };
-	VkCommandPool command_pool;
+	VkCommandPool command_pool {};
 	std::vector<VkCommandBuffer> command_buffers;
 	VkCommandBuffer active { nullptr };
 	std::vector<VkFence> fences;
-	VkQueue graphics_queue;
+	VkQueue graphics_queue {};
 
 	std::uint32_t timestamp_query_count { 0 };
 	uint32_t timestamp_next_available_query { 2 };

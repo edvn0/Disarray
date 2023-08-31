@@ -26,6 +26,26 @@ static constexpr auto shader_type_extension(ShaderType shader_type)
 	}
 }
 
+inline auto to_shader_type(const std::filesystem::path& path_like)
+{
+	auto copy = path_like;
+	if (path_like.extension() == ".spv") {
+		copy.replace_extension();
+	}
+
+	if (copy.extension() == ".vert") {
+		return ShaderType::Vertex;
+	}
+	if (copy.extension() == ".frag") {
+		return ShaderType::Fragment;
+	}
+	if (copy.extension() == ".comp") {
+		return ShaderType::Compute;
+	}
+
+	unreachable();
+}
+
 struct ShaderProperties {
 	std::filesystem::path path;
 	ShaderType type { ShaderType::Vertex };

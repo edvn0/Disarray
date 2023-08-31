@@ -31,8 +31,6 @@ App::App(const Disarray::ApplicationProperties& props)
 	initialise_debug_applications(*device);
 	initialise_allocator(*device, window->get_instance());
 	swapchain = Swapchain::construct(*window, *device);
-
-	Input::construct({}, *window);
 }
 
 void App::on_event(Event& event)
@@ -55,36 +53,32 @@ void App::run()
 {
 	on_attach();
 
-	ThreadPool pool { 2 };
+	ThreadPool pool { 8 };
 
-	auto constructed_renderer = Renderer::construct(*device, *swapchain, {});
+	auto ui_layer = add_layer<UI::InterfaceLayer>();
 
-	auto& l = add_layer<UI::InterfaceLayer>();
-	auto ui_layer = std::dynamic_pointer_cast<UI::InterfaceLayer>(l);
-
-	UI::DescriptorCache::initialise();
-
-	auto& renderer = *constructed_renderer;
+	UI::InterfaceCaches::initialise();
 
 	for (auto& layer : layers) {
-		layer->construct(*this, renderer, pool);
+		layer->construct(*this, pool);
 	}
 
 	static float current_time = Clock::ms();
 	while (!window->should_close()) {
 		window->update();
 
-		if (!could_prepare_frame(renderer))
+		if (!could_prepare_frame())
 			continue;
 
 		const auto needs_recreation = swapchain->needs_recreation();
 		float time_step = Clock::ms() - current_time;
 
 		for (auto& layer : layers) {
-			if (needs_recreation)
+			if (needs_recreation) {
 				layer->handle_swapchain_recreation(*swapchain);
-			layer->update(time_step, renderer);
-			layer->render(renderer);
+			}
+			layer->update(time_step);
+			layer->render();
 		}
 		statistics.cpu_time = time_step;
 
@@ -104,8 +98,7 @@ void App::run()
 
 	wait_for_cleanup(*device);
 
-	UI::DescriptorCache::destruct();
-
+	UI::InterfaceCaches::destruct();
 	for (auto& layer : layers) {
 		layer->destruct();
 	}
@@ -114,13 +107,12 @@ void App::run()
 	on_detach();
 }
 
-bool App::could_prepare_frame(Renderer& renderer)
+auto App::could_prepare_frame() -> bool
 {
 	const auto could_prepare = swapchain->prepare_frame();
 	if (could_prepare)
 		return true;
 
-	renderer.force_recreation();
 	for (auto& layer : layers) {
 		layer->handle_swapchain_recreation(*swapchain);
 	}

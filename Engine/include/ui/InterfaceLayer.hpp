@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "Forward.hpp"
+#include "core/Collections.hpp"
 #include "core/Layer.hpp"
 #include "core/Panel.hpp"
 #include "core/UsageBadge.hpp"
@@ -17,13 +18,13 @@ public:
 	InterfaceLayer(Disarray::Device& dev, Disarray::Window& win, Disarray::Swapchain& swap);
 	~InterfaceLayer() override;
 
-	void construct(App&, Renderer&, ThreadPool&) override;
+	void construct(App&, ThreadPool&) override;
 	void handle_swapchain_recreation(Swapchain&) override;
 	void on_event(Event&) override;
 	void interface() override;
-	void update(float ts, IGraphicsResource&) override;
+	void update(float time_step) override;
 	void destruct() override;
-	void render(Renderer&) override;
+	void render() override;
 	bool is_interface_layer() const override { return true; }
 
 	template <typename T, typename... Args>
@@ -33,13 +34,6 @@ public:
 	auto& add_panel(Args&&... args)
 	{
 		return panels.emplace_back(std::shared_ptr<T> { new T { device, window, swapchain, std::forward<Args>(args)... } });
-	}
-
-	void construct_panels(UsageBadge<App>, App& app, Renderer& renderer, ThreadPool& thread_pool)
-	{
-		for (auto& panel : panels) {
-			panel->construct(app, renderer, thread_pool);
-		}
 	}
 
 	template <class Func>

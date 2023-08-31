@@ -12,38 +12,41 @@ namespace Disarray {
 DataBuffer::DataBuffer(std::size_t s)
 	: size(s)
 {
-	data = new std::byte[size];
+	data = make_unique<std::byte*>(new std::byte[size]);
 }
 
 DataBuffer::DataBuffer(const void* new_data, std::size_t s)
 	: DataBuffer(s)
 {
-	std::memcpy(data, new_data, s);
+	std::memcpy(*data, new_data, s);
 }
 
 DataBuffer::DataBuffer(std::nullptr_t) { }
 
-DataBuffer::~DataBuffer() { delete[] data; }
+DataBuffer::~DataBuffer() { }
 
 void DataBuffer::reset()
 {
-	delete[] data;
+	data.reset();
 	size = 0;
 }
 
 void DataBuffer::copy_from(const DataBuffer& buffer)
 {
+	if (!buffer.is_valid())
+		return;
+
 	reset();
 	size = buffer.size;
-	data = new std::byte[size];
-	std::memcpy(data, buffer.data, size);
+	data = make_unique<std::byte*>(new std::byte[size]);
+	std::memcpy(*data, *buffer.data, size);
 }
 
 void DataBuffer::allocate(std::size_t s)
 {
 	reset();
 	size = s;
-	data = new std::byte[size];
+	data = make_unique<std::byte*>(new std::byte[size]);
 }
 
 DataBuffer::DataBuffer(const DataBuffer& other) { copy_from(other); }
@@ -54,9 +57,16 @@ DataBuffer::DataBuffer(DataBuffer&& other) noexcept
 {
 }
 
-DataBuffer& DataBuffer::operator=(DataBuffer other)
+auto DataBuffer::operator=(DataBuffer other) -> DataBuffer&
 {
 	swap(*this, other); // (2)
+
+	return *this;
+}
+
+DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept
+{
+	swap(*this, other);
 
 	return *this;
 }

@@ -131,7 +131,7 @@ struct PipelineProperties {
 	PolygonMode polygon_mode { PolygonMode::Fill };
 	float line_width { 1.0f };
 	SampleCount samples { SampleCount::One };
-	DepthCompareOperator depth_comparison_operator { DepthCompareOperator::GreaterOrEqual };
+	DepthCompareOperator depth_comparison_operator { DepthCompareOperator::Less };
 	CullMode cull_mode { CullMode::Front };
 	FaceMode face_mode { FaceMode::Clockwise };
 	bool write_depth { true };
@@ -148,17 +148,25 @@ struct PipelineProperties {
 };
 
 class Pipeline : public ReferenceCountable {
-	DISARRAY_OBJECT(Pipeline)
+	DISARRAY_OBJECT_PROPS(Pipeline, PipelineProperties)
 public:
-	virtual Disarray::RenderPass& get_render_pass() = 0;
-	virtual Disarray::Framebuffer& get_framebuffer() = 0;
+	virtual auto get_render_pass() -> Disarray::RenderPass& = 0;
+	virtual auto get_framebuffer() -> Disarray::Framebuffer& = 0;
 
-	virtual void recreate(bool should_clear) = 0;
+	[[nodiscard]] auto has_shader_with_name(std::string_view name) const -> bool
+	{
+		auto vert = get_properties().vertex_shader->get_properties().path;
+		auto frag = get_properties().fragment_shader->get_properties().path;
+		return vert.replace_extension().string() == name || frag.replace_extension().string() == name;
+	}
+	[[nodiscard]] auto has_shader_with_name(const std::filesystem::path& name) const -> bool
+	{
+		auto vert = get_properties().vertex_shader->get_properties().path;
+		auto frag = get_properties().fragment_shader->get_properties().path;
+		return vert.replace_extension().string() == name || frag.replace_extension().string() == name;
+	}
 
-	virtual const PipelineProperties& get_properties() const = 0;
-	virtual PipelineProperties& get_properties() = 0;
-
-	static Ref<Pipeline> construct(const Disarray::Device&, const PipelineProperties&);
+	static auto construct(const Disarray::Device&, PipelineProperties) -> Ref<Pipeline>;
 };
 
 } // namespace Disarray

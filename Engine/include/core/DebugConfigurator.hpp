@@ -1,11 +1,9 @@
 #pragma once
 
+#include "Forward.hpp"
 #include "core/Types.hpp"
 
 namespace Disarray {
-
-class Device;
-class PhysicalDevice;
 
 void initialise_debug_applications(Disarray::Device& device);
 

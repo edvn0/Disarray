@@ -6,6 +6,8 @@
 
 #include <core/Ensure.hpp>
 
+#include <memory>
+
 #include "Forward.hpp"
 #include "core/Types.hpp"
 #include "graphics/ImageProperties.hpp"
@@ -22,9 +24,9 @@
 
 namespace Disarray::Vulkan {
 
-Framebuffer::Framebuffer(const Disarray::Device& dev, const FramebufferProperties& properties)
-	: device(dev)
-	, props(properties)
+Framebuffer::Framebuffer(const Disarray::Device& dev, FramebufferProperties properties)
+	: Disarray::Framebuffer(std::move(properties))
+	, device(dev)
 {
 	std::uint32_t attachment_index = 0;
 	for (auto& attachment_spec : props.attachments.texture_attachments) {
@@ -33,13 +35,13 @@ Framebuffer::Framebuffer(const Disarray::Device& dev, const FramebufferPropertie
 			spec.format = attachment_spec.format;
 			spec.extent = props.extent;
 			spec.debug_name = fmt::format("{0}-depth{1}", props.debug_name, attachment_index);
-			depth_attachment.reset(new Vulkan::Image(device, spec));
+			depth_attachment = std::make_unique<Vulkan::Image>(device, std::move(spec));
 		} else {
 			ImageProperties spec;
 			spec.format = attachment_spec.format;
 			spec.extent = props.extent;
 			spec.debug_name = fmt::format("{0}-color{1}", props.debug_name, attachment_index);
-			attachments.emplace_back(new Vulkan::Image(device, spec));
+			attachments.emplace_back(std::make_unique<Vulkan::Image>(device, std::move(spec)));
 		}
 		attachment_index++;
 	}

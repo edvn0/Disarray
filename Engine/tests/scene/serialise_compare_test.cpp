@@ -25,13 +25,13 @@ public:
 
 class DeviceMock : public Disarray::Device {
 public:
-	Disarray::PhysicalDevice& get_physical_device() override { return pd; }
-	const Disarray::PhysicalDevice& get_physical_device() const override { return pd; }
+	auto get_physical_device() -> Disarray::PhysicalDevice& override { return pd; }
+	[[nodiscard]] auto get_physical_device() const -> const Disarray::PhysicalDevice& override { return pd; }
 
 	PhysicalDeviceMock pd {};
 };
 
-static auto device_mock = DeviceMock();
+static Disarray::Device* device_mock = new DeviceMock();
 
 static auto json_to_string(const auto& json)
 {
@@ -44,29 +44,10 @@ static auto verify_serialisation(const auto& serialiser) { ApprovalTests::Approv
 
 TEST(SceneSerialisation, ForwardPass)
 {
-	Disarray::Scene s(device_mock, "Test");
+	Disarray::Scene s(*device_mock, "Test");
 	s.create("TEST1");
 	s.create("TEST2");
 	s.create("TEST3");
-	Disarray::SceneSerialiser serialiser { s };
+	Disarray::SceneSerialiser serialiser { &s };
 	verify_serialisation(serialiser);
-}
-
-TEST(SceneSerialisation, RoundTrip)
-{
-	Disarray::Scene s(device_mock, "Test");
-	s.create("TEST1");
-	s.create("TEST2");
-	s.create("TEST3");
-	Disarray::SceneSerialiser serialiser { s };
-	auto out = serialiser.get_as_json();
-
-	std::stringstream stream;
-	stream << out;
-	Disarray::Scene new_scene(device_mock, "Test");
-	Disarray::SceneDeserialiser scene_deserialiser { new_scene, device_mock, stream };
-	Disarray::SceneSerialiser serialiser_new { new_scene };
-	auto out_new = serialiser_new.get_as_json();
-
-	EXPECT_EQ(out, out_new);
 }

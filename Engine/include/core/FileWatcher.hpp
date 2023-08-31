@@ -23,12 +23,12 @@ enum class FileStatus : std::uint8_t { Created = bit(0), Deleted = bit(1), Modif
 
 static constexpr auto operator|(FileStatus left, FileStatus right)
 {
-	return static_cast<FileStatus>(static_cast<int>(left) | static_cast<int>(right));
+	return static_cast<FileStatus>(static_cast<std::uint8_t>(left) | static_cast<std::uint8_t>(right));
 }
 
 static constexpr auto operator&(FileStatus left, FileStatus right)
 {
-	return static_cast<FileStatus>(static_cast<int>(left) & static_cast<int>(right));
+	return static_cast<FileStatus>(static_cast<std::uint8_t>(left) & static_cast<std::uint8_t>(right));
 }
 
 namespace FileStatuses {
@@ -47,16 +47,20 @@ struct FileInformation {
 	std::filesystem::file_time_type last_modified;
 	FileStatus status = FileStatus::Created;
 
-	auto to_path() const { return std::filesystem::path { path }; }
-	auto is_valid() const { return std::filesystem::is_regular_file(to_path()); }
+	[[nodiscard]] auto to_path() const { return std::filesystem::path { path }; }
+	[[nodiscard]] auto is_valid() const { return std::filesystem::is_regular_file(to_path()); }
+	[[nodiscard]] auto has_extension(std::string_view ext) const { return to_path().extension().string() == ext; }
 };
 
 class FileWatcher {
 public:
 	FileWatcher(ThreadPool&, const std::filesystem::path&, std::chrono::duration<int, std::milli> = std::chrono::milliseconds(2000));
+	FileWatcher(ThreadPool&, const std::filesystem::path&, const Collections::StringSet& extensions,
+		std::chrono::duration<int, std::milli> = std::chrono::milliseconds(2000));
 	~FileWatcher() { stop(); }
 
 	void on_created(const std::function<void(const FileInformation&)>& activation_function);
+	void on_created_or_modified(const std::function<void(const FileInformation&)>& activation_function);
 	void on_modified(const std::function<void(const FileInformation&)>& activation_function);
 	void on_deleted(const std::function<void(const FileInformation&)>& activation_function);
 	void on_created_or_deleted(const std::function<void(const FileInformation&)>& activation_function);
@@ -75,8 +79,21 @@ private:
 	void loop_until();
 	void update();
 
+	auto in_extensions(const auto& entry)
+	{
+		if (extensions.contains("*")) {
+			return true;
+		}
+
+		if (extensions.contains(entry.path().extension().string())) {
+			return true;
+		}
+		return false;
+	}
+
 	std::vector<std::function<void(const FileInformation&)>> activations;
 	std::filesystem::path root;
+	Collections::StringSet extensions {};
 	std::chrono::duration<int, std::milli> delay;
 	std::unordered_map<std::string, FileInformation, StringHash, std::equal_to<>> paths {};
 	std::unordered_set<std::string, StringHash> additional_paths {};

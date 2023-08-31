@@ -11,18 +11,18 @@ namespace Disarray::Client {
 
 class ScenePanel : public Disarray::Panel {
 public:
-	ScenePanel(Disarray::Device& dev, Disarray::Window&, Disarray::Swapchain&, Disarray::Scene& s);
+	ScenePanel(Disarray::Device& dev, Disarray::Window&, Disarray::Swapchain&, Disarray::Scene* s);
 
-	void update(float, IGraphicsResource&) override;
+	void update(float) override;
 	void interface() override;
 	void for_all_components(Entity& entity);
 	void on_event(Event&) override;
 
 private:
-	void draw_entity_node(Entity&);
+	void draw_entity_node(Entity&, bool has_parent, std::uint32_t depth = 0);
 
 	Device& device;
-	Scene& scene;
+	Scene* scene;
 
 	std::unique_ptr<entt::entity> selected_entity {};
 };

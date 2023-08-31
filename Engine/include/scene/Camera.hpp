@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 
+#include "core/events/Event.hpp"
+#include "core/events/MouseEvent.hpp"
 #include "graphics/ImageProperties.hpp"
 
 namespace Disarray {
@@ -21,6 +23,7 @@ public:
 	virtual void on_update(float) {};
 
 	virtual glm::vec3 get_position() const = 0;
+	virtual glm::vec3 get_direction() const = 0;
 
 	virtual const glm::mat4& get_projection_matrix() const { return projection_matrix; }
 	virtual const glm::mat4& get_view_matrix() const { return view_matrix; }
@@ -59,7 +62,7 @@ public:
 	void init(EditorCamera* previous_camera = nullptr);
 
 	void focus(const glm::vec3& focus_point) final;
-	void on_update(float ts) final;
+	void on_update(float time_step) final;
 
 	bool is_active() const { return this->active; }
 	void set_active(bool in) { this->active = in; }
@@ -104,6 +107,9 @@ public:
 		// update_camera_view();
 	}
 
+	void on_event(Event& event);
+	auto on_mouse_scroll(MouseScrolledEvent& e) -> bool;
+
 	template <class Ex>
 		requires(std::is_same_v<Ex, Extent> || std::is_same_v<Ex, FloatExtent>)
 	void set_viewport_size(const Ex& ex)
@@ -115,23 +121,24 @@ public:
 	}
 
 	const glm::mat4& get_view_matrix() const override { return view_matrix; }
-	glm::mat4 get_unreversed_view_projection() const { return get_unreversed_projection_matrix() * view_matrix; }
+	auto get_unreversed_view_projection() const { return get_unreversed_projection_matrix() * view_matrix; }
 
-	glm::vec3 get_up_direction() const;
-	glm::vec3 get_right_direction() const;
-	glm::vec3 get_forward_direction() const;
+	auto get_up_direction() const -> glm::vec3;
+	auto get_right_direction() const -> glm::vec3;
+	auto get_forward_direction() const -> glm::vec3;
 
-	glm::vec3 get_position() const override { return position; }
+	auto get_position() const -> glm::vec3 override { return position; }
+	auto get_direction() const -> glm::vec3 override { return direction; }
 
 	glm::quat get_orientation() const;
 
-	[[nodiscard]] float get_vertical_fov() const { return vertical_fov; }
-	[[nodiscard]] float get_aspect_ratio() const { return aspect_ratio; }
-	[[nodiscard]] float get_near_clip() const { return near_clip; }
-	[[nodiscard]] float get_far_clip() const { return far_clip; }
-	[[nodiscard]] float get_pitch() const { return pitch; }
-	[[nodiscard]] float get_yaw() const { return yaw; }
-	[[nodiscard]] float get_camera_speed() const;
+	[[nodiscard]] auto get_vertical_fov() const -> float { return vertical_fov; }
+	[[nodiscard]] auto get_aspect_ratio() const -> float { return aspect_ratio; }
+	[[nodiscard]] auto get_near_clip() const -> float { return near_clip; }
+	[[nodiscard]] auto get_far_clip() const -> float { return far_clip; }
+	[[nodiscard]] auto get_pitch() const -> float { return pitch; }
+	[[nodiscard]] auto get_yaw() const -> float { return yaw; }
+	[[nodiscard]] auto get_camera_speed() const -> float;
 
 private:
 	void update_camera_view();
@@ -143,7 +150,7 @@ private:
 	glm::vec3 calculate_position() const;
 
 	std::pair<float, float> pan_speed() const;
-	float rotation_speed() const;
+	static float rotation_speed();
 	float zoom_speed() const;
 
 	glm::mat4 view_matrix;

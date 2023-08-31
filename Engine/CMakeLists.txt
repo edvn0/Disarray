@@ -42,6 +42,8 @@ set(ENGINE_SOURCES
     include/DisarrayPCH.hpp
     include/scene/Component.hpp
     include/scene/Camera.hpp
+    include/scene/CppScript.hpp
+    include/scene/Scripts.hpp
     include/scene/Components.hpp
     include/scene/Entity.hpp
     include/scene/Serialiser.hpp
@@ -114,6 +116,8 @@ set(ENGINE_SOURCES
     src/scene/Entity.cpp
     src/scene/Scene.cpp
     src/scene/Camera.cpp
+    src/scene/CppScript.cpp
+    src/scene/Scripts.cpp
     src/scene/ComponentSerialisers.cpp
     src/scene/ComponentDeserialisers.cpp
     src/scene/SerialisationTypeConversions.cpp

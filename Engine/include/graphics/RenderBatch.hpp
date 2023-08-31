@@ -11,16 +11,22 @@
 #include "graphics/Renderer.hpp"
 #include "graphics/VertexBuffer.hpp"
 #include "graphics/VertexTypes.hpp"
+#include "scene/Camera.hpp"
 
 namespace Disarray {
 
-template <IsValidVertexType T, std::size_t Objects = 1,
-	typename Child = std::enable_if<vertex_per_object_count<T> != 0 && index_per_object_count<T> != 0>>
+#ifdef DISARRAY_BATCH_RENDERER_SIZE
+static constexpr std::size_t batch_renderer_size = DISARRAY_BATCH_RENDERER_SIZE;
+#else
+static constexpr std::size_t batch_renderer_size = 500;
+#endif
+
+template <IsValidVertexType T, typename Child = std::enable_if<vertex_per_object_count<T> != 0 && index_per_object_count<T> != 0>>
 struct RenderBatchFor {
 	static constexpr auto VertexCount = vertex_per_object_count<T>;
 	static constexpr auto IndexCount = index_per_object_count<T>;
 
-	std::array<T, Objects * VertexCount> vertices {};
+	std::array<T, batch_renderer_size * VertexCount> vertices {};
 	Scope<Disarray::IndexBuffer> index_buffer { nullptr };
 	Scope<Disarray::VertexBuffer> vertex_buffer { nullptr };
 
@@ -31,7 +37,7 @@ struct RenderBatchFor {
 	std::uint32_t submitted_indices { 0 };
 	std::uint32_t submitted_objects { 0 };
 
-	void construct(Disarray::Renderer& renderer, Disarray::Device& device) { static_cast<Child&>(*this).construct_impl(renderer, device); }
+	void construct(Disarray::Renderer& renderer, const Disarray::Device& device) { static_cast<Child&>(*this).construct_impl(renderer, device); }
 	void submit(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor) { static_cast<Child&>(*this).submit_impl(renderer, executor); }
 	void create_new(Geometry geometry, const GeometryProperties& properties) { static_cast<Child&>(*this).create_new_impl(geometry, properties); }
 	void flush(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor) { static_cast<Child&>(*this).flush_impl(renderer, executor); }
@@ -49,14 +55,14 @@ protected:
 
 	void flush_vertex_buffer() { vertex_buffer->set_data(vertices.data(), static_cast<std::uint32_t>(vertex_buffer_size())); }
 
-	std::size_t vertex_buffer_size() { return VertexCount * Objects * sizeof(T); }
-	std::size_t index_buffer_size() { return IndexCount * Objects * sizeof(std::uint32_t); }
+	auto vertex_buffer_size() -> std::size_t { return VertexCount * batch_renderer_size * sizeof(T); }
+	auto index_buffer_size() -> std::size_t { return IndexCount * batch_renderer_size * sizeof(std::uint32_t); }
 
-	T& emplace() { return vertices[submitted_vertices++]; }
+	auto emplace() -> T& { return vertices[submitted_vertices++]; }
 };
 
 #define MAKE_BATCH_RENDERER(Type, Child)                                                                                                             \
-	using Current = RenderBatchFor<Type, Objects, Child<Objects>>;                                                                                   \
+	using Current = RenderBatchFor<Type, Child>;                                                                                                     \
 	using Current::emplace;                                                                                                                          \
 	using Current::index_buffer;                                                                                                                     \
 	using Current::index_buffer_size;                                                                                                                \
@@ -73,33 +79,39 @@ protected:
 	using Current::vertices;                                                                                                                         \
 	using Current::flush_vertex_buffer;
 
-template <std::size_t Objects = 1> struct LineVertexBatch final : public RenderBatchFor<LineVertex, Objects, LineVertexBatch<Objects>> {
+struct LineVertexBatch final : public RenderBatchFor<LineVertex, LineVertexBatch> {
 	MAKE_BATCH_RENDERER(LineVertex, LineVertexBatch)
 
-	void construct_impl(Disarray::Renderer&, Disarray::Device&);
+	void construct_impl(Disarray::Renderer&, const Disarray::Device&);
 	void submit_impl(Disarray::Renderer&, Disarray::CommandExecutor&);
 	void create_new_impl(Geometry, const GeometryProperties&);
 	void flush_impl(Disarray::Renderer&, Disarray::CommandExecutor&);
 };
 
-template <std::size_t Objects = 1> struct QuadVertexBatch final : public RenderBatchFor<QuadVertex, Objects, QuadVertexBatch<Objects>> {
+struct QuadVertexBatch final : public RenderBatchFor<QuadVertex, QuadVertexBatch> {
 	MAKE_BATCH_RENDERER(QuadVertex, QuadVertexBatch)
 
-	void construct_impl(Disarray::Renderer&, Disarray::Device&);
+	void construct_impl(Disarray::Renderer&, const Disarray::Device&);
 	void submit_impl(Disarray::Renderer&, Disarray::CommandExecutor&);
 	void create_new_impl(Geometry, const GeometryProperties&);
 	void flush_impl(Disarray::Renderer&, Disarray::CommandExecutor&);
 };
 
-template <std::size_t Objects = 1> struct LineIdVertexBatch final : public LineVertexBatch<Objects> {
-	void construct_impl(Disarray::Renderer&, Disarray::Device&);
+struct LineIdVertexBatch final : public RenderBatchFor<LineIdVertex, LineIdVertexBatch> {
+	MAKE_BATCH_RENDERER(LineIdVertex, LineIdVertexBatch)
+
+	void construct_impl(Disarray::Renderer&, const Disarray::Device&);
+	void submit_impl(Disarray::Renderer&, Disarray::CommandExecutor&);
 	void create_new_impl(Geometry, const GeometryProperties&);
+	void flush_impl(Disarray::Renderer&, Disarray::CommandExecutor&);
 };
 
-template <std::size_t Objects = 1> struct BatchRenderer {
-	using Quads = QuadVertexBatch<Objects>;
-	using Lines = LineVertexBatch<Objects>;
-	using LinesWithIdentifiers = LineVertexBatch<Objects>;
+struct BatchRenderer {
+	static constexpr auto Objects = batch_renderer_size;
+
+	using Quads = QuadVertexBatch;
+	using Lines = LineVertexBatch;
+	using LinesWithIdentifiers = LineIdVertexBatch;
 
 	std::tuple<Quads, Lines, LinesWithIdentifiers> objects {};
 
@@ -113,12 +125,12 @@ template <std::size_t Objects = 1> struct BatchRenderer {
 		Tuple::static_for(objects, [](std::size_t index, auto& batch) { batch.reset(); });
 	}
 
-	constexpr void construct(Disarray::Renderer& renderer, Disarray::Device& device)
+	constexpr void construct(Disarray::Renderer& renderer, const Disarray::Device& device)
 	{
 		Tuple::static_for(objects, [&renderer, &device](std::size_t index, auto& batch) { batch.construct(renderer, device); });
 	}
 
-	bool would_be_full()
+	auto would_be_full() -> bool
 	{
 		bool batch_would_be_full = false;
 		Tuple::static_for(objects, [&batch_would_be_full](std::size_t index, auto& batch) {
@@ -128,7 +140,7 @@ template <std::size_t Objects = 1> struct BatchRenderer {
 		return batch_would_be_full;
 	}
 
-	bool is_full()
+	auto is_full() -> bool
 	{
 		bool batch_would_be_full = false;
 		Tuple::static_for(objects, [&batch_would_be_full](std::size_t index, auto& batch) {
@@ -138,7 +150,7 @@ template <std::size_t Objects = 1> struct BatchRenderer {
 		return batch_would_be_full;
 	}
 
-	bool should_submit()
+	auto should_submit() -> bool
 	{
 		bool should_submit_batch = false;
 		Tuple::static_for(objects, [&should_submit_batch](std::size_t index, auto& batch) {
@@ -156,12 +168,13 @@ template <std::size_t Objects = 1> struct BatchRenderer {
 
 	constexpr void create_new(Geometry geometry, const GeometryProperties& properties)
 	{
-		Tuple::static_for(objects, [geometry, &properties](std::size_t index, auto& batch) { batch.create_new(geometry, properties); });
+		Tuple::static_for(objects, [geometry, &properties](std::size_t index, auto& batch) mutable { batch.create_new(geometry, properties); });
 	}
 
 	constexpr void submit(Disarray::Renderer& renderer, Disarray::CommandExecutor& command_executor)
 	{
-		Tuple::static_for(objects, [&renderer, &command_executor](std::size_t index, auto& batch) { batch.submit(renderer, command_executor); });
+		Tuple::static_for(
+			objects, [&renderer, &command_executor](std::size_t index, auto& batch) mutable { batch.submit(renderer, command_executor); });
 	}
 };
 

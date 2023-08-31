@@ -6,20 +6,27 @@
 
 #include <entt/entt.hpp>
 
+#include <memory>
+#include <string_view>
 #include <unordered_set>
 
 #include "Forward.hpp"
 #include "core/Concepts.hpp"
+#include "core/Log.hpp"
 #include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
 #include "graphics/Material.hpp"
+#include "graphics/Mesh.hpp"
+#include "graphics/Pipeline.hpp"
 #include "graphics/Renderer.hpp"
+#include "graphics/RendererProperties.hpp"
+#include "graphics/Texture.hpp"
 
 namespace Disarray::Components {
 
 namespace {
-	static const auto default_rotation = glm::angleAxis(0.f, glm::vec3 { 0.f, 0.f, 1.0f });
-	static constexpr auto identity = glm::identity<glm::mat4>();
+	const auto default_rotation = glm::angleAxis(0.f, glm::vec3 { 0.f, 0.f, 1.0f });
+	constexpr auto identity = glm::identity<glm::mat4>();
 	inline auto scale_matrix(const auto& vec) { return glm::scale(identity, vec); }
 	inline auto translate_matrix(const auto& vec) { return glm::translate(identity, vec); }
 } // namespace
@@ -37,7 +44,7 @@ struct Transform {
 	{
 	}
 
-	auto compute() const { return translate_matrix(position) * glm::mat4_cast(rotation) * scale_matrix(scale); }
+	[[nodiscard]] auto compute() const { return translate_matrix(position) * glm::mat4_cast(rotation) * scale_matrix(scale); }
 };
 
 struct Mesh {
@@ -88,7 +95,7 @@ struct QuadGeometry {
 struct ID {
 	Identifier identifier {};
 
-	template <std::integral T> T get_id() const { return static_cast<T>(identifier); }
+	template <std::integral T> [[nodiscard]] T get_id() const { return static_cast<T>(identifier); }
 };
 
 struct Tag {
@@ -97,14 +104,66 @@ struct Tag {
 
 struct DirectionalLight {
 	glm::vec3 direction { 1, 1, 1 };
-	float intensity { .8f };
+	float intensity { .05f };
 
-	glm::vec4 compute() const { return { glm::normalize(direction), intensity }; }
+	[[nodiscard]] auto compute() const -> glm::vec4 { return { glm::normalize(direction), intensity }; }
 };
 
 struct PointLight {
-	glm::vec3 direction;
-	float intensity { .8f };
+	glm::vec3 direction { 0.f };
+	float intensity { .01f };
+};
+
+void script_deleter(CppScript*);
+struct Script {
+private:
+	friend class Disarray::Entity;
+	static constexpr auto deleter = +[](CppScript* script) { script_deleter(script); };
+	using ScriptPtr = std::unique_ptr<CppScript, decltype(deleter)>;
+
+	void setup_entity_destruction();
+	void setup_entity_creation();
+
+	template <class ChildScript, typename... Args> auto construct_script(Args&&... args) -> ChildScript*
+	{
+		return new ChildScript(std::forward<Args>(args)...);
+	}
+
+	ScriptPtr instance_slot { nullptr, deleter };
+
+	std::function<void(Script&)> create_script_functor;
+	std::function<void(Script&)> destroy_script_functor;
+
+	bool bound { false };
+	bool instantiated { false };
+
+public:
+	Script() = default;
+
+	template <class ChildScript, typename... Args>
+		requires std::is_base_of_v<CppScript, ChildScript>
+	void bind(Args&&... args)
+	{
+		auto* constructed_script = construct_script<ChildScript, Args...>(std::forward<Args>(args)...);
+		create_script_functor = [&](Script& script) {
+			script.instance_slot.reset(std::move(constructed_script));
+			setup_entity_creation();
+		};
+		setup_entity_destruction();
+		bound = true;
+	}
+
+	void destroy() { destroy_script_functor(*this); }
+	void instantiate()
+	{
+		create_script_functor(*this);
+		instantiated = true;
+	}
+
+	auto get_script() -> auto& { return *instance_slot; }
+	[[nodiscard]] auto get_script() const -> const auto& { return *instance_slot; }
+
+	[[nodiscard]] auto has_been_bound() const -> bool { return bound && !instantiated; }
 };
 
 struct Inheritance {
@@ -112,6 +171,8 @@ struct Inheritance {
 	Identifier parent {};
 
 	void add_child(Entity&);
+
+	[[nodiscard]] auto has_parent() const -> bool { return parent != invalid_identifier; }
 };
 
 } // namespace Disarray::Components

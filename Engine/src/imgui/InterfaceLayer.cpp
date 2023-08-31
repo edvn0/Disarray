@@ -7,7 +7,9 @@
 #include <ImGuizmo.h>
 #include <imgui.h>
 
+#include "core/Formatters.hpp"
 #include "core/Types.hpp"
+#include "core/filesystem/FileIO.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Device.hpp"
 #include "graphics/Renderer.hpp"
@@ -42,7 +44,7 @@ InterfaceLayer::InterfaceLayer(Device& dev, Window& win, Swapchain& swap)
 
 InterfaceLayer::~InterfaceLayer() { }
 
-void InterfaceLayer::construct(App&, Renderer& renderer, ThreadPool&)
+void InterfaceLayer::construct(App&, ThreadPool&)
 {
 	command_executor = CommandExecutor::construct(device, swapchain,
 		{
@@ -101,6 +103,16 @@ void InterfaceLayer::construct(App&, Renderer& renderer, ThreadPool&)
 
 	{
 		auto executor = Vulkan::construct_immediate(device);
+		static constexpr auto font_sizes = std::array { 16.F, 15.F, 14.F, 13.F, 12.F, 11.F, 10.F, 9.F };
+		FS::for_each_in_directory(
+			std::filesystem::path { "Assets/Fonts" },
+			[&fonts = io.Fonts](const auto& entry) {
+				for (const auto& size : font_sizes) {
+					Log::info("InterfaceLayer", "Adding font {} with size {}", entry.path(), size);
+					fonts->AddFontFromFileTTF(entry.path().string().c_str(), size);
+				}
+			},
+			[](const std::filesystem::directory_entry& entry) { return entry.path().extension() == ".ttf"; });
 		ImGui_ImplVulkan_CreateFontsTexture(executor->supply());
 	}
 
@@ -117,15 +129,18 @@ void InterfaceLayer::on_event(Event& event)
 	}
 }
 
-void InterfaceLayer::update(float ts, IGraphicsResource& resource_renderer)
+void InterfaceLayer::update(float time_step)
 {
 	for (auto& panel : panels) {
-		panel->update(ts, resource_renderer);
+		panel->update(time_step);
 	}
 }
 
 void InterfaceLayer::destruct()
 {
+	for (auto& panel : panels) {
+		panel->destruct();
+	}
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
@@ -149,7 +164,7 @@ void InterfaceLayer::begin()
 void InterfaceLayer::end()
 {
 	ImGui::Render();
-	static constexpr VkClearColorValue clear_colour { { 0.1f, 0.1f, 0.1f, 0.0f } };
+	static constexpr VkClearColorValue clear_colour { { 0.0f, 0.0f, 0.0f, 0.0f } };
 	static constexpr VkClearDepthStencilValue depth_stencil_clear { .depth = 1.0f, .stencil = 0 };
 
 	std::array<VkClearValue, 2> clear_values {};
@@ -253,10 +268,10 @@ void InterfaceLayer::end()
 	}
 }
 
-void InterfaceLayer::render(Renderer& renderer)
+void InterfaceLayer::render()
 {
 	for (auto& panel : panels) {
-		panel->render(renderer);
+		panel->render();
 	}
 }
 } // namespace Disarray::UI

@@ -27,7 +27,7 @@ public:
 private:
 	VkPhysicalDevice physical_device;
 	Ref<Disarray::QueueFamilyIndex> queue_family_index;
-	VkPhysicalDeviceProperties device_properties;
+	VkPhysicalDeviceProperties device_properties {};
 	SampleCount samples { SampleCount::One };
 };
 

@@ -17,7 +17,21 @@ void PipelineSerialiser::serialise_impl(const Components::Pipeline& pipeline, nl
 		properties["line_width"] = props.line_width;
 		properties["vertex_shader"] = props.vertex_shader->get_properties().path;
 		properties["fragment_shader"] = props.fragment_shader->get_properties().path;
-		// VertexLayout layout {};
+		properties["vertex_layout"] = [](const VertexLayout& vertex_layout) {
+			json layout_object;
+			layout_object["binding"] = { { "binding", vertex_layout.binding.binding },
+				{ "input_rate", magic_enum::enum_name(vertex_layout.binding.input_rate) }, { "stride", vertex_layout.binding.stride } };
+			layout_object["total_size"] = vertex_layout.total_size;
+
+			auto arr = json::array();
+			for (const auto& layout : vertex_layout.elements) {
+				arr.push_back({ { "debug_name", layout.debug_name }, { "offset", layout.offset }, { "size", layout.size },
+					{ "type", magic_enum::enum_name(layout.type) } });
+			}
+			layout_object["elements"] = arr;
+			return layout_object;
+		}(props.layout);
+		properties["push_constant_layout"] = [](const PushConstantLayout& push_constant_layout) { return json(); }(props.push_constant_layout);
 		// PushConstantLayout push_constant_layout {};
 		properties["extent"] = props.extent;
 		properties["polygon_mode"] = magic_enum::enum_name(props.polygon_mode);

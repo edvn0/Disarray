@@ -18,18 +18,9 @@ template <typename T, typename... Rest> inline void hash_combine(std::size_t& se
 
 struct StringHash {
 	using is_transparent = void;
-
-	std::size_t operator()(std::string_view sv) const
-	{
-		std::hash<std::string_view> hasher;
-		return hasher(sv);
-	}
-};
-
-struct string_hash {
-	using is_transparent = void;
 	[[nodiscard]] size_t operator()(const char* txt) const { return std::hash<std::string_view> {}(txt); }
 	[[nodiscard]] size_t operator()(std::string_view txt) const { return std::hash<std::string_view> {}(txt); }
+	[[nodiscard]] size_t operator()(const std::filesystem::path& txt) const { return std::hash<std::string_view> {}(txt.string()); }
 	[[nodiscard]] size_t operator()(const std::string& txt) const { return std::hash<std::string> {}(txt); }
 };
 

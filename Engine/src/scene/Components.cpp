@@ -2,8 +2,11 @@
 
 #include "scene/Components.hpp"
 
+#include "core/Log.hpp"
 #include "graphics/Mesh.hpp"
+#include "scene/CppScript.hpp"
 #include "scene/Entity.hpp"
+#include "scene/Scene.hpp"
 
 namespace Disarray::Components {
 
@@ -59,5 +62,17 @@ Texture::Texture(const glm::vec4& colour)
 	: colour(colour)
 {
 }
+
+void script_deleter(CppScript* script) { delete script; }
+
+void Script::setup_entity_destruction()
+{
+	destroy_script_functor = [](Script& script) {
+		script.instance_slot->on_destroy();
+		script.instance_slot.reset();
+	};
+}
+
+void Script::setup_entity_creation() { get_script().on_create(); }
 
 } // namespace Disarray::Components

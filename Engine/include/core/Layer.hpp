@@ -7,8 +7,6 @@
 
 namespace Disarray {
 
-class Renderer;
-class IGraphicsResource;
 class App;
 class Swapchain;
 
@@ -16,12 +14,12 @@ class Layer {
 public:
 	virtual ~Layer() = default;
 
-	virtual void construct(App&, Renderer&, ThreadPool&);
+	virtual void construct(App&, ThreadPool&);
 	virtual void handle_swapchain_recreation(Swapchain&);
 	virtual void on_event(Event&);
 	virtual void interface();
-	virtual void update(float ts, IGraphicsResource&);
-	virtual void render(Renderer&);
+	virtual void update(float time_step);
+	virtual void render();
 	virtual void destruct();
 	virtual bool is_interface_layer() const;
 };

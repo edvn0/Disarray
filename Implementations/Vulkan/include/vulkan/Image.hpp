@@ -44,7 +44,7 @@ static constexpr auto to_vulkan_format(ImageFormat format)
 
 static constexpr auto is_depth_format = [](ImageFormat format) { return format == ImageFormat::Depth || format == ImageFormat::DepthStencil; };
 
-constexpr VkImageLayout to_vulkan_layout(ImageFormat format)
+constexpr auto to_vulkan_layout(ImageFormat format) -> VkImageLayout
 {
 	switch (format) {
 	case ImageFormat::SRGB:
@@ -70,7 +70,7 @@ constexpr VkImageLayout to_vulkan_layout(ImageFormat format)
 	}
 }
 
-constexpr VkSampleCountFlagBits to_vulkan_samples(SampleCount format)
+constexpr auto to_vulkan_samples(SampleCount format) -> VkSampleCountFlagBits
 {
 	switch (format) {
 	case SampleCount::One:
@@ -105,24 +105,23 @@ constexpr auto to_vulkan_tiling(Tiling tiling)
 }
 
 class Image : public Disarray::Image, public PropertySupplier<VkImage> {
+	DISARRAY_MAKE_NONCOPYABLE(Image)
 public:
-	Image(const Disarray::Device&, const ImageProperties&);
+	Image(const Disarray::Device&, ImageProperties);
 	~Image() override;
 
-	void force_recreation() override { recreate(true, props.extent); };
-	void recreate(bool should_clean, const Extent&) override;
+	void force_recreation() override { recreate(true, get_properties().extent); };
+	void recreate(bool should_clean, const Extent& /*unused*/) override;
 
-	PixelReadData read_pixel(const glm::vec2&) const override;
-	const ImageProperties& get_properties() const override { return props; }
+	auto read_pixel(const glm::vec2& /*unused*/) const -> PixelReadData override;
 
-	VkImage get_image() const { return info.image; }
-	const VkDescriptorSetLayout& get_layout() const { return layout; }
+	auto get_image() const -> VkImage { return info.image; }
+	auto get_layout() const -> const VkDescriptorSetLayout& { return layout; }
 
-	VkImage supply() const override { return get_image(); }
+	auto supply() const -> VkImage override { return get_image(); }
+	auto get_descriptor_info() const -> const VkDescriptorImageInfo& { return descriptor_info; }
 
-	const VkDescriptorImageInfo& get_descriptor_info() const { return descriptor_info; }
-
-	Identifier hash() const override
+	auto hash() const -> Identifier override
 	{
 		return bit_cast<std::uint64_t>(descriptor_info.imageView) ^ bit_cast<std::uint64_t>(descriptor_info.sampler);
 	};
@@ -134,11 +133,10 @@ private:
 	void create_mips();
 
 	ImageInfo info {};
-	VkDescriptorImageInfo descriptor_info;
-	VkDescriptorSetLayout layout;
+	VkDescriptorImageInfo descriptor_info {};
+	VkDescriptorSetLayout layout {};
 
 	const Disarray::Device& device;
-	ImageProperties props;
 };
 
 } // namespace Disarray::Vulkan

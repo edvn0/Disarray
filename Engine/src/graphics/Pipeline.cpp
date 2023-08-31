@@ -6,9 +6,9 @@
 
 namespace Disarray {
 
-Ref<Pipeline> Pipeline::construct(const Disarray::Device& device, const Disarray::PipelineProperties& props)
+Ref<Pipeline> Pipeline::construct(const Disarray::Device& device, Disarray::PipelineProperties props)
 {
-	return make_ref<Vulkan::Pipeline>(device, props);
+	return make_ref<Vulkan::Pipeline>(device, std::move(props));
 }
 
 } // namespace Disarray

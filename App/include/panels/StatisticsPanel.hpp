@@ -18,9 +18,9 @@ public:
 	StatisticsPanel(Device&, Window&, Swapchain&, const ApplicationStatistics& stats)
 		: statistics(stats) {};
 
-	void update(float ts, IGraphicsResource&) override
+	void update(float time_step) override
 	{
-		should_update_counter += ts;
+		should_update_counter += time_step;
 		if (should_update_counter > update_interval_ms) {
 			should_update_counter = 0;
 			const auto& [cpu_time, frame_time, presentation_time] = statistics;

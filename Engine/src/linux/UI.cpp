@@ -2,6 +2,8 @@
 
 #include "ui/UI.hpp"
 
+#include "core/Log.hpp"
+
 namespace Disarray::UI {
 
 void drag_drop(const std::filesystem::path& path)

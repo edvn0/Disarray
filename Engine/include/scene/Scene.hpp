@@ -7,42 +7,48 @@
 #include <queue>
 #include <type_traits>
 
+#include "core/FileWatcher.hpp"
 #include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
 #include "core/events/Event.hpp"
 #include "graphics/CommandExecutor.hpp"
+#include "graphics/Framebuffer.hpp"
 #include "graphics/Mesh.hpp"
 #include "graphics/Texture.hpp"
 #include "scene/Component.hpp"
+#include "scene/Entity.hpp"
 
 namespace Disarray {
 
-enum class GizmoType {
-	TranslateX = (1u << 0),
-	Translate_Y = (1u << 1),
-	TranslateZ = (1u << 2),
-	RotateX = (1u << 3),
-	RotateY = (1u << 4),
-	RotateZ = (1u << 5),
-	RotateScreen = (1u << 6),
-	ScaleX = (1u << 7),
-	ScaleY = (1u << 8),
-	ScaleZ = (1u << 9),
-	Bounds = (1u << 10),
+enum class GizmoType : std::uint16_t {
+	TranslateX = (1U << 0),
+	Translate_Y = (1U << 1),
+	TranslateZ = (1U << 2),
+	RotateX = (1U << 3),
+	RotateY = (1U << 4),
+	RotateZ = (1U << 5),
+	RotateScreen = (1U << 6),
+	ScaleX = (1U << 7),
+	ScaleY = (1U << 8),
+	ScaleZ = (1U << 9),
+	Bounds = (1U << 10),
 	Translate = TranslateX | Translate_Y | TranslateZ,
 	Rotate = RotateX | RotateY | RotateZ | RotateScreen,
 	Scale = ScaleX | ScaleY | ScaleZ
 };
 
-class Entity;
-
 class Scene {
 public:
 	Scene(const Disarray::Device&, std::string_view);
 	~Scene();
-	void update(float, IGraphicsResource&);
-	void render(Disarray::Renderer&);
-	void construct(Disarray::App&, Disarray::Renderer&, Disarray::ThreadPool&);
+
+	void begin_frame(const Camera&);
+	void end_frame();
+
+	void update(float);
+	void render();
+	void interface();
+	void construct(Disarray::App&, Disarray::ThreadPool&);
 	void destruct();
 	void on_event(Disarray::Event&);
 	void recreate(const Extent& extent);
@@ -55,45 +61,66 @@ public:
 
 	FloatExtent get_viewport_bounds() const { return { vp_max.x - vp_min.x, vp_max.y - vp_min.y }; }
 
-	Entity create(std::string_view = "Unnamed");
+	auto create(std::string_view = "Unnamed") -> Entity;
+
+	template <typename... Args> auto create(fmt::format_string<Args...> format, Args&&... args) -> Entity
+	{
+		return create(fmt::format(format, std::forward<Args>(args)...));
+	}
 	void delete_entity(entt::entity);
 	void delete_entity(const Entity& entity);
 
-	Disarray::Image& get_image(std::uint32_t index)
+	auto get_image(std::uint32_t index) -> Disarray::Image&
 	{
-		if (index == 0)
+		if (index == 0) {
 			return identity_framebuffer->get_image(0);
-		else if (index == 1)
+		} else if (index == 1)
 			return identity_framebuffer->get_image(1);
 		else
 			return identity_framebuffer->get_depth_image();
 	}
 
-	const CommandExecutor& get_command_executor() const { return *command_executor; };
+	auto get_command_executor() const -> const CommandExecutor& { return *command_executor; };
 
-	entt::registry& get_registry() { return registry; };
-	const auto& get_selected_entity() const { return selected_entity; }
-	const entt::registry& get_registry() const { return registry; };
-	const std::string& get_name() const { return scene_name; };
+	auto get_selected_entity() const -> const auto& { return selected_entity; }
+	auto get_registry() -> entt::registry& { return registry; };
+	auto get_registry() const -> const entt::registry& { return registry; };
+	auto get_name() const -> const std::string& { return scene_name; };
 
-	std::optional<Entity> get_by_identifier(Identifier);
+	template <ValidComponent... T> auto entities_with() -> std::vector<Entity>
+	{
+		auto view_for = registry.view<T...>();
+		std::vector<Entity> out;
+		if constexpr (sizeof...(T) == 1)
+			out.reserve(view_for.size());
+		else
+			out.reserve(view_for.size_hint());
+		view_for.each([this, &out](auto entity, auto... ts) { out.push_back(Entity { this, entity }); });
+		return out;
+	}
+
+	auto get_by_identifier(Identifier) -> std::optional<Entity>;
 
 	void update_picked_entity(std::uint32_t handle);
-	void manipulate_entity_transform(Entity&, Camera&, GizmoType);
+	static void manipulate_entity_transform(Entity&, Camera&, GizmoType);
 
 	template <class Func> constexpr void for_all_entities(Func&& func)
 	{
 		const auto view = get_registry().storage<entt::entity>().each();
 		for (const auto& [entity] : view) {
-			func(entity);
+			std::forward<Func>(func)(entity);
 		}
 	}
 
-	static Scope<Scene> deserialise(const Device&, std::string_view, const std::filesystem::path&);
+	auto get_framebuffers() -> std::array<Ref<Disarray::Framebuffer>, 2> { return { framebuffer, identity_framebuffer }; }
+
+	static auto deserialise(const Device&, std::string_view, const std::filesystem::path&) -> Scope<Scene>;
 
 private:
 	const Disarray::Device& device;
 	std::string scene_name;
+	Scope<Renderer> scene_renderer { nullptr };
+	Scope<FileWatcher> file_watcher { nullptr };
 
 	Scope<Entity> picked_entity { nullptr };
 	Scope<Entity> selected_entity { nullptr };
@@ -106,19 +133,24 @@ private:
 	Ref<Disarray::Framebuffer> identity_framebuffer {};
 	Ref<Disarray::CommandExecutor> command_executor {};
 
-	// Should contain some kind of container for entities :)
+	std::mutex registry_access;
 	entt::registry registry;
+	void create_entities();
 
+	using FuncPtr = void (*)(const Disarray::Scene*);
 	struct ThreadPoolCallback {
-		std::function<void(void)> func;
+		FuncPtr func { nullptr };
 		bool parallel { false };
 	};
 	std::queue<ThreadPoolCallback> thread_pool_callbacks {};
+	void setup_filewatcher_and_threadpool(ThreadPool&);
 
 	std::future<void> final_pool_callback {};
 	std::atomic_bool should_run_callbacks { true };
 	std::condition_variable callback_cv {};
 	std::mutex callback_mutex {};
+
+	friend class CppScript;
 };
 
 } // namespace Disarray

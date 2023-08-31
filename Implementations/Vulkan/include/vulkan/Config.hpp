@@ -20,7 +20,7 @@ static constexpr auto is_windows = false;
 
 static constexpr auto use_validation_layers = is_debug && is_windows;
 
-static std::array<const char*, 1> device_extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+static std::array<const char*, 2> device_extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, "VK_KHR_dynamic_rendering" };
 
 static constexpr int max_frames_in_flight = 3;
 

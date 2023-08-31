@@ -42,7 +42,7 @@ struct PipelineCacheCreationProperties {
 
 class PipelineCache : public ResourceCache<Ref<Disarray::Pipeline>, PipelineCacheCreationProperties, PipelineCache, std::string, StringHash> {
 public:
-	PipelineCache(Disarray::Device& device, const std::filesystem::path&);
+	PipelineCache(const Disarray::Device& device, const std::filesystem::path&);
 
 	void force_recreate_impl(const Extent& extent)
 	{
@@ -52,7 +52,7 @@ public:
 		});
 	}
 
-	Ref<Disarray::Pipeline> create_from_impl(const PipelineCacheCreationProperties& props)
+	auto create_from_impl(const PipelineCacheCreationProperties& props) -> Ref<Disarray::Pipeline>
 	{
 		PipelineProperties properties {
 			.vertex_shader = shader_cache[props.vertex_shader_key],
@@ -75,7 +75,7 @@ public:
 		return Pipeline::construct(get_device(), properties);
 	}
 
-	std::string create_key_impl(const PipelineCacheCreationProperties& props) { return props.pipeline_key; }
+	static auto create_key(const PipelineCacheCreationProperties& props) -> std::string { return props.pipeline_key; }
 
 	template <class Key> const Ref<Shader>& get_shader(Key&& key) { return shader_cache.at(std::forward<Key>(key)); }
 

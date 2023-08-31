@@ -13,7 +13,7 @@ class App;
 
 class Input {
 public:
-	static void construct(UsageBadge<App>, Disarray::Window&);
+	static void construct(const Disarray::Window&);
 
 	static bool button_pressed(MouseCode code);
 	static bool key_pressed(KeyCode code);

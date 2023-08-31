@@ -7,7 +7,7 @@
 #include <memory>
 #include <string>
 
-extern std::unique_ptr<Disarray::App> Disarray::create_application(const Disarray::ApplicationProperties&);
+extern auto Disarray::create_application(const Disarray::ApplicationProperties&) -> std::unique_ptr<Disarray::App>;
 
 int main(int argc, char** argv)
 {

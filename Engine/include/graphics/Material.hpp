@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "Forward.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
@@ -15,14 +17,14 @@ struct MaterialProperties {
 class Material : public ReferenceCountable {
 	DISARRAY_OBJECT(Material)
 public:
-	static Ref<Material> construct(const Disarray::Device&, const MaterialProperties&);
-	const MaterialProperties& get_properties() const { return props; };
+	static auto construct(const Disarray::Device&, const MaterialProperties&) -> Ref<Material>;
+	auto get_properties() const -> const MaterialProperties& { return props; };
 
 	virtual void update_material(Renderer&) = 0;
 
 protected:
-	Material(const MaterialProperties& properties)
-		: props(properties)
+	Material(MaterialProperties properties)
+		: props(std::move(properties))
 	{
 	}
 

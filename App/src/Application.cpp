@@ -14,7 +14,7 @@ public:
 	void on_detach() override { }
 };
 
-extern std::unique_ptr<Disarray::App> Disarray::create_application(const Disarray::ApplicationProperties& props)
+extern auto Disarray::create_application(const Disarray::ApplicationProperties& props) -> std::unique_ptr<Disarray::App>
 {
 	return std::make_unique<ClientApp>(props);
 }

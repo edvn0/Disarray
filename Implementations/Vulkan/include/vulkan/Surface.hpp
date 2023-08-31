@@ -20,6 +20,6 @@ public:
 
 private:
 	Instance& instance;
-	VkSurfaceKHR surface;
+	VkSurfaceKHR surface { nullptr };
 };
 } // namespace Disarray::Vulkan

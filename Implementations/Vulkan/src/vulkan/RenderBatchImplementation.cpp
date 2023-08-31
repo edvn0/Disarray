@@ -1,5 +1,3 @@
-#pragma once
-
 #include <glm/ext/matrix_transform.hpp>
 #include <vulkan/vulkan.h>
 
@@ -7,8 +5,10 @@
 
 #include "core/Clock.hpp"
 #include "core/Formatters.hpp"
+#include "core/Log.hpp"
 #include "core/Types.hpp"
 #include "graphics/Maths.hpp"
+#include "graphics/RenderBatch.hpp"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Framebuffer.hpp"
@@ -22,15 +22,15 @@
 
 namespace Disarray {
 
-template <std::size_t Objects> void QuadVertexBatch<Objects>::construct_impl(Renderer& renderer, Device& dev)
+void QuadVertexBatch::construct_impl(Renderer& renderer, const Device& dev)
 {
 	reset();
 
 	pipeline = renderer.get_pipeline_cache().get("quad");
 	std::vector<std::uint32_t> quad_indices;
-	quad_indices.resize(vertices.size() * index_per_object_count<QuadVertex>);
+	quad_indices.resize(batch_renderer_size * IndexCount);
 	std::uint32_t offset = 0;
-	for (std::size_t i = 0; i < vertices.size() * index_per_object_count<QuadVertex>; i += index_per_object_count<QuadVertex>) {
+	for (std::size_t i = 0; i < quad_indices.size(); i += index_per_object_count<QuadVertex>) {
 		quad_indices[i + 0] = 0 + offset;
 		quad_indices[i + 1] = 1 + offset;
 		quad_indices[i + 2] = 2 + offset;
@@ -53,7 +53,7 @@ template <std::size_t Objects> void QuadVertexBatch<Objects>::construct_impl(Ren
 		});
 }
 
-template <std::size_t Objects> void QuadVertexBatch<Objects>::create_new_impl(Geometry geometry, const GeometryProperties& props)
+void QuadVertexBatch::create_new_impl(Geometry geometry, const GeometryProperties& props)
 {
 	if (geometry != Geometry::Rectangle)
 		return;
@@ -84,14 +84,16 @@ template <std::size_t Objects> void QuadVertexBatch<Objects>::create_new_impl(Ge
 	submitted_objects++;
 }
 
-template <std::size_t Objects> void QuadVertexBatch<Objects>::submit_impl(Renderer& renderer, CommandExecutor& command_executor)
+void QuadVertexBatch::submit_impl(Renderer& renderer, CommandExecutor& command_executor)
 {
 	if (submitted_indices == 0)
 		return;
 
 	prepare_data();
 
-	renderer.get_editable_push_constant().max_identifiers = submitted_objects;
+	auto& resources = renderer.get_graphics_resource();
+
+	resources.get_editable_push_constant().max_identifiers = submitted_objects;
 
 	auto command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
 
@@ -100,13 +102,13 @@ template <std::size_t Objects> void QuadVertexBatch<Objects>::submit_impl(Render
 	const auto index_count = submitted_indices;
 	const auto& vk_pipeline = cast_to<Vulkan::Pipeline>(*pipeline);
 
-	const std::array<VkDescriptorSet, 1> desc { renderer.get_descriptor_set() };
+	const std::array<VkDescriptorSet, 1> desc { resources.get_descriptor_set() };
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.get_layout(), 0, 1, desc.data(), 0, nullptr);
 
 	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.supply());
 
 	vkCmdPushConstants(command_buffer, vk_pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),
-		renderer.get_push_constant());
+		resources.get_push_constant());
 
 	const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vb) };
 	constexpr VkDeviceSize offsets { 0 };
@@ -118,21 +120,21 @@ template <std::size_t Objects> void QuadVertexBatch<Objects>::submit_impl(Render
 	vkCmdDrawIndexed(command_buffer, count, 1, 0, 0, 0);
 }
 
-template <std::size_t Objects> void QuadVertexBatch<Objects>::flush_impl(Renderer& renderer, CommandExecutor& executor)
+void QuadVertexBatch::flush_impl(Renderer& renderer, CommandExecutor& executor)
 {
 	submit_impl(renderer, executor);
 	reset();
 	// flush_vertex_buffer();
 }
 
-template <std::size_t Objects> void LineVertexBatch<Objects>::construct_impl(Disarray::Renderer& renderer, Disarray::Device& dev)
+void LineVertexBatch::construct_impl(Disarray::Renderer& renderer, const Disarray::Device& dev)
 {
 	reset();
 
 	pipeline = renderer.get_pipeline_cache().get("line");
 
 	std::vector<std::uint32_t> line_indices;
-	line_indices.resize(Objects * IndexCount);
+	line_indices.resize(batch_renderer_size * IndexCount);
 	for (std::size_t i = 0; i < line_indices.size(); i++) {
 		line_indices[i] = static_cast<std::uint32_t>(i);
 	}
@@ -151,13 +153,15 @@ template <std::size_t Objects> void LineVertexBatch<Objects>::construct_impl(Dis
 		});
 }
 
-template <std::size_t Objects> void LineVertexBatch<Objects>::create_new_impl(Geometry geometry, const Disarray::GeometryProperties& props)
+void LineVertexBatch::create_new_impl(Geometry geometry, const Disarray::GeometryProperties& props)
 {
-	if (geometry != Geometry::Line)
+	if (geometry != Geometry::Line) {
 		return;
+	}
 
-	if (props.identifier)
+	if (props.identifier) {
 		return;
+	}
 
 	{
 		auto& vertex = emplace();
@@ -175,16 +179,18 @@ template <std::size_t Objects> void LineVertexBatch<Objects>::create_new_impl(Ge
 	submitted_objects++;
 }
 
-template <std::size_t Objects> void LineVertexBatch<Objects>::submit_impl(Disarray::Renderer& renderer, Disarray::CommandExecutor& command_executor)
+void LineVertexBatch::submit_impl(Disarray::Renderer& renderer, Disarray::CommandExecutor& command_executor)
 {
 	if (submitted_indices == 0)
 		return;
 
 	prepare_data();
 
-	renderer.get_editable_push_constant().max_identifiers = this->submitted_objects;
+	auto& resources = renderer.get_graphics_resource();
 
-	auto command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
+	resources.get_editable_push_constant().max_identifiers = this->submitted_objects;
+
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
 
 	const auto& vb = vertex_buffer;
 	const auto& ib = index_buffer;
@@ -194,9 +200,9 @@ template <std::size_t Objects> void LineVertexBatch<Objects>::submit_impl(Disarr
 	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.supply());
 
 	vkCmdPushConstants(command_buffer, vk_pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),
-		renderer.get_push_constant());
+		resources.get_push_constant());
 
-	const std::array<VkDescriptorSet, 1> desc { renderer.get_descriptor_set() };
+	const std::array<VkDescriptorSet, 1> desc { resources.get_descriptor_set() };
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.get_layout(), 0, 1, desc.data(), 0, nullptr);
 
 	const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vb) };
@@ -210,7 +216,7 @@ template <std::size_t Objects> void LineVertexBatch<Objects>::submit_impl(Disarr
 	vkCmdDrawIndexed(command_buffer, index_count, 1, 0, 0, 0);
 }
 
-template <std::size_t Objects> void LineVertexBatch<Objects>::flush_impl(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
+void LineVertexBatch::flush_impl(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
 {
 	submit_impl(renderer, executor);
 	reset();
@@ -219,14 +225,14 @@ template <std::size_t Objects> void LineVertexBatch<Objects>::flush_impl(Disarra
 
 // LINE ID VERTEX
 
-template <std::size_t Objects> void LineIdVertexBatch<Objects>::construct_impl(Disarray::Renderer& renderer, Disarray::Device& dev)
+void LineIdVertexBatch::construct_impl(Disarray::Renderer& renderer, const Disarray::Device& dev)
 {
 	this->reset();
 
 	this->pipeline = renderer.get_pipeline_cache().get("line_id");
 
 	std::vector<std::uint32_t> line_indices;
-	line_indices.resize(Objects * this->IndexCount);
+	line_indices.resize(batch_renderer_size * IndexCount);
 	for (std::size_t i = 0; i < line_indices.size(); i++) {
 		line_indices[i] = static_cast<std::uint32_t>(i);
 	}
@@ -245,30 +251,76 @@ template <std::size_t Objects> void LineIdVertexBatch<Objects>::construct_impl(D
 		});
 }
 
-template <std::size_t Objects> void LineIdVertexBatch<Objects>::create_new_impl(Geometry geometry, const Disarray::GeometryProperties& props)
+void LineIdVertexBatch::create_new_impl(Geometry geometry, const Disarray::GeometryProperties& props)
 {
-	if (geometry != Geometry::Line)
+	if (geometry != Geometry::Line) {
 		return;
+	}
 
-	if (!props.identifier)
+	if (!props.identifier) {
 		return;
+	}
 
 	{
 		LineIdVertex& vertex = this->emplace();
 		vertex.pos = props.position;
 		vertex.colour = props.colour;
-		vertex.identifier = props.identifier.value_or(0);
+		vertex.identifier = props.identifier.value();
 	}
 
 	{
 		LineIdVertex& vertex = this->emplace();
 		vertex.pos = props.to_position;
 		vertex.colour = props.colour;
-		vertex.identifier = props.identifier.value_or(0);
+		vertex.identifier = props.identifier.value();
 	}
 
 	this->submitted_indices += 2;
 	this->submitted_objects++;
+}
+
+void LineIdVertexBatch::submit_impl(Renderer& renderer, CommandExecutor& command_executor)
+{
+	if (submitted_indices == 0)
+		return;
+
+	prepare_data();
+
+	auto& resources = renderer.get_graphics_resource();
+
+	resources.get_editable_push_constant().max_identifiers = this->submitted_objects;
+
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
+
+	const auto& vb = vertex_buffer;
+	const auto& ib = index_buffer;
+	const auto index_count = submitted_indices;
+	const auto& vk_pipeline = cast_to<Vulkan::Pipeline>(*pipeline);
+
+	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.supply());
+
+	vkCmdPushConstants(command_buffer, vk_pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),
+		resources.get_push_constant());
+
+	const std::array<VkDescriptorSet, 1> desc { resources.get_descriptor_set() };
+	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.get_layout(), 0, 1, desc.data(), 0, nullptr);
+
+	const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vb) };
+	const VkDeviceSize offsets { 0 };
+	vkCmdBindVertexBuffers(command_buffer, 0, 1, vbs.data(), &offsets);
+
+	vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(*ib), 0, VK_INDEX_TYPE_UINT32);
+
+	vkCmdSetLineWidth(command_buffer, vk_pipeline.get_properties().line_width);
+
+	vkCmdDrawIndexed(command_buffer, index_count, 1, 0, 0, 0);
+}
+
+void LineIdVertexBatch::flush_impl(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
+{
+	submit_impl(renderer, executor);
+	reset();
+	// flush_vertex_buffer();
 }
 
 } // namespace Disarray

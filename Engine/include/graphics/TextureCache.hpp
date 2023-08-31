@@ -26,13 +26,14 @@ struct TextureCacheCreationProperties {
 
 class TextureCache : public ResourceCache<Ref<Disarray::Texture>, TextureCacheCreationProperties, TextureCache, std::string, StringHash> {
 public:
-	TextureCache(Disarray::Device& device, std::filesystem::path path)
+	TextureCache(const Disarray::Device& device, std::filesystem::path path)
 		: ResourceCache(device, path, { ".png", ".jpg" })
 	{
 		auto files = get_unique_files_recursively();
 		for (const auto& p : files) {
 			put(TextureCacheCreationProperties {
 				.key = p.stem().string(),
+				.debug_name = fmt::format("TextureCache-{}", p.string()),
 				.path = p.string(),
 			});
 		}
@@ -46,14 +47,16 @@ public:
 		});
 	}
 
-	Ref<Disarray::Texture> create_from_impl(const TextureCacheCreationProperties& props)
+	auto create_from_impl(const TextureCacheCreationProperties& props) -> Ref<Disarray::Texture>
 	{
 		return Texture::construct(get_device(),
 			TextureProperties {
 				.path = props.path.string(),
+				.locked_extent = true,
+				.debug_name = props.debug_name,
 			});
 	}
 
-	std::string create_key_impl(const TextureCacheCreationProperties& props) { return props.key; }
+	static auto create_key(const TextureCacheCreationProperties& props) -> std::string { return props.key; }
 };
 } // namespace Disarray

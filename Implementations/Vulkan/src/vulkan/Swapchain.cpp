@@ -4,6 +4,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include <magic_enum.hpp>
+
 #include <algorithm>
 
 #include "core/CleanupAwaiter.hpp"
@@ -32,17 +34,17 @@ namespace Disarray::Vulkan {
 Swapchain::Swapchain(Disarray::Window& win, Disarray::Device& dev, Disarray::Swapchain* old)
 	: window(win)
 	, device(dev)
+	, present_queue(cast_to<Vulkan::Device>(device).get_present_queue())
+	, graphics_queue(cast_to<Vulkan::Device>(device).get_graphics_queue())
 {
 #ifdef HAS_MSAA
 	samples = cast_to<Vulkan::PhysicalDevice>(dev.get_physical_device()).get_sample_count();
 #else
-	samples = SampleCount::One;
 #endif
 	recreate_swapchain(old, false);
+	Log::debug(
+		"Swapchain", "Swapchain created with extent and format: {}, {}; {}", extent.width, extent.height, magic_enum::enum_name(format.format));
 	swapchain_needs_recreation = false;
-
-	present_queue = cast_to<Vulkan::Device>(device).get_present_queue();
-	graphics_queue = cast_to<Vulkan::Device>(device).get_graphics_queue();
 }
 
 Swapchain::~Swapchain()
@@ -64,7 +66,7 @@ void Swapchain::create_synchronisation_objects()
 	fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fence_create_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	const auto vk_device = supply_cast<Vulkan::Device>(device);
+	auto* vk_device = supply_cast<Vulkan::Device>(device);
 
 	for (std::uint32_t i = 0; i < image_count(); i++) {
 		verify(vkCreateSemaphore(vk_device, &semaphore_info, nullptr, &image_available_semaphores[i]));
@@ -73,9 +75,9 @@ void Swapchain::create_synchronisation_objects()
 	}
 }
 
-bool Swapchain::prepare_frame()
+auto Swapchain::prepare_frame() -> bool
 {
-	auto vk_device = supply_cast<Vulkan::Device>(device);
+	auto* vk_device = supply_cast<Vulkan::Device>(device);
 
 	vkWaitForFences(vk_device, 1, &in_flight_fences[get_current_frame()], VK_TRUE, UINT64_MAX);
 
@@ -235,8 +237,8 @@ void Swapchain::recreate_swapchain(Disarray::Swapchain* old, bool should_clean)
 	create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	create_info.presentMode = present_mode;
 	create_info.clipped = VK_TRUE;
-	const auto* old_vulkan = static_cast<const Vulkan::Swapchain*>(old);
-	create_info.oldSwapchain = old ? old_vulkan->supply() : nullptr;
+	const auto* old_vulkan = dynamic_cast<const Vulkan::Swapchain*>(old);
+	create_info.oldSwapchain = old != nullptr ? old_vulkan->supply() : nullptr;
 
 	verify(vkCreateSwapchainKHR(supply_cast<Vulkan::Device>(device), &create_info, nullptr, &swapchain));
 
@@ -288,7 +290,7 @@ void Swapchain::recreate_swapchain(Disarray::Swapchain* old, bool should_clean)
 
 void Swapchain::cleanup_swapchain()
 {
-	const auto vk_device = supply_cast<Vulkan::Device>(device);
+	auto* vk_device = supply_cast<Vulkan::Device>(device);
 
 	render_pass.reset();
 
@@ -296,8 +298,9 @@ void Swapchain::cleanup_swapchain()
 		vkDestroyFramebuffer(vk_device, fb, nullptr);
 	}
 
-	for (auto& [_, command_pool] : command_buffers)
+	for (auto& [_, command_pool] : command_buffers) {
 		vkDestroyCommandPool(vk_device, command_pool, nullptr);
+	}
 
 	for (size_t i = 0; i < image_count(); i++) {
 		vkDestroySemaphore(vk_device, render_finished_semaphores[i], nullptr);
@@ -305,18 +308,18 @@ void Swapchain::cleanup_swapchain()
 		vkDestroyFence(vk_device, in_flight_fences[i], nullptr);
 	}
 
-	for (size_t i = 0; i < swapchain_image_views.size(); i++) {
-		vkDestroyImageView(vk_device, swapchain_image_views[i], nullptr);
+	for (auto& swapchain_image_view : swapchain_image_views) {
+		vkDestroyImageView(vk_device, swapchain_image_view, nullptr);
 	}
 
 	vkDestroySwapchainKHR(vk_device, swapchain, nullptr);
 }
 
-Disarray::RenderPass& Swapchain::get_render_pass() { return *render_pass; }
+auto Swapchain::get_render_pass() -> Disarray::RenderPass& { return *render_pass; }
 
 void Swapchain::recreate_framebuffer()
 {
-	const auto vk_device = supply_cast<Vulkan::Device>(device);
+	auto* const vk_device = supply_cast<Vulkan::Device>(device);
 
 	framebuffers.resize(image_count());
 

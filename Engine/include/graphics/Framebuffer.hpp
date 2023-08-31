@@ -1,20 +1,17 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
 #include "Forward.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
-#include "graphics/Device.hpp"
-#include "graphics/Image.hpp"
-#include "graphics/ImageProperties.hpp"
-#include "graphics/RenderPass.hpp"
-#include "graphics/Swapchain.hpp"
 
 namespace Disarray {
 
-enum class FramebufferBlendMode { None = 0, OneZero, SrcAlphaOneMinusSrcAlpha, Additive, Zero_SrcColor };
+enum class FramebufferBlendMode { None, OneZero, SrcAlphaOneMinusSrcAlpha, Additive, Zero_SrcColor };
 
 struct FramebufferTextureSpecification {
-	ImageFormat format;
+	ImageFormat format { ImageFormat::SBGR };
 	bool blend { true };
 	FramebufferBlendMode blend_mode { FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha };
 };
@@ -31,8 +28,8 @@ struct FramebufferAttachmentSpecification {
 struct FramebufferProperties {
 	Extent extent { 0, 0 };
 	FramebufferAttachmentSpecification attachments {};
-	glm::vec4 clear_colour { 0.0f, 0.0f, 0.0f, 1.0f };
-	float depth_clear_value { 0.0f };
+	glm::vec4 clear_colour { 0.0F, 0.0F, 0.0F, 0.0F };
+	float depth_clear_value { 0.0F };
 	bool clear_colour_on_load { true };
 	bool clear_depth_on_load { true };
 	bool should_blend { true };
@@ -42,21 +39,30 @@ struct FramebufferProperties {
 	std::string debug_name { "UnknownFramebuffer" };
 };
 
+using FramebufferChangeCallback = std::function<void(Framebuffer&)>;
+
 class Framebuffer : public ReferenceCountable {
-	DISARRAY_OBJECT(Framebuffer)
+	DISARRAY_OBJECT_PROPS(Framebuffer, FramebufferProperties)
 public:
-	virtual Disarray::Image& get_image(std::uint32_t index) = 0;
-	virtual Disarray::Image& get_depth_image() = 0;
-	Disarray::Image& get_image() { return get_image(0); };
+	auto get_image() -> Disarray::Image& { return get_image(0); };
 
-	virtual Disarray::RenderPass& get_render_pass() = 0;
+	virtual auto get_image(std::uint32_t index) -> Disarray::Image& = 0;
+	virtual auto get_depth_image() -> Disarray::Image& = 0;
 
-	virtual std::uint32_t get_colour_attachment_count() const = 0;
-	virtual FramebufferProperties& get_properties() = 0;
-	virtual const FramebufferProperties& get_properties() const = 0;
-	virtual bool has_depth() = 0;
+	virtual auto get_render_pass() -> Disarray::RenderPass& = 0;
 
-	static Ref<Framebuffer> construct(const Disarray::Device&, const FramebufferProperties&);
+	virtual auto get_colour_attachment_count() const -> std::uint32_t = 0;
+	virtual auto has_depth() -> bool = 0;
+
+	template <class Func> void register_on_framebuffer_change(Func&& func) { change_callbacks.emplace_back(std::move(func)); };
+
+	static auto construct(const Disarray::Device&, FramebufferProperties) -> Ref<Framebuffer>;
+
+protected:
+	auto get_callbacks() { return change_callbacks; }
+
+private:
+	std::vector<FramebufferChangeCallback> change_callbacks {};
 };
 
 } // namespace Disarray

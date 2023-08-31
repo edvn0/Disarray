@@ -1,0 +1,34 @@
+{
+	"configurations": [
+		{
+			"name": "Win32",
+			"includePath": [
+				"${workspaceFolder}/**"
+			],
+			"compileCommands": "${workspaceFolder}/compile_commands.json",
+			"defines": [
+				"IS_DEBUG",
+				"DISARRAY_WINDOWS"
+			],
+			"windowsSdkVersion": "10.0.22621.0",
+			"compilerPath": "cl.exe",
+			"cStandard": "c17",
+			"cppStandard": "c++20"
+		},
+		{
+			"name": "Linux",
+			"includePath": [
+				"${workspaceFolder}/**"
+			],
+			"compileCommands": "${workspaceFolder}/compile_commands.json",
+			"defines": [
+				"IS_DEBUG",
+				"DISARRAY_LINUX"
+			],
+			"compilerPath": "/usr/bin/clang++-16.exe",
+			"cStandard": "c17",
+			"cppStandard": "c++20"
+		}
+	],
+	"version": 4
+}

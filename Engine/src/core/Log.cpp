@@ -23,17 +23,17 @@ void Logging::Logger::error(const std::string& message) { std::cerr << message <
 #endif
 
 namespace Log {
-	std::string current_time(bool include_ms)
+	auto current_time(bool include_ms) -> std::string
 	{
 		auto now = std::chrono::system_clock::now();
 		if (include_ms) {
 			return fmt::format("{:%F %T}", now);
-		} else {
-			return fmt::format("{:%F-%T}", std::chrono::floor<std::chrono::seconds>(now));
 		}
+
+		return fmt::format("{:%F-%T}", std::chrono::floor<std::chrono::seconds>(now));
 	}
 
-	std::string format(const char* const format, ...)
+	auto format(const char* const format, ...) -> std::string
 	{
 		auto temp = std::vector<char> {};
 		auto length = std::size_t { 63 };

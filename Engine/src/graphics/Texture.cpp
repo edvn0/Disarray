@@ -6,9 +6,9 @@
 
 namespace Disarray {
 
-Ref<Texture> Texture::construct(const Disarray::Device& device, const Disarray::TextureProperties& props)
+auto Texture::construct(const Disarray::Device& device, Disarray::TextureProperties props) -> Ref<Texture>
 {
-	return make_ref<Vulkan::Texture>(device, props);
+	return make_ref<Vulkan::Texture>(device, std::move(props));
 }
 
 } // namespace Disarray

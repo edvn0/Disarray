@@ -6,31 +6,30 @@
 namespace Disarray::Vulkan {
 
 class Pipeline : public Disarray::Pipeline, public PropertySupplier<VkPipeline> {
+	DISARRAY_MAKE_NONCOPYABLE(Pipeline)
 public:
-	Pipeline(const Disarray::Device&, const PipelineProperties&);
+	Pipeline(const Disarray::Device&, PipelineProperties);
 	~Pipeline() override;
 
-	void force_recreation() override { recreate(true); };
-	void recreate(bool should_clean) override;
+	auto recreate(bool /*unused*/, const Extent& /*unused*/) -> void override;
 
-	VkPipeline supply() const override { return pipeline; }
-	VkPipelineLayout get_layout() const { return layout; }
+	auto force_recreation() -> void override { recreate(true, {}); };
 
-	Disarray::Framebuffer& get_framebuffer() override;
-	Disarray::RenderPass& get_render_pass() override;
+	auto supply() const -> VkPipeline override { return pipeline; }
+	auto get_layout() const -> VkPipelineLayout { return layout; }
 
-	const PipelineProperties& get_properties() const override { return props; }
-	PipelineProperties& get_properties() override { return props; }
+	auto get_framebuffer() -> Disarray::Framebuffer& override;
+	auto get_render_pass() -> Disarray::RenderPass& override;
 
 private:
-	void construct_layout();
+	void construct_layout(const Extent&);
 	void try_find_or_recreate_cache();
-	std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo> retrieve_shader_stages(
-		Ref<Disarray::Shader> vertex, Ref<Disarray::Shader> fragment) const;
-	void recreate_pipeline(bool should_clean);
+	void recreate_pipeline(bool, const Extent&);
+
+	static auto retrieve_shader_stages(Ref<Disarray::Shader> vertex, Ref<Disarray::Shader> fragment)
+		-> std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo>;
 
 	const Disarray::Device& device;
-	PipelineProperties props;
 	VkPipeline pipeline { nullptr };
 	VkPipelineCache cache { nullptr };
 	VkPipelineLayout layout { nullptr };

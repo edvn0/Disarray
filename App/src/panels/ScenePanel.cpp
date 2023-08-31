@@ -1,21 +1,22 @@
 #include "panels/ScenePanel.hpp"
 
+#include <glm/common.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/gtx/dual_quaternion.hpp>
+
 #include <fmt/format.h>
+#include <imgui.h>
 #include <imgui_internal.h>
 
 #include "core/Formatters.hpp"
-#include "glm/common.hpp"
-#include "glm/ext/matrix_transform.hpp"
-#include "glm/gtx/dual_quaternion.hpp"
 #include "graphics/CommandExecutor.hpp"
+#include "graphics/Framebuffer.hpp"
 #include "graphics/ImageProperties.hpp"
 #include "graphics/Pipeline.hpp"
+#include "scene/Camera.hpp"
 #include "scene/Components.hpp"
 #include "ui/InterfaceLayer.hpp"
 #include "ui/UI.hpp"
-
-static constexpr float font_size = 11.0f;
-static constexpr float frame_padding = 0.5f;
 
 namespace Disarray::Client {
 
@@ -60,7 +61,7 @@ template <ValidComponent T> void draw_component(Entity& entity, const std::strin
 	}
 }
 
-ScenePanel::ScenePanel(Device& dev, Window&, Swapchain&, Scene& s)
+ScenePanel::ScenePanel(Device& dev, Window&, Swapchain&, Scene* s)
 	: device(dev)
 	, scene(s)
 {
@@ -68,59 +69,97 @@ ScenePanel::ScenePanel(Device& dev, Window&, Swapchain&, Scene& s)
 	selected_entity = std::make_unique<entt::entity>(entt::null);
 }
 
-void ScenePanel::draw_entity_node(Disarray::Entity& entity)
+void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_parent, std::uint32_t depth)
 {
+	static constexpr auto max_recursion = 4;
+	const auto has_inheritance = entity.has_component<Components::Inheritance>();
+	const auto has_hit_max_recursion = depth >= 4;
+	if (!has_hit_max_recursion && check_if_has_parent && has_inheritance) {
+		auto inheritance = entity.get_components<Components::Inheritance>();
+		if (inheritance.has_parent()) {
+			return;
+		}
+	}
 	const auto& tag = entity.get_components<Components::Tag>().name;
 
 	const auto is_same = (*selected_entity == entity.get_identifier());
 	ImGuiTreeNodeFlags flags = (is_same ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
 	flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
-	const auto& id = entity.get_components<Components::ID>();
-	bool opened = ImGui::TreeNodeEx(Disarray::bit_cast<const void*>(id.identifier), flags, "%s", tag.c_str());
+	const auto& id_component = entity.get_components<Components::ID>();
+	bool opened = ImGui::TreeNodeEx(Disarray::bit_cast<const void*>(id_component.identifier), flags, "%s", tag.c_str());
 	if (ImGui::IsItemClicked()) {
 		*selected_entity = entity.get_identifier();
 	}
 
 	bool entity_deleted = false;
-	if (ImGui::BeginPopupContextWindow("##testtest")) {
-		if (ImGui::MenuItem("Delete Entity"))
+	if (ImGui::BeginPopupContextWindow("##DeleteEntityPopup")) {
+		if (ImGui::MenuItem("Delete Entity")) {
 			entity_deleted = true;
-
+		}
 		ImGui::EndPopup();
 	}
 
 	if (opened) {
-		if (entity.has_component<Components::Inheritance>()) {
-			const auto children = entity.get_components<Components::Inheritance>();
-			for (const auto& child : children.children) {
-				const auto child_entity = scene.get_by_identifier(child);
-				if (!child_entity)
-					continue;
-				const auto& t = (*child_entity).get_components<Components::Tag>();
-				ImGui::Text("%s", t.name.c_str());
+		if (!has_inheritance) {
+			ImGui::TreePop();
+			return;
+		}
+
+		const auto children = entity.get_components<Components::Inheritance>();
+		for (const auto& child : children.children) {
+			auto child_entity = scene->get_by_identifier(child);
+			if (!child_entity) {
+				continue;
 			}
+			draw_entity_node(*child_entity, false, depth + 1);
 		}
 		ImGui::TreePop();
 	}
 
 	if (entity_deleted) {
-		scene.delete_entity(entity);
-		if (*selected_entity == entity.get_identifier())
-			selected_entity = {};
+		scene->delete_entity(entity);
+		if (*selected_entity == entity.get_identifier()) {
+			*selected_entity = {};
+		}
 	}
 }
 
 void ScenePanel::interface()
 {
+	UI::begin("Framebuffer");
+	std::size_t id { 1 };
+	auto fbs = scene->get_framebuffers();
+	for (auto& frame_buffer : fbs) {
+		ImGui::PushID(id++);
+		auto& props = frame_buffer->get_properties();
+		UI::text("{}", props.debug_name);
+		bool any_changed = false;
+
+		any_changed |= UI::checkbox("Should blend", props.should_blend);
+		any_changed |= UI::combo_choice<FramebufferBlendMode>("Blend mode", props.blend_mode);
+		any_changed |= ImGui::DragFloat4("Clear colour", glm::value_ptr(props.clear_colour));
+
+		for (auto& attachment : props.attachments.texture_attachments) {
+			any_changed |= UI::checkbox(fmt::format("{}: Should blend", attachment.format), attachment.blend);
+			any_changed |= UI::combo_choice<FramebufferBlendMode>("Blend mode", attachment.blend_mode);
+		}
+
+		if (any_changed) {
+			frame_buffer->force_recreation();
+		}
+		ImGui::NewLine();
+		ImGui::PopID();
+	}
+	UI::end();
 	UI::begin("Scene");
-	scene.for_all_entities([this](entt::entity entity_id) {
+	scene->for_all_entities([this](entt::entity entity_id) {
 		Entity entity { scene, entity_id };
-		draw_entity_node(entity);
+		draw_entity_node(entity, true);
 	});
 
 	if (ImGui::BeginPopupContextWindow("EmptyEntityId", 1)) {
 		if (ImGui::MenuItem("Create Empty Entity"))
-			scene.create("Empty Entity");
+			scene->create("Empty Entity");
 
 		ImGui::EndPopup();
 	}
@@ -137,9 +176,9 @@ void ScenePanel::interface()
 	UI::end();
 } // namespace Disarray::Client
 
-void Disarray::Client::ScenePanel::update(float, IGraphicsResource&)
+void Disarray::Client::ScenePanel::update(float)
 {
-	if (const auto& selected = scene.get_selected_entity(); selected && selected->is_valid()) {
+	if (const auto& selected = scene->get_selected_entity(); selected && selected->is_valid()) {
 		*selected_entity = selected->get_identifier();
 	}
 }
@@ -168,7 +207,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		any_changed |= ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale));
 
 		if (any_changed) {
-			transform.rotation = glm::quat(glm::vec3(euler_angles.x, euler_angles.y, euler_angles.z));
+			transform.rotation = glm::quat(euler_angles);
 		}
 	});
 
@@ -197,8 +236,8 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (glm::all(glm::isnan(direction)))
 			direction = glm::vec3(0.0f);
 
-		if (ImGui::DragFloat3("Direction", glm::value_ptr(direction))) { }
-		if (ImGui::DragFloat("Intensity", &intensity, 0.05f, 0.01f, 1.0f)) { }
+		if (ImGui::DragFloat3("Direction", glm::value_ptr(direction), 0.05f, -glm::pi<float>(), glm::pi<float>())) { }
+		if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.01f, 0.2f)) { }
 	});
 
 	draw_component<Components::Pipeline>(entity, "Pipeline", [&dev = device](Components::Pipeline& pipeline) {
@@ -211,8 +250,11 @@ void ScenePanel::for_all_components(Entity& entity)
 		any_changed |= UI::combo_choice<PolygonMode>("Polygon mode", std::ref(props.polygon_mode));
 		any_changed |= UI::shader_drop_button(dev, "Vertex Shader", ShaderType::Vertex, std::ref(props.vertex_shader));
 		any_changed |= UI::shader_drop_button(dev, "Fragment Shader", ShaderType::Fragment, std::ref(props.fragment_shader));
+		any_changed |= UI::checkbox("Depth test", props.test_depth);
+		any_changed |= UI::checkbox("Depth write", props.write_depth);
+
 		if (any_changed) {
-			pipe->recreate(true);
+			pipe->recreate(true, {});
 		}
 	});
 }
