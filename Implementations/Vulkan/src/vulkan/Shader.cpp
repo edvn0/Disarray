@@ -32,15 +32,15 @@ namespace {
 	{
 		auto create_info = vk_structures<VkShaderModuleCreateInfo> {}();
 		create_info.codeSize = code.size();
-		create_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
+		create_info.pCode = Disarray::bit_cast<const uint32_t*>(code.data());
 
 		verify(vkCreateShaderModule(*device, &create_info, nullptr, &shader));
 	}
 } // namespace
 
-Shader::Shader(const Disarray::Device& dev, const ShaderProperties& properties)
-	: device(dev)
-	, props(properties)
+Shader::Shader(const Disarray::Device& dev, ShaderProperties properties)
+	: Disarray::Shader(std::move(properties))
+	, device(dev)
 {
 	auto source = read_file(props.path);
 
@@ -57,11 +57,12 @@ Shader::Shader(const Disarray::Device& dev, const ShaderProperties& properties)
 
 Shader::~Shader()
 {
-	if (!was_destroyed_explicitly)
+	if (!was_destroyed_explicitly) {
 		vkDestroyShaderModule(supply_cast<Vulkan::Device>(device), shader_module, nullptr);
+	}
 }
 
-std::string Shader::read_file(const std::filesystem::path& path)
+auto Shader::read_file(const std::filesystem::path& path) -> std::string
 {
 	std::ifstream stream { path.string().c_str(), std::ios::ate | std::ios::in | std::ios::binary };
 	if (!stream) {
@@ -73,7 +74,7 @@ std::string Shader::read_file(const std::filesystem::path& path)
 	buffer.resize(size);
 
 	stream.seekg(0);
-	stream.read(buffer.data(), size);
+	stream.read(buffer.data(), static_cast<long long>(size));
 
 	return std::string { buffer.begin(), buffer.end() };
 }

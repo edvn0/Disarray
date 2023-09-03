@@ -123,8 +123,9 @@ void Framebuffer::recreate_framebuffer(bool should_clean)
 	subpass_description.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass_description.colorAttachmentCount = uint32_t(color_attachment_references.size());
 	subpass_description.pColorAttachments = color_attachment_references.data();
-	if (depth_attachment)
+	if (depth_attachment) {
 		subpass_description.pDepthStencilAttachment = &depth_attachment_reference;
+	}
 
 	std::vector<VkSubpassDependency> dependencies;
 	if (!attachments.empty()) {

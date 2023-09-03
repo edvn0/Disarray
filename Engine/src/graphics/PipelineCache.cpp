@@ -8,6 +8,7 @@
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/Shader.hpp"
+#include "graphics/ShaderCompiler.hpp"
 #include "graphics/Swapchain.hpp"
 
 namespace Disarray {
@@ -21,19 +22,21 @@ PipelineCache::PipelineCache(const Disarray::Device& dev, const std::filesystem:
 	std::vector<std::filesystem::path> as_vector { all_files.begin(), all_files.end() };
 	std::sort(as_vector.begin(), as_vector.end());
 
+	Runtime::ShaderCompiler::initialize();
+	Runtime::ShaderCompiler compiler {};
+
 	for (const auto& shader_path : as_vector) {
 		auto name = shader_path.filename();
 		const auto filename_without_spv = name.replace_extension().string();
-		if (shader_cache.contains(name.string()))
+		if (shader_cache.contains(name.string())) {
 			break;
+		}
 
 		auto path_copy = shader_path;
 		const auto& shader_extension_without_spv = path_copy.replace_extension();
-		ShaderType type = ShaderType::Vertex;
-		if (shader_extension_without_spv.extension() == ".frag")
-			type = ShaderType::Fragment;
-		if (shader_extension_without_spv.extension() == ".comp")
-			type = ShaderType::Compute;
+
+		ShaderType type = to_shader_type(shader_extension_without_spv);
+		compiler.compile(shader_extension_without_spv, type);
 
 		auto shader = Shader::construct(get_device(),
 			{
@@ -48,6 +51,8 @@ PipelineCache::PipelineCache(const Disarray::Device& dev, const std::filesystem:
 
 		shader_cache.try_emplace(filename_without_spv, std::move(shader));
 	}
+
+	Runtime::ShaderCompiler::destroy();
 }
 
 } // namespace Disarray

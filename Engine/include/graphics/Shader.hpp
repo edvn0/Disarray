@@ -1,5 +1,7 @@
 #pragma once
 
+#include <fmt/core.h>
+
 #include <filesystem>
 #include <string_view>
 
@@ -10,7 +12,7 @@
 
 namespace Disarray {
 
-enum class ShaderType { Vertex, Fragment, Compute };
+enum class ShaderType : std::uint8_t { Vertex, Fragment, Compute };
 
 static constexpr auto shader_type_extension(ShaderType shader_type)
 {
@@ -53,13 +55,18 @@ struct ShaderProperties {
 };
 
 class Shader : public ReferenceCountable {
-	DISARRAY_OBJECT(Shader)
+	DISARRAY_OBJECT_PROPS(Shader, ShaderProperties)
 public:
 	virtual void destroy_module() = 0;
-	virtual const ShaderProperties& get_properties() const = 0;
-	virtual ShaderProperties& get_properties() = 0;
 
-	static Ref<Disarray::Shader> construct(const Disarray::Device& device, const ShaderProperties&);
+	static auto construct(const Disarray::Device& device, const ShaderProperties&) -> Ref<Disarray::Shader>;
 };
 
 } // namespace Disarray
+
+namespace fmt {
+template <> struct fmt::formatter<Disarray::ShaderType> : fmt::formatter<std::string_view> {
+	auto format(const Disarray::ShaderType& format, format_context& ctx) -> decltype(ctx.out());
+};
+
+} // namespace fmt

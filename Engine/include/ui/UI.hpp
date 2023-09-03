@@ -33,8 +33,8 @@ public:
 	static void initialise();
 	static void destruct();
 
-	static auto& descriptor_cache() { return image_descriptor_cache; }
-	static auto& font_cache() { return font_map; }
+	static auto descriptor_cache() -> auto& { return image_descriptor_cache; }
+	static auto font_cache() -> auto& { return font_map; }
 
 private:
 	inline static ImageCache image_descriptor_cache {};
@@ -67,13 +67,13 @@ void end();
 
 bool begin_combo(std::string_view name, std::string_view data);
 void end_combo();
-bool is_selectable(std::string_view name, const bool is_selected);
+auto is_selectable(std::string_view name, const bool is_selected) -> bool;
 void set_item_default_focus();
 
 void drag_drop(const std::filesystem::path& path);
-std::optional<std::filesystem::path> accept_drag_drop(const std::string& payload_identifier, const ExtensionSet& allowed_extension = { "*" });
-bool is_item_hovered();
-bool is_mouse_double_clicked(MouseCode code = MouseCode::Left);
+auto accept_drag_drop(const std::string& payload_identifier, const ExtensionSet& allowed_extension = { "*" }) -> std::optional<std::filesystem::path>;
+auto is_item_hovered() -> bool;
+auto is_mouse_double_clicked(MouseCode code = MouseCode::Left) -> bool;
 void handle_double_click(auto&& handler)
 {
 	if (is_item_hovered() && is_mouse_double_clicked()) {
@@ -143,12 +143,12 @@ template <IsEnum T> auto combo_choice(std::string_view name, std::reference_wrap
 	return changed;
 }
 
-bool checkbox(const std::string&, bool&);
+auto checkbox(const std::string&, bool&) -> bool;
 
-bool shader_drop_button(Device&, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader);
-Ref<Texture> texture_drop_button(Device&, const Texture& texture);
+auto shader_drop_button(Device&, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader) -> bool;
+auto texture_drop_button(Device&, const Texture& texture) -> Ref<Texture>;
 
-bool is_maximised(Window& window);
+auto is_maximised(Window& window) -> bool;
 void remove_image(const Texture& texture);
 void remove_image(ImageIdentifier hash);
 
