@@ -183,7 +183,7 @@ void FileWatcher::stop()
 		running = false;
 		finaliser.get();
 	} catch (const std::exception& e) {
-		Log::error("FileWatcher", "Already joined this thread. Message: {}", e.what());
+		DISARRAY_LOG_ERROR("FileWatcher", "Already joined this thread. Message: {}", e.what());
 	}
 }
 

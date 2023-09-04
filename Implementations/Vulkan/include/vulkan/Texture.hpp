@@ -24,8 +24,6 @@ public:
 		}
 		recreate_texture(should_clean);
 		const auto new_extent = new_props.extent;
-		Log::info("Texture", "Recreating texture with old size {}x{} and new size: {}x{}", old_extent.width, old_extent.height, new_extent.width,
-			new_extent.height);
 	}
 	auto get_view() -> VkImageView { return image->get_descriptor_info().imageView; }
 

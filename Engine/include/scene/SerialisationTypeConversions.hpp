@@ -15,11 +15,11 @@ namespace Disarray {
 struct FloatExtent;
 struct Extent;
 
-template <class Enum> inline decltype(auto) to_enum_value(const auto& object, std::string_view key)
+template <class Enum> inline auto to_enum_value(const auto& object, std::string_view key) -> decltype(auto)
 {
 	std::string value;
 	if (!object.contains(key)) {
-		throw ComponentDeserialiseException { fmt::format("Key {} was missing from object", key) };
+		throw ComponentDeserialiseException { "ToEnumValue", fmt::format("Key {} was missing from object", key) };
 	}
 	object[key].get_to(value);
 	return magic_enum::enum_cast<Enum>(value);

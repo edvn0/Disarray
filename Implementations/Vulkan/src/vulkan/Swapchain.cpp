@@ -42,7 +42,7 @@ Swapchain::Swapchain(Disarray::Window& win, Disarray::Device& dev, Disarray::Swa
 #else
 #endif
 	recreate_swapchain(old, false);
-	Log::debug(
+	DISARRAY_LOG_DEBUG(
 		"Swapchain", "Swapchain created with extent and format: {}, {}; {}", extent.width, extent.height, magic_enum::enum_name(format.format));
 	swapchain_needs_recreation = false;
 }
@@ -50,7 +50,7 @@ Swapchain::Swapchain(Disarray::Window& win, Disarray::Device& dev, Disarray::Swa
 Swapchain::~Swapchain()
 {
 	cleanup_swapchain();
-	Log::debug("Swapchain", "Swapchain destroyed.");
+	DISARRAY_LOG_DEBUG("Swapchain", "Swapchain destroyed.");
 }
 
 void Swapchain::create_synchronisation_objects()

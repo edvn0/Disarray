@@ -65,7 +65,7 @@ void IndependentCommandExecutor::create_query_pools()
 	timestamp_query_pools.resize(image_count);
 	for (auto& timestamp_query_pool : timestamp_query_pools) {
 		verify(vkCreateQueryPool(vk_device, &query_pool_create_info, nullptr, &timestamp_query_pool));
-		Log::debug(
+		DISARRAY_LOG_DEBUG(
 			"IndependentCommandExecutor - Create Query Pool", "Constructed as {}", FormattingUtilities::pointer_to_string(timestamp_query_pool));
 	}
 

@@ -57,7 +57,7 @@ Device::Device(Disarray::Window& window)
 Device::~Device()
 {
 	vkDestroyDevice(device, nullptr);
-	Log::debug("Device", "Device destroyed.");
+	DISARRAY_LOG_DEBUG("Device", "Device destroyed.");
 }
 
 } // namespace Disarray::Vulkan

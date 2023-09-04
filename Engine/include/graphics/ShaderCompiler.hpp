@@ -30,6 +30,7 @@ private:
 	};
 	using CompilerData = std::unique_ptr<Detail::CompilerIntrinsics, Deleter>;
 	CompilerData compiler_data { nullptr };
+	void add_include_extension(std::vector<char>& glsl_code);
 };
 
 } // namespace Disarray::Runtime

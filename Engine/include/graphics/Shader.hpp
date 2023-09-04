@@ -49,6 +49,7 @@ inline auto to_shader_type(const std::filesystem::path& path_like)
 }
 
 struct ShaderProperties {
+	std::optional<std::vector<std::uint32_t>> code;
 	std::filesystem::path path;
 	ShaderType type { ShaderType::Vertex };
 	std::string entry_point = "main";

@@ -25,7 +25,7 @@ std::optional<std::filesystem::path> accept_drag_drop(const std::string& payload
 	if (ImGui::BeginDragDropTarget()) {
 		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payload_id.c_str())) {
 			const auto* path = static_cast<const char*>(payload->Data);
-			Log::info("Drag Drop Accept", "{}", path);
+			DISARRAY_LOG_INFO("Drag Drop Accept", "{}", path);
 			fp = path;
 		}
 		ImGui::EndDragDropTarget();

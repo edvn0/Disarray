@@ -37,12 +37,12 @@ namespace {
 			try {
 				could_serialise = try_deserialise(in);
 			} catch (const CouldNotDeserialiseException& exc) {
-				Log::error("Scene Deserialiser", "Could not serialise scene. Message: {}", exc.what());
+				DISARRAY_LOG_ERROR("Scene Deserialiser", "Could not serialise scene. Message: {}", exc.what());
 				return;
 			}
 
 			if (!could_serialise) {
-				Log::info("Scene Deserialiser", "Deserialised output was empty...?");
+				DISARRAY_LOG_ERROR("Scene Deserialiser", "Deserialised output was empty...?");
 				return;
 			}
 		}
@@ -55,29 +55,29 @@ namespace {
 			json in;
 			std::ifstream input_stream { path };
 			if (!input_stream) {
-				Log::error("Scene Deserialiser", "Could not open file at {}", path.string());
+				DISARRAY_LOG_ERROR("Scene Deserialiser", "Could not open file at {}", path.string());
 				return;
 			}
 
 			in = json::parse(input_stream);
 
-			bool could_serialise;
+			bool could_serialise { true };
 			try {
 				could_serialise = try_deserialise(in);
 			} catch (const CouldNotDeserialiseException& exc) {
-				Log::error("Scene Deserialiser", "Could not serialise scene. Message: {}", exc.what());
+				DISARRAY_LOG_ERROR("Scene Deserialiser", "Could not serialise scene. Message: {}", exc.what());
 				return;
 			}
 
 			if (!could_serialise) {
-				Log::info("Scene Deserialiser", "Deserialised output was empty...?");
+				DISARRAY_LOG_INFO("Scene Deserialiser", "Deserialised output was empty...?");
 				return;
 			}
 		};
 
 		std::tuple<Deserialisers...> serialisers {};
 
-		bool try_deserialise(const json& root)
+		auto try_deserialise(const json& root) -> bool
 		{
 			auto& registry = scene.get_registry();
 
@@ -102,11 +102,11 @@ namespace {
 			return true;
 		}
 
-		std::pair<Identifier, std::string> parse_key(const json& k)
+		auto parse_key(const json& k) -> std::pair<Identifier, std::string>
 		{
 			std::string key = k;
 			static constexpr std::string_view split = "__disarray__";
-			auto found = key.find(split);
+			auto found = static_cast<long long>(key.find(split));
 
 			std::string id { key.begin(), key.begin() + found };
 			std::string tag { key.begin() + found + split.size(), key.end() };

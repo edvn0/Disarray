@@ -141,7 +141,7 @@ Pipeline::Pipeline(const Disarray::Device& dev, Disarray::PipelineProperties pro
 	, device(dev)
 {
 	props.framebuffer->register_on_framebuffer_change([this](Disarray::Framebuffer& frame_buffer) {
-		Log::info("Pipeline - FB Change", "{}", get_properties().hash());
+		DISARRAY_LOG_INFO("Pipeline - FB Change", "{}", get_properties().hash());
 		recreate_pipeline(true, frame_buffer.get_properties().extent);
 	});
 
@@ -417,8 +417,7 @@ auto Pipeline::get_render_pass() -> Disarray::RenderPass& { return props.framebu
 void Pipeline::try_find_or_recreate_cache()
 {
 	const auto hash = props.hash();
-	const auto name = fmt::format("Assets/Pipelines/Pipeline-{}-{}-Cache-{}.pipe-bin", props.vertex_shader->get_properties().path.filename(),
-		props.fragment_shader->get_properties().path.filename(), hash);
+	const auto name = fmt::format("Assets/Pipelines/PipelineCache-{}.pipe-bin", hash);
 
 	std::ifstream input_stream { name, std::fstream::ate | std::fstream::binary };
 	if (!input_stream) {
@@ -436,7 +435,7 @@ void Pipeline::try_find_or_recreate_cache()
 	cache_create_info.pInitialData = buffer.data();
 	cache_create_info.initialDataSize = buffer.size() * sizeof(unsigned char);
 	vkCreatePipelineCache(supply_cast<Vulkan::Device>(device), &cache_create_info, nullptr, &cache);
-	Log::info("Pipeline - Cache", "Time elapsed: {}ms", timer.elapsed<Granularity::Millis>());
+	DISARRAY_LOG_INFO("Pipeline - Cache", "Time elapsed: {}ms", timer.elapsed<Granularity::Millis>());
 }
 
 } // namespace Disarray::Vulkan

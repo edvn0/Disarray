@@ -22,10 +22,11 @@ function(compile_shaders)
             COMMENT "Creating ${SHADER_BINARY_DIR}"
     )
 
-    if(${Vulkan_glslc_FOUND})
+    if (${Vulkan_glslc_FOUND})
         set(SHADER_INCLUDE_DIRECTORY "${SHADER_SOURCE_DIR}/Include")
-        foreach(source IN LISTS SHADERS)
+        foreach (source IN LISTS SHADERS)
             get_filename_component(FILENAME ${source} NAME)
+            get_filename_component(DIR_NAME ${source} DIRECTORY)
             add_custom_command(
                     COMMAND
                     ${Vulkan_GLSLC_EXECUTABLE}
@@ -34,11 +35,11 @@ function(compile_shaders)
                     DEPENDS ${source} ${SHADER_BINARY_DIR}
             )
             list(APPEND SPV_SHADERS ${SHADER_BINARY_DIR}/${FILENAME}.spv)
-        endforeach()
+        endforeach ()
 
         add_custom_target(shaders ALL DEPENDS ${SPV_SHADERS})
         set_source_files_properties(shaders PROPERTIES SYMBOLIC 1)
-    else()
+    else ()
         message(AUTHOR_WARNING "Could not find glslc. Won't compile shaders.")
-    endif()
+    endif ()
 endfunction()

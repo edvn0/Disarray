@@ -31,8 +31,17 @@ namespace {
 	void create_module(const Vulkan::Device& device, const std::string& code, VkShaderModule& shader)
 	{
 		auto create_info = vk_structures<VkShaderModuleCreateInfo> {}();
-		create_info.codeSize = code.size();
+		create_info.codeSize = code.size() * sizeof(std::uint32_t);
 		create_info.pCode = Disarray::bit_cast<const uint32_t*>(code.data());
+
+		verify(vkCreateShaderModule(*device, &create_info, nullptr, &shader));
+	}
+
+	void create_module(const Vulkan::Device& device, const std::vector<std::uint32_t>& code, VkShaderModule& shader)
+	{
+		auto create_info = vk_structures<VkShaderModuleCreateInfo> {}();
+		create_info.codeSize = code.size() * sizeof(std::uint32_t);
+		create_info.pCode = code.data();
 
 		verify(vkCreateShaderModule(*device, &create_info, nullptr, &shader));
 	}
@@ -42,11 +51,14 @@ Shader::Shader(const Disarray::Device& dev, ShaderProperties properties)
 	: Disarray::Shader(std::move(properties))
 	, device(dev)
 {
-	auto source = read_file(props.path);
-
 	auto type = to_stage(props.type);
 
-	create_module(cast_to<Vulkan::Device>(device), source, shader_module);
+	if (props.code) {
+		create_module(cast_to<Vulkan::Device>(device), *props.code, shader_module);
+	} else {
+		auto read = Shader::read_file(props.path);
+		create_module(cast_to<Vulkan::Device>(device), read, shader_module);
+	}
 
 	stage = {};
 	stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

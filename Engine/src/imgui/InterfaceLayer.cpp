@@ -108,7 +108,6 @@ void InterfaceLayer::construct(App&, ThreadPool&)
 			std::filesystem::path { "Assets/Fonts" },
 			[&fonts = io.Fonts](const auto& entry) {
 				for (const auto& size : font_sizes) {
-					Log::info("InterfaceLayer", "Adding font {} with size {}", entry.path(), size);
 					fonts->AddFontFromFileTTF(entry.path().string().c_str(), size);
 				}
 			},

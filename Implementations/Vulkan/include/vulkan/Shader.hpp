@@ -14,7 +14,7 @@ public:
 	void destroy_module() override;
 
 private:
-	auto read_file(const std::filesystem::path&) -> std::string;
+	static auto read_file(const std::filesystem::path&) -> std::string;
 
 	bool was_destroyed_explicitly { false };
 

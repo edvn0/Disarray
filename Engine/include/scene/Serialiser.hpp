@@ -45,7 +45,7 @@ namespace {
 			try {
 				serialised_object = serialise();
 			} catch (const CouldNotSerialiseException& exc) {
-				Log::error("Scene Serialiser", "Could not serialise scene. Message: {}", exc.what());
+				DISARRAY_LOG_ERROR("Scene Serialiser", "Could not serialise scene. Message: {}", exc.what());
 				return;
 			}
 
@@ -58,7 +58,7 @@ namespace {
 			auto full_path = path / scene_name;
 			std::ofstream output { full_path };
 			if (!output) {
-				Log::error("Scene Serialiser", "Could not open {} for writing.", full_path.string());
+				DISARRAY_LOG_ERROR("Scene Serialiser", "Could not open {} for writing.", full_path.string());
 				return;
 			}
 
@@ -104,7 +104,7 @@ namespace {
 
 			root["entities"] = entities;
 
-			Log::debug("Serialiser", "Serialising took {}s", elapsed);
+			DISARRAY_LOG_DEBUG("Serialiser", "Serialising took {}s", elapsed);
 
 			return root;
 		}

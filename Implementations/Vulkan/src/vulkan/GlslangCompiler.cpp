@@ -1,20 +1,21 @@
 #include "DisarrayPCH.hpp"
 
+#include <SPIRV/GlslangToSpv.h>
+#include <SPIRV/SpvTools.h>
+#include <glslang/MachineIndependent/Versions.h>
+#include <glslang/Public/ResourceLimits.h>
 #include <glslang/Public/ShaderLang.h>
 
 #include <exception>
 
-#include "SPIRV/GlslangToSpv.h"
-#include "SPIRV/SpvTools.h"
 #include "core/Ensure.hpp"
 #include "core/Formatters.hpp"
 #include "core/Log.hpp"
 #include "core/Types.hpp"
 #include "core/filesystem/FileIO.hpp"
-#include "glslang/MachineIndependent/Versions.h"
-#include "glslang/Public/ResourceLimits.h"
 #include "graphics/Shader.hpp"
 #include "graphics/ShaderCompiler.hpp"
+#include "vulkan/IncludeDirectoryIncluder.hpp"
 
 namespace Disarray::Runtime {
 
@@ -44,22 +45,13 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 
 	std::unique_ptr<glslang::TShader> shader { new glslang::TShader { glslang_type } };
 
-	struct IncludeDirectoryIncluder : public glslang::TShader::Includer {
-		IncludeDirectoryIncluder(std::filesystem::path dir)
-			: include_directory(std::move(dir))
-		{
-		}
-		std::filesystem::path include_directory;
-
-		void releaseInclude(IncludeResult* result) override { Log::info("IncludeDirectoryIncluder", "Current header: {}", result->headerName); }
-	};
-
 	Scope<IncludeDirectoryIncluder> include_dir_includer = make_scope<IncludeDirectoryIncluder>("Assets/Shaders/Include");
 
-	Log::info("ShaderCompiler", "Compiling shader '{}' with type: '{}'", path_to_shader, type);
+	DISARRAY_LOG_INFO("ShaderCompiler", "Compiling shader '{}' with type: '{}'", path_to_shader, type);
 
 	std::vector<char> output;
 	FS::read_from_file(path_to_shader.string(), output);
+	add_include_extension(output);
 
 	std::array<char*, 1> sources = { output.data() };
 	shader->setStrings(sources.data(), 1);
@@ -72,7 +64,6 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	shader->setEnvTarget(glslang::EshTargetSpv, target_spirv_version);
 
 	shader->setEntryPoint("main"); // We can specify a different entry point
-
 	// int defaultVersion = 110, // use 100 for ES environment, overridden by #version in shader
 	const int default_version = 450;
 	const bool forward_compatible = false;
@@ -82,21 +73,21 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	std::string preprocessed_str;
 	if (!shader->preprocess(
 			resources, default_version, default_profile, false, forward_compatible, message_flags, &preprocessed_str, *include_dir_includer)) {
-		Log::error("ShaderCompiler", "Failed to preprocess shader: {}", shader->getInfoLog());
+		DISARRAY_LOG_ERROR("ShaderCompiler", "Failed to preprocess shader: {}", shader->getInfoLog());
 		ensure(false);
 	}
 	std::array<const char*, 1> preprocessed_sources = { preprocessed_str.c_str() };
 	shader->setStrings(preprocessed_sources.data(), 1);
 
 	if (!shader->parse(resources, default_version, default_profile, false, forward_compatible, message_flags)) {
-		Log::error("ShaderCompiler", "Failed to parse shader: {}", shader->getInfoLog());
+		DISARRAY_LOG_ERROR("ShaderCompiler", "Failed to parse shader: {}", shader->getInfoLog());
 		ensure(false);
 	}
 
 	glslang::TProgram program;
 	program.addShader(shader.get());
 	if (!program.link(message_flags)) {
-		Log::error("ShaderCompiler", "Failed to link shader: {}", program.getInfoLog());
+		DISARRAY_LOG_ERROR("ShaderCompiler", "Failed to link shader: {}", program.getInfoLog());
 		ensure(false);
 	}
 
@@ -114,5 +105,24 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 }
 void ShaderCompiler::initialize() { glslang::InitializeProcess(); }
 void ShaderCompiler::destroy() { glslang::FinalizeProcess(); }
+
+void ShaderCompiler::add_include_extension(std::vector<char>& glsl_code)
+{
+	static constexpr std::string_view extension = "\n#extension GL_GOOGLE_include_directive: require\n";
+	static constexpr std::string_view version = "#version 450\n";
+	std::string output;
+	output.reserve(glsl_code.size());
+	for (char code_character : glsl_code) {
+		output.push_back(code_character);
+	}
+
+	auto found = output.find(version);
+	output.insert(found + version.size() + 1, extension);
+
+	glsl_code.clear();
+	for (char character : output) {
+		glsl_code.push_back(character);
+	}
+}
 
 } // namespace Disarray::Runtime

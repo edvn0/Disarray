@@ -6,7 +6,7 @@
 
 namespace Disarray {
 
-Ref<Pipeline> Pipeline::construct(const Disarray::Device& device, Disarray::PipelineProperties props)
+auto Pipeline::construct(const Disarray::Device& device, Disarray::PipelineProperties props) -> Ref<Pipeline>
 {
 	return make_ref<Vulkan::Pipeline>(device, std::move(props));
 }

@@ -13,7 +13,7 @@ BaseException::BaseException(std::string_view scope, std::string_view data)
 	: std::runtime_error(data.data())
 	, message(data)
 {
-	Log::error(scope, "{}", data);
+	DISARRAY_LOG_ERROR(scope, "{}", data);
 }
 
 const char* BaseException::what() const noexcept { return message.c_str(); }

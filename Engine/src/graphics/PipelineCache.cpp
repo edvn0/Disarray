@@ -14,7 +14,7 @@
 namespace Disarray {
 
 PipelineCache::PipelineCache(const Disarray::Device& dev, const std::filesystem::path& base)
-	: ResourceCache(dev, base, { ".spv" })
+	: ResourceCache(dev, base, { ".vert", ".frag" })
 {
 	const auto all_files = get_unique_files_recursively();
 
@@ -27,29 +27,26 @@ PipelineCache::PipelineCache(const Disarray::Device& dev, const std::filesystem:
 
 	for (const auto& shader_path : as_vector) {
 		auto name = shader_path.filename();
-		const auto filename_without_spv = name.replace_extension().string();
 		if (shader_cache.contains(name.string())) {
 			break;
 		}
 
-		auto path_copy = shader_path;
-		const auto& shader_extension_without_spv = path_copy.replace_extension();
-
-		ShaderType type = to_shader_type(shader_extension_without_spv);
-		compiler.compile(shader_extension_without_spv, type);
+		ShaderType type = to_shader_type(shader_path);
+		auto code = compiler.compile(shader_path, type);
 
 		auto shader = Shader::construct(get_device(),
 			{
-				.path = shader_path,
+				.code = code,
 				.type = type,
 			});
 
 		if (!shader) {
-			Log::error("Pipeline Cache - Shader Loading", "Tried to load shader {} but could not.", shader_path.string());
+			DISARRAY_LOG_ERROR("Pipeline Cache - Shader Loading", "Tried to load shader {} but could not.", shader_path.string());
 			continue;
 		}
 
-		shader_cache.try_emplace(filename_without_spv, std::move(shader));
+		auto filename = shader_path.filename().string();
+		shader_cache.try_emplace(filename, std::move(shader));
 	}
 
 	Runtime::ShaderCompiler::destroy();

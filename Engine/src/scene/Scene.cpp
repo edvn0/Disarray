@@ -28,6 +28,7 @@
 #include "graphics/PipelineCache.hpp"
 #include "graphics/PushConstantLayout.hpp"
 #include "graphics/Renderer.hpp"
+#include "graphics/RendererProperties.hpp"
 #include "graphics/Texture.hpp"
 #include "graphics/TextureCache.hpp"
 #include "scene/Camera.hpp"
@@ -82,10 +83,10 @@ void Scene::setup_filewatcher_and_threadpool(ThreadPool& pool)
 			unique_pipelines_sharing_this_files.insert(pipeline.pipeline.get());
 		}
 
-		Log::info("Scene FileWatcher", "Number of pipelines sharing this changed shader: {}", unique_pipelines_sharing_this_files.size());
+		DISARRAY_LOG_INFO("Scene FileWatcher", "Number of pipelines sharing this changed shader: {}", unique_pipelines_sharing_this_files.size());
 		for (auto* pipe : unique_pipelines_sharing_this_files) {
 			// TODO: Runtime shader compilation!
-			Log::info("Scene FileWatcher", "Pipelines {}", fmt::ptr(pipe));
+			DISARRAY_LOG_INFO("Scene FileWatcher", "Pipelines {}", fmt::ptr(pipe));
 #if 0
 			ShaderType type = to_shader_type(entry.path);
 			auto& pipe_props = pipe->get_properties();
@@ -159,18 +160,25 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 			.clear_depth_on_load = true,
 			.debug_name = "ShadowFramebuffer",
 		});
+
+	const auto& resources = scene_renderer->get_graphics_resource();
+	const auto& desc_layout = resources.get_descriptor_set_layouts();
+
 	shadow_pipeline = Pipeline::construct(device,
 		{
 			.vertex_shader = scene_renderer->get_pipeline_cache().get_shader("shadow.vert"),
 			.fragment_shader = scene_renderer->get_pipeline_cache().get_shader("shadow.frag"),
+			.framebuffer = shadow_framebuffer,
 			.layout = {
 		{ ElementType::Float3, "position" },
 		{ ElementType::Float2, "uv" },
 		{ ElementType::Float4, "colour" },
 				{ ElementType::Float3, "normals" },
 			},
+			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 			.write_depth = true,
 			.test_depth = true,
+			.descriptor_set_layouts = desc_layout,
 		});
 	identity_framebuffer = Framebuffer::construct(device,
 		{

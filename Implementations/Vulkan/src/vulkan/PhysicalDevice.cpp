@@ -50,7 +50,7 @@ PhysicalDevice::PhysicalDevice(Disarray::Instance& inst, Disarray::Surface& surf
 		if (extension_support) {
 			swapchain_is_allowed = !formats.empty() && !modes.empty();
 		} else {
-			Log::error("PhysicalDevice", "Extension support is missing.");
+			DISARRAY_LOG_ERROR("PhysicalDevice", "Extension support is missing.");
 		}
 		return indices && extension_support && swapchain_is_allowed;
 	};

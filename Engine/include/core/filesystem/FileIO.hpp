@@ -22,7 +22,10 @@ namespace Detail {
 	};
 
 	template <class T, class Child> struct FileRead {
-		void read_from_file(std::string_view path, std::vector<T>& output) { static_cast<Child&>(*this).read_from_file_impl(path, output); }
+		auto read_from_file(std::string_view path, std::vector<T>& output) -> bool
+		{
+			return static_cast<Child&>(*this).read_from_file_impl(path, output);
+		}
 	};
 
 	template <class T> struct GenericFileWriter : FileWrite<T, GenericFileWriter<T>> {
@@ -31,7 +34,7 @@ namespace Detail {
 			std::filesystem::path path { path_sv };
 			std::ofstream stream { path };
 			if (!stream) {
-				Log::empty_error("Could not open file: {}", path.string());
+				DISARRAY_LOG_ERROR("FileIO", "Could not open file: {}", path.string());
 				return;
 			}
 
@@ -40,13 +43,13 @@ namespace Detail {
 	};
 
 	template <class T> struct GenericFileReader : FileRead<T, GenericFileReader<T>> {
-		auto read_from_file_impl(std::string_view path_sv, std::vector<T>& out) -> void
+		auto read_from_file_impl(std::string_view path_sv, std::vector<T>& out) -> bool
 		{
 			std::filesystem::path path { path_sv };
 			std::ifstream stream { path, std::fstream::ate | std::fstream::in };
 			if (!stream) {
-				Log::empty_error("Could not open file: {}", path.string());
-				return;
+				DISARRAY_LOG_ERROR("FileIO", "Could not open file: {}", path.string());
+				return false;
 			}
 
 			const auto size = stream.tellg();
@@ -56,6 +59,8 @@ namespace Detail {
 
 			char* cast = Disarray::bit_cast<char*>(out.data());
 			stream.read(cast, size);
+
+			return true;
 		}
 	};
 
@@ -77,11 +82,11 @@ template <class T> void write_to_file(std::string_view path, std::size_t size, s
 
 template <class T>
 concept AllowedVectorTypes = AnyOf<T, const char, char, const unsigned char, unsigned char, const std::uint32_t, std::uint32_t>;
-template <AllowedVectorTypes T> void read_from_file(std::string_view path, std::vector<T>& output)
+template <AllowedVectorTypes T> auto read_from_file(std::string_view path, std::vector<T>& output) -> bool
 {
 	using Reader = Detail::GenericFileReader<T>;
 	Reader reader {};
-	reader.read_from_file(path, output);
+	return reader.read_from_file(path, output);
 }
 
 template <typename Func, typename ExtensionIncludeFunc, bool Recursive = false, bool IncludeDirectories = false>

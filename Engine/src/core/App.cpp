@@ -21,7 +21,7 @@ namespace Disarray {
 
 App::App(const Disarray::ApplicationProperties& props)
 {
-	Log::info("App", "Working directory configured to: {}", props.working_directory);
+	DISARRAY_LOG_INFO("App", "Working directory configured to: {}", props.working_directory);
 	std::filesystem::current_path(props.working_directory);
 
 	window = Window::construct({ .width = props.width, .height = props.height, .name = props.name, .is_fullscreen = props.is_fullscreen });

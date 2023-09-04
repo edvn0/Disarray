@@ -141,8 +141,8 @@ struct PipelineProperties {
 	std::size_t hash() const
 	{
 		std::size_t seed { 0 };
-		hash_combine(seed, extent.width, extent.height, cull_mode, face_mode, depth_comparison_operator, samples, write_depth, test_depth, line_width,
-			vertex_shader->get_properties().path, fragment_shader->get_properties().path);
+		hash_combine(
+			seed, extent.width, extent.height, cull_mode, face_mode, depth_comparison_operator, samples, write_depth, test_depth, line_width);
 		return seed;
 	}
 };
