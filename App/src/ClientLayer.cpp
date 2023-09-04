@@ -61,8 +61,8 @@ void ClientLayer::construct(App& app, ThreadPool& pool)
 	std::size_t index { 0 };
 	ensure(angles.size() == point_lights.size());
 	for (auto&& point_light : point_lights) {
-		constexpr auto radius = 8UL;
-		constexpr auto count = 30UL;
+		constexpr std::uint32_t radius = 8;
+		constexpr std::uint32_t count = 30;
 		point_light.add_script<Scripts::MoveInCircleScript>(radius, count, angles.at(index++));
 	}
 };
@@ -230,7 +230,6 @@ protected:
 		, file_path(std::move(p))
 		, extension(ext)
 	{
-		DISARRAY_LOG_INFO("FileHandler", "Running file handler for ext: {}. The dropped file had extension: {}", extension, file_path.extension());
 		valid = file_path.extension() == extension;
 		if (valid) {
 			handle();

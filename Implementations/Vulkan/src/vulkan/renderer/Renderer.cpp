@@ -128,8 +128,8 @@ void Renderer::end_frame()
 {
 	auto [ubo, camera_ubo, lights] = get_graphics_resource().get_editable_ubos();
 
-	std::memset(&ubo, 0, sizeof(UBO));
-	std::memset(&camera_ubo, 0, sizeof(CameraUBO));
+	ubo = {};
+	camera_ubo = {};
 	lights.lights.fill({});
 }
 

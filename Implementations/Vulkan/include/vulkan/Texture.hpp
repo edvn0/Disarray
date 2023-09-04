@@ -17,13 +17,11 @@ public:
 	void force_recreation() override { recreate_texture(); };
 	void recreate(bool should_clean, const Extent& extent) override
 	{
-		const auto old_extent = get_properties().extent;
 		auto& new_props = this->get_properties();
 		if (!props.locked_extent) {
 			new_props.extent = extent;
 		}
 		recreate_texture(should_clean);
-		const auto new_extent = new_props.extent;
 	}
 	auto get_view() -> VkImageView { return image->get_descriptor_info().imageView; }
 

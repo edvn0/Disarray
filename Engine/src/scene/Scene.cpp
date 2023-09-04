@@ -43,7 +43,7 @@ template <std::size_t Count> static consteval auto generate_colours() -> std::ar
 {
 	std::array<glm::vec4, Count> colours {};
 	constexpr auto division = 1.F / static_cast<float>(Count);
-	for (auto i = 0; i < Count; i++) {
+	for (std::size_t i = 0; i < Count; i++) {
 		colours.at(i) = glm::vec4 { division * i, division * i, 0.3, 1 };
 	}
 	return colours;
@@ -53,7 +53,7 @@ template <std::size_t Count> static consteval auto generate_angles() -> std::arr
 {
 	std::array<float, Count> angles {};
 	constexpr auto division = 1.F / static_cast<float>(Count);
-	for (auto i = 0; i < Count; i++) {
+	for (std::size_t i = 0; i < Count; i++) {
 		angles.at(i) = glm::two_pi<float>() * division;
 	}
 	return angles;

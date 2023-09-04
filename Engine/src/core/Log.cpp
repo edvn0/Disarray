@@ -2,6 +2,8 @@
 
 #include "core/Log.hpp"
 
+#include <fmt/chrono.h>
+
 #include <cstdarg>
 #include <cstddef>
 #include <iostream>

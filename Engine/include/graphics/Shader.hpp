@@ -67,9 +67,6 @@ public:
 
 } // namespace Disarray
 
-namespace fmt {
 template <> struct fmt::formatter<Disarray::ShaderType> : fmt::formatter<std::string_view> {
 	auto format(const Disarray::ShaderType& format, format_context& ctx) -> decltype(ctx.out());
 };
-
-} // namespace fmt

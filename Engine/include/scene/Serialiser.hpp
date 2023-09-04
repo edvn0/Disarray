@@ -1,6 +1,6 @@
 #pragma once
 
-#include <fmt/format.h>
+#include <fmt/core.h>
 #include <nlohmann/json.hpp>
 
 #include <chrono>
@@ -14,14 +14,12 @@
 #include "core/Log.hpp"
 #include "core/Tuple.hpp"
 #include "scene/ComponentSerialisers.hpp"
+#include "scene/Scene.hpp"
 #include "util/Timer.hpp"
 
 namespace Disarray {
 
-class Scene;
-
 namespace {
-
 	class CouldNotSerialiseException : public std::runtime_error {
 	public:
 		explicit CouldNotSerialiseException(const std::string& message)
@@ -33,7 +31,7 @@ namespace {
 
 	template <class... Serialisers> struct Serialiser {
 	private:
-		std::tuple<Serialisers...> serialisers;
+		std::tuple<Serialisers...> serialisers {};
 
 	public:
 		using json = nlohmann::json;

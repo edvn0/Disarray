@@ -130,6 +130,7 @@ set(ENGINE_SOURCES
     src/core/FileWatcher.cpp
     src/core/Window.cpp
     src/core/Formatters.cpp
+    src/util/FormattingUtilities.cpp
     src/core/Log.cpp
     src/imgui/InterfaceLayer.cpp)
 

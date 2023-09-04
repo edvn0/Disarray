@@ -1,6 +1,6 @@
 #pragma once
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -57,11 +57,3 @@ struct FloatExtent : public IExtent<float> { };
 enum class ImageFormat { SRGB, RGB, SBGR, BGR, SRGB32, RGB32, Depth, DepthStencil, Uint };
 
 } // namespace Disarray
-
-template <> struct fmt::formatter<Disarray::SampleCount> : fmt::formatter<std::string_view> {
-	auto format(Disarray::SampleCount samples, format_context& ctx) const -> decltype(ctx.out());
-};
-
-template <> struct fmt::formatter<Disarray::ImageFormat> : fmt::formatter<std::string_view> {
-	auto format(Disarray::ImageFormat format, format_context& ctx) const -> decltype(ctx.out());
-};
