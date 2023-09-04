@@ -42,7 +42,6 @@ namespace {
 			}
 
 			if (!could_serialise) {
-				DISARRAY_LOG_ERROR("Scene Deserialiser", "Deserialised output was empty...?");
 				return;
 			}
 		}
@@ -70,7 +69,6 @@ namespace {
 			}
 
 			if (!could_serialise) {
-				DISARRAY_LOG_INFO("Scene Deserialiser", "Deserialised output was empty...?");
 				return;
 			}
 		};

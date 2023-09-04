@@ -168,7 +168,7 @@ bool Instance::check_validation_layer_support() const
 		}
 
 		if (!layer_found) {
-			DISARRAY_LOG_DEBUG("Instance", "Layer was not found");
+			DISARRAY_LOG_DEBUG("Instance", "{}", "Layer was not found");
 			return false;
 		}
 	}

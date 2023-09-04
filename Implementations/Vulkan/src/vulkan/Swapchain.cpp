@@ -50,7 +50,7 @@ Swapchain::Swapchain(Disarray::Window& win, Disarray::Device& dev, Disarray::Swa
 Swapchain::~Swapchain()
 {
 	cleanup_swapchain();
-	DISARRAY_LOG_DEBUG("Swapchain", "Swapchain destroyed.");
+	DISARRAY_LOG_DEBUG("Swapchain", "{}", "Swapchain destroyed.");
 }
 
 void Swapchain::create_synchronisation_objects()

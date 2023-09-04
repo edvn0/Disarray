@@ -38,7 +38,7 @@ public:
 		auto resource = create_from(props);
 		const auto& [pair, could] = storage.try_emplace(std::move(key), std::move(resource));
 		if (!could)
-			DISARRAY_LOG_ERROR("ResourceCache - Put", "Could not insert resource.");
+			DISARRAY_LOG_ERROR("ResourceCache - Put", "Could not insert resource {}", key);
 		return pair->second;
 	}
 

@@ -54,10 +54,6 @@ Device::Device(Disarray::Window& window)
 	vkGetDeviceQueue(device, queue_family_index.get_present_family(), 0, &present);
 }
 
-Device::~Device()
-{
-	vkDestroyDevice(device, nullptr);
-	DISARRAY_LOG_DEBUG("Device", "Device destroyed.");
-}
+Device::~Device() { vkDestroyDevice(device, nullptr); }
 
 } // namespace Disarray::Vulkan

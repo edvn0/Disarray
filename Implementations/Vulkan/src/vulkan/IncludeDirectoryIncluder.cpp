@@ -15,7 +15,6 @@ auto IncludeDirectoryIncluder::includeSystem(const char* header_name, const char
 {
 	// TODO: This should be used if a shader file says "#include <source>",
 	// in which case it includes a "system" file instead of a local file.
-	DISARRAY_LOG_ERROR("IncludeDirectoryIncluder", "includeSystem() is not implemented!");
 	DISARRAY_LOG_ERROR("IncludeDirectoryIncluder", "includeSystem({}, {}, {})", header_name, includer_name, inclusion_depth);
 	return nullptr;
 }
@@ -44,9 +43,8 @@ auto IncludeDirectoryIncluder::includeLocal(const char* header_name, const char*
 
 	auto result
 		= IncludeResultPtr { new IncludeResult { resolved_string, sources[resolved_string].data(), sources[resolved_string].size(), nullptr } };
-	auto [it, b] = includes.emplace(std::make_pair(resolved_string, std::move(result)));
+	auto [it, b] = includes.emplace(resolved_string, std::move(result));
 	if (!b) {
-		DISARRAY_LOG_ERROR("IncludeDirectoryIncluder", "Failed to insert IncResult into std::map!");
 		return &fail_result;
 	}
 	return it->second.get();

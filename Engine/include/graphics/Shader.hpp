@@ -3,7 +3,9 @@
 #include <fmt/core.h>
 
 #include <filesystem>
+#include <optional>
 #include <string_view>
+#include <vector>
 
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
