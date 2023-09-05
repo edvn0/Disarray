@@ -3,6 +3,7 @@
 #include "vulkan/IncludeDirectoryIncluder.hpp"
 
 #include <filesystem>
+#include <string>
 
 #include "core/Log.hpp"
 #include "core/filesystem/FileIO.hpp"
@@ -29,14 +30,14 @@ auto IncludeDirectoryIncluder::includeLocal(const char* header_name, const char*
 	}
 
 	sources[resolved_string] = {};
+	auto& value = sources[resolved_string];
 
-	bool could = FS::read_from_file(resolved_string, sources[resolved_string]);
+	bool could = FS::read_from_file(resolved_string, value);
 	if (!could) {
 		return &fail_result;
 	}
 
-	auto result
-		= IncludeResultPtr { new IncludeResult { resolved_string, sources[resolved_string].data(), sources[resolved_string].size(), nullptr } };
+	auto result = IncludeResultPtr { new IncludeResult { resolved_string, value.c_str(), value.size(), nullptr } };
 	auto [it, b] = includes.emplace(resolved_string, std::move(result));
 	if (!b) {
 		return &fail_result;

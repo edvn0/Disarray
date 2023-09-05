@@ -5,17 +5,28 @@
 #include <chrono>
 #include <string>
 
+#ifndef DISARRAY_LOGS
+#define DISARRAY_LOGS
+
+#ifdef DISARRAY_USE_FILE_LINE
 #define LOG_MACRO_IMPL(type, file, line, scope, format_string, ...)                                                                                  \
 	{                                                                                                                                                \
-		auto fixed = fmt::format("{} at: {}:{}", scope, file, line);                                                                                 \
+		auto fixed = fmt::format("{} at: {}:{}", scope, __func__, line);                                                                             \
 		Disarray::Log::Detail::type(fixed, format_string, __VA_ARGS__);                                                                              \
 	}
+#else
+#define LOG_MACRO_IMPL(type, file, line, scope, format_string, ...)                                                                                  \
+	{                                                                                                                                                \
+		auto fixed = fmt::format("{}", scope);                                                                                                       \
+		Disarray::Log::Detail::type(fixed, format_string, __VA_ARGS__);                                                                              \
+	}
+#endif
 
 #define DISARRAY_LOG_ERROR(scope, format, ...) LOG_MACRO_IMPL(error, __FILE__, __LINE__, scope, format, __VA_ARGS__)
-
 #define DISARRAY_LOG_INFO(scope, format, ...) LOG_MACRO_IMPL(info, __FILE__, __LINE__, scope, format, __VA_ARGS__)
-
 #define DISARRAY_LOG_DEBUG(scope, format, ...) LOG_MACRO_IMPL(debug, __FILE__, __LINE__, scope, format, __VA_ARGS__)
+
+#endif
 
 namespace Disarray {
 

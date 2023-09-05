@@ -106,18 +106,21 @@ template <class T> void write_to_file(std::string_view path, std::size_t size, s
 
 template <class T>
 concept AllowedVectorTypes = AnyOf<T, const char, char, const unsigned char, unsigned char, const std::uint32_t, std::uint32_t>;
+template <AllowedVectorTypes T> inline auto read_from_file(std::string_view path, std::string& output) -> bool
+{
+	using Reader = Detail::GenericFileReader<T>;
+	Reader reader {};
+	return reader.read_from_file(path, output);
+}
+
 template <AllowedVectorTypes T> auto read_from_file(std::string_view path, std::vector<T>& output) -> bool
 {
 	using Reader = Detail::GenericFileReader<T>;
 	Reader reader {};
 	return reader.read_from_file(path, output);
 }
-inline auto read_from_file(std::string_view path, std::string& output) -> bool
-{
-	using Reader = Detail::GenericFileReader<std::uint32_t>;
-	Reader reader {};
-	return reader.read_from_file(path, output);
-}
+
+inline auto read_from_file(std::string_view path, std::string& output) -> bool { return read_from_file<std::uint32_t>(path, output); }
 
 template <typename Func, typename ExtensionIncludeFunc, bool Recursive = false, bool IncludeDirectories = false>
 auto for_each_in_directory(auto path, Func&& func, ExtensionIncludeFunc&& ext) -> void

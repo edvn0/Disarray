@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <map>
+#include <string>
 
 namespace Disarray {
 
@@ -39,7 +40,7 @@ private:
 	using IncludeResultPtr = std::unique_ptr<IncludeResult, Deleter>;
 	std::filesystem::path directory {};
 	std::map<std::string, IncludeResultPtr> includes;
-	std::map<std::string, std::vector<char>> sources;
+	std::map<std::string, std::string> sources;
 };
 
 } // namespace Disarray
