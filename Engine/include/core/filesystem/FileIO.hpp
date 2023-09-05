@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <fstream>
 #include <span>
 #include <string_view>
 
@@ -82,6 +83,7 @@ namespace Detail {
 
 			stream.seekg(0);
 			stream.read(out.data(), size);
+
 			return true;
 		}
 	};

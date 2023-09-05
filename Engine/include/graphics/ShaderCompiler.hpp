@@ -29,12 +29,14 @@ public:
 	static void destroy();
 
 private:
+	void add_include_extension(std::vector<char>& glsl_code);
+	void add_include_extension(std::string& glsl_code);
+
 	struct Deleter {
 		void operator()(Detail::CompilerIntrinsics* ptr) { Detail::data_deleter(ptr); }
 	};
 	using CompilerData = std::unique_ptr<Detail::CompilerIntrinsics, Deleter>;
 	CompilerData compiler_data { nullptr };
-	void add_include_extension(std::vector<char>& glsl_code);
 };
 
 } // namespace Disarray::Runtime

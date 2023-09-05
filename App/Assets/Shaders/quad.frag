@@ -1,6 +1,3 @@
-#version 460
-#extension GL_GOOGLE_include_directive:require
-
 #include "PC.glsl"
 #include "UBO.glsl"
 #include "PointLight.glsl"

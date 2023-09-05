@@ -66,7 +66,7 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 		DISARRAY_LOG_ERROR("ShaderCompiler", "Could not read shader: {}", path_to_shader);
 		throw CouldNotOpenStreamException { fmt::format("Could not read shader: {}", path_to_shader) };
 	}
-	// add_include_extension(output);
+	add_include_extension(output);
 
 	std::array sources = { output.c_str() };
 	shader->setStrings(sources.data(), 1);
@@ -163,6 +163,13 @@ void ShaderCompiler::add_include_extension(std::vector<char>& glsl_code)
 	output.shrink_to_fit();
 
 	glsl_code = { output.begin(), output.end() };
+}
+
+void ShaderCompiler::add_include_extension(std::string& glsl_code)
+{
+	ensure(glsl_code.find("#version") == std::string::npos, "Shader has a #version directive");
+	static constexpr std::string_view extension = "#version 450\n#extension GL_GOOGLE_include_directive: require\n";
+	glsl_code.insert(0, extension);
 }
 
 ShaderCompiler::ShaderCompiler()

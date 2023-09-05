@@ -141,7 +141,7 @@ void ScenePanel::interface()
 
 		for (auto& attachment : props.attachments.texture_attachments) {
 			const auto& blend_attachment = attachment.format;
-			const auto formatted = fmt::format("{}: Should blend", magic_enum::enum_name(blend_attachment));
+			const auto formatted = fmt::format("{}: Should blend", blend_attachment);
 			any_changed |= UI::checkbox(formatted, attachment.blend);
 			any_changed |= UI::combo_choice<FramebufferBlendMode>("Blend mode", attachment.blend_mode);
 		}
@@ -160,8 +160,9 @@ void ScenePanel::interface()
 	});
 
 	if (ImGui::BeginPopupContextWindow("EmptyEntityId", 1)) {
-		if (ImGui::MenuItem("Create Empty Entity"))
+		if (ImGui::MenuItem("Create Empty Entity")) {
 			scene->create("Empty Entity");
+		}
 
 		ImGui::EndPopup();
 	}

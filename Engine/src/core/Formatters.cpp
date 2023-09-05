@@ -5,15 +5,21 @@
 #include <glm/gtx/quaternion.hpp>
 
 #include <fmt/format.h>
+#include <magic_enum.hpp>
 
-auto fmt::formatter<Disarray::Extent>::format(const Disarray::Extent& vec, format_context& ctx) -> decltype(ctx.out())
+auto fmt::formatter<Disarray::ImageFormat>::format(const Disarray::ImageFormat& image_format, format_context& ctx) -> decltype(ctx.out())
 {
-	return formatter<std::string_view>::format(fmt::format("[{}, {}]", vec.width, vec.height), ctx);
+	return formatter<std::string_view>::format(fmt::format("[{}]", magic_enum::enum_name(image_format)), ctx);
 }
 
-auto fmt::formatter<Disarray::FloatExtent>::format(const Disarray::FloatExtent& vec, format_context& ctx) -> decltype(ctx.out())
+auto fmt::formatter<Disarray::Extent>::format(const Disarray::Extent& extent, format_context& ctx) -> decltype(ctx.out())
 {
-	return formatter<std::string_view>::format(fmt::format("[{}, {}]", vec.width, vec.height), ctx);
+	return formatter<std::string_view>::format(fmt::format("[{}, {}]", extent.width, extent.height), ctx);
+}
+
+auto fmt::formatter<Disarray::FloatExtent>::format(const Disarray::FloatExtent& extent, format_context& ctx) -> decltype(ctx.out())
+{
+	return formatter<std::string_view>::format(fmt::format("[{}, {}]", extent.width, extent.height), ctx);
 }
 
 auto fmt::formatter<glm::vec2>::format(const glm::vec2& vec, format_context& ctx) -> decltype(ctx.out())

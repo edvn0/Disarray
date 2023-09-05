@@ -25,7 +25,6 @@ auto IncludeDirectoryIncluder::includeLocal(const char* header_name, const char*
 	}
 
 	if (!std::filesystem::exists(path_to_file)) {
-		DISARRAY_LOG_ERROR("IncludeDirectoryIncluder", "Included GLSL shader file '{}' does not exist!", resolved_string);
 		return &fail_result;
 	}
 
@@ -33,7 +32,6 @@ auto IncludeDirectoryIncluder::includeLocal(const char* header_name, const char*
 
 	bool could = FS::read_from_file(resolved_string, sources[resolved_string]);
 	if (!could) {
-		DISARRAY_LOG_ERROR("IncludeDirectoryIncluder", "Failed to open #included GLSL shader file: {}", resolved_string);
 		return &fail_result;
 	}
 
