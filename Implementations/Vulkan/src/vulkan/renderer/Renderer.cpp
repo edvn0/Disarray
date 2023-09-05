@@ -37,9 +37,11 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 	geometry_framebuffer = Framebuffer::construct(device, geometry_props);
 
 	quad_framebuffer = Framebuffer::construct(device,
-			{ .extent = swapchain.get_extent(),
-				.attachments = { { ImageFormat::SBGR },  { ImageFormat::Uint, false },{ ImageFormat::Depth }, },
-				.debug_name = "QuadFramebuffer" });
+			{
+				.extent = swapchain.get_extent(),
+				.attachments = { { ImageFormat::SBGR }, { ImageFormat::Uint, false }, { ImageFormat::Depth }, },
+				.debug_name = "QuadFramebuffer",
+			});
 
 	PipelineCacheCreationProperties pipeline_properties = {
 		.pipeline_key = "quad",
@@ -66,7 +68,9 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 		pipeline_properties.pipeline_key = "line";
 		pipeline_properties.vertex_shader_key = "line.vert";
 		pipeline_properties.fragment_shader_key = "line.frag";
-		pipeline_properties.line_width = 8.0f;
+		pipeline_properties.write_depth = false;
+		pipeline_properties.test_depth = false;
+		pipeline_properties.line_width = 3.0f;
 		pipeline_properties.polygon_mode = PolygonMode::Line;
 		pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" } };
 		resource.get_pipeline_cache().put(pipeline_properties);
@@ -124,8 +128,8 @@ void Renderer::end_frame()
 {
 	auto [ubo, camera_ubo, lights] = get_graphics_resource().get_editable_ubos();
 
-	std::memset(&ubo, 0, sizeof(UBO));
-	std::memset(&camera_ubo, 0, sizeof(CameraUBO));
+	ubo = {};
+	camera_ubo = {};
 	lights.lights.fill({});
 }
 

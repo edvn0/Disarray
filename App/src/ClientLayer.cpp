@@ -61,8 +61,8 @@ void ClientLayer::construct(App& app, ThreadPool& pool)
 	std::size_t index { 0 };
 	ensure(angles.size() == point_lights.size());
 	for (auto&& point_light : point_lights) {
-		constexpr auto radius = 8UL;
-		constexpr auto count = 30UL;
+		constexpr std::uint32_t radius = 8;
+		constexpr std::uint32_t count = 30;
 		point_light.add_script<Scripts::MoveInCircleScript>(radius, count, angles.at(index++));
 	}
 };
@@ -191,10 +191,10 @@ void ClientLayer::on_event(Event& event)
 
 			auto pixel_data = image.read_pixel(pos);
 			std::visit(Tuple::overload { [&s = this->scene](const std::uint32_t& handle) {
-											Log::info("Client Layer", "Entity data: {}", handle);
+											DISARRAY_LOG_INFO("Client Layer", "Entity data: {}", handle);
 											s->update_picked_entity(handle);
 										},
-						   [](const glm::vec4& vec) { Log::info("Client Layer", "Pixel data: {},{},{},{}", vec.x, vec.y, vec.z, vec.w); },
+						   [](const glm::vec4& vec) { DISARRAY_LOG_INFO("Client Layer", "Pixel data: {},{},{},{}", vec.x, vec.y, vec.z, vec.w); },
 						   [](std::monostate) {} },
 				pixel_data);
 			return true;
@@ -230,7 +230,6 @@ protected:
 		, file_path(std::move(p))
 		, extension(ext)
 	{
-		Log::info("FileHandler", "Running file handler for ext: {}. The dropped file had extension: {}", extension, file_path.extension());
 		valid = file_path.extension() == extension;
 		if (valid) {
 			handle();

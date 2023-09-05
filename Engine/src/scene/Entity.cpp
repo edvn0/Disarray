@@ -97,8 +97,7 @@ void Entity::add_child(Entity& child)
 
 void Entity::add_child(Entity* child_of_this)
 {
-	if (!child_of_this) {
-		Log::debug("Entity add_child", "Associated child was nullptr.");
+	if (child_of_this == nullptr) {
 		return;
 	}
 

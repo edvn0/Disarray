@@ -17,10 +17,10 @@
 #include "vulkan/Verify.hpp"
 #include "vulkan/exceptions/VulkanExceptions.hpp"
 
-std::vector<const char*> get_required_extensions()
+auto get_required_extensions() -> std::vector<const char*>
 {
 	uint32_t ext_count = 0;
-	const char** glfw_exts;
+	const char** glfw_exts = nullptr;
 	glfw_exts = glfwGetRequiredInstanceExtensions(&ext_count);
 
 	std::vector<const char*> extensions(glfw_exts, glfw_exts + ext_count);
@@ -42,10 +42,10 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverity
 	switch (severity) {
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-		Disarray::Log::debug("Validation", "Validation layer: {}", std::string(callback_data->pMessage));
+		DISARRAY_LOG_DEBUG("Validation", "Validation layer: {}", std::string(callback_data->pMessage));
 		return VK_FALSE;
 	default:
-		Disarray::Log::error("Validation", "Validation layer: {}", std::string(callback_data->pMessage));
+		DISARRAY_LOG_ERROR("Validation", "Validation layer: {}", std::string(callback_data->pMessage));
 		return VK_FALSE;
 	}
 }
@@ -86,7 +86,7 @@ Instance::Instance(const std::vector<const char*>& supported_layers)
 	: requested_layers(supported_layers)
 {
 	const auto check_support = check_validation_layer_support();
-	Log::info("Instance - Validation Layers", "Requested?: {}. Supported?: {}", Config::use_validation_layers, check_support);
+	DISARRAY_LOG_INFO("Instance - Validation Layers", "Requested?: {}. Supported?: {}", Config::use_validation_layers, check_support);
 	if (Config::use_validation_layers && !check_support) {
 		throw CouldNotCreateValidationLayersException("Could not configure validation layers, and it was asked for.");
 	}
@@ -126,7 +126,7 @@ Instance::Instance(const std::vector<const char*>& supported_layers)
 
 	setup_debug_messenger();
 
-	Log::debug("Vulkan Instance", "{}", "Instance created!");
+	DISARRAY_LOG_DEBUG("Vulkan Instance", "{}", "Instance created!");
 }
 
 Instance::~Instance()
@@ -135,7 +135,7 @@ Instance::~Instance()
 		destroy_debug_messenger_ext(instance, debug_messenger, nullptr);
 	}
 	vkDestroyInstance(instance, nullptr);
-	Log::debug("Vulkan Instance", "{}", "Instance destroyed!");
+	DISARRAY_LOG_DEBUG("Vulkan Instance", "{}", "Instance destroyed!");
 }
 
 void Instance::setup_debug_messenger()
@@ -168,7 +168,7 @@ bool Instance::check_validation_layer_support() const
 		}
 
 		if (!layer_found) {
-			Log::debug("Instance", "Layer was not found");
+			DISARRAY_LOG_DEBUG("Instance", "{}", "Layer was not found");
 			return false;
 		}
 	}

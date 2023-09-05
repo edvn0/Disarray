@@ -15,13 +15,13 @@ Surface::Surface(Instance& inst, GLFWwindow* window)
 	: instance(inst)
 {
 	verify(glfwCreateWindowSurface(*instance, window, nullptr, &surface));
-	Log::debug("Surface", "{}", "Surface created!");
+	DISARRAY_LOG_DEBUG("Surface", "{}", "Surface created!");
 }
 
 Surface::~Surface()
 {
 	vkDestroySurfaceKHR(*instance, surface, nullptr);
-	Log::debug("Surface", "{}", "Surface destroyed.");
+	DISARRAY_LOG_DEBUG("Surface", "{}", "Surface destroyed.");
 }
 
 } // namespace Disarray::Vulkan

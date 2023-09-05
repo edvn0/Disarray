@@ -38,7 +38,7 @@ public:
 		auto resource = create_from(props);
 		const auto& [pair, could] = storage.try_emplace(std::move(key), std::move(resource));
 		if (!could)
-			Log::error("ResourceCache - Put", "Could not insert resource.");
+			DISARRAY_LOG_ERROR("ResourceCache - Put", "Could not insert resource {}", key);
 		return pair->second;
 	}
 
@@ -68,7 +68,7 @@ protected:
 	{
 		UniquePathSet paths;
 		if (!std::filesystem::exists(path)) {
-			Log::error("ResourceCache - Load all files", "{}", "The path was not found.");
+			DISARRAY_LOG_ERROR("ResourceCache - Load all files", "{}", "The path was not found.");
 			return paths;
 		}
 
@@ -78,7 +78,7 @@ protected:
 				continue;
 			}
 
-			paths.insert(current);
+			paths.insert(current.path());
 		}
 		return paths;
 	}

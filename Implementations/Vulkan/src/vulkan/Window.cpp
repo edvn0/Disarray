@@ -192,7 +192,7 @@ Window::~Window()
 	surface.reset();
 	glfwDestroyWindow(window);
 	glfwTerminate();
-	Log::debug("Window", "Window destroyed.");
+	DISARRAY_LOG_DEBUG("Window", "{}", "Window destroyed.");
 }
 
 void Window::update() { glfwPollEvents(); }

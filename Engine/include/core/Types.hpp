@@ -21,7 +21,10 @@ template <class T, class... Args> inline auto make_ref(Args&&... args) -> Ref<T>
 template <class T, class... Args> Ref<T> make_ref(Args&&... args) { return std::shared_ptr<T> { new T { std::forward<Args>(args)... } }; }
 #endif
 
-template <class T, class... Args> inline auto make_scope(Args&&... args) -> Scope<T> { return Scope<T> { new T { std::forward<Args>(args)... } }; }
+template <class T, class D = std::default_delete<T>, class... Args> inline auto make_scope(Args&&... args) -> Scope<T, D>
+{
+	return Scope<T, D> { new T { std::forward<Args>(args)... } };
+}
 
 template <class To, class From>
 	requires(std::is_base_of_v<From, To>)

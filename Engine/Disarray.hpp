@@ -7,7 +7,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-#include <fmt/format.h>
+#include <fmt/core.h>
 #include <imgui.h>
 
 #include "core/App.hpp"

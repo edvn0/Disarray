@@ -77,7 +77,12 @@ public:
 
 	static auto create_key(const PipelineCacheCreationProperties& props) -> std::string { return props.pipeline_key; }
 
-	template <class Key> const Ref<Shader>& get_shader(Key&& key) { return shader_cache.at(std::forward<Key>(key)); }
+	template <class Key> auto get_shader(Key&& key) -> const Ref<Shader>&
+	{
+		ensure(shader_cache.contains(std::forward<Key>(key)), "Shader with key '{}' was not compiled", key);
+
+		return shader_cache.at(std::forward<Key>(key));
+	}
 
 private:
 	std::unordered_map<std::string, Ref<Shader>> shader_cache {};

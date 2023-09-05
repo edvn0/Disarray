@@ -103,12 +103,11 @@ void InterfaceLayer::construct(App&, ThreadPool&)
 
 	{
 		auto executor = Vulkan::construct_immediate(device);
-		static constexpr auto font_sizes = std::array { 16.F, 15.F, 14.F, 13.F, 12.F, 11.F, 10.F, 9.F };
 		FS::for_each_in_directory(
 			std::filesystem::path { "Assets/Fonts" },
 			[&fonts = io.Fonts](const auto& entry) {
+				static constexpr auto font_sizes = std::array { 16.F, 15.F, 14.F, 13.F, 12.F, 11.F, 10.F, 9.F };
 				for (const auto& size : font_sizes) {
-					Log::info("InterfaceLayer", "Adding font {} with size {}", entry.path(), size);
 					fonts->AddFontFromFileTTF(entry.path().string().c_str(), size);
 				}
 			},

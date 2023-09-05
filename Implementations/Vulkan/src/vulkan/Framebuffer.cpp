@@ -123,8 +123,9 @@ void Framebuffer::recreate_framebuffer(bool should_clean)
 	subpass_description.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass_description.colorAttachmentCount = uint32_t(color_attachment_references.size());
 	subpass_description.pColorAttachments = color_attachment_references.data();
-	if (depth_attachment)
+	if (depth_attachment) {
 		subpass_description.pDepthStencilAttachment = &depth_attachment_reference;
+	}
 
 	std::vector<VkSubpassDependency> dependencies;
 	if (!attachments.empty()) {
@@ -179,8 +180,8 @@ void Framebuffer::recreate_framebuffer(bool should_clean)
 	render_pass_info.pAttachments = attachment_descriptions.data();
 	render_pass_info.subpassCount = 1;
 	render_pass_info.pSubpasses = &subpass_description;
-	render_pass_info.dependencyCount = static_cast<uint32_t>(dependencies.size());
-	render_pass_info.pDependencies = dependencies.data();
+	// render_pass_info.dependencyCount = static_cast<uint32_t>(dependencies.size());
+	// render_pass_info.pDependencies = dependencies.data();
 
 	render_pass = RenderPass::construct(device);
 	auto& vk_render_pass = cast_to<Vulkan::RenderPass>(*render_pass);

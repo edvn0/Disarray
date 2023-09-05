@@ -4,11 +4,11 @@
 
 #include <vulkan/vulkan.h>
 
+#include "core/Log.hpp"
 #include "graphics/Instance.hpp"
 #include "graphics/QueueFamilyIndex.hpp"
 #include "graphics/Surface.hpp"
 #include "vulkan/ExtensionSupport.hpp"
-#include "vulkan/Image.hpp"
 #include "vulkan/Instance.hpp"
 #include "vulkan/PhysicalDevice.hpp"
 #include "vulkan/QueueFamilyIndex.hpp"
@@ -50,7 +50,6 @@ PhysicalDevice::PhysicalDevice(Disarray::Instance& inst, Disarray::Surface& surf
 		if (extension_support) {
 			swapchain_is_allowed = !formats.empty() && !modes.empty();
 		} else {
-			Log::error("PhysicalDevice", "Extension support is missing.");
 		}
 		return indices && extension_support && swapchain_is_allowed;
 	};

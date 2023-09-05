@@ -71,6 +71,12 @@ set(SOURCES
         src/vulkan/Texture.cpp
         src/vulkan/Image.cpp)
 
+if (DISARRAY_HAS_GLSLC)
+    list(APPEND SOURCES "src/vulkan/GlslcCompiler.cpp")
+else ()
+    list(APPEND SOURCES "src/vulkan/GlslangCompiler.cpp" "src/vulkan/IncludeDirectoryIncluder.cpp")
+endif ()
+
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 add_library(Implementations::Vulkan ALIAS ${PROJECT_NAME})
 target_link_libraries(
@@ -82,6 +88,11 @@ target_link_libraries(
         Vulkan::Vulkan
         imgui
         fmt::fmt
-        magic_enum::magic_enum)
+        magic_enum::magic_enum
+        spirv-cross-core
+        spirv-cross-glsl
+        glslang
+        glslang-default-resource-limits
+        SPIRV)
 target_include_directories(${PROJECT_NAME} PUBLIC include)
 default_compile_flags()

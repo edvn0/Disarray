@@ -2,10 +2,10 @@
 
 #include "graphics/Shader.hpp"
 
-#include <bit>
 #include <fstream>
 #include <stdexcept>
 
+#include "core/Ensure.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Shader.hpp"
 #include "vulkan/Structures.hpp"
@@ -31,22 +31,36 @@ namespace {
 	void create_module(const Vulkan::Device& device, const std::string& code, VkShaderModule& shader)
 	{
 		auto create_info = vk_structures<VkShaderModuleCreateInfo> {}();
-		create_info.codeSize = code.size();
-		create_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
+		create_info.codeSize = code.size() * sizeof(std::uint32_t);
+		create_info.pCode = Disarray::bit_cast<const uint32_t*>(code.data());
+
+		verify(vkCreateShaderModule(*device, &create_info, nullptr, &shader));
+	}
+
+	void create_module(const Vulkan::Device& device, const std::vector<std::uint32_t>& code, VkShaderModule& shader)
+	{
+		auto create_info = vk_structures<VkShaderModuleCreateInfo> {}();
+		create_info.codeSize = code.size() * sizeof(std::uint32_t);
+		create_info.pCode = code.data();
 
 		verify(vkCreateShaderModule(*device, &create_info, nullptr, &shader));
 	}
 } // namespace
 
-Shader::Shader(const Disarray::Device& dev, const ShaderProperties& properties)
-	: device(dev)
-	, props(properties)
+Shader::Shader(const Disarray::Device& dev, ShaderProperties properties)
+	: Disarray::Shader(std::move(properties))
+	, device(dev)
 {
-	auto source = read_file(props.path);
-
 	auto type = to_stage(props.type);
 
-	create_module(cast_to<Vulkan::Device>(device), source, shader_module);
+	if (props.code) {
+		ensure(!props.identifier.empty(), "Must supply an identifier");
+		create_module(cast_to<Vulkan::Device>(device), *props.code, shader_module);
+	} else {
+		props.identifier = props.path;
+		auto read = Shader::read_file(props.path);
+		create_module(cast_to<Vulkan::Device>(device), read, shader_module);
+	}
 
 	stage = {};
 	stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -57,11 +71,12 @@ Shader::Shader(const Disarray::Device& dev, const ShaderProperties& properties)
 
 Shader::~Shader()
 {
-	if (!was_destroyed_explicitly)
+	if (!was_destroyed_explicitly) {
 		vkDestroyShaderModule(supply_cast<Vulkan::Device>(device), shader_module, nullptr);
+	}
 }
 
-std::string Shader::read_file(const std::filesystem::path& path)
+auto Shader::read_file(const std::filesystem::path& path) -> std::string
 {
 	std::ifstream stream { path.string().c_str(), std::ios::ate | std::ios::in | std::ios::binary };
 	if (!stream) {
@@ -73,7 +88,7 @@ std::string Shader::read_file(const std::filesystem::path& path)
 	buffer.resize(size);
 
 	stream.seekg(0);
-	stream.read(buffer.data(), size);
+	stream.read(buffer.data(), static_cast<long long>(size));
 
 	return std::string { buffer.begin(), buffer.end() };
 }

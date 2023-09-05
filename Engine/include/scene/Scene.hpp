@@ -59,7 +59,7 @@ public:
 		vp_min = min;
 	}
 
-	FloatExtent get_viewport_bounds() const { return { vp_max.x - vp_min.x, vp_max.y - vp_min.y }; }
+	auto get_viewport_bounds() const -> FloatExtent { return { vp_max.x - vp_min.x, vp_max.y - vp_min.y }; }
 
 	auto create(std::string_view = "Unnamed") -> Entity;
 
@@ -91,11 +91,12 @@ public:
 	{
 		auto view_for = registry.view<T...>();
 		std::vector<Entity> out;
-		if constexpr (sizeof...(T) == 1)
+		if constexpr (sizeof...(T) == 1) {
 			out.reserve(view_for.size());
-		else
+		} else {
 			out.reserve(view_for.size_hint());
-		view_for.each([this, &out](auto entity, auto... ts) { out.push_back(Entity { this, entity }); });
+		}
+		view_for.each([this, &out](auto entity, auto... other_ts) { out.push_back(Entity { this, entity }); });
 		return out;
 	}
 
@@ -129,6 +130,9 @@ private:
 	glm::vec2 vp_max { 1 };
 	glm::vec2 vp_min { 1 };
 
+	Ref<Disarray::Framebuffer> shadow_framebuffer {};
+	Ref<Disarray::Pipeline> shadow_pipeline {};
+
 	Ref<Disarray::Framebuffer> framebuffer {};
 	Ref<Disarray::Framebuffer> identity_framebuffer {};
 	Ref<Disarray::CommandExecutor> command_executor {};
@@ -136,6 +140,7 @@ private:
 	std::mutex registry_access;
 	entt::registry registry;
 	void create_entities();
+	void draw_geometry(CommandExecutor&, bool is_shadow = false);
 
 	using FuncPtr = void (*)(const Disarray::Scene*);
 	struct ThreadPoolCallback {

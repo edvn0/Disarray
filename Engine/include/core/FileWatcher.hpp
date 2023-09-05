@@ -52,6 +52,10 @@ struct FileInformation {
 	[[nodiscard]] auto has_extension(std::string_view ext) const { return to_path().extension().string() == ext; }
 };
 
+struct FileWatcherCallback {
+	auto operator()(const FileInformation& info) -> void;
+};
+
 class FileWatcher {
 public:
 	FileWatcher(ThreadPool&, const std::filesystem::path&, std::chrono::duration<int, std::milli> = std::chrono::milliseconds(2000));
@@ -69,9 +73,9 @@ public:
 	void add_watched_paths(const std::filesystem::path& path);
 
 private:
-	static void for_each(const FileInformation& i, const std::vector<std::function<void(const FileInformation&)>>& funcs)
+	static void for_each(const FileInformation& file_information, const std::vector<std::function<void(const FileInformation&)>>& funcs)
 	{
-		Collections::for_each(funcs, [&info = i](auto& func) { func(info); });
+		Collections::for_each(funcs, [&info = file_information](auto& func) { func(info); });
 	}
 
 	void start(const std::function<void(const FileInformation&)>& activation_function);

@@ -124,6 +124,7 @@ class Swapchain;
 struct PipelineProperties {
 	Ref<Shader> vertex_shader { nullptr };
 	Ref<Shader> fragment_shader { nullptr };
+	Ref<Shader> compute_shader { nullptr };
 	Ref<Framebuffer> framebuffer { nullptr };
 	VertexLayout layout {};
 	PushConstantLayout push_constant_layout {};
@@ -141,8 +142,8 @@ struct PipelineProperties {
 	std::size_t hash() const
 	{
 		std::size_t seed { 0 };
-		hash_combine(seed, extent.width, extent.height, cull_mode, face_mode, depth_comparison_operator, samples, write_depth, test_depth, line_width,
-			vertex_shader->get_properties().path, fragment_shader->get_properties().path);
+		hash_combine(
+			seed, extent.width, extent.height, cull_mode, face_mode, depth_comparison_operator, samples, write_depth, test_depth, line_width);
 		return seed;
 	}
 };
@@ -155,15 +156,15 @@ public:
 
 	[[nodiscard]] auto has_shader_with_name(std::string_view name) const -> bool
 	{
-		auto vert = get_properties().vertex_shader->get_properties().path;
-		auto frag = get_properties().fragment_shader->get_properties().path;
-		return vert.replace_extension().string() == name || frag.replace_extension().string() == name;
+		auto vert = get_properties().vertex_shader->get_properties().identifier;
+		auto frag = get_properties().fragment_shader->get_properties().identifier;
+		return vert.string() == name || frag.string() == name;
 	}
 	[[nodiscard]] auto has_shader_with_name(const std::filesystem::path& name) const -> bool
 	{
-		auto vert = get_properties().vertex_shader->get_properties().path;
-		auto frag = get_properties().fragment_shader->get_properties().path;
-		return vert.replace_extension().string() == name || frag.replace_extension().string() == name;
+		auto vert = get_properties().vertex_shader->get_properties().identifier;
+		auto frag = get_properties().fragment_shader->get_properties().identifier;
+		return vert.string() == name || frag.string() == name;
 	}
 
 	static auto construct(const Disarray::Device&, PipelineProperties) -> Ref<Pipeline>;

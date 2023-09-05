@@ -1,15 +1,13 @@
-#version 450
-
 #include "PC.glsl"
 #include "UBO.glsl"
 
 layout(set = 0, binding = 0) uniform UniformBlock {
-    Uniform ubo;
+	Uniform ubo;
 } UBO;
 
 layout(push_constant) uniform PushConstantBlock
 {
-    PushConstant pc;
+	PushConstant pc;
 }
 PC;
 
@@ -21,8 +19,8 @@ layout(location = 0) out vec4 colour;
 layout(location = 1) out uint identifier;
 
 void main() {
-    PushConstant pc = PC.pc;
+	PushConstant pc = PC.pc;
 
-    colour = fragColour;
-    identifier = pc.current_identifier;
+	colour = fragColour;
+	identifier = pc.current_identifier;
 }

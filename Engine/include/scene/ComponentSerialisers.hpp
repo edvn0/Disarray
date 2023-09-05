@@ -4,18 +4,18 @@
 #include <nlohmann/json.hpp>
 
 #include "core/Log.hpp"
+#include "core/exceptions/BaseException.hpp"
 #include "scene/Component.hpp"
 #include "scene/Components.hpp"
 #include "scene/Entity.hpp"
 
 namespace Disarray {
 
-class ComponentDeserialiseException : public std::runtime_error {
+class ComponentDeserialiseException : public BaseException {
 public:
-	explicit ComponentDeserialiseException(const std::string& message)
-		: runtime_error(message)
+	explicit ComponentDeserialiseException(std::string_view scope, std::string_view message)
+		: BaseException(scope, message)
 	{
-		Log::error("ComponentDeserialiseException", "{}", message);
 	}
 };
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <fmt/format.h>
+#include <fmt/core.h>
 #include <nlohmann/json.hpp>
 
 #include <chrono>
@@ -14,14 +14,12 @@
 #include "core/Log.hpp"
 #include "core/Tuple.hpp"
 #include "scene/ComponentSerialisers.hpp"
+#include "scene/Scene.hpp"
 #include "util/Timer.hpp"
 
 namespace Disarray {
 
-class Scene;
-
 namespace {
-
 	class CouldNotSerialiseException : public std::runtime_error {
 	public:
 		explicit CouldNotSerialiseException(const std::string& message)
@@ -33,7 +31,7 @@ namespace {
 
 	template <class... Serialisers> struct Serialiser {
 	private:
-		std::tuple<Serialisers...> serialisers;
+		std::tuple<Serialisers...> serialisers {};
 
 	public:
 		using json = nlohmann::json;
@@ -45,7 +43,7 @@ namespace {
 			try {
 				serialised_object = serialise();
 			} catch (const CouldNotSerialiseException& exc) {
-				Log::error("Scene Serialiser", "Could not serialise scene. Message: {}", exc.what());
+				DISARRAY_LOG_ERROR("Scene Serialiser", "Could not serialise scene. Message: {}", exc.what());
 				return;
 			}
 
@@ -58,7 +56,7 @@ namespace {
 			auto full_path = path / scene_name;
 			std::ofstream output { full_path };
 			if (!output) {
-				Log::error("Scene Serialiser", "Could not open {} for writing.", full_path.string());
+				DISARRAY_LOG_ERROR("Scene Serialiser", "Could not open {} for writing.", full_path.string());
 				return;
 			}
 
@@ -104,7 +102,7 @@ namespace {
 
 			root["entities"] = entities;
 
-			Log::debug("Serialiser", "Serialising took {}s", elapsed);
+			DISARRAY_LOG_DEBUG("Serialiser", "Serialising took {}s", elapsed);
 
 			return root;
 		}

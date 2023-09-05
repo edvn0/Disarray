@@ -40,10 +40,10 @@ void DebugMarker::setup(VkDevice device, VkPhysicalDevice physical_device)
 		// Set flag if at least one function pointer is present
 		active = (vkDebugMarkerSetObjectName != VK_NULL_HANDLE);
 
-		Log::error("DebugMarker", "Info: {} was present, debug markers are enabled.", std::string { VK_EXT_DEBUG_MARKER_EXTENSION_NAME });
+		DISARRAY_LOG_ERROR("DebugMarker", "Info: {} was present, debug markers are enabled.", std::string { VK_EXT_DEBUG_MARKER_EXTENSION_NAME });
 	} else {
-		Log::error("DebugMarker", "Warning: {} not present, debug markers are disabled.", std::string { VK_EXT_DEBUG_MARKER_EXTENSION_NAME });
-		Log::error("DebugMarker", "Try running from inside a Vulkan graphics debugger (e.g. RenderDoc)");
+		DISARRAY_LOG_ERROR("DebugMarker", "Warning: {} not present, debug markers are disabled.", std::string { VK_EXT_DEBUG_MARKER_EXTENSION_NAME });
+		DISARRAY_LOG_ERROR("DebugMarker", "{}", "Try running from inside a Vulkan graphics debugger (e.g. RenderDoc)");
 	}
 }
 

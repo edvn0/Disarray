@@ -1,7 +1,11 @@
 #pragma once
 
+#include <fmt/core.h>
+
 #include <filesystem>
+#include <optional>
 #include <string_view>
+#include <vector>
 
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
@@ -10,7 +14,7 @@
 
 namespace Disarray {
 
-enum class ShaderType { Vertex, Fragment, Compute };
+enum class ShaderType : std::uint8_t { Vertex, Fragment, Compute };
 
 static constexpr auto shader_type_extension(ShaderType shader_type)
 {
@@ -47,19 +51,23 @@ inline auto to_shader_type(const std::filesystem::path& path_like)
 }
 
 struct ShaderProperties {
+	std::optional<std::vector<std::uint32_t>> code;
 	std::filesystem::path path;
+	std::filesystem::path identifier;
 	ShaderType type { ShaderType::Vertex };
 	std::string entry_point = "main";
 };
 
 class Shader : public ReferenceCountable {
-	DISARRAY_OBJECT(Shader)
+	DISARRAY_OBJECT_PROPS(Shader, ShaderProperties)
 public:
 	virtual void destroy_module() = 0;
-	virtual const ShaderProperties& get_properties() const = 0;
-	virtual ShaderProperties& get_properties() = 0;
 
-	static Ref<Disarray::Shader> construct(const Disarray::Device& device, const ShaderProperties&);
+	static auto construct(const Disarray::Device& device, const ShaderProperties&) -> Ref<Disarray::Shader>;
 };
 
 } // namespace Disarray
+
+template <> struct fmt::formatter<Disarray::ShaderType> : fmt::formatter<std::string_view> {
+	auto format(const Disarray::ShaderType& format, format_context& ctx) -> decltype(ctx.out());
+};
