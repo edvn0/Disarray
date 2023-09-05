@@ -1,4 +1,5 @@
-#version 450
+#version 460
+#extension GL_GOOGLE_include_directive:require
 
 #include "PC.glsl"
 #include "UBO.glsl"
@@ -13,8 +14,8 @@ layout(location = 1) in vec4 colour;
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    Uniform ubo = UBO.ubo;
+	Uniform ubo = UBO.ubo;
 
-    gl_Position = ubo.view_projection * vec4(pos, 1.0);
-    fragColor = colour;
+	gl_Position = ubo.view_projection * vec4(pos, 1.0);
+	fragColor = colour;
 }

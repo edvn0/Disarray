@@ -5,6 +5,7 @@
 
 namespace Disarray {
 
-void wait_for_cleanup(Disarray::Device&);
+void wait_for_idle(Disarray::Device&);
+void wait_for_idle(const Disarray::Device&);
 
 } // namespace Disarray

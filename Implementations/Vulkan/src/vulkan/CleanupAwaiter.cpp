@@ -9,6 +9,7 @@
 
 namespace Disarray {
 
-void wait_for_cleanup(Disarray::Device& device) { vkDeviceWaitIdle(supply_cast<Disarray::Vulkan::Device>(device)); }
+void wait_for_idle(Disarray::Device& device) { vkDeviceWaitIdle(supply_cast<Disarray::Vulkan::Device>(device)); }
+void wait_for_idle(const Disarray::Device& device) { vkDeviceWaitIdle(supply_cast<Disarray::Vulkan::Device>(device)); }
 
 } // namespace Disarray

@@ -1,15 +1,16 @@
-#version 450
+#version 460
+#extension GL_GOOGLE_include_directive:require
 
 #include "PC.glsl"
 #include "UBO.glsl"
 
 layout(set = 0, binding = 0) uniform UniformBlock {
-    Uniform ubo;
+	Uniform ubo;
 } UBO;
 
 layout(push_constant) uniform PushConstantBlock
 {
-    PushConstant pc;
+	PushConstant pc;
 }
 PC;
 
@@ -23,12 +24,12 @@ layout(location = 1) out vec2 uvs;
 layout(location = 2) out vec3 outNormals;
 
 void main() {
-    PushConstant pc = PC.pc;
-    Uniform ubo = UBO.ubo;
+	PushConstant pc = PC.pc;
+	Uniform ubo = UBO.ubo;
 
-    gl_Position = ubo.view_projection * pc.object_transform * vec4(pos, 1.0);
-    gl_PointSize = 1.0f;
-    fragColor = pc.colour;
-    uvs = uv;
-    outNormals = normals;
+	gl_Position = ubo.view_projection * pc.object_transform * vec4(pos, 1.0);
+	gl_PointSize = 1.0f;
+	fragColor = pc.colour;
+	uvs = uv;
+	outNormals = normals;
 }

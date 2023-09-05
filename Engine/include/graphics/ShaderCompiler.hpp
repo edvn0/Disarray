@@ -14,19 +14,23 @@ namespace Disarray::Runtime {
 
 namespace Detail {
 	struct CompilerIntrinsics;
-	void script_deleter(CompilerIntrinsics*);
+	void data_deleter(CompilerIntrinsics*);
 } // namespace Detail
 
 class ShaderCompiler {
+	using Code = std::vector<std::uint32_t>;
+
 public:
-	auto compile(const std::filesystem::path&, ShaderType) -> std::vector<std::uint32_t>;
+	ShaderCompiler();
+	auto compile(const std::filesystem::path&, ShaderType) -> Code;
+	auto try_compile(const std::filesystem::path&, ShaderType) -> std::pair<bool, Code>;
 
 	static void initialize();
 	static void destroy();
 
 private:
 	struct Deleter {
-		void operator()(Detail::CompilerIntrinsics* ptr) { Detail::script_deleter(ptr); }
+		void operator()(Detail::CompilerIntrinsics* ptr) { Detail::data_deleter(ptr); }
 	};
 	using CompilerData = std::unique_ptr<Detail::CompilerIntrinsics, Deleter>;
 	CompilerData compiler_data { nullptr };

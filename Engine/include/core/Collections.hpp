@@ -30,6 +30,9 @@ concept Iterable = requires(T collection) {
 	{
 		std::end(collection)
 	};
+	{
+		*std::begin(collection)
+	};
 };
 
 template <class T>
@@ -66,6 +69,18 @@ template <class T, std::size_t BatchSize> auto split_into_batches(Iterable auto&
 }
 
 constexpr inline auto for_each(Iterable auto& collection, auto&& func) { std::for_each(std::begin(collection), std::end(collection), func); }
+constexpr inline auto remove_if(Iterable auto& collection, auto&& predicate)
+{
+	auto iterator = std::begin(collection);
+	auto end = std::end(collection);
+	for (; iterator != end;) {
+		if (predicate(*iterator)) {
+			iterator = collection.erase(iterator);
+		} else {
+			++iterator;
+		}
+	}
+}
 constexpr inline auto map(Iterable auto& collection, auto&& func)
 {
 	using Type = decltype(func(collection[0]));

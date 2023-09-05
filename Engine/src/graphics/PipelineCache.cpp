@@ -37,6 +37,7 @@ PipelineCache::PipelineCache(const Disarray::Device& dev, const std::filesystem:
 		auto shader = Shader::construct(get_device(),
 			{
 				.code = code,
+				.identifier = shader_path,
 				.type = type,
 			});
 
@@ -48,8 +49,6 @@ PipelineCache::PipelineCache(const Disarray::Device& dev, const std::filesystem:
 		auto filename = shader_path.filename().string();
 		shader_cache.try_emplace(filename, std::move(shader));
 	}
-
-	Runtime::ShaderCompiler::destroy();
 }
 
 } // namespace Disarray

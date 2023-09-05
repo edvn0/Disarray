@@ -2,10 +2,10 @@
 
 #include "graphics/Shader.hpp"
 
-#include <bit>
 #include <fstream>
 #include <stdexcept>
 
+#include "core/Ensure.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Shader.hpp"
 #include "vulkan/Structures.hpp"
@@ -54,8 +54,10 @@ Shader::Shader(const Disarray::Device& dev, ShaderProperties properties)
 	auto type = to_stage(props.type);
 
 	if (props.code) {
+		ensure(!props.identifier.empty(), "Must supply an identifier");
 		create_module(cast_to<Vulkan::Device>(device), *props.code, shader_module);
 	} else {
+		props.identifier = props.path;
 		auto read = Shader::read_file(props.path);
 		create_module(cast_to<Vulkan::Device>(device), read, shader_module);
 	}

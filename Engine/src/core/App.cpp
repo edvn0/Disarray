@@ -96,7 +96,7 @@ void App::run()
 		current_time = Clock::ms();
 	}
 
-	wait_for_cleanup(*device);
+	wait_for_idle(*device);
 
 	UI::InterfaceCaches::destruct();
 	for (auto& layer : layers) {

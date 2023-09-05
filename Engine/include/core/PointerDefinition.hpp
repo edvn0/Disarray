@@ -11,6 +11,6 @@ template <class T> using Ref = ReferenceCounted<T>;
 #else
 template <class T> using Ref = std::shared_ptr<T>;
 #endif
-template <class T> using Scope = std::unique_ptr<T>;
+template <class T, class D = std::default_delete<T>> using Scope = std::unique_ptr<T, D>;
 
 } // namespace Disarray

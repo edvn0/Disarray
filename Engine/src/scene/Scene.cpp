@@ -29,6 +29,7 @@
 #include "graphics/PushConstantLayout.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
+#include "graphics/ShaderCompiler.hpp"
 #include "graphics/Texture.hpp"
 #include "graphics/TextureCache.hpp"
 #include "scene/Camera.hpp"
@@ -71,45 +72,62 @@ Scene::Scene(const Device& dev, std::string_view name)
 
 void Scene::setup_filewatcher_and_threadpool(ThreadPool& pool)
 {
-	file_watcher = make_scope<FileWatcher>(pool, "Assets/Shaders", Collections::StringSet { ".spv", ".vert", ".frag" });
-	file_watcher->on_modified([&reg = registry, &mutex = registry_access](const FileInformation& entry) {
+	file_watcher = make_scope<FileWatcher>(pool, "Assets/Shaders", Collections::StringSet { ".vert", ".frag" }, std::chrono::milliseconds(200));
+	file_watcher->on_modified([&dev = device, &reg = registry, &mutex = registry_access](const FileInformation& entry) {
 		std::scoped_lock lock { mutex };
 		const auto view = reg.view<Components::Pipeline>();
-		std::unordered_set<Pipeline*> unique_pipelines_sharing_this_files {};
+		std::unordered_set<Components::Pipeline*> unique_pipelines_sharing_this_files {};
 		for (auto&& [ent, pipeline] : view.each()) {
 			if (!pipeline.pipeline->has_shader_with_name(entry.to_path())) {
 				continue;
 			}
-			unique_pipelines_sharing_this_files.insert(pipeline.pipeline.get());
+			unique_pipelines_sharing_this_files.insert(&pipeline);
 		}
 
-		DISARRAY_LOG_INFO("Scene FileWatcher", "Number of pipelines sharing this changed shader: {}", unique_pipelines_sharing_this_files.size());
+		Runtime::ShaderCompiler compiler;
 		for (auto* pipe : unique_pipelines_sharing_this_files) {
-			// TODO: Runtime shader compilation!
-			DISARRAY_LOG_INFO("Scene FileWatcher", "Pipelines {}", fmt::ptr(pipe));
-#if 0
+			auto& [pipeline] = *pipe;
 			ShaderType type = to_shader_type(entry.path);
-			auto& pipe_props = pipe->get_properties();
+			auto& pipe_props = pipeline->get_properties();
+
+			auto&& [could, code] = compiler.try_compile(entry.path, type);
+			if (!could) {
+				continue;
+			}
+
 			switch (type) {
 			case ShaderType::Vertex: {
 				pipe_props.vertex_shader = Shader::construct(dev,
 					{
-						.path = entry.path,
+						.code = std::move(code),
+						.identifier = entry.path,
 						.type = type,
 					});
 			}
 			case ShaderType::Fragment: {
 				pipe_props.fragment_shader = Shader::construct(dev,
 					{
-						.path = entry.path,
+						.code = std::move(code),
+						.identifier = entry.path,
 						.type = type,
 					});
 			}
 			case ShaderType::Compute: {
+				pipe_props.compute_shader = Shader::construct(dev,
+					{
+						.code = std::move(code),
+						.identifier = entry.path,
+						.type = type,
+					});
 			}
 			}
-#endif
 		}
+
+		wait_for_idle(dev);
+		for (auto* comp : unique_pipelines_sharing_this_files) {
+			comp->pipeline->force_recreation();
+		}
+		wait_for_idle(dev);
 	});
 
 	final_pool_callback = pool.submit([this]() {
@@ -128,7 +146,7 @@ void Scene::setup_filewatcher_and_threadpool(ThreadPool& pool)
 			}
 
 			auto* scene = this;
-			Collections::parallel_for_each(parallels, [scene](auto& f) { f.func(scene); });
+			Collections::parallel_for_each(parallels, [scene](auto& func_wrapper) { func_wrapper.func(scene); });
 			callback_cv.wait_for(lock, 10s);
 		}
 	});
@@ -255,14 +273,13 @@ void Scene::update(float time_step)
 void Scene::render()
 {
 	command_executor->begin();
+#ifdef SHADOW_PASS_SUPPORTED
 	{
 		scene_renderer->begin_pass(*command_executor, *shadow_framebuffer);
 		draw_geometry(*command_executor, true);
 		scene_renderer->end_pass(*command_executor);
 	}
-	command_executor->end();
-
-	command_executor->begin();
+#endif
 	{
 		scene_renderer->begin_pass(*command_executor, *framebuffer, true);
 

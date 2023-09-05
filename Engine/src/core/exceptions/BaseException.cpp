@@ -13,9 +13,9 @@ BaseException::BaseException(std::string_view scope, std::string_view data)
 	: std::runtime_error(data.data())
 	, message(data)
 {
-	DISARRAY_LOG_ERROR(scope, "{}", data);
+	DISARRAY_LOG_ERROR(scope, "{}", message);
 }
 
-const char* BaseException::what() const noexcept { return message.c_str(); }
+auto BaseException::what() const noexcept -> const char* { return message.c_str(); }
 
 } // namespace Disarray

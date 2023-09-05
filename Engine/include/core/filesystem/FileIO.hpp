@@ -26,6 +26,11 @@ namespace Detail {
 		{
 			return static_cast<Child&>(*this).read_from_file_impl(path, output);
 		}
+
+		auto read_from_file(std::string_view path, std::string& output) -> bool
+		{
+			return static_cast<Child&>(*this).read_from_file_impl(path, output);
+		}
 	};
 
 	template <class T> struct GenericFileWriter : FileWrite<T, GenericFileWriter<T>> {
@@ -62,6 +67,23 @@ namespace Detail {
 
 			return true;
 		}
+
+		auto read_from_file_impl(std::string_view path_sv, std::string& out) -> bool
+		{
+			std::filesystem::path path { path_sv };
+			std::ifstream stream { path, std::fstream::ate | std::fstream::in };
+			if (!stream) {
+				DISARRAY_LOG_ERROR("FileIO", "Could not open file: {}", path.string());
+				return false;
+			}
+
+			const auto size = stream.tellg();
+			out.resize(size);
+
+			stream.seekg(0);
+			stream.read(out.data(), size);
+			return true;
+		}
 	};
 
 	using CharFileRead = GenericFileReader<char>;
@@ -88,6 +110,12 @@ template <AllowedVectorTypes T> auto read_from_file(std::string_view path, std::
 	Reader reader {};
 	return reader.read_from_file(path, output);
 }
+inline auto read_from_file(std::string_view path, std::string& output) -> bool
+{
+	using Reader = Detail::GenericFileReader<std::uint32_t>;
+	Reader reader {};
+	return reader.read_from_file(path, output);
+}
 
 template <typename Func, typename ExtensionIncludeFunc, bool Recursive = false, bool IncludeDirectories = false>
 auto for_each_in_directory(auto path, Func&& func, ExtensionIncludeFunc&& ext) -> void
@@ -109,7 +137,7 @@ auto for_each_in_directory(auto path, Func&& func, ExtensionIncludeFunc&& ext) -
 			continue;
 		}
 
-		func(entry);
+		std::forward<Func>(func)(entry);
 	}
 }
 

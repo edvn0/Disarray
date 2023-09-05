@@ -4,7 +4,6 @@
 
 #include <filesystem>
 
-#include "core/Formatters.hpp"
 #include "core/Log.hpp"
 #include "core/filesystem/FileIO.hpp"
 #include "fmt/core.h"
@@ -13,9 +12,6 @@ namespace Disarray {
 
 auto IncludeDirectoryIncluder::includeSystem(const char* header_name, const char* includer_name, size_t inclusion_depth) -> IncResult*
 {
-	// TODO: This should be used if a shader file says "#include <source>",
-	// in which case it includes a "system" file instead of a local file.
-	DISARRAY_LOG_ERROR("IncludeDirectoryIncluder", "includeSystem({}, {}, {})", header_name, includer_name, inclusion_depth);
 	return nullptr;
 }
 
@@ -33,7 +29,7 @@ auto IncludeDirectoryIncluder::includeLocal(const char* header_name, const char*
 		return &fail_result;
 	}
 
-	sources[resolved_string] = {}; // insert an empty vector!
+	sources[resolved_string] = {};
 
 	bool could = FS::read_from_file(resolved_string, sources[resolved_string]);
 	if (!could) {
@@ -56,15 +52,10 @@ void IncludeDirectoryIncluder::releaseInclude(IncResult* result)
 		sources.erase(iterator);
 	}
 	if (auto iterator = includes.find(result->headerName); iterator != includes.end()) {
-		// EDIT: I have forgotten to use "delete" here on the IncResult, but should probably be done!
 		includes.erase(iterator);
 	}
 }
 
-auto IncludeDirectoryIncluder::Deleter::operator()(IncResult* ptr) -> void
-{
-	DISARRAY_LOG_INFO("IncludeDirectoryInclude::Deleter", "Calling delete on result '{}'", ptr->headerName);
-	delete ptr;
-}
+auto IncludeDirectoryIncluder::Deleter::operator()(IncResult* ptr) -> void { delete ptr; }
 
 } // namespace Disarray

@@ -191,7 +191,7 @@ void Swapchain::recreate_swapchain(Disarray::Swapchain* old, bool should_clean)
 	window.wait_for_minimisation();
 	swapchain_needs_recreation = true;
 
-	wait_for_cleanup(device);
+	wait_for_idle(device);
 
 	if (should_clean) {
 		cleanup_swapchain();
