@@ -69,7 +69,7 @@ auto for_each_in_directory(auto path, Func&& func, ExtensionIncludeFunc&& ext) -
 	using IteratorType = std::conditional_t<Recursive, std::filesystem::directory_iterator, std::filesystem::recursive_directory_iterator>;
 	using EntryType = std::filesystem::directory_entry;
 	static constexpr auto should_include = [](const EntryType& entry, auto&& extension_func) -> bool {
-		const auto should_include = extension_func(entry);
+		const bool should_include = extension_func(entry);
 		if constexpr (IncludeDirectories) {
 			const auto is_directory = entry.is_directory();
 			return should_include && is_directory;

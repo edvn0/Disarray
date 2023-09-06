@@ -84,41 +84,37 @@ void Scene::setup_filewatcher_and_threadpool(ThreadPool& pool)
 			unique_pipelines_sharing_this_files.insert(&pipeline);
 		}
 
+		if (unique_pipelines_sharing_this_files.empty()) {
+			return;
+		}
+
 		Runtime::ShaderCompiler compiler;
+		ShaderType type = to_shader_type(entry.path);
+		auto&& [could, code] = compiler.try_compile(entry.path, type);
+		if (!could) {
+			return;
+		}
+
+		auto shader = Shader::construct(dev,
+			{
+				.code = std::move(code),
+				.identifier = entry.path,
+				.type = type,
+			});
+
 		for (auto* pipe : unique_pipelines_sharing_this_files) {
 			auto& [pipeline] = *pipe;
-			ShaderType type = to_shader_type(entry.path);
 			auto& pipe_props = pipeline->get_properties();
-
-			auto&& [could, code] = compiler.try_compile(entry.path, type);
-			if (!could) {
-				continue;
-			}
 
 			switch (type) {
 			case ShaderType::Vertex: {
-				pipe_props.vertex_shader = Shader::construct(dev,
-					{
-						.code = std::move(code),
-						.identifier = entry.path,
-						.type = type,
-					});
+				pipe_props.vertex_shader = shader;
 			}
 			case ShaderType::Fragment: {
-				pipe_props.fragment_shader = Shader::construct(dev,
-					{
-						.code = std::move(code),
-						.identifier = entry.path,
-						.type = type,
-					});
+				pipe_props.fragment_shader = shader;
 			}
 			case ShaderType::Compute: {
-				pipe_props.compute_shader = Shader::construct(dev,
-					{
-						.code = std::move(code),
-						.identifier = entry.path,
-						.type = type,
-					});
+				pipe_props.compute_shader = shader;
 			}
 			}
 		}

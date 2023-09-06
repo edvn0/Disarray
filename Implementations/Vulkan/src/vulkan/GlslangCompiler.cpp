@@ -7,6 +7,8 @@
 #include <glslang/Public/ShaderLang.h>
 
 #include <exception>
+#include <filesystem>
+#include <unordered_set>
 
 #include "core/Collections.hpp"
 #include "core/Ensure.hpp"
@@ -79,8 +81,9 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	EProfile default_profile = ECoreProfile;
 
 	std::string preprocessed_str;
-	glslang::TShader::ForbidIncluder includer {};
-	if (!shader->preprocess(resources, default_version, default_profile, false, forward_compatible, EShMsgDefault, &preprocessed_str, includer)) {
+	glslang::TShader::ForbidIncluder forbid_includer {};
+	if (!shader->preprocess(
+			resources, default_version, default_profile, false, forward_compatible, EShMsgDefault, &preprocessed_str, forbid_includer)) {
 		DISARRAY_LOG_ERROR("ShaderCompiler", "Failed to preprocess shader: {}. Info:{}", path_to_shader.string(), shader->getInfoLog());
 		return {};
 	}
@@ -149,19 +152,6 @@ void ShaderCompiler::destroy()
 	}
 }
 
-void ShaderCompiler::add_include_extension(std::vector<char>& glsl_code)
-{
-	static constexpr std::string_view extension = "\n#version 460\n#extension GL_GOOGLE_include_directive:require\n";
-	std::string output;
-	output += extension;
-	for (char character : glsl_code) {
-		output += character;
-	}
-	output.shrink_to_fit();
-
-	glsl_code = { output.begin(), output.end() };
-}
-
 static auto replace(std::string& output, const std::string_view from, const std::string& replacement) -> bool
 {
 	size_t start_pos = output.find(from);
@@ -172,43 +162,41 @@ static auto replace(std::string& output, const std::string_view from, const std:
 	return true;
 }
 
-static auto get_includes() -> const auto&
-{
-	static const Collections::StringViewMap<std::string> includes = []() {
-		Collections::StringViewMap<std::string> inc {};
-		inc["PC.glsl"] = {};
-		if (!FS::read_from_file("Assets/Shaders/Include/PC.glsl", inc["PC.glsl"])) {
-			DISARRAY_LOG_ERROR("ShaderCompiler", "Could not populate include map with file: {}", "PC.glsl");
-		}
-		inc["UBO.glsl"] = {};
-		if (!FS::read_from_file("Assets/Shaders/Include/UBO.glsl", inc["UBO.glsl"])) {
-			DISARRAY_LOG_ERROR("ShaderCompiler", "Could not populate include map with file: {}", "UBO.glsl");
-		}
-		inc["CameraUBO.glsl"] = {};
-		if (!FS::read_from_file("Assets/Shaders/Include/CameraUBO.glsl", inc["CameraUBO.glsl"])) {
-			DISARRAY_LOG_ERROR("ShaderCompiler", "Could not populate include map with file: {}", "CameraUBO.glsl");
-		}
-		inc["PointLight.glsl"] = {};
-		if (!FS::read_from_file("Assets/Shaders/Include/PointLight.glsl", inc["PointLight.glsl"])) {
-			DISARRAY_LOG_ERROR("ShaderCompiler", "Could not populate include map with file: {}", "PointLight.glsl");
-		}
-
-		return inc;
-	}();
-
-	return includes;
-}
-
-static auto check_and_replace(auto& io_string, const std::string_view to_find)
+auto BasicIncluder::check_and_replace(std::string& io_string, std::string_view to_find)
 {
 	if (io_string.find(fmt::format("#include \"{}\"\n", to_find)) == std::string::npos) {
 		return;
 	}
 
 	auto include = fmt::format("#include \"{}\"\n", to_find);
-	const auto include_string = get_includes().at(to_find);
+	ensure(include_include_source_map.contains(to_find), fmt::format("Could not find key {}", to_find));
+	const auto include_string = include_include_source_map.at(std::string { to_find });
 
 	replace(io_string, include, fmt::format("\n{}\n", include_string));
+}
+
+BasicIncluder::BasicIncluder(std::filesystem::path directory)
+{
+	FS::for_each_in_directory(
+		std::move(directory),
+		[&inc = include_include_source_map](const std::filesystem::directory_entry& entry) {
+			const auto& path = entry.path();
+			inc[path.filename().string()] = {};
+			if (!FS::read_from_file(path.string(), inc[path.filename().string()])) {
+				DISARRAY_LOG_ERROR("ShaderCompiler", "Could not populate include map with file: {}", path.filename().string());
+			}
+		},
+		[](const std::filesystem::directory_entry& entry) { return extensions.contains(entry.path().extension().string()); });
+
+	ensure(include_include_source_map.size() == 4, "We currently have 4 include files");
+}
+
+void BasicIncluder::replace_all_includes(std::string& io_string)
+{
+	Collections::for_each(include_include_source_map, [&str = io_string, this](const auto& pair) {
+		auto&& [view, string] = pair;
+		check_and_replace(str, view);
+	});
 }
 
 void ShaderCompiler::add_include_extension(std::string& glsl_code)
@@ -218,12 +206,12 @@ void ShaderCompiler::add_include_extension(std::string& glsl_code)
 	glsl_code.insert(0, extension);
 
 	using namespace std::string_view_literals;
-	std::array includes = { "PC.glsl"sv, "CameraUBO.glsl"sv, "PointLight.glsl"sv, "UBO.glsl"sv };
-	Collections::for_each(includes, [&code = glsl_code](const auto& value) { check_and_replace(code, value); });
+	includer.replace_all_includes(glsl_code);
 }
 
 ShaderCompiler::ShaderCompiler()
-	: compiler_data(make_scope<Detail::CompilerIntrinsics, Deleter>())
+	: includer("Assets/Shaders/Include")
+	, compiler_data(make_scope<Detail::CompilerIntrinsics, Deleter>())
 {
 }
 
