@@ -34,93 +34,34 @@ namespace Detail {
 		}
 	};
 
-	template <class T> struct GenericFileWriter : FileWrite<T, GenericFileWriter<T>> {
-		auto write_to_file_impl(std::string_view path_sv, std::size_t size, std::span<T> data) -> void
-		{
-			std::filesystem::path path { path_sv };
-			std::ofstream stream { path };
-			if (!stream) {
-				DISARRAY_LOG_ERROR("FileIO", "Could not open file: {}", path.string());
-				return;
-			}
-
-			stream.write(Disarray::bit_cast<const char*>(data.data()), size);
-		}
-	};
-
-	template <class T> struct GenericFileReader : FileRead<T, GenericFileReader<T>> {
-		auto read_from_file_impl(std::string_view path_sv, std::vector<T>& out) -> bool
-		{
-			std::filesystem::path path { path_sv };
-			std::ifstream stream { path, std::fstream::ate | std::fstream::in };
-			if (!stream) {
-				DISARRAY_LOG_ERROR("FileIO", "Could not open file: {}", path.string());
-				return false;
-			}
-
-			const auto size = stream.tellg();
-			out.resize(size);
-
-			stream.seekg(0);
-
-			char* cast = Disarray::bit_cast<char*>(out.data());
-			stream.read(cast, size);
-
-			return true;
-		}
-
-		auto read_from_file_impl(std::string_view path_sv, std::string& out) -> bool
-		{
-			std::filesystem::path path { path_sv };
-			std::ifstream stream { path, std::fstream::ate | std::fstream::in };
-			if (!stream) {
-				DISARRAY_LOG_ERROR("FileIO", "Could not open file: {}", path.string());
-				return false;
-			}
-
-			const auto size = stream.tellg();
-			out.resize(size);
-
-			stream.seekg(0);
-			stream.read(out.data(), size);
-
-			return true;
-		}
-	};
-
-	using CharFileRead = GenericFileReader<char>;
-	using UintFileRead = GenericFileReader<std::uint32_t>;
-	using UnsignedCharFileRead = GenericFileReader<unsigned char>;
-	using ConstCharFileRead = GenericFileReader<const char>;
-	using ConstUintFileRead = GenericFileReader<const std::uint32_t>;
-	using ConstUnsignedCharFileRead = GenericFileReader<const unsigned char>;
-
 } // namespace Detail
+
+#include "core/filesystem/FileReadWriters.inl"
 
 template <class T> void write_to_file(std::string_view path, std::size_t size, std::span<T> data)
 {
-	using FW = Detail::GenericFileWriter<const void*>;
+	using FW = Detail::GenericFileWriter<T>;
 	FW writer {};
 	writer.write_to_file(path, size, data);
 }
 
 template <class T>
 concept AllowedVectorTypes = AnyOf<T, const char, char, const unsigned char, unsigned char, const std::uint32_t, std::uint32_t>;
-template <AllowedVectorTypes T> inline auto read_from_file(std::string_view path, std::string& output) -> bool
+template <AllowedVectorTypes T> [[nodiscard]] inline auto read_from_file(std::string_view path, std::string& output) -> bool
 {
 	using Reader = Detail::GenericFileReader<T>;
 	Reader reader {};
 	return reader.read_from_file(path, output);
 }
 
-template <AllowedVectorTypes T> auto read_from_file(std::string_view path, std::vector<T>& output) -> bool
+template <AllowedVectorTypes T> [[nodiscard]] auto read_from_file(std::string_view path, std::vector<T>& output) -> bool
 {
 	using Reader = Detail::GenericFileReader<T>;
 	Reader reader {};
 	return reader.read_from_file(path, output);
 }
 
-inline auto read_from_file(std::string_view path, std::string& output) -> bool { return read_from_file<std::uint32_t>(path, output); }
+[[nodiscard]] inline auto read_from_file(std::string_view path, std::string& output) -> bool { return read_from_file<char>(path, output); }
 
 template <typename Func, typename ExtensionIncludeFunc, bool Recursive = false, bool IncludeDirectories = false>
 auto for_each_in_directory(auto path, Func&& func, ExtensionIncludeFunc&& ext) -> void

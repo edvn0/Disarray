@@ -14,7 +14,6 @@ namespace Disarray::Runtime {
 
 namespace Detail {
 	struct CompilerIntrinsics;
-	void data_deleter(CompilerIntrinsics*);
 } // namespace Detail
 
 class ShaderCompiler {
@@ -33,9 +32,9 @@ private:
 	void add_include_extension(std::string& glsl_code);
 
 	struct Deleter {
-		void operator()(Detail::CompilerIntrinsics* ptr) { Detail::data_deleter(ptr); }
+		void operator()(Detail::CompilerIntrinsics* ptr);
 	};
-	using CompilerData = std::unique_ptr<Detail::CompilerIntrinsics, Deleter>;
+	using CompilerData = Scope<Detail::CompilerIntrinsics, Deleter>;
 	CompilerData compiler_data { nullptr };
 };
 

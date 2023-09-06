@@ -8,6 +8,7 @@
 
 #include <exception>
 
+#include "core/Collections.hpp"
 #include "core/Ensure.hpp"
 #include "core/Formatters.hpp"
 #include "core/Log.hpp"
@@ -43,12 +44,7 @@ struct Detail::CompilerIntrinsics {
 	}
 };
 
-auto Detail::data_deleter(Detail::CompilerIntrinsics* ptr) -> void
-{
-	DISARRAY_LOG_DEBUG("Detail::data_deleter", "Deleted compiler_intrinsics ptr at: {}", fmt::ptr(ptr));
-
-	delete ptr;
-}
+auto ShaderCompiler::Deleter::operator()(Detail::CompilerIntrinsics* ptr) -> void { delete ptr; }
 
 auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, ShaderType type) -> std::vector<std::uint32_t>
 {
@@ -83,8 +79,8 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	EProfile default_profile = ECoreProfile;
 
 	std::string preprocessed_str;
-	if (!shader->preprocess(resources, default_version, default_profile, false, forward_compatible, EShMsgDefault, &preprocessed_str,
-			*compiler_data->include_dir_includer)) {
+	glslang::TShader::ForbidIncluder includer {};
+	if (!shader->preprocess(resources, default_version, default_profile, false, forward_compatible, EShMsgDefault, &preprocessed_str, includer)) {
 		DISARRAY_LOG_ERROR("ShaderCompiler", "Failed to preprocess shader: {}. Info:{}", path_to_shader.string(), shader->getInfoLog());
 		return {};
 	}
@@ -166,11 +162,64 @@ void ShaderCompiler::add_include_extension(std::vector<char>& glsl_code)
 	glsl_code = { output.begin(), output.end() };
 }
 
+static auto replace(std::string& output, const std::string_view from, const std::string& replacement) -> bool
+{
+	size_t start_pos = output.find(from);
+	if (start_pos == std::string::npos) {
+		return false;
+	}
+	output.replace(start_pos, from.length(), replacement.c_str());
+	return true;
+}
+
+static auto get_includes() -> const auto&
+{
+	static const Collections::StringViewMap<std::string> includes = []() {
+		Collections::StringViewMap<std::string> inc {};
+		inc["PC.glsl"] = {};
+		if (!FS::read_from_file("Assets/Shaders/Include/PC.glsl", inc["PC.glsl"])) {
+			DISARRAY_LOG_ERROR("ShaderCompiler", "Could not populate include map with file: {}", "PC.glsl");
+		}
+		inc["UBO.glsl"] = {};
+		if (!FS::read_from_file("Assets/Shaders/Include/UBO.glsl", inc["UBO.glsl"])) {
+			DISARRAY_LOG_ERROR("ShaderCompiler", "Could not populate include map with file: {}", "UBO.glsl");
+		}
+		inc["CameraUBO.glsl"] = {};
+		if (!FS::read_from_file("Assets/Shaders/Include/CameraUBO.glsl", inc["CameraUBO.glsl"])) {
+			DISARRAY_LOG_ERROR("ShaderCompiler", "Could not populate include map with file: {}", "CameraUBO.glsl");
+		}
+		inc["PointLight.glsl"] = {};
+		if (!FS::read_from_file("Assets/Shaders/Include/PointLight.glsl", inc["PointLight.glsl"])) {
+			DISARRAY_LOG_ERROR("ShaderCompiler", "Could not populate include map with file: {}", "PointLight.glsl");
+		}
+
+		return inc;
+	}();
+
+	return includes;
+}
+
+static auto check_and_replace(auto& io_string, const std::string_view to_find)
+{
+	if (io_string.find(fmt::format("#include \"{}\"\n", to_find)) == std::string::npos) {
+		return;
+	}
+
+	auto include = fmt::format("#include \"{}\"\n", to_find);
+	const auto include_string = get_includes().at(to_find);
+
+	replace(io_string, include, fmt::format("\n{}\n", include_string));
+}
+
 void ShaderCompiler::add_include_extension(std::string& glsl_code)
 {
 	ensure(glsl_code.find("#version") == std::string::npos, "Shader has a #version directive");
-	static constexpr std::string_view extension = "#version 460\n#extension GL_GOOGLE_include_directive: require\n";
+	static constexpr std::string_view extension = "#version 460\n";
 	glsl_code.insert(0, extension);
+
+	using namespace std::string_view_literals;
+	std::array includes = { "PC.glsl"sv, "CameraUBO.glsl"sv, "PointLight.glsl"sv, "UBO.glsl"sv };
+	Collections::for_each(includes, [&code = glsl_code](const auto& value) { check_and_replace(code, value); });
 }
 
 ShaderCompiler::ShaderCompiler()
