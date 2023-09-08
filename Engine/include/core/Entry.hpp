@@ -7,7 +7,7 @@
 #include <memory>
 #include <string>
 
-extern auto Disarray::create_application(const Disarray::ApplicationProperties&) -> Disarray::Scope<Disarray::App,Disarray::AppDeleter>;
+extern auto Disarray::create_application(const Disarray::ApplicationProperties&) -> Disarray::Scope<Disarray::App, Disarray::AppDeleter>;
 
 int main(int argc, char** argv)
 {

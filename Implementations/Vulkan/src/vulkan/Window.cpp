@@ -3,6 +3,7 @@
 #include "vulkan/Window.hpp"
 
 #include <GLFW/glfw3.h>
+
 #include <graphics/ImageLoader.hpp>
 
 #include <string>

@@ -2,10 +2,10 @@
 
 #include "ui/UI.hpp"
 
-#include <vulkan/vulkan.h>
-
 #include <GLFW/glfw3.h>
 #include <backends/imgui_impl_vulkan.h>
+#include <vulkan/vulkan.h>
+
 #include <imgui.h>
 
 #include <unordered_map>
