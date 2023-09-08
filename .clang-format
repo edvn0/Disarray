@@ -7,7 +7,7 @@ IncludeBlocks: Regroup
 IncludeCategories:
   - Regex: "DisarrayPCH.hpp"
     Priority: -1
-  - Regex: "<(vulkan|glm).*>"
+  - Regex: "<(vulkan|glm|GLFW|SPIRV|backends).*>"
     Priority: 2
   - Regex: '<[\w\/-_]+[\.\/][\w\/-_]+>'
     Priority: 3

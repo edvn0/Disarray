@@ -10,12 +10,12 @@ template <IsNumber T, IsNumber Total, std::size_t N> class MovingAverage {
 public:
 	MovingAverage() { samples.fill(T {}); }
 
-	MovingAverage& operator()(T sample)
+	auto operator()(T sample) -> MovingAverage&
 	{
 		total += sample;
-		if (num_samples < N)
+		if (num_samples < N) {
 			samples[num_samples++] = sample;
-		else {
+		} else {
 			T& oldest = samples[num_samples++ % N];
 			total -= oldest;
 			oldest = sample;
@@ -26,7 +26,7 @@ public:
 	operator double() const { return total / std::min(num_samples, N); }
 	operator float() const { return static_cast<float>(total) / std::min(num_samples, N); }
 
-	double inverse() const { return std::min(num_samples, N) / total; }
+	[[nodiscard]] auto inverse() const -> double { return std::min(num_samples, N) / total; }
 
 private:
 	std::array<T, N> samples {};

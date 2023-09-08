@@ -38,7 +38,7 @@ ClientLayer::ClientLayer(Device& device, Window& win, Swapchain& swapchain)
 
 ClientLayer::~ClientLayer() = default;
 
-void ClientLayer::construct(App& app, ThreadPool& pool)
+void ClientLayer::construct(App& app, Threading::ThreadPool& pool)
 {
 	scene = std::make_unique<Scene>(device, "Default scene");
 

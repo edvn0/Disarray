@@ -157,7 +157,7 @@ void DirectoryContentPanel::interface()
 	ImGui::End();
 }
 
-void DirectoryContentPanel::construct(App&, ThreadPool& pool)
+void DirectoryContentPanel::construct(App&, Threading::ThreadPool& pool)
 {
 	using namespace std::chrono_literals;
 	file_watcher = make_scope<FileWatcher>(pool, "Assets", 300ms);
@@ -176,8 +176,9 @@ void DirectoryContentPanel::construct(App&, ThreadPool& pool)
 
 	file_watcher->on(FileStatuses::All, [this](const FileInformation& file_info) {
 		std::filesystem::path file_path { file_info.path };
-		if (const auto file_directory_for_modified_file = file_path.parent_path(); file_directory_for_modified_file != current)
+		if (const auto file_directory_for_modified_file = file_path.parent_path(); file_directory_for_modified_file != current) {
 			return;
+		}
 
 		std::unique_lock lock { mutex };
 		reload();

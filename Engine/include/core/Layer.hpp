@@ -14,14 +14,14 @@ class Layer {
 public:
 	virtual ~Layer() = default;
 
-	virtual void construct(App&, ThreadPool&);
+	virtual void construct(App&, Threading::ThreadPool&);
 	virtual void handle_swapchain_recreation(Swapchain&);
 	virtual void on_event(Event&);
 	virtual void interface();
 	virtual void update(float time_step);
 	virtual void render();
 	virtual void destruct();
-	virtual bool is_interface_layer() const;
+	[[nodiscard]] virtual auto is_interface_layer() const -> bool;
 };
 
 } // namespace Disarray

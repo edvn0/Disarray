@@ -10,13 +10,12 @@
 #include "graphics/Device.hpp"
 #include "graphics/Image.hpp"
 #include "graphics/ImageProperties.hpp"
-#include "graphics/Swapchain.hpp"
 
 namespace Disarray {
 
 struct TextureProperties {
-	Extent extent;
-	ImageFormat format;
+	Extent extent {};
+	ImageFormat format { ImageFormat::SRGB }; // TODO: This is a crazy default, just to shut up clangd...
 	std::optional<std::uint32_t> mips { std::nullopt };
 	std::filesystem::path path {};
 	bool locked_extent { false };

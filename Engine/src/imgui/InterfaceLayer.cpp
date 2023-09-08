@@ -44,7 +44,7 @@ InterfaceLayer::InterfaceLayer(Device& dev, Window& win, Swapchain& swap)
 
 InterfaceLayer::~InterfaceLayer() { }
 
-void InterfaceLayer::construct(App&, ThreadPool&)
+void InterfaceLayer::construct(App&, Threading::ThreadPool&)
 {
 	command_executor = CommandExecutor::construct(device, swapchain,
 		{

@@ -1,11 +1,12 @@
 #pragma once
 
+#include <cstdint>
+
 #include "core/Clock.hpp"
-#include "core/Concepts.hpp"
 
 namespace Disarray {
 
-enum class Granularity { Seconds, Millis, Nanos };
+enum class Granularity : std::uint8_t { Seconds, Millis, Nanos };
 template <Granularity T> inline constexpr double convert_from_nano_seconds_to_factor = 0;
 template <> inline constexpr double convert_from_nano_seconds_to_factor<Granularity::Seconds> = 1e6;
 template <> inline constexpr double convert_from_nano_seconds_to_factor<Granularity::Millis> = 1e3;
@@ -19,7 +20,7 @@ public:
 	}
 	~Timer() = default;
 
-	template <Granularity Other> T elapsed()
+	template <Granularity Other> auto elapsed() -> T
 	{
 		const double current_nanos = nanos();
 		constexpr auto factor = convert_from_nano_seconds_to_factor<Other>;
@@ -28,9 +29,9 @@ public:
 	}
 
 private:
-	double nanos() const { return static_cast<double>(Clock::ns()); };
+	[[nodiscard]] auto nanos() const -> double { return static_cast<double>(Clock::ns()); };
 
-	const double start_nanos { 0.0 };
+	double start_nanos { 0.0 };
 };
 
 using MSTimer = Timer<float>;

@@ -34,13 +34,13 @@ constexpr auto to_filetype(const auto& extension) -> FileType
 		return FileType::UNKNOWN;
 }
 
-FileWatcher::FileWatcher(ThreadPool& pool, const std::filesystem::path& in_path, std::chrono::duration<int, std::milli> in_delay)
+FileWatcher::FileWatcher(Threading::ThreadPool& pool, const std::filesystem::path& in_path, std::chrono::duration<int, std::milli> in_delay)
 	: FileWatcher(pool, in_path, { "*" }, in_delay)
 {
 }
 
-FileWatcher::FileWatcher(
-	ThreadPool& pool, const std::filesystem::path& in_path, const Collections::StringSet& exts, std::chrono::duration<int, std::milli> in_delay)
+FileWatcher::FileWatcher(Threading::ThreadPool& pool, const std::filesystem::path& in_path, const Collections::StringSet& exts,
+	std::chrono::duration<int, std::milli> in_delay)
 	: root(in_path)
 	, extensions(exts)
 	, delay(in_delay)

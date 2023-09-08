@@ -70,7 +70,7 @@ Scene::Scene(const Device& dev, std::string_view name)
 	selected_entity = make_scope<Entity>(this);
 }
 
-void Scene::setup_filewatcher_and_threadpool(ThreadPool& pool)
+void Scene::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
 {
 	file_watcher = make_scope<FileWatcher>(pool, "Assets/Shaders", Collections::StringSet { ".vert", ".frag" }, std::chrono::milliseconds(200));
 	file_watcher->on_modified([&dev = device, &reg = registry, &mutex = registry_access](const FileInformation& entry) {
@@ -148,7 +148,7 @@ void Scene::setup_filewatcher_and_threadpool(ThreadPool& pool)
 	});
 }
 
-void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
+void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 {
 	scene_renderer = Renderer::construct_unique(device, app.get_swapchain(), {});
 

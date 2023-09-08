@@ -13,7 +13,7 @@ public:
 
 	void interface() override;
 
-	void construct(App& /*unused*/, ThreadPool& /*unused*/) override;
+	void construct(App& /*unused*/, Threading::ThreadPool& /*unused*/) override;
 	void handle_swapchain_recreation(Swapchain& /*unused*/) override;
 	void on_event(Event& /*unused*/) override;
 	void update(float /*time_step*/) override;

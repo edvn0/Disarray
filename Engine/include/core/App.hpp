@@ -92,6 +92,9 @@ private:
 	ApplicationStatistics statistics;
 };
 
-extern auto create_application(const Disarray::ApplicationProperties&) -> std::unique_ptr<Disarray::App>;
+struct AppDeleter {
+	auto operator()(Disarray::App*) -> void;
+};
+extern auto create_application(const Disarray::ApplicationProperties&) -> Disarray::Scope<Disarray::App, Disarray::AppDeleter>;
 
 } // namespace Disarray

@@ -38,30 +38,30 @@ public:
 				{
 					ImGui::TableNextRow();
 					ImGui::TableNextColumn();
-					ImGui::Text("%s", "Frametime");
+					UI::text("{}", "Frametime");
 					ImGui::TableNextColumn();
-					ImGui::Text("%fms", double(frame_time_average));
+					UI::text("{}ms", double(frame_time_average));
 				}
 				{
 					ImGui::TableNextRow();
 					ImGui::TableNextColumn();
-					ImGui::Text("%s", "CPU");
+					UI::text("{}", "CPU");
 					ImGui::TableNextColumn();
-					ImGui::Text("%fms", double(cpu_time_average));
+					UI::text("{}ms", double(cpu_time_average));
 				}
 				{
 					ImGui::TableNextRow();
 					ImGui::TableNextColumn();
-					ImGui::Text("%s", "FPS");
+					UI::text("{}", "FPS");
 					ImGui::TableNextColumn();
-					ImGui::Text("%fms", double(1000.0 * frame_time_average.inverse()));
+					UI::text("{}ms", double(1000.0 * frame_time_average.inverse()));
 				}
 				{
 					ImGui::TableNextRow();
 					ImGui::TableNextColumn();
-					ImGui::Text("%s", "Presentation");
+					UI::text("{}", "Presentation");
 					ImGui::TableNextColumn();
-					ImGui::Text("%fus", double(presentation_time_average));
+					UI::text("{}us", double(presentation_time_average));
 				}
 				ImGui::EndTable();
 			}
@@ -72,9 +72,10 @@ private:
 	double should_update_counter { 0.0 };
 	const ApplicationStatistics& statistics;
 
-	MovingAverage<double, double, (144 * 6) / 30> frame_time_average;
-	MovingAverage<double, double, (144 * 6) / 30> cpu_time_average;
-	MovingAverage<double, double, (144 * 6) / 30> presentation_time_average;
+	static constexpr auto frame_keep = (144 * 6) / 30;
+	MovingAverage<double, double, frame_keep> frame_time_average;
+	MovingAverage<double, double, frame_keep> cpu_time_average;
+	MovingAverage<double, double, frame_keep> presentation_time_average;
 };
 
 } // namespace Disarray::Client

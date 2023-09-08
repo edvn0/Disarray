@@ -58,8 +58,8 @@ struct FileWatcherCallback {
 
 class FileWatcher {
 public:
-	FileWatcher(ThreadPool&, const std::filesystem::path&, std::chrono::duration<int, std::milli> = std::chrono::milliseconds(2000));
-	FileWatcher(ThreadPool&, const std::filesystem::path&, const Collections::StringSet& extensions,
+	FileWatcher(Threading::ThreadPool&, const std::filesystem::path&, std::chrono::duration<int, std::milli> = std::chrono::milliseconds(2000));
+	FileWatcher(Threading::ThreadPool&, const std::filesystem::path&, const Collections::StringSet& extensions,
 		std::chrono::duration<int, std::milli> = std::chrono::milliseconds(2000));
 	~FileWatcher() { stop(); }
 

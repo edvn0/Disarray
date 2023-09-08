@@ -111,8 +111,9 @@ namespace {
 		{
 			static constexpr auto type = serialiser_type_for<T>;
 			auto result = std::apply(
-				[](auto... ts) {
-					return std::tuple_cat(std::conditional_t<(decltype(ts)::type == type), std::tuple<decltype(ts)>, std::tuple<>> {}...);
+				[](auto... remaining) {
+					return std::tuple_cat(
+						std::conditional_t<(decltype(remaining)::type == type), std::tuple<decltype(remaining)>, std::tuple<>> {}...);
 				},
 				serialisers);
 			Tuple::static_for(result, [&entity, &components](auto, auto& serialiser) {

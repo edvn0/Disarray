@@ -48,7 +48,7 @@ public:
 	void update(float);
 	void render();
 	void interface();
-	void construct(Disarray::App&, Disarray::ThreadPool&);
+	void construct(Disarray::App&, Disarray::Threading::ThreadPool&);
 	void destruct();
 	void on_event(Disarray::Event&);
 	void recreate(const Extent& extent);
@@ -148,7 +148,7 @@ private:
 		bool parallel { false };
 	};
 	std::queue<ThreadPoolCallback> thread_pool_callbacks {};
-	void setup_filewatcher_and_threadpool(ThreadPool&);
+	void setup_filewatcher_and_threadpool(Threading::ThreadPool&);
 
 	std::future<void> final_pool_callback {};
 	std::atomic_bool should_run_callbacks { true };
