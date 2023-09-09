@@ -10,7 +10,6 @@
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
-#include "graphics/Device.hpp"
 
 namespace Disarray {
 
@@ -62,8 +61,6 @@ class Shader : public ReferenceCountable {
 	DISARRAY_OBJECT_PROPS(Shader, ShaderProperties)
 public:
 	virtual void destroy_module() = 0;
-
-	static auto construct(const Disarray::Device& device, const ShaderProperties&) -> Ref<Disarray::Shader>;
 };
 
 } // namespace Disarray

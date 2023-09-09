@@ -8,7 +8,10 @@
 
 namespace Disarray {
 
-auto Image::construct(const Device& device, ImageProperties image_properties) { return make_ref<Vulkan::Image>(device, std::move(image_properties)); }
+auto Image::construct(const Disarray::Device& device, ImageProperties image_properties) -> Ref<Disarray::Image>
+{
+	return make_ref<Vulkan::Image>(device, std::move(image_properties));
+}
 
 void Image::write_to_file(std::string_view path, const Image& image, const void* data)
 {

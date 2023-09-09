@@ -6,21 +6,15 @@
 
 namespace Disarray {
 
-Ref<CommandExecutor> CommandExecutor::construct(
-	Disarray::Device& device, Disarray::Swapchain& swapchain, const Disarray::CommandExecutorProperties& props)
+auto CommandExecutor::construct(const Disarray::Device& device, const Disarray::Swapchain* swapchain, Disarray::CommandExecutorProperties props)
+	-> Ref<Disarray::CommandExecutor>
 {
 	return make_ref<Vulkan::CommandExecutor>(device, swapchain, props);
 }
 
-Ref<CommandExecutor> CommandExecutor::construct(
-	const Disarray::Device& device, const Disarray::Swapchain& swapchain, const Disarray::CommandExecutorProperties& props)
+auto CommandExecutor::construct_scoped(const Disarray::Device& device, Disarray::CommandExecutorProperties props) -> Scope<Disarray::CommandExecutor>
 {
-	return make_ref<Vulkan::CommandExecutor>(device, swapchain, props);
-}
-
-Scope<CommandExecutor> IndependentCommandExecutor::construct(Disarray::Device& device, const Disarray::CommandExecutorProperties& props)
-{
-	return make_scope<Vulkan::IndependentCommandExecutor>(device, props);
+	return make_scope<Vulkan::CommandExecutor>(device, nullptr, props);
 }
 
 } // namespace Disarray

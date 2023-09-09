@@ -42,44 +42,42 @@ Allocator::Allocator(const std::string& resource)
 {
 }
 
-Allocator::~Allocator() { }
-
-VmaAllocation Allocator::allocate_buffer(VkBuffer& buffer, VkBufferCreateInfo buffer_info, const AllocationProperties& props)
+auto Allocator::allocate_buffer(VkBuffer& buffer, VkBufferCreateInfo buffer_info, const AllocationProperties& props) -> VmaAllocation
 {
 	ensure(allocator != nullptr, "Allocator was null.");
 	VmaAllocationCreateInfo alloc_info = {};
 	alloc_info.usage = static_cast<VmaMemoryUsage>(props.usage);
 	alloc_info.flags = static_cast<VmaAllocationCreateFlags>(props.creation);
 
-	VmaAllocation allocation;
+	VmaAllocation allocation {};
 	verify(vmaCreateBuffer(allocator, &buffer_info, &alloc_info, &buffer, &allocation, nullptr));
 	vmaSetAllocationName(allocator, allocation, resource_name.data());
 
 	return allocation;
 }
 
-VmaAllocation Allocator::allocate_buffer(
-	VkBuffer& buffer, VmaAllocationInfo& allocation_info, VkBufferCreateInfo buffer_info, const AllocationProperties& props)
+auto Allocator::allocate_buffer(
+	VkBuffer& buffer, VmaAllocationInfo& allocation_info, VkBufferCreateInfo buffer_info, const AllocationProperties& props) -> VmaAllocation
 {
 	ensure(allocator != nullptr, "Allocator was null.");
 	VmaAllocationCreateInfo alloc_info = {};
 	alloc_info.usage = static_cast<VmaMemoryUsage>(props.usage);
 	alloc_info.flags = static_cast<VmaAllocationCreateFlags>(props.creation);
 
-	VmaAllocation allocation;
+	VmaAllocation allocation {};
 	verify(vmaCreateBuffer(allocator, &buffer_info, &alloc_info, &buffer, &allocation, &allocation_info));
 	vmaSetAllocationName(allocator, allocation, resource_name.data());
 
 	return allocation;
 }
 
-VmaAllocation Allocator::allocate_image(VkImage& image, VkImageCreateInfo image_create_info, const AllocationProperties& props)
+auto Allocator::allocate_image(VkImage& image, VkImageCreateInfo image_create_info, const AllocationProperties& props) -> VmaAllocation
 {
 	ensure(allocator != nullptr, "Allocator was null.");
 	VmaAllocationCreateInfo allocation_create_info = {};
 	allocation_create_info.usage = static_cast<VmaMemoryUsage>(props.usage);
 
-	VmaAllocation allocation;
+	VmaAllocation allocation {};
 	verify(vmaCreateImage(allocator, &image_create_info, &allocation_create_info, &image, &allocation, nullptr));
 	vmaSetAllocationName(allocator, allocation, resource_name.data());
 
@@ -98,4 +96,5 @@ void Allocator::deallocate_image(VmaAllocation allocation, VkImage& image)
 	vmaDestroyImage(allocator, image, allocation);
 }
 
+void Allocator::unmap_memory(VmaAllocation allocation) { vmaUnmapMemory(allocator, allocation); }
 } // namespace Disarray::Vulkan

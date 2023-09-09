@@ -10,13 +10,10 @@
 #include <unordered_map>
 
 #include "core/Collections.hpp"
-#include "core/ThreadPool.hpp"
 #include "core/exceptions/GeneralExceptions.hpp"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
-
-#include <execution>
 
 namespace Disarray {
 
@@ -43,8 +40,8 @@ ModelLoader::ModelLoader(const std::filesystem::path& path, const glm::mat4& ini
 	std::mutex attrib_mutex;
 	for (const auto& shape : shapes) {
 		auto split = Collections::split_into_batches<tinyobj::index_t, 4>(shape.mesh.indices);
-		for (auto i = 0ULL; i < split.size(); i++) {
-			tasks.emplace_back(Collections::map(split[i], [&attrib, &mutex = attrib_mutex](const auto& index) {
+		for (auto& sub_split : split) {
+			tasks.emplace_back(Collections::map(sub_split, [&attrib, &mutex = attrib_mutex](const auto& index) {
 				std::scoped_lock lock { mutex };
 				ModelVertex vertex {};
 
@@ -77,5 +74,13 @@ ModelLoader::ModelLoader(const std::filesystem::path& path, const glm::mat4& ini
 		Collections::parallel_for_each(vertices, [&rot = initial_rotation](auto& vertex) { vertex.rotate_by(rot); });
 	}
 }
+
+auto ModelLoader::get_vertices_count() const -> std::size_t { return vertices.size(); }
+
+auto ModelLoader::get_indices_size() const -> std::size_t { return indices.size() * sizeof(std::uint32_t); }
+
+auto ModelLoader::get_vertices_size() const -> std::size_t { return vertices.size() * sizeof(ModelVertex); }
+
+auto ModelLoader::get_indices_count() const -> std::size_t { return indices.size(); }
 
 } // namespace Disarray

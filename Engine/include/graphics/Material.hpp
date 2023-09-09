@@ -15,21 +15,9 @@ struct MaterialProperties {
 };
 
 class Material : public ReferenceCountable {
-	DISARRAY_OBJECT(Material)
+	DISARRAY_OBJECT_PROPS(Material, MaterialProperties)
 public:
-	static auto construct(const Disarray::Device&, const MaterialProperties&) -> Ref<Material>;
-	auto get_properties() const -> const MaterialProperties& { return props; };
-
 	virtual void update_material(Renderer&) = 0;
-
-protected:
-	Material(MaterialProperties properties)
-		: props(std::move(properties))
-	{
-	}
-
-private:
-	MaterialProperties props;
 };
 
 } // namespace Disarray

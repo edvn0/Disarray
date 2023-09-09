@@ -10,9 +10,9 @@ namespace Disarray::Vulkan {
 class UniformBuffer : public Disarray::UniformBuffer, public Vulkan::BaseBuffer {
 	MAKE_SUB_BUFFER(UniformBuffer)
 public:
-	UniformBuffer(const Disarray::Device&, const BufferProperties&);
+	UniformBuffer(const Disarray::Device&, BufferProperties);
 
-	const auto& get_buffer_info() const { return buffer_info; }
+	auto get_buffer_info() const -> const auto& { return buffer_info; }
 
 private:
 	void create_buffer_info();

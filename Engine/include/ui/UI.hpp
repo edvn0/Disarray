@@ -146,7 +146,7 @@ template <IsEnum T> auto combo_choice(std::string_view name, std::reference_wrap
 auto checkbox(const std::string&, bool&) -> bool;
 
 auto shader_drop_button(Device&, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader) -> bool;
-auto texture_drop_button(Device&, const Texture& texture) -> Ref<Texture>;
+auto texture_drop_button(Device&, const Texture& texture) -> Ref<Disarray::Texture>;
 
 auto is_maximised(Window& window) -> bool;
 void remove_image(const Texture& texture);

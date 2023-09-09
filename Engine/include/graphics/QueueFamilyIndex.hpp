@@ -1,11 +1,9 @@
 #pragma once
 
 #include <optional>
-#include <stdexcept>
-#include <vector>
 
 #include "core/DisarrayObject.hpp"
-#include "core/Types.hpp"
+#include "core/PointerDefinition.hpp"
 #include "core/exceptions/GeneralExceptions.hpp"
 
 namespace Disarray {
@@ -14,31 +12,31 @@ class Surface;
 class PhysicalDevice;
 
 class QueueFamilyIndex : public ReferenceCountable {
-	DISARRAY_OBJECT(QueueFamilyIndex)
+	DISARRAY_OBJECT_NO_PROPS(QueueFamilyIndex)
 public:
-	std::uint32_t get_graphics_family() const { return get_or_throw(graphics); };
-	std::uint32_t get_compute_family() const { return get_or_throw(compute); };
-	std::uint32_t get_transfer_family() const { return get_or_throw(transfer); };
-	std::uint32_t get_present_family() const { return get_or_throw(present); };
+	auto get_graphics_family() const -> std::uint32_t { return get_or_throw(graphics); };
+	auto get_compute_family() const -> std::uint32_t { return get_or_throw(compute); };
+	auto get_transfer_family() const -> std::uint32_t { return get_or_throw(transfer); };
+	auto get_present_family() const -> std::uint32_t { return get_or_throw(present); };
 
 	operator bool() const { return is_complete(); }
 
-	static Ref<QueueFamilyIndex> construct(Disarray::PhysicalDevice&, Disarray::Surface&);
+	static auto construct(Disarray::PhysicalDevice&, Disarray::Surface&) -> Ref<Disarray::QueueFamilyIndex>;
 
 protected:
-	bool is_complete() const { return graphics.has_value() && compute.has_value() && present.has_value(); }
-	auto& get_graphics() { return graphics; }
-	auto& get_compute() { return compute; }
-	auto& get_transfer() { return transfer; }
-	auto& get_present() { return present; }
+	auto is_complete() const -> bool { return graphics.has_value() && compute.has_value() && present.has_value(); }
+	auto get_graphics() -> auto& { return graphics; }
+	auto get_compute() -> auto& { return compute; }
+	auto get_transfer() -> auto& { return transfer; }
+	auto get_present() -> auto& { return present; }
 
 private:
-	template <typename T> std::uint32_t get_or_throw(T t) const
+	template <typename T> auto get_or_throw(T input) const -> std::uint32_t
 	{
-		if (!t) {
+		if (!input) {
 			throw MissingValueException("Missing value");
 		}
-		return *t;
+		return *input;
 	}
 
 	std::optional<std::uint32_t> graphics { std::nullopt };

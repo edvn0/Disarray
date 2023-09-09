@@ -3,7 +3,6 @@
 #include "graphics/Shader.hpp"
 
 #include <fstream>
-#include <stdexcept>
 
 #include "core/Ensure.hpp"
 #include "vulkan/Device.hpp"

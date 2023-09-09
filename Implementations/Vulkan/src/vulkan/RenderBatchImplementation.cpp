@@ -55,8 +55,9 @@ void QuadVertexBatch::construct_impl(Renderer& renderer, const Device& dev)
 
 void QuadVertexBatch::create_new_impl(Geometry geometry, const GeometryProperties& props)
 {
-	if (geometry != Geometry::Rectangle)
+	if (geometry != Geometry::Rectangle) {
 		return;
+	}
 
 	static constexpr std::array<glm::vec2, 4> texture_coordinates = { glm::vec2 { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 1.0f } };
 	static constexpr std::array<glm::vec4, 4> quad_positions
@@ -68,8 +69,8 @@ void QuadVertexBatch::create_new_impl(Geometry geometry, const GeometryPropertie
 	auto start_index = submitted_vertices;
 	for (std::size_t i = 0; i < vertex_per_object_count<QuadVertex>; i++) {
 		QuadVertex& vertex = emplace();
-		vertex.pos = transform * quad_positions[i];
-		vertex.uvs = texture_coordinates[i];
+		vertex.pos = transform * quad_positions.at(i);
+		vertex.uvs = texture_coordinates.at(i);
 		vertex.colour = props.colour;
 		vertex.identifier = props.identifier.value_or(0);
 	}
@@ -181,8 +182,9 @@ void LineVertexBatch::create_new_impl(Geometry geometry, const Disarray::Geometr
 
 void LineVertexBatch::submit_impl(Disarray::Renderer& renderer, Disarray::CommandExecutor& command_executor)
 {
-	if (submitted_indices == 0)
+	if (submitted_indices == 0) {
 		return;
+	}
 
 	prepare_data();
 
@@ -281,8 +283,9 @@ void LineIdVertexBatch::create_new_impl(Geometry geometry, const Disarray::Geome
 
 void LineIdVertexBatch::submit_impl(Renderer& renderer, CommandExecutor& command_executor)
 {
-	if (submitted_indices == 0)
+	if (submitted_indices == 0) {
 		return;
+	}
 
 	prepare_data();
 

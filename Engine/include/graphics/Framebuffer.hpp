@@ -5,10 +5,11 @@
 #include "Forward.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
+#include "graphics/ImageProperties.hpp"
 
 namespace Disarray {
 
-enum class FramebufferBlendMode { None, OneZero, SrcAlphaOneMinusSrcAlpha, Additive, Zero_SrcColor };
+enum class FramebufferBlendMode : std::uint8_t { None, OneZero, SrcAlphaOneMinusSrcAlpha, Additive, Zero_SrcColor };
 
 struct FramebufferTextureSpecification {
 	ImageFormat format { ImageFormat::SBGR };
@@ -54,12 +55,10 @@ public:
 	virtual auto get_colour_attachment_count() const -> std::uint32_t = 0;
 	virtual auto has_depth() -> bool = 0;
 
-	template <class Func> void register_on_framebuffer_change(Func&& func) { change_callbacks.emplace_back(std::move(func)); };
-
-	static auto construct(const Disarray::Device&, FramebufferProperties) -> Ref<Framebuffer>;
+	template <class Func> void register_on_framebuffer_change(Func&& func) { change_callbacks.emplace_back(std::forward<Func>(func)); };
 
 protected:
-	auto get_callbacks() { return change_callbacks; }
+	auto get_callbacks() -> const std::vector<FramebufferChangeCallback>& { return change_callbacks; }
 
 private:
 	std::vector<FramebufferChangeCallback> change_callbacks {};

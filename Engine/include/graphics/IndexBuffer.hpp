@@ -11,10 +11,9 @@ class Swapchain;
 class PhysicalDevice;
 
 class IndexBuffer : public ReferenceCountable {
-	DISARRAY_OBJECT(IndexBuffer)
+	DISARRAY_OBJECT_PROPS(IndexBuffer, BufferProperties)
 public:
-	static Ref<IndexBuffer> construct(const Disarray::Device&, const Disarray::BufferProperties&);
-	virtual std::size_t size() const = 0;
+	virtual auto size() const -> std::size_t = 0;
 	virtual void set_data(const void*, std::uint32_t) = 0;
 };
 

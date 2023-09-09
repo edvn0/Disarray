@@ -18,9 +18,9 @@ auto fmt::formatter<Disarray::ShaderType>::format(const Disarray::ShaderType& fo
 
 namespace Disarray {
 
-auto Shader::construct(const Disarray::Device& device, const ShaderProperties& props) -> Ref<Shader>
+auto Shader::construct(const Disarray::Device& device, ShaderProperties properties) -> Ref<Disarray::Shader>
 {
-	return make_ref<Vulkan::Shader>(device, props);
+	return make_ref<Vulkan::Shader>(device, std::move(properties));
 }
 
 } // namespace Disarray

@@ -10,6 +10,7 @@
 
 #include "Forward.hpp"
 #include "core/Types.hpp"
+#include "fmt/core.h"
 #include "graphics/ImageProperties.hpp"
 #include "graphics/PhysicalDevice.hpp"
 #include "graphics/RenderPass.hpp"
@@ -183,7 +184,10 @@ void Framebuffer::recreate_framebuffer(bool should_clean)
 	// render_pass_info.dependencyCount = static_cast<uint32_t>(dependencies.size());
 	// render_pass_info.pDependencies = dependencies.data();
 
-	render_pass = RenderPass::construct(device);
+	render_pass = RenderPass::construct(device,
+		{
+			.debug_name = fmt::format("RenderPass-{}", props.debug_name),
+		});
 	auto& vk_render_pass = cast_to<Vulkan::RenderPass>(*render_pass);
 	vk_render_pass.create_with(render_pass_info);
 

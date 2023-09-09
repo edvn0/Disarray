@@ -155,7 +155,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 	setup_filewatcher_and_threadpool(pool);
 
 	extent = app.get_swapchain().get_extent();
-	command_executor = CommandExecutor::construct(device, app.get_swapchain(), { .count = 3, .is_primary = true, .record_stats = true });
+	command_executor = CommandExecutor::construct(device, &app.get_swapchain(), { .count = 3, .is_primary = true, .record_stats = true });
 	scene_renderer->on_batch_full([&exec = *command_executor](Renderer& r) { r.flush_batch(exec); });
 
 	framebuffer = Framebuffer::construct(device,

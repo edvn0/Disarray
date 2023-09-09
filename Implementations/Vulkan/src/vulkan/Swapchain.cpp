@@ -181,7 +181,10 @@ void Swapchain::recreate_renderpass()
 	render_pass_info.dependencyCount = 1;
 	render_pass_info.pDependencies = &dependency;
 
-	render_pass = RenderPass::construct(device);
+	render_pass = RenderPass::construct(device,
+		{
+			.debug_name = "Swapchain renderpass",
+		});
 	auto& vk_render_pass = cast_to<Vulkan::RenderPass>(*render_pass);
 	vk_render_pass.create_with(render_pass_info);
 }

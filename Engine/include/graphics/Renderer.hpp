@@ -76,8 +76,8 @@ public:
 
 	auto get_graphics_resource() -> IGraphicsResource& { return *graphics_resource; }
 
-	static auto construct(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&) -> Ref<Renderer>;
-	static auto construct_unique(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&) -> Scope<Renderer>;
+	static auto construct(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&) -> Ref<Disarray::Renderer>;
+	static auto construct_unique(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&) -> Scope<Disarray::Renderer>;
 
 protected:
 	Renderer(Scope<IGraphicsResource> resource)

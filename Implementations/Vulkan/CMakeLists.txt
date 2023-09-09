@@ -58,7 +58,6 @@ set(SOURCES
         src/vulkan/Surface.cpp
         src/vulkan/Window.cpp
         src/vulkan/BaseBuffer.cpp
-        src/vulkan/IndependentCommandExecutor.cpp
         src/vulkan/DebugConfigurator.cpp
         src/vulkan/Allocator.cpp
         src/vulkan/DebugMarker.cpp

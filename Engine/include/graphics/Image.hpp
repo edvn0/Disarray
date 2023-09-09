@@ -35,7 +35,6 @@ public:
 	virtual auto read_pixel(const glm::vec2&) const -> PixelReadData = 0;
 	virtual auto hash() const -> Identifier = 0;
 
-	static auto construct(const Disarray::Device&, ImageProperties);
 	static void write_to_file(std::string_view path, const Image& image, const void* data);
 };
 

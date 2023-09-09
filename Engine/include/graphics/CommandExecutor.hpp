@@ -8,6 +8,7 @@
 #include "core/CleanupAwaiter.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/Types.hpp"
+#include "graphics/Device.hpp"
 
 namespace Disarray {
 
@@ -29,52 +30,49 @@ struct CommandExecutorProperties {
 };
 
 class CommandExecutor : public ReferenceCountable {
-	DISARRAY_OBJECT(CommandExecutor)
+	DISARRAY_OBJECT_PROPS(CommandExecutor, CommandExecutorProperties)
 public:
-	template <class T>
-		requires(std::is_base_of_v<CommandExecutor, T>)
-	static Ref<T> construct_as(Disarray::Device& device, Disarray::Swapchain& swapchain, const CommandExecutorProperties& props)
-	{
-		return cast_to<T>(CommandExecutor::construct(device, swapchain, props));
-	}
-
-	static Ref<CommandExecutor> construct(Disarray::Device&, Disarray::Swapchain&, const CommandExecutorProperties&);
-	static Ref<CommandExecutor> construct(const Disarray::Device&, const Disarray::Swapchain&, const CommandExecutorProperties&);
-
 	virtual void begin() = 0;
 	virtual void end() = 0;
 	virtual void submit_and_end() = 0;
 
-	virtual float get_gpu_execution_time(uint32_t frame_index, uint32_t query_index = 0) const = 0;
-	virtual const PipelineStatistics& get_pipeline_statistics(uint32_t frame_index) const = 0;
+	virtual void wait_indefinite() = 0;
 
-	virtual bool has_stats() const = 0;
+	virtual auto get_gpu_execution_time(uint32_t frame_index, uint32_t query_index = 0) const -> float = 0;
+	virtual auto get_pipeline_statistics(uint32_t frame_index) const -> const PipelineStatistics& = 0;
+
+	virtual auto has_stats() const -> bool = 0;
+
+	static auto construct(const Disarray::Device&, const Disarray::Swapchain*, CommandExecutorProperties) -> Ref<Disarray::CommandExecutor>;
 };
 
-class IndependentCommandExecutor : public Disarray::CommandExecutor {
+template <class T> class IndependentCommandExecutor {
+	DISARRAY_MAKE_NONCOPYABLE(IndependentCommandExecutor)
 public:
-	virtual ~IndependentCommandExecutor() override = default;
-	virtual void recreate(bool, const Extent&) override {};
-	virtual void force_recreation() override {};
-
-public:
-	template <class T>
-		requires(std::is_base_of_v<CommandExecutor, T>)
-	static Ref<T> construct_as(Disarray::Device& device, const CommandExecutorProperties& props)
+	IndependentCommandExecutor(const Disarray::Device& device)
 	{
-		return cast_to<T>(IndependentCommandExecutor::construct(device, props));
+		executor = CommandExecutor::construct_scoped(device,
+			{
+				.count = 1,
+				.is_primary = true,
+				.owned_by_swapchain = false,
+				.record_stats = false,
+			});
 	}
+	virtual ~IndependentCommandExecutor() = default;
 
-	static Scope<CommandExecutor> construct(Disarray::Device&, const CommandExecutorProperties&);
+	void begin() { executor->begin(); }
+	void submit_and_end() { executor->submit_and_end(); };
 
-	virtual void begin() override = 0;
-	virtual void end() override = 0;
-	virtual void submit_and_end() override = 0;
+	[[nodiscard]] static auto buffer_index() -> std::uint32_t { return 0; }
 
-	virtual float get_gpu_execution_time(uint32_t frame_index, uint32_t query_index = 0) const override = 0;
-	virtual const PipelineStatistics& get_pipeline_statistics(uint32_t frame_index) const override = 0;
+	void wait_indefinite() { executor->wait_indefinite(); }
 
-	virtual bool has_stats() const override = 0;
+protected:
+	auto get_executor() const -> const auto& { return *executor; }
+
+private:
+	Scope<Disarray::CommandExecutor> executor { nullptr };
 };
 
 } // namespace Disarray

@@ -9,17 +9,16 @@ namespace Disarray {
 
 class ModelLoader {
 public:
-	explicit ModelLoader(const std::filesystem::path&, const glm::mat4& = glm::mat4 { 1.0f });
-	~ModelLoader() = default;
+	explicit ModelLoader(const std::filesystem::path&, const glm::mat4& = glm::mat4 { 1.0F });
 
-	const auto& get_vertices() const { return vertices; }
-	const auto& get_indices() const { return indices; }
+	[[nodiscard]] auto get_vertices() const -> const auto& { return vertices; }
+	[[nodiscard]] auto get_indices() const -> const auto& { return indices; }
 
-	const auto get_vertices_size() const { return vertices.size() * sizeof(ModelVertex); }
-	const auto get_indices_size() const { return indices.size() * sizeof(std::uint32_t); }
+	[[nodiscard]] auto get_vertices_size() const -> std::size_t;
+	[[nodiscard]] auto get_indices_size() const -> std::size_t;
 
-	const auto get_vertices_count() const { return vertices.size(); }
-	const auto get_indices_count() const { return indices.size(); }
+	[[nodiscard]] auto get_vertices_count() const -> std::size_t;
+	[[nodiscard]] auto get_indices_count() const -> std::size_t;
 
 private:
 	std::vector<ModelVertex> vertices;

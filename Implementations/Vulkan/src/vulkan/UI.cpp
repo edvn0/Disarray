@@ -171,12 +171,16 @@ auto shader_drop_button(Device& device, const std::string& button_name, ShaderTy
 	return false;
 }
 
-auto texture_drop_button(Device& device, const Texture& out_texture) -> Ref<Texture>
+auto texture_drop_button(Device& device, const Texture& out_texture) -> Ref<Disarray::Texture>
 {
 	UI::image_button(out_texture.get_image());
 	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".png", ".jpg", ".jpeg" })) {
 		const auto& texture_path = *dropped;
-		return Texture::construct(device, { .path = std::filesystem::path(texture_path) });
+		return Texture::construct(device,
+			{
+				.path = std::filesystem::path(texture_path),
+				.debug_name = texture_path.string(),
+			});
 	}
 
 	return nullptr;

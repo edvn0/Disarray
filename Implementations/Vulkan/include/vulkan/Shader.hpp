@@ -6,6 +6,7 @@
 namespace Disarray::Vulkan {
 
 class Shader : public Disarray::Shader, public PropertySupplier<VkPipelineShaderStageCreateInfo> {
+	DISARRAY_MAKE_NONCOPYABLE(Shader)
 public:
 	Shader(const Disarray::Device& device, ShaderProperties);
 	~Shader() override;

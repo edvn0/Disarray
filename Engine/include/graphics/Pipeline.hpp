@@ -166,8 +166,6 @@ public:
 		auto frag = get_properties().fragment_shader->get_properties().identifier;
 		return vert.string() == name || frag.string() == name;
 	}
-
-	static auto construct(const Disarray::Device&, PipelineProperties) -> Ref<Pipeline>;
 };
 
 } // namespace Disarray

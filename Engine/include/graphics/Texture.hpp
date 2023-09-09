@@ -7,7 +7,6 @@
 #include "Forward.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
-#include "graphics/Device.hpp"
 #include "graphics/Image.hpp"
 #include "graphics/ImageProperties.hpp"
 
@@ -27,8 +26,6 @@ class Texture : public ReferenceCountable {
 public:
 	virtual auto get_image() -> Image& = 0;
 	virtual auto get_image() const -> const Image& = 0;
-
-	static auto construct(const Disarray::Device&, TextureProperties) -> Ref<Texture>;
 };
 
 } // namespace Disarray

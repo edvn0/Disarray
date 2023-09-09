@@ -89,21 +89,21 @@ public:
 		increment_reference_count();
 	}
 
-	static ReferenceCounted<T> copy_without_increment(const ReferenceCounted<T>& other)
+	static auto copy_without_increment(const ReferenceCounted<T>& other) -> ReferenceCounted<T>
 	{
 		ReferenceCounted<T> result = nullptr;
 		result->instance = other.instance;
 		return result;
 	}
 
-	ReferenceCounted& operator=(std::nullptr_t)
+	auto operator=(std::nullptr_t) -> ReferenceCounted&
 	{
 		decrement_reference_count();
 		instance = nullptr;
 		return *this;
 	}
 
-	ReferenceCounted& operator=(const ReferenceCounted<T>& other)
+	auto operator=(const ReferenceCounted<T>& other) -> ReferenceCounted&
 	{
 		other.increment_reference_count();
 		decrement_reference_count();
@@ -112,7 +112,7 @@ public:
 		return *this;
 	}
 
-	template <class Other> ReferenceCounted& operator=(const ReferenceCounted<Other>& other)
+	template <class Other> auto operator=(const ReferenceCounted<Other>& other) -> ReferenceCounted&
 	{
 		other.increment_reference_count();
 		decrement_reference_count();
@@ -121,11 +121,11 @@ public:
 		return *this;
 	}
 
-	template <class Other> ReferenceCounted& operator=(ReferenceCounted<Other>&& other)
+	template <class Other> auto operator=(ReferenceCounted<Other>&& other) -> ReferenceCounted&
 	{
 		decrement_reference_count();
 
-		instance = other.instance;
+		instance = std::move(other.instance);
 		other.instance = nullptr;
 		return *this;
 	}
@@ -133,14 +133,14 @@ public:
 	operator bool() { return instance != nullptr; }
 	operator bool() const { return instance != nullptr; }
 
-	T* operator->() { return instance; }
-	const T* operator->() const { return instance; }
+	auto operator->() -> T* { return instance; }
+	auto operator->() const -> const T* { return instance; }
 
-	T& operator*() { return *instance; }
-	const T& operator*() const { return *instance; }
+	auto operator*() -> T& { return *instance; }
+	auto operator*() const -> const T& { return *instance; }
 
-	T* get() { return instance; }
-	const T* get() const { return instance; }
+	auto get() -> T* { return instance; }
+	auto get() const -> const T* { return instance; }
 
 	void reset(T* inst = nullptr)
 	{
@@ -148,19 +148,20 @@ public:
 		instance = inst;
 	}
 
-	template <class Other> ReferenceCounted<Other> as() const { return ReferenceCounted<Other>(*this); }
+	template <class Other> auto as() const -> ReferenceCounted<Other> { return ReferenceCounted<Other>(*this); }
 
-	bool operator==(const ReferenceCounted<T>& other) const { return instance == other.instance; }
-	bool operator!=(const ReferenceCounted<T>& other) const { return !this->operator==(other); }
-	bool equals(const ReferenceCounted<T>& other) const
+	auto operator==(const ReferenceCounted<T>& other) const -> bool { return instance == other.instance; }
+	auto operator!=(const ReferenceCounted<T>& other) const -> bool { return !this->operator==(other); }
+	auto equals(const ReferenceCounted<T>& other) const -> bool
 	{
-		if (!instance || !other.instance)
+		if (!instance || !other.instance) {
 			return false;
+		}
 
 		return *instance == *other.instance;
 	}
 
-	template <typename... Args> static ReferenceCounted<T> construct(Args&&... args)
+	template <typename... Args> static auto construct(Args&&... args) -> ReferenceCounted<T>
 	{
 		return ReferenceCounted<T>(new T(std::forward<Args>(args)...));
 	}

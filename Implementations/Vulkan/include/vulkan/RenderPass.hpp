@@ -3,13 +3,15 @@
 #include <vulkan/vulkan.h>
 
 #include "PropertySupplier.hpp"
+#include "core/DisarrayObject.hpp"
 #include "graphics/RenderPass.hpp"
 
 namespace Disarray::Vulkan {
 
 class RenderPass : public Disarray::RenderPass, public PropertySupplier<VkRenderPass> {
+	DISARRAY_MAKE_NONCOPYABLE(RenderPass)
 public:
-	RenderPass(const Disarray::Device&, const RenderPassProperties&);
+	RenderPass(const Disarray::Device&, RenderPassProperties);
 	~RenderPass() override;
 
 	void create_with(VkRenderPassCreateInfo);
