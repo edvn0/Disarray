@@ -12,7 +12,6 @@
 #include "vulkan/Device.hpp"
 #include "vulkan/Verify.hpp"
 
-
 namespace Disarray::Vulkan {
 
 RenderPass::RenderPass(const Disarray::Device& dev, Disarray::RenderPassProperties properties)
