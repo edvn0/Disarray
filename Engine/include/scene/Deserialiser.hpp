@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <utility>
 
 #include "core/Formatters.hpp"
 #include "core/Tuple.hpp"
@@ -21,23 +22,21 @@ namespace {
 			: runtime_error(message)
 		{
 		}
-		~CouldNotDeserialiseException() noexcept override = default;
 	};
 
 	template <class... Deserialisers> struct Deserialiser {
 		using json = nlohmann::json;
 
-		explicit Deserialiser(Scene& s, const Device& dev, std::istream& to_deserialise)
-			: scene(s)
+		explicit Deserialiser(Scene& input_scene, const Device& dev, std::istream& to_deserialise)
+			: scene(input_scene)
 			, device(dev)
 		{
-			json in = json::parse(to_deserialise);
+			json parsed = json::parse(to_deserialise);
 
-			bool could_serialise;
+			bool could_serialise { true };
 			try {
-				could_serialise = try_deserialise(in);
-			} catch (const CouldNotDeserialiseException& exc) {
-				DISARRAY_LOG_ERROR("Scene Deserialiser", "Could not serialise scene. Message: {}", exc.what());
+				could_serialise = try_deserialise(parsed);
+			} catch (const CouldNotDeserialiseException&) {
 				return;
 			}
 
@@ -46,25 +45,23 @@ namespace {
 			}
 		}
 
-		explicit Deserialiser(Scene& s, const Device& dev, const std::filesystem::path& input_path)
-			: scene(s)
+		explicit Deserialiser(Scene& input_scene, const Device& dev, std::filesystem::path input_path)
+			: scene(input_scene)
 			, device(dev)
-			, path(input_path)
+			, path(std::move(input_path))
 		{
-			json in;
+			json parsed;
 			std::ifstream input_stream { path };
 			if (!input_stream) {
-				DISARRAY_LOG_ERROR("Scene Deserialiser", "Could not open file at {}", path.string());
 				return;
 			}
 
-			in = json::parse(input_stream);
+			parsed = json::parse(input_stream);
 
 			bool could_serialise { true };
 			try {
-				could_serialise = try_deserialise(in);
-			} catch (const CouldNotDeserialiseException& exc) {
-				DISARRAY_LOG_ERROR("Scene Deserialiser", "Could not serialise scene. Message: {}", exc.what());
+				could_serialise = try_deserialise(parsed);
+			} catch (const CouldNotDeserialiseException&) {
 				return;
 			}
 
@@ -100,23 +97,23 @@ namespace {
 			return true;
 		}
 
-		auto parse_key(const json& k) -> std::pair<Identifier, std::string>
+		auto parse_key(const json& json_key) -> std::pair<Identifier, std::string>
 		{
-			std::string key = k;
+			std::string key = json_key;
 			static constexpr std::string_view split = "__disarray__";
 			auto found = static_cast<long long>(key.find(split));
 
-			std::string id { key.begin(), key.begin() + found };
+			std::string identifier { key.begin(), key.begin() + found };
 			std::string tag { key.begin() + found + split.size(), key.end() };
-			return { std::stoull(id), tag };
+			return { std::stoull(identifier), tag };
 		}
 
 		template <class T> void deserialise_component(const json& components, Entity& entity)
 		{
 			static constexpr auto type = serialiser_type_for<T>;
 			auto result = std::apply(
-				[](auto... ts) {
-					return std::tuple_cat(std::conditional_t<(decltype(ts)::type == type), std::tuple<decltype(ts)>, std::tuple<>> {}...);
+				[](auto... types) {
+					return std::tuple_cat(std::conditional_t<(decltype(types)::type == type), std::tuple<decltype(types)>, std::tuple<>> {}...);
 				},
 				serialisers);
 			Tuple::static_for(result, [&entity, &components, &dev = device](auto, auto& deserialiser) {

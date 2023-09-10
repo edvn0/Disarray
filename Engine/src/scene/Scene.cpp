@@ -413,6 +413,11 @@ auto Scene::deserialise(const Device& device, std::string_view name, const std::
 	return created;
 }
 
+auto Scene::deserialise_into(Scene& output_scene, const Device& device, const std::filesystem::path& filename) -> void
+{
+	SceneDeserialiser deserialiser { output_scene, device, filename };
+}
+
 void Scene::update_picked_entity(std::uint32_t handle) { picked_entity = make_scope<Entity>(this, handle == 0 ? entt::null : handle); }
 
 void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoType gizmo_type)

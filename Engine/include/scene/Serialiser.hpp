@@ -42,8 +42,7 @@ namespace {
 		{
 			try {
 				serialised_object = serialise();
-			} catch (const CouldNotSerialiseException& exc) {
-				DISARRAY_LOG_ERROR("Scene Serialiser", "Could not serialise scene. Message: {}", exc.what());
+			} catch (const CouldNotSerialiseException&) {
 				return;
 			}
 
@@ -56,7 +55,6 @@ namespace {
 			auto full_path = path / scene_name;
 			std::ofstream output { full_path };
 			if (!output) {
-				DISARRAY_LOG_ERROR("Scene Serialiser", "Could not open {} for writing.", full_path.string());
 				return;
 			}
 
@@ -101,8 +99,6 @@ namespace {
 			const double elapsed = timer.elapsed<Granularity::Seconds>();
 
 			root["entities"] = entities;
-
-			DISARRAY_LOG_DEBUG("Serialiser", "Serialising took {}s", elapsed);
 
 			return root;
 		}

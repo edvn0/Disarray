@@ -63,9 +63,7 @@ public:
 				Args&&... args) { T(dev, win, swap, std::forward<Args>(args)...); })
 	auto add_panel(Args&&... args) -> auto&
 	{
-		std::shared_ptr<Layer> interface {
-			nullptr
-		};
+		std::shared_ptr<Layer> interface { nullptr };
 		for (const auto& layer : layers) {
 			if (layer->is_interface_layer()) {
 				interface = layer;
@@ -79,8 +77,8 @@ public:
 
 	void on_event(Event& event);
 
-	auto get_statistics() const -> const auto& { return statistics; }
-	auto get_swapchain() const -> const auto& { return *swapchain; }
+	[[nodiscard]] auto get_statistics() const -> const auto& { return statistics; }
+	[[nodiscard]] auto get_swapchain() const -> const auto& { return *swapchain; }
 
 private:
 	auto could_prepare_frame() -> bool;

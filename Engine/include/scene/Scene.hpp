@@ -116,6 +116,7 @@ public:
 	auto get_framebuffers() -> std::array<Ref<Disarray::Framebuffer>, 2> { return { framebuffer, identity_framebuffer }; }
 
 	static auto deserialise(const Device&, std::string_view, const std::filesystem::path&) -> Scope<Scene>;
+	static auto deserialise_into(Scene&, const Device&, const std::filesystem::path&) -> void;
 
 private:
 	const Disarray::Device& device;

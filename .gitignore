@@ -6,6 +6,8 @@ build
 out
 cmake-build*
 
+*pipe-bin
+
 .vs
 
 .DS_Store

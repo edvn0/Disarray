@@ -2,6 +2,8 @@
 
 #include "scene/ComponentSerialisers.hpp"
 
+#include <optional>
+
 #include "scene/SerialisationTypeConversions.hpp"
 
 namespace Disarray {
@@ -9,14 +11,33 @@ namespace Disarray {
 using json = nlohmann::json;
 using namespace std::string_view_literals;
 
+template <class T> static constexpr auto assign_or_noop(auto& json_object, std::string_view key, const T& value)
+{
+	if (json_object.contains(key)) {
+		return;
+	}
+	json_object[key] = value;
+}
+
+template <class T> static constexpr auto assign_or_noop(auto& json_object, std::string_view key, const std::optional<T>& value)
+{
+	if (!value.has_value()) {
+		return;
+	}
+	assign_or_noop<T>(json_object, key, *value);
+}
+
 void PipelineSerialiser::serialise_impl(const Components::Pipeline& pipeline, nlohmann::json& object)
 {
 	if (pipeline.pipeline) {
 		json properties;
 		const auto& props = pipeline.pipeline->get_properties();
 		properties["line_width"] = props.line_width;
-		properties["vertex_shader"] = props.vertex_shader->get_properties().path;
-		properties["fragment_shader"] = props.fragment_shader->get_properties().path;
+
+		assign_or_noop(properties, "vertex_shader", props.vertex_shader->get_properties().path);
+		assign_or_noop(properties, "fragment_shader", props.fragment_shader->get_properties().path);
+		assign_or_noop(properties, "vertex_identifier", props.vertex_shader->get_properties().identifier);
+		assign_or_noop(properties, "fragment_identifier", props.fragment_shader->get_properties().identifier);
 		properties["vertex_layout"] = [](const VertexLayout& vertex_layout) {
 			json layout_object;
 			layout_object["binding"] = { { "binding", vertex_layout.binding.binding },
@@ -31,7 +52,17 @@ void PipelineSerialiser::serialise_impl(const Components::Pipeline& pipeline, nl
 			layout_object["elements"] = arr;
 			return layout_object;
 		}(props.layout);
-		properties["push_constant_layout"] = [](const PushConstantLayout& push_constant_layout) { return json(); }(props.push_constant_layout);
+		properties["push_constant_layout"] = [](const PushConstantLayout& push_constant_layout) {
+			json object;
+			object["size"] = push_constant_layout.size();
+
+			auto arr = json::array();
+			for (const auto& range : push_constant_layout.get_input_ranges()) {
+				arr.push_back({ { "flags", range.flags }, { "size", range.size }, { "offset", range.offset } });
+			}
+			object["ranges"] = arr;
+			return object;
+		}(props.push_constant_layout);
 		// PushConstantLayout push_constant_layout {};
 		properties["extent"] = props.extent;
 		properties["polygon_mode"] = magic_enum::enum_name(props.polygon_mode);

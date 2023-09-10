@@ -6,7 +6,6 @@ template <class T> struct GenericFileWriter : FileWrite<T, GenericFileWriter<T>>
 		std::filesystem::path path { path_sv };
 		std::ofstream stream { path };
 		if (!stream) {
-			DISARRAY_LOG_ERROR("FileIO", "Could not open file: {}", path.string());
 			return;
 		}
 
@@ -20,7 +19,6 @@ template <class T> struct GenericFileReader : FileRead<T, GenericFileReader<T>> 
 		std::filesystem::path path { path_sv };
 		std::ifstream stream { path, std::fstream::ate | std::fstream::in };
 		if (!stream) {
-			DISARRAY_LOG_ERROR("FileIO", "Could not open file: {}", path.string());
 			return false;
 		}
 
@@ -40,7 +38,6 @@ template <class T> struct GenericFileReader : FileRead<T, GenericFileReader<T>> 
 		std::filesystem::path path { path_sv };
 		std::ifstream stream { path, std::fstream::ate | std::fstream::in };
 		if (!stream) {
-			DISARRAY_LOG_ERROR("FileIO", "Could not open file: {}", path.string());
 			return false;
 		}
 

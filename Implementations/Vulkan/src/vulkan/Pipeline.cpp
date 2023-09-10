@@ -381,7 +381,7 @@ Pipeline::~Pipeline()
 	vkGetPipelineCacheData(supply_cast<Vulkan::Device>(device), cache, &size, data.data());
 
 	const auto pipeline_name = fmt::format(
-		"Pipeline-{}-{}", props.vertex_shader->get_properties().path.filename(), props.fragment_shader->get_properties().path.filename());
+		"Pipeline-{}-{}", props.vertex_shader->get_properties().identifier.filename(), props.fragment_shader->get_properties().identifier.filename());
 
 	const auto name = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", pipeline_name, props.hash());
 	FS::write_to_file(name, size, std::span { data });
@@ -432,7 +432,6 @@ void Pipeline::try_find_or_recreate_cache()
 	cache_create_info.pInitialData = buffer.data();
 	cache_create_info.initialDataSize = buffer.size() * sizeof(unsigned char);
 	vkCreatePipelineCache(supply_cast<Vulkan::Device>(device), &cache_create_info, nullptr, &cache);
-	DISARRAY_LOG_INFO("Pipeline - Cache", "Time elapsed: {}ms", timer.elapsed<Granularity::Millis>());
 }
 
 } // namespace Disarray::Vulkan

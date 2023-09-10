@@ -41,5 +41,5 @@ template <> struct fmt::formatter<std::filesystem::path> : fmt::formatter<std::s
 };
 
 template <> struct fmt::formatter<std::exception> : fmt::formatter<std::string_view> {
-	auto format(const std::exception& exc, format_context& ctx) -> decltype(ctx.out());
+	auto format(const std::exception&, format_context& ctx) -> decltype(ctx.out());
 };

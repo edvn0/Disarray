@@ -6,11 +6,15 @@
 #include <fmt/format.h>
 
 #include <array>
+#include <exception>
 #include <filesystem>
+#include <initializer_list>
 #include <memory>
 #include <type_traits>
 #include <utility>
 
+#include "core/Collections.hpp"
+#include "core/Log.hpp"
 #include "graphics/Renderer.hpp"
 #include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
@@ -190,12 +194,8 @@ void ClientLayer::on_event(Event& event)
 			}
 
 			auto pixel_data = image.read_pixel(pos);
-			std::visit(Tuple::overload { [&s = this->scene](const std::uint32_t& handle) {
-											DISARRAY_LOG_INFO("Client Layer", "Entity data: {}", handle);
-											s->update_picked_entity(handle);
-										},
-						   [](const glm::vec4& vec) { DISARRAY_LOG_INFO("Client Layer", "Pixel data: {},{},{},{}", vec.x, vec.y, vec.z, vec.w); },
-						   [](std::monostate) {} },
+			std::visit(Tuple::overload { [&s = this->scene](const std::uint32_t& handle) { s->update_picked_entity(handle); },
+						   [](const glm::vec4& vec) {}, [](std::monostate) {} },
 				pixel_data);
 			return true;
 		}
@@ -224,44 +224,44 @@ void ClientLayer::destruct() { scene->destruct(); }
 
 template <typename Child> class FileHandlerBase {
 protected:
-	explicit FileHandlerBase(const Device& dev, Scene& s, std::filesystem::path p, std::string_view ext)
+	explicit FileHandlerBase(const Device& dev, Scene* scene, std::filesystem::path path, std::initializer_list<std::string_view> exts)
 		: device(dev)
-		, base_scene(s)
-		, file_path(std::move(p))
-		, extension(ext)
+		, base_scene(scene)
+		, file_path(std::move(path))
+		, extensions(exts)
 	{
-		valid = file_path.extension() == extension;
+		valid = extensions.contains(file_path.extension().string());
 		if (valid) {
 			handle();
 		}
 	}
 	auto child() -> auto& { return static_cast<Child&>(*this); }
-	auto get_scene() -> auto& { return base_scene; }
+	auto get_scene() -> auto* { return base_scene; }
 	[[nodiscard]] auto get_device() const -> const auto& { return device; }
 	[[nodiscard]] auto get_path() const -> const auto& { return file_path; }
 
 private:
 	void handle() { return child().handle_impl(); }
 	const Device& device;
-	Scene& base_scene;
+	Scene* base_scene;
 	std::filesystem::path file_path {};
-	std::string extension {};
+	Collections::StringViewSet extensions {};
 	bool valid { false };
 };
 
 class PNGHandler : public FileHandlerBase<PNGHandler> {
 public:
-	explicit PNGHandler(const Device& device, Scene& scene, const std::filesystem::path& path)
-		: FileHandlerBase(device, scene, path, ".png")
+	explicit PNGHandler(const Device& device, Scene* scene, const std::filesystem::path& path)
+		: FileHandlerBase(device, scene, path, { ".png" })
 	{
 	}
 
 private:
 	void handle_impl()
 	{
-		auto& scene = get_scene();
+		auto* scene = get_scene();
 		const auto& path = get_path();
-		auto entity = scene.create(path.filename().string());
+		auto entity = scene->create(path.filename().string());
 		auto texture = Texture::construct(get_device(),
 			{
 				.path = path,
@@ -274,13 +274,34 @@ private:
 	friend class FileHandlerBase<PNGHandler>;
 };
 
+class SceneHandler : public FileHandlerBase<SceneHandler> {
+public:
+	explicit SceneHandler(const Device& device, Scene* scene, const std::filesystem::path& path)
+		: FileHandlerBase(device, scene, path, { ".scene", ".json" })
+	{
+	}
+
+private:
+	void handle_impl()
+	{
+		try {
+			auto& current_scene = *get_scene();
+			Scene::deserialise_into(current_scene, get_device(), get_path());
+		} catch (const std::exception&) {
+		}
+	}
+
+	friend class FileHandlerBase<SceneHandler>;
+};
+
+using FileHandlers = std::tuple<PNGHandler, SceneHandler>;
 void ClientLayer::handle_file_drop(const std::filesystem::path& path)
 {
 	if (!std::filesystem::exists(path)) {
 		return;
 	}
 
-	PNGHandler png_handler { device, *scene, path };
+	FileHandlers handlers { PNGHandler { device, scene.get(), path }, SceneHandler { device, scene.get(), path } };
 }
 
 } // namespace Disarray::Client

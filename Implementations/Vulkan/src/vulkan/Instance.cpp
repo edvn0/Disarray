@@ -42,10 +42,10 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverity
 	switch (severity) {
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-		DISARRAY_LOG_DEBUG("Validation", "Validation layer: {}", std::string(callback_data->pMessage));
+		Disarray::Log::info("Validation", "Validation layer: {}", std::string(callback_data->pMessage));
 		return VK_FALSE;
 	default:
-		DISARRAY_LOG_ERROR("Validation", "Validation layer: {}", std::string(callback_data->pMessage));
+		Disarray::Log::error("Validation", "Validation layer: {}", std::string(callback_data->pMessage));
 		return VK_FALSE;
 	}
 }
@@ -86,7 +86,6 @@ Instance::Instance(const std::vector<const char*>& supported_layers)
 	: requested_layers(supported_layers)
 {
 	const auto check_support = check_validation_layer_support();
-	DISARRAY_LOG_INFO("Instance - Validation Layers", "Requested?: {}. Supported?: {}", Config::use_validation_layers, check_support);
 	if (Config::use_validation_layers && !check_support) {
 		throw CouldNotCreateValidationLayersException("Could not configure validation layers, and it was asked for.");
 	}
@@ -125,8 +124,6 @@ Instance::Instance(const std::vector<const char*>& supported_layers)
 	verify(vkCreateInstance(&create_info, nullptr, &instance));
 
 	setup_debug_messenger();
-
-	DISARRAY_LOG_DEBUG("Vulkan Instance", "{}", "Instance created!");
 }
 
 Instance::~Instance()
@@ -135,7 +132,6 @@ Instance::~Instance()
 		destroy_debug_messenger_ext(instance, debug_messenger, nullptr);
 	}
 	vkDestroyInstance(instance, nullptr);
-	DISARRAY_LOG_DEBUG("Vulkan Instance", "{}", "Instance destroyed!");
 }
 
 void Instance::setup_debug_messenger()
@@ -168,7 +164,6 @@ bool Instance::check_validation_layer_support() const
 		}
 
 		if (!layer_found) {
-			DISARRAY_LOG_DEBUG("Instance", "{}", "Layer was not found");
 			return false;
 		}
 	}

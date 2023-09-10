@@ -13,7 +13,6 @@
 #include "core/Log.hpp"
 #include "core/ThreadPool.hpp"
 #include "core/Window.hpp"
-#include "graphics/Renderer.hpp"
 #include "graphics/Swapchain.hpp"
 #include "ui/InterfaceLayer.hpp"
 #include "ui/UI.hpp"
@@ -22,8 +21,8 @@ namespace Disarray {
 
 App::App(const Disarray::ApplicationProperties& props)
 {
-	DISARRAY_LOG_INFO("App", "Working directory configured to: {}", props.working_directory);
-	std::filesystem::current_path(props.working_directory);
+	const auto& path = props.working_directory;
+	std::filesystem::current_path(path);
 
 	window = Window::construct({ .width = props.width, .height = props.height, .name = props.name, .is_fullscreen = props.is_fullscreen });
 	device = Device::construct(*window);
@@ -45,7 +44,11 @@ void App::on_event(Event& event)
 	}
 }
 
-auto AppDeleter::operator()(Disarray::App*) -> void { DISARRAY_LOG_INFO("App", "{}", "Successfully exited application."); }
+auto AppDeleter::operator()(Disarray::App* ptr) -> void
+{
+	Log::info("App", "{}", "Successfully exited application.");
+	operator delete(ptr);
+}
 
 App::~App()
 {

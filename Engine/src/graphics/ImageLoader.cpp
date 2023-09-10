@@ -19,7 +19,6 @@ ImageLoader::ImageLoader(const std::filesystem::path& path, Disarray::DataBuffer
 	int tex_width, tex_height, tex_channels;
 
 	if (!std::filesystem::exists(path)) {
-		DISARRAY_LOG_ERROR("ImageLoader", "File {} does not exist.", path);
 		data = nullptr;
 		return;
 	}

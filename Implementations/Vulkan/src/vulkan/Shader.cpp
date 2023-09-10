@@ -56,8 +56,9 @@ Shader::Shader(const Disarray::Device& dev, ShaderProperties properties)
 		ensure(!props.identifier.empty(), "Must supply an identifier");
 		create_module(cast_to<Vulkan::Device>(device), *props.code, shader_module);
 	} else {
-		props.identifier = props.path;
-		auto read = Shader::read_file(props.path);
+		ensure(props.path.has_value(), "No code, but no path provided.");
+		props.identifier = props.path.value();
+		auto read = Shader::read_file(props.path.value());
 		create_module(cast_to<Vulkan::Device>(device), read, shader_module);
 	}
 

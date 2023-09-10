@@ -61,7 +61,6 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 
 	std::string output;
 	if (!FS::read_from_file(path_to_shader.string(), output)) {
-		DISARRAY_LOG_ERROR("ShaderCompiler", "Could not read shader: {}", path_to_shader);
 		throw CouldNotOpenStreamException { fmt::format("Could not read shader: {}", path_to_shader) };
 	}
 	add_include_extension(output);
@@ -85,7 +84,6 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	glslang::TShader::ForbidIncluder forbid_includer {};
 	if (!shader->preprocess(
 			resources, default_version, default_profile, false, forward_compatible, EShMsgDefault, &preprocessed_str, forbid_includer)) {
-		DISARRAY_LOG_ERROR("ShaderCompiler", "Failed to preprocess shader: {}. Info:{}", path_to_shader.string(), shader->getInfoLog());
 		return {};
 	}
 
@@ -93,14 +91,12 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	shader->setStrings(strings.data(), 1);
 
 	if (!shader->parse(resources, default_version, default_profile, false, forward_compatible, EShMsgDefault)) {
-		DISARRAY_LOG_ERROR("ShaderCompiler", "Failed to parse shader: {}. Info: {}", path_to_shader.string(), shader->getInfoLog());
 		return {};
 	}
 
 	glslang::TProgram program;
 	program.addShader(shader.get());
 	if (!program.link(EShMsgDefault)) {
-		DISARRAY_LOG_ERROR("ShaderCompiler", "Failed to link shader: {}. Info:{}", path_to_shader.string(), program.getInfoLog());
 		return {};
 	}
 
@@ -112,10 +108,6 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	options.generateDebugInfo = true;
 	spv::SpvBuildLogger logger;
 	glslang::GlslangToSpv(intermediate_ref, spirv, &logger, &options);
-
-	if (const auto all_messages = logger.getAllMessages(); !all_messages.empty()) {
-		DISARRAY_LOG_INFO("ShaderCompiler", "SpvBuildLogger messages  \n{}\n", logger.getAllMessages());
-	}
 
 	return spirv;
 }
@@ -129,11 +121,9 @@ auto ShaderCompiler::try_compile(const std::filesystem::path& path, Disarray::Sh
 		}
 		return { true, compiled };
 
-	} catch (const BaseException& exc) {
-		DISARRAY_LOG_ERROR("ShaderCompiler::try_compile", "Error: {}", exc.what());
+	} catch (const BaseException&) {
 		return { false, {} };
-	} catch (const std::exception& exc) {
-		DISARRAY_LOG_ERROR("ShaderCompiler::try_compile", "Error: {}", exc.what());
+	} catch (const std::exception&) {
 		return { false, {} };
 	}
 }
@@ -183,9 +173,7 @@ BasicIncluder::BasicIncluder(std::filesystem::path directory)
 		[&inc = include_include_source_map](const std::filesystem::directory_entry& entry) {
 			const auto& path = entry.path();
 			inc[path.filename().string()] = {};
-			if (!FS::read_from_file(path.string(), inc[path.filename().string()])) {
-				DISARRAY_LOG_ERROR("ShaderCompiler", "Could not populate include map with file: {}", path.filename().string());
-			}
+			if (!FS::read_from_file(path.string(), inc[path.filename().string()])) { }
 		},
 		[](const std::filesystem::directory_entry& entry) { return extensions.contains(entry.path().extension().string()); });
 

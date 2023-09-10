@@ -12,8 +12,8 @@ Window::Window(const WindowProperties& properties)
 {
 }
 
-Scope<Window> Window::construct(const WindowProperties& properties) { return make_scope<Vulkan::Window>(properties); }
+auto Window::construct(const WindowProperties& properties) -> Scope<Window> { return make_scope<Vulkan::Window>(properties); }
 
-const WindowProperties& Window::get_properties() { return props; }
+auto Window::get_properties() -> const WindowProperties& { return props; }
 
 } // namespace Disarray
