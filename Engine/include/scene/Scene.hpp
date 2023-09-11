@@ -145,12 +145,6 @@ private:
 	void create_entities();
 	void draw_geometry(CommandExecutor&, bool is_shadow = false);
 
-	using FuncPtr = void (*)(const Disarray::Scene*);
-	struct ThreadPoolCallback {
-		FuncPtr func { nullptr };
-		bool parallel { false };
-	};
-	std::queue<ThreadPoolCallback> thread_pool_callbacks {};
 	void setup_filewatcher_and_threadpool(Threading::ThreadPool&);
 
 	std::future<void> final_pool_callback {};

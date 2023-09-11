@@ -128,7 +128,6 @@ struct PointLight {
 };
 template <> constexpr std::string_view component_name<PointLight> = "PointLight";
 
-void script_deleter(CppScript*);
 struct Script {
 	Script() = default;
 
@@ -161,7 +160,7 @@ struct Script {
 private:
 	friend class Disarray::Entity;
 	struct Deleter {
-		void operator()(CppScript* ptr) { script_deleter(ptr); }
+		void operator()(CppScript* script) noexcept;
 	};
 	using ScriptPtr = std::unique_ptr<CppScript, Deleter>;
 

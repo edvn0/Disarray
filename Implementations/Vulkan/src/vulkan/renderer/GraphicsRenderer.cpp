@@ -11,6 +11,7 @@
 
 #include "core/Types.hpp"
 #include "graphics/Pipeline.hpp"
+#include "util/BitCast.hpp"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/IndexBuffer.hpp"
@@ -25,8 +26,8 @@ void Renderer::bind_pipeline(Disarray::CommandExecutor& executor, const Disarray
 {
 	if (&pipeline != bound_pipeline) {
 		bound_pipeline = &pipeline;
-		vkCmdBindPipeline(supply_cast<Vulkan::CommandExecutor>(executor), Disarray::bit_cast<VkPipelineBindPoint>(point),
-			supply_cast<Vulkan::Pipeline>(*bound_pipeline));
+		vkCmdBindPipeline(
+			supply_cast<Vulkan::CommandExecutor>(executor), static_cast<VkPipelineBindPoint>(point), supply_cast<Vulkan::Pipeline>(*bound_pipeline));
 	}
 }
 

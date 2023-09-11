@@ -3,7 +3,6 @@
 #include "graphics/Framebuffer.hpp"
 
 #include "core/Ensure.hpp"
-#include "graphics/PhysicalDevice.hpp"
 #include "graphics/RenderPass.hpp"
 #include "vulkan/Framebuffer.hpp"
 

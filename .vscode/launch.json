@@ -8,12 +8,13 @@
 			"type": "lldb",
 			"request": "launch",
 			"name": "Debug",
-			"program": "${workspaceFolder}/build/App/App.exe",
+			"program": "${workspaceFolder}/build/App/RelWithDebInfo/App.exe",
 			"args": [
 				"--wd",
-				"${workspaceFolder}/build/App"
+				"${workspaceFolder}/App"
 			],
-			"cwd": "${workspaceFolder}"
+			"cwd": "${workspaceFolder}",
+			"preLaunchTask": "Build CMake"
 		}
 	]
 }

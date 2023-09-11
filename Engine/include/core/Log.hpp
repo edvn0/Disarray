@@ -37,25 +37,41 @@ namespace Log {
 
 	template <class... Args> inline void debug(std::string_view scope, fmt::format_string<Args...> fmt, Args&&... args)
 	{
-#ifdef IS_DEBUG
 		const auto message = fmt::format(fmt, std::forward<Args>(args)...);
 		auto formatted = fmt::format("[{}] {}", scope, message);
-		Logging::Logger::logger().debug(std::move(formatted));
-#endif
+		Logging::Logger::logger().debug(formatted);
 	}
 
 	template <class... Args> inline void info(std::string_view scope, fmt::format_string<Args...> fmt, Args&&... args)
 	{
 		const auto message = fmt::format(fmt, std::forward<Args>(args)...);
 		auto formatted = fmt::format("[{}] {}", scope, message);
-		Logging::Logger::logger().info(std::move(formatted));
+		Logging::Logger::logger().info(formatted);
 	}
 
 	template <class... Args> inline void error(std::string_view scope, fmt::format_string<Args...> fmt, Args&&... args)
 	{
 		const auto message = fmt::format(fmt, std::forward<Args>(args)...);
 		auto formatted = fmt::format("[{}] {}", scope, message);
-		Logging::Logger::logger().error(std::move(formatted));
+		Logging::Logger::logger().error(formatted);
+	}
+
+	inline void debug(std::string_view scope, std::string_view message)
+	{
+		auto formatted = fmt::format("[{}] {}", scope, message);
+		Logging::Logger::logger().debug(formatted);
+	}
+
+	inline void info(std::string_view scope, std::string_view message)
+	{
+		auto formatted = fmt::format("[{}] {}", scope, message);
+		Logging::Logger::logger().info(formatted);
+	}
+
+	inline void error(std::string_view scope, std::string_view message)
+	{
+		auto formatted = fmt::format("[{}] {}", scope, message);
+		Logging::Logger::logger().error(formatted);
 	}
 
 } // namespace Log

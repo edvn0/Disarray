@@ -8,19 +8,12 @@
 
 #include <cstdarg>
 #include <cstddef>
-#include <iostream>
-#include <stdexcept>
 #include <vector>
 
 #include "core/PointerDefinition.hpp"
 #include "core/exceptions/GeneralExceptions.hpp"
 
 namespace Disarray {
-
-template <> auto PimplDeleter<Logging::Logger::LoggerDataPimpl>::operator()(Logging::Logger::LoggerDataPimpl* ptr) noexcept -> void
-{
-	operator delete(ptr);
-}
 
 namespace Logging {
 
@@ -49,6 +42,8 @@ namespace Logging {
 	}
 
 } // namespace Logging
+
+template <> auto PimplDeleter<Logging::Logger::LoggerDataPimpl>::operator()(Logging::Logger::LoggerDataPimpl* ptr) noexcept -> void { delete ptr; }
 
 namespace Log {
 	auto current_time(bool include_ms) -> std::string

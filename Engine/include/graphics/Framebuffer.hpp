@@ -2,10 +2,13 @@
 
 #include <glm/glm.hpp>
 
+#include <functional>
+
 #include "Forward.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "graphics/ImageProperties.hpp"
+
 
 namespace Disarray {
 

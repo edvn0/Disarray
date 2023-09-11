@@ -125,27 +125,6 @@ void Scene::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
 		}
 		wait_for_idle(dev);
 	});
-
-	final_pool_callback = pool.submit([this]() {
-		using namespace std::chrono_literals;
-		while (should_run_callbacks) {
-			std::unique_lock lock { callback_mutex };
-			std::vector<ThreadPoolCallback> parallels {};
-			while (!thread_pool_callbacks.empty()) {
-				ThreadPoolCallback& front = thread_pool_callbacks.front();
-				if (front.parallel) {
-					parallels.push_back(front);
-				} else {
-					front.func(this);
-				}
-				thread_pool_callbacks.pop();
-			}
-
-			auto* scene = this;
-			Collections::parallel_for_each(parallels, [scene](auto& func_wrapper) { func_wrapper.func(scene); });
-			callback_cv.wait_for(lock, 10s);
-		}
-	});
 }
 
 void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
@@ -208,9 +187,9 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 
 Scene::~Scene()
 {
-	std::lock_guard<std::mutex> guard(callback_mutex);
-	should_run_callbacks = false;
-	callback_cv.notify_all();
+
+	auto script_view = registry.view<Components::Script>();
+	Log::info("Scene", "Script count: {}", script_view.size());
 	SceneSerialiser scene_serialiser(this);
 }
 
@@ -366,12 +345,9 @@ void Scene::draw_geometry(CommandExecutor& executor, bool is_shadow)
 void Scene::on_event(Event& event)
 {
 	EventDispatcher dispatcher { event };
-	dispatcher.dispatch<KeyPressedEvent>([this](KeyPressedEvent&) {
+	dispatcher.dispatch<KeyPressedEvent>([scene = this](KeyPressedEvent&) {
 		if (Input::all<KeyCode::LeftControl, KeyCode::LeftShift, KeyCode::S>()) {
-			thread_pool_callbacks.push({
-				.func = [](const Scene* scene) { SceneSerialiser scene_serialiser(scene); },
-				.parallel = false,
-			});
+			SceneSerialiser scene_serialiser(scene);
 		}
 		return true;
 	});

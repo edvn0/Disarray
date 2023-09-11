@@ -44,7 +44,7 @@ ClientLayer::~ClientLayer() = default;
 
 void ClientLayer::construct(App& app, Threading::ThreadPool& pool)
 {
-	scene = std::make_unique<Scene>(device, "Default scene");
+	scene = make_scope<Scene>(device, "Default scene");
 
 	ensure(scene != nullptr, "Forgot to initialise scene");
 	scene->construct(app, pool);

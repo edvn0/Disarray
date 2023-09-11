@@ -36,13 +36,13 @@ Framebuffer::Framebuffer(const Disarray::Device& dev, FramebufferProperties prop
 			spec.format = attachment_spec.format;
 			spec.extent = props.extent;
 			spec.debug_name = fmt::format("{0}-depth{1}", props.debug_name, attachment_index);
-			depth_attachment = std::make_unique<Vulkan::Image>(device, std::move(spec));
+			depth_attachment = make_scope<Vulkan::Image>(device, std::move(spec));
 		} else {
 			ImageProperties spec;
 			spec.format = attachment_spec.format;
 			spec.extent = props.extent;
 			spec.debug_name = fmt::format("{0}-color{1}", props.debug_name, attachment_index);
-			attachments.emplace_back(std::make_unique<Vulkan::Image>(device, std::move(spec)));
+			attachments.emplace_back(make_scope<Vulkan::Image>(device, std::move(spec)));
 		}
 		attachment_index++;
 	}

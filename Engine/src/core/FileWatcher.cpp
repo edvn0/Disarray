@@ -60,32 +60,35 @@ FileWatcher::FileWatcher(Threading::ThreadPool& pool, const std::filesystem::pat
 		};
 	}
 
-	finaliser = pool.submit([this]() { loop_until(); });
+	finaliser = pool.submit(&FileWatcher::loop_until, this);
 }
 
 void FileWatcher::loop_until()
 {
 	while (running) {
 		std::this_thread::sleep_for(delay);
-
 		update();
 	}
 }
 
-void FileWatcher::update()
+static auto check_for_delete(auto& paths, auto& activations, auto* func)
 {
-
 	auto path_iterator = paths.begin();
 	while (path_iterator != paths.end()) {
 		if (!std::filesystem::exists(path_iterator->first)) {
 			path_iterator->second.status = FileStatus::Deleted;
 			const auto& current = path_iterator->second;
-			for_each(current, activations);
+			func(current, activations);
 			path_iterator = paths.erase(path_iterator);
 		} else {
 			path_iterator++;
 		}
 	}
+}
+
+void FileWatcher::update()
+{
+	check_for_delete(paths, activations, &for_each);
 
 	for (const auto& file : std::filesystem::recursive_directory_iterator(root)) {
 		if (!in_extensions(file)) {
@@ -111,35 +114,6 @@ void FileWatcher::update()
 				current.last_modified = current_file_last_write_time;
 				current.status = FileStatus::Modified;
 				for_each(current, activations);
-			}
-		}
-	}
-
-	for (const auto& additional : additional_paths) {
-		for (const auto& file : std::filesystem::directory_iterator { root / additional }) {
-			if (!in_extensions(file)) {
-				continue;
-			}
-			auto current_file_last_write_time = std::filesystem::last_write_time(file);
-			const auto view = file.path().string();
-
-			if (!paths.contains(view)) {
-				const auto type_if_not_directory = std::filesystem::is_directory(file) ? FileType::DIRECTORY : to_filetype(file.path().extension());
-
-				paths[file.path().string()] = FileInformation {
-					.type = type_if_not_directory, .path = view, .last_modified = current_file_last_write_time, .status = FileStatus::Created
-				};
-
-				const auto& current = paths[file.path().string()];
-				for_each(current, activations);
-			} else {
-				auto& current = paths[file.path().string()];
-
-				if (current.last_modified != current_file_last_write_time) {
-					current.last_modified = current_file_last_write_time;
-					current.status = FileStatus::Modified;
-					for_each(current, activations);
-				}
 			}
 		}
 	}
@@ -175,15 +149,13 @@ void FileWatcher::on_created_or_deleted(const std::function<void(const FileInfor
 
 void FileWatcher::on(FileStatus status, const std::function<void(const FileInformation&)>& in) { register_callback(status, activations, in); }
 
-void FileWatcher::add_watched_paths(const std::filesystem::path& path) { additional_paths.insert(path.string()); }
+FileWatcher::~FileWatcher() { stop(); }
 
 void FileWatcher::stop()
 {
-	try {
-		running = false;
-		finaliser.get();
-	} catch (const std::exception&) {
-	}
+	running = false;
+	finaliser.wait();
+	activations.clear();
 }
 
 } // namespace Disarray

@@ -28,10 +28,12 @@ Material::Material(Device& device, std::string_view vertex, std::string_view fra
 			.vertex_shader = Shader::construct(device,
 				{
 					.path = std::filesystem::path { vertex },
+					.identifier = vertex,
 				}),
 			.fragment_shader = Shader::construct(device,
 				{
 					.path = std::filesystem::path { fragment },
+					.identifier = fragment,
 				}),
 		}))
 {
@@ -63,7 +65,7 @@ Texture::Texture(const glm::vec4& colour)
 {
 }
 
-void script_deleter(CppScript* script) { delete script; }
+void Script::Deleter::operator()(CppScript* script) noexcept { delete script; }
 
 void Script::setup_entity_destruction()
 {

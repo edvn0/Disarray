@@ -7,7 +7,7 @@
 
 namespace Disarray {
 
-template <> auto PimplDeleter<Entity>::operator()(Entity* ptr) noexcept -> void { operator delete(ptr); }
+template <> auto PimplDeleter<Entity>::operator()(Entity* ptr) noexcept -> void { delete ptr; }
 
 void CppScript::update_entity(Scene* scene, entt::entity handle) { *current_entity = Entity { scene, handle }; }
 

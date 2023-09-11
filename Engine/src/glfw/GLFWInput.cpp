@@ -8,7 +8,7 @@ struct Input::WindowData {
 	GLFWwindow* window;
 };
 
-auto Input::WindowDataDeleter::operator()(WindowData* ptr) -> void { operator delete(ptr); }
+auto Input::WindowDataDeleter::operator()(WindowData* ptr) -> void { delete ptr; }
 
 void Input::construct(const Disarray::Window& window)
 {

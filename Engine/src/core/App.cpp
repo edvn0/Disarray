@@ -47,7 +47,7 @@ void App::on_event(Event& event)
 auto AppDeleter::operator()(Disarray::App* ptr) -> void
 {
 	Log::info("App", "{}", "Successfully exited application.");
-	operator delete(ptr);
+	delete ptr;
 }
 
 App::~App()
