@@ -230,6 +230,7 @@
       "repr",
       "Serialiser",
       "Serialisers",
+      "spdlog",
       "spirv",
       "SSBO",
       "Subpass",

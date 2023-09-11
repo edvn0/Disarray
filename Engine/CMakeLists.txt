@@ -151,7 +151,7 @@ add_library(Disarray::Engine ALIAS ${PROJECT_NAME})
 target_include_directories(
   ${PROJECT_NAME}
   PRIVATE ${Vulkan_INCLUDE_DIRS}
-  PUBLIC include . ${THIRD_PARTY}/glm)
+  PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/spdlog/include)
 target_link_libraries(
   ${PROJECT_NAME}
   PRIVATE glfw GPUOpen::VulkanMemoryAllocator nlohmann_json::nlohmann_json
@@ -160,10 +160,11 @@ target_link_libraries(
          thread-pool
          Vulkan::Vulkan
          imgui
+         spdlog::spdlog
+         fmt::fmt
          imguizmo
          magic_enum::magic_enum
-         EnTT::EnTT
-         fmt::fmt)
+         EnTT::EnTT)
 target_precompile_headers(${PROJECT_NAME} PRIVATE
                           ${CMAKE_CURRENT_SOURCE_DIR}/include/DisarrayPCH.hpp)
 

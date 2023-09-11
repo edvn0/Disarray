@@ -140,8 +140,7 @@ void ScenePanel::interface()
 		any_changed |= ImGui::DragFloat4("Clear colour", glm::value_ptr(props.clear_colour));
 
 		for (auto& attachment : props.attachments.texture_attachments) {
-			const auto& blend_attachment = attachment.format;
-			const auto formatted = fmt::format("{}: Should blend", blend_attachment);
+			auto formatted = fmt::format("{}", magic_enum::enum_name(attachment.format));
 			any_changed |= UI::checkbox(formatted, attachment.blend);
 			any_changed |= UI::combo_choice<FramebufferBlendMode>("Blend mode", attachment.blend_mode);
 		}

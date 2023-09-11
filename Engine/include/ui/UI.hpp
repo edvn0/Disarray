@@ -23,6 +23,19 @@
 
 namespace Disarray::UI {
 
+namespace Detail {
+	template <class Formatter, class T>
+	concept ArgumentFormatter = requires(const Formatter& formatter, const T& value) {
+		{
+			formatter.operator()(value)
+		} -> std::same_as<std::string>;
+	};
+
+	template <class T> struct DefaultFormatter {
+		auto operator()(const T& value) const -> std::string { return fmt::format("{}", value); }
+	};
+} // namespace Detail
+
 using ExtensionSet = Collections::StringSet;
 using ImageIdentifier = std::uint64_t;
 
@@ -37,8 +50,8 @@ public:
 	static auto font_cache() -> auto& { return font_map; }
 
 private:
-	inline static ImageCache image_descriptor_cache {};
-	inline static Collections::StringMap<ImFont*> font_map {};
+	static inline ImageCache image_descriptor_cache {};
+	static inline Collections::StringMap<ImFont*> font_map {};
 };
 
 static constexpr std::array<glm::vec2, 2> default_uvs = { glm::vec2 { 0.f, 0.f }, glm::vec2 { 1.f, 1.f } };
@@ -54,20 +67,46 @@ template <typename... Args> void text(fmt::format_string<Args...> fmt_string, Ar
 	text(formatted);
 }
 
-void image_button(Image&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
-void image_button(const Image&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
-void image(Image&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
-void image_button(Texture&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
-void image(Texture&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+static constexpr inline auto button_size = 64;
+
+void image_button(Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+void image_button(const Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+void image(Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+void image_button(Texture&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+void image(Texture&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+
+namespace Tabular {
+	auto table(std::string_view name, const Collections::StringViewMap<std::string>& map) -> bool;
+
+	template <class T>
+	auto table(std::string_view name, const Collections::StringViewMap<T>& map, Detail::ArgumentFormatter<T> auto formatter) -> bool
+	{
+		Collections::StringViewMap<std::string> temporary {};
+		for (const auto& [key, value] : map) {
+			temporary.try_emplace(key, formatter(value));
+		}
+		return table(name, temporary);
+	}
+
+	template <class T> auto table(std::string_view name, const Collections::StringViewMap<T>& map) -> bool
+	{
+		Collections::StringViewMap<std::string> temporary {};
+		auto formatter = Detail::DefaultFormatter<T> {};
+		for (const auto& [key, value] : map) {
+			temporary.try_emplace(key, formatter(value));
+		}
+		return table(name, temporary);
+	}
+} // namespace Tabular
 
 void scope(std::string_view name, UIFunction&& func = default_function);
 
 void begin(std::string_view);
 void end();
 
-bool begin_combo(std::string_view name, std::string_view data);
+auto begin_combo(std::string_view name, std::string_view data) -> bool;
 void end_combo();
-auto is_selectable(std::string_view name, const bool is_selected) -> bool;
+auto is_selectable(std::string_view name, bool is_selected) -> bool;
 void set_item_default_focus();
 
 void drag_drop(const std::filesystem::path& path);

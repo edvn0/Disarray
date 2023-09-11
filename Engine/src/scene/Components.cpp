@@ -83,8 +83,8 @@ void Script::instantiate()
 }
 
 auto Script::get_script() -> CppScript& { return *instance_slot; }
-[[nodiscard]] auto Script::get_script() const -> const CppScript& { return *instance_slot; }
 
+[[nodiscard]] auto Script::get_script() const -> const CppScript& { return *instance_slot; }
 [[nodiscard]] auto Script::has_been_bound() const -> bool { return bound && !instantiated; }
 
 } // namespace Disarray::Components

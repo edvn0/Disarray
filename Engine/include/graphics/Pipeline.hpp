@@ -19,6 +19,11 @@ using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;
 
 namespace Disarray {
 
+enum class PipelineBindPoint {
+	BindPointGraphics = 0,
+	BindPointCompute = 1,
+};
+
 enum class PolygonMode { Fill, Line, Point };
 
 enum class DepthCompareOperator {

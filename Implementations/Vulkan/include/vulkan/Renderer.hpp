@@ -56,6 +56,8 @@ public:
 
 	void force_recreation() override;
 
+	void bind_pipeline(Disarray::CommandExecutor&, const Disarray::Pipeline&, PipelineBindPoint = PipelineBindPoint::BindPointGraphics) override;
+
 private:
 	void add_geometry_to_batch(Geometry, const GeometryProperties&);
 
@@ -66,6 +68,8 @@ private:
 
 	Ref<Disarray::Framebuffer> geometry_framebuffer;
 	Ref<Disarray::Framebuffer> quad_framebuffer;
+
+	mutable const Disarray::Pipeline* bound_pipeline { nullptr };
 
 	std::function<void(Disarray::Renderer&)> on_batch_full_func = [](auto&) {};
 

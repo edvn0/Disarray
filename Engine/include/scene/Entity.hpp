@@ -24,7 +24,7 @@ public:
 		: Entity(input_scene, static_cast<entt::entity>(input_id)) {};
 	Entity(Scene*);
 
-	static auto deserialise(Scene&, entt::entity, Identifier, std::string_view = "Empty") -> Entity;
+	static auto deserialise(Scene&, Identifier, std::string_view = "Empty") -> Entity;
 
 	auto get_registry() -> entt::registry&;
 	[[nodiscard]] auto get_registry() const -> const entt::registry&;

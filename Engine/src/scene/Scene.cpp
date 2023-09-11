@@ -261,7 +261,7 @@ void Scene::update(float time_step)
 		}
 
 		auto& instantiated = script.get_script();
-		instantiated.update_entity(Entity { scene, entity });
+		instantiated.update_entity(scene, entity);
 		instantiated.on_update(step);
 	});
 }
@@ -469,6 +469,12 @@ auto Scene::get_by_identifier(Identifier identifier) -> std::optional<Entity>
 	}
 
 	return std::nullopt;
+}
+
+void Scene::clear()
+{
+	std::scoped_lock lock { registry_access };
+	registry.clear();
 }
 
 void Scene::create_entities()

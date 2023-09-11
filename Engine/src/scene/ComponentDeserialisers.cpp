@@ -1,4 +1,6 @@
+#include "core/Collections.hpp"
 #include "scene/ComponentSerialisers.hpp"
+#include "scene/Scripts.hpp"
 #include "scene/SerialisationTypeConversions.hpp"
 
 namespace Disarray {
@@ -38,6 +40,21 @@ void PipelineDeserialiser::deserialise_impl(const nlohmann::json& object, Compon
 	};
 
 	pipeline.pipeline = Pipeline::construct(device, properties);
+}
+
+auto ScriptDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return object.contains("identifier"); }
+void ScriptDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Script& script, const Device& device)
+{
+	const auto& identifier = object["identifier"];
+	static Collections::StringMap<Scope<CppScript>> scripts {};
+	const auto& s = scripts[identifier];
+
+	const json& json_parameters = object["parameters"];
+	Collections::StringViewMap<Parameter> parameters {};
+
+	if (identifier == "MoveInCircle") {
+		script.bind<Scripts::MoveInCircleScript>(parameters);
+	}
 }
 
 auto MeshDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return object.contains("properties"); }

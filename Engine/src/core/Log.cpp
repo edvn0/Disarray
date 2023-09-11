@@ -3,6 +3,8 @@
 #include "core/Log.hpp"
 
 #include <fmt/chrono.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
 #include <cstdarg>
 #include <cstddef>
@@ -10,19 +12,43 @@
 #include <stdexcept>
 #include <vector>
 
+#include "core/PointerDefinition.hpp"
 #include "core/exceptions/GeneralExceptions.hpp"
 
 namespace Disarray {
 
-#ifdef DISARRAY_ALLOW_SLOW_LOGGING
-void Logging::Logger::debug(const std::string& message) { std::cout << message << std::endl; }
-void Logging::Logger::info(const std::string& message) { std::cout << message << std::endl; }
-void Logging::Logger::error(const std::string& message) { std::cerr << message << std::endl; }
-#else
-void Logging::Logger::debug(const std::string& message) { std::cout << message << "\n"; }
-void Logging::Logger::info(const std::string& message) { std::cout << message << "\n"; }
-void Logging::Logger::error(const std::string& message) { std::cerr << message << "\n"; }
-#endif
+template <> auto PimplDeleter<Logging::Logger::LoggerDataPimpl>::operator()(Logging::Logger::LoggerDataPimpl* ptr) noexcept -> void
+{
+	operator delete(ptr);
+}
+
+namespace Logging {
+
+	using LoggerType = std::shared_ptr<spdlog::logger>;
+	struct Logger::LoggerDataPimpl {
+		LoggerType engine_logger { nullptr };
+		LoggerType std_err_logger { nullptr };
+	};
+
+	Logger::Logger()
+	{
+		logger_data = make_scope<LoggerDataPimpl, PimplDeleter<LoggerDataPimpl>>();
+
+		logger_data->engine_logger = spdlog::stdout_color_mt("Disarray");
+		logger_data->std_err_logger = spdlog::stderr_color_mt("Error");
+	}
+
+	auto Logger::Logger::debug(const std::string& message) -> void { logger_data->engine_logger->debug(message); }
+
+	auto Logger::Logger::info(const std::string& message) -> void { logger_data->engine_logger->info(message); }
+
+	auto Logger::Logger::error(const std::string& message) -> void
+	{
+		logger_data->engine_logger->error(message);
+		logger_data->std_err_logger->error(message);
+	}
+
+} // namespace Logging
 
 namespace Log {
 	auto current_time(bool include_ms) -> std::string

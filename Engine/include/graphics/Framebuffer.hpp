@@ -58,7 +58,7 @@ public:
 	template <class Func> void register_on_framebuffer_change(Func&& func) { change_callbacks.emplace_back(std::forward<Func>(func)); };
 
 protected:
-	auto get_callbacks() -> const std::vector<FramebufferChangeCallback>& { return change_callbacks; }
+	auto get_callbacks() -> std::vector<FramebufferChangeCallback>& { return change_callbacks; }
 
 private:
 	std::vector<FramebufferChangeCallback> change_callbacks {};

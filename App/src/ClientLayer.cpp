@@ -286,6 +286,7 @@ private:
 	{
 		try {
 			auto& current_scene = *get_scene();
+			current_scene.clear();
 			Scene::deserialise_into(current_scene, get_device(), get_path());
 		} catch (const std::exception&) {
 		}
@@ -300,8 +301,8 @@ void ClientLayer::handle_file_drop(const std::filesystem::path& path)
 	if (!std::filesystem::exists(path)) {
 		return;
 	}
-
-	FileHandlers handlers { PNGHandler { device, scene.get(), path }, SceneHandler { device, scene.get(), path } };
+	PNGHandler { device, scene.get(), path };
+	SceneHandler { device, scene.get(), path };
 }
 
 } // namespace Disarray::Client

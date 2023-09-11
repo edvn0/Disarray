@@ -4,6 +4,7 @@
 
 #include <optional>
 
+#include "scene/CppScript.hpp"
 #include "scene/SerialisationTypeConversions.hpp"
 
 namespace Disarray {
@@ -73,6 +74,13 @@ void PipelineSerialiser::serialise_impl(const Components::Pipeline& pipeline, nl
 		properties["test_depth"] = props.test_depth;
 		object["properties"] = properties;
 	}
+}
+
+void ScriptSerialiser::serialise_impl(const Components::Script& script, nlohmann::json& object)
+{
+	const auto& cpp_script = script.get_script();
+	const auto& identifier = cpp_script.identifier();
+	object["identifier"] = identifier;
 }
 
 void MeshSerialiser::serialise_impl(const Components::Mesh& mesh, nlohmann::json& object)

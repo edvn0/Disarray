@@ -2,12 +2,14 @@
 
 #include <nlohmann/json.hpp>
 
+#include <exception>
 #include <fstream>
 #include <sstream>
 #include <utility>
 
 #include "core/Formatters.hpp"
 #include "core/Tuple.hpp"
+#include "core/exceptions/BaseException.hpp"
 #include "scene/Component.hpp"
 #include "scene/ComponentSerialisers.hpp"
 #include "scene/Entity.hpp"
@@ -16,13 +18,7 @@ namespace Disarray {
 
 namespace {
 
-	class CouldNotDeserialiseException : public std::runtime_error {
-	public:
-		explicit CouldNotDeserialiseException(const std::string& message)
-			: runtime_error(message)
-		{
-		}
-	};
+	class CouldNotDeserialiseException : public BaseException { };
 
 	template <class... Deserialisers> struct Deserialiser {
 		using json = nlohmann::json;
@@ -61,7 +57,11 @@ namespace {
 			bool could_serialise { true };
 			try {
 				could_serialise = try_deserialise(parsed);
-			} catch (const CouldNotDeserialiseException&) {
+			} catch (const CouldNotDeserialiseException& exc) {
+				Log::error("Deserialiser", "Error: {}", exc);
+				return;
+			} catch (const std::exception& exc) {
+				Log::error("Deserialiser", "Error: {}", exc);
 				return;
 			}
 
@@ -84,7 +84,13 @@ namespace {
 
 				auto&& components = json_entity.value()["components"];
 				auto&& [id, tag] = parse_key(key);
-				auto entity = Entity::deserialise(scene, registry.create(), id, tag);
+				Entity entity;
+				try {
+					entity = Entity::deserialise(scene, id, tag);
+				} catch (const std::exception& exc) {
+					Log::error("SceneDeserialiser", "{}", exc);
+					continue;
+				}
 				deserialise_component<Components::QuadGeometry>(components, entity);
 				deserialise_component<Components::LineGeometry>(components, entity);
 				deserialise_component<Components::Transform>(components, entity);

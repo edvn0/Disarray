@@ -37,3 +37,6 @@
 [submodule "ThirdParty/glslang"]
 	path = ThirdParty/glslang
 	url = https://github.com/edvn0/glslang
+[submodule "ThirdParty/spdlog"]
+	path = ThirdParty/spdlog
+	url = git@github.com:gabime/spdlog.git

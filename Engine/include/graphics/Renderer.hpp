@@ -6,6 +6,8 @@
 #include <tuple>
 
 #include "Forward.hpp"
+#include "graphics/CommandExecutor.hpp"
+#include "graphics/Pipeline.hpp"
 #include "graphics/RendererProperties.hpp"
 
 using VkDescriptorSet = struct VkDescriptorSet_T*;
@@ -46,6 +48,8 @@ public:
 	virtual void end_pass(Disarray::CommandExecutor&) = 0;
 
 	virtual void on_resize() = 0;
+
+	virtual void bind_pipeline(Disarray::CommandExecutor&, const Disarray::Pipeline&, PipelineBindPoint = PipelineBindPoint::BindPointGraphics) = 0;
 
 	virtual void draw_planar_geometry(Geometry, const GeometryProperties&) = 0;
 	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const GeometryProperties&) = 0;

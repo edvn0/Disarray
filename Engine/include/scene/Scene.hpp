@@ -118,6 +118,8 @@ public:
 	static auto deserialise(const Device&, std::string_view, const std::filesystem::path&) -> Scope<Scene>;
 	static auto deserialise_into(Scene&, const Device&, const std::filesystem::path&) -> void;
 
+	void clear();
+
 private:
 	const Disarray::Device& device;
 	std::string scene_name;

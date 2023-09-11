@@ -77,13 +77,14 @@ namespace {
 			MSTimer timer {};
 			std::vector<EntityAndKey> output;
 			output.reserve(view.size_hint());
-			view.each([&](const auto handle, const auto& id, const auto& tag) {
+			view.each([this, &output](const auto handle, const auto& id, const auto& tag) {
 				ImmutableEntity entity { scene, handle, tag.name };
 				auto key = fmt::format("{}__disarray__{}", id.identifier, tag.name);
 				json entity_object;
 				json components;
 				serialise_component<Components::Pipeline>(entity, components);
 				serialise_component<Components::Texture>(entity, components);
+				serialise_component<Components::Script>(entity, components);
 				serialise_component<Components::Mesh>(entity, components);
 				serialise_component<Components::Transform>(entity, components);
 				serialise_component<Components::LineGeometry>(entity, components);
@@ -132,7 +133,7 @@ namespace {
 	};
 } // namespace
 
-using SceneSerialiser = Serialiser<PipelineSerialiser, TextureSerialiser, MeshSerialiser, TransformSerialiser, InheritanceSerialiser,
-	LineGeometrySerialiser, QuadGeometrySerialiser>;
+using SceneSerialiser = Serialiser<PipelineSerialiser, ScriptSerialiser, TextureSerialiser, MeshSerialiser, TransformSerialiser,
+	InheritanceSerialiser, LineGeometrySerialiser, QuadGeometrySerialiser>;
 
 } // namespace Disarray

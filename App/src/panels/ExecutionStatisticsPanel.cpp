@@ -2,6 +2,8 @@
 
 namespace Disarray::Client {
 
+using namespace std::string_view_literals;
+
 void ExecutionStatisticsPanel::update(float time_step)
 {
 	if (!has_stats) {
@@ -23,73 +25,29 @@ void ExecutionStatisticsPanel::update(float time_step)
 	}
 }
 
+struct FloatFormatter {
+	auto operator()(float float_value) const -> std::string { return fmt::format("{:.3f}", float_value); }
+};
+static constexpr const FloatFormatter formatter {};
+
 void ExecutionStatisticsPanel::interface()
 {
 	if (!has_stats) {
 		UI::scope("ExecutionStatisticsPanel"sv, []() { UI::text("{}", "No GPU stats collected."); });
 	}
 
-	UI::scope("ExecutionStatisticsPanel"sv, [&]() {
-		if (ImGui::BeginTable("StatisticsTable", 2)) {
-			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				UI::text("{}", "GPU time");
-				ImGui::TableNextColumn();
-				UI::text("{}", float(gpu_execution_time));
-			}
-			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				UI::text("{}", "IA Vertices");
-				ImGui::TableNextColumn();
-				UI::text("{}", float(input_assembly_vertices));
-			}
-			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				UI::text("{}", "IA Primitives");
-				ImGui::TableNextColumn();
-				UI::text("{}", float(input_assembly_primitives));
-			}
-			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				UI::text("{}", "VS Calls");
-				ImGui::TableNextColumn();
-				UI::text("{}", float(vertex_shader_invocations));
-			}
-			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				UI::text("{}", "Clip Calls");
-				ImGui::TableNextColumn();
-				UI::text("{}", float(clipping_invocations));
-			}
-			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				UI::text("{}", "Clip Primitives");
-				ImGui::TableNextColumn();
-				UI::text("{}", float(clipping_primitives));
-			}
-			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				UI::text("{}", "FS Calls");
-				ImGui::TableNextColumn();
-				UI::text("{}", float(fragment_shader_invocations));
-			}
-			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				UI::text("{}", "CS Calls");
-				ImGui::TableNextColumn();
-				UI::text("{}", float(compute_shader_invocations));
-			}
-			ImGui::EndTable();
-		}
-	});
+	UI::Tabular::table<float>("ExecutionStatisticsPanel"sv,
+		{
+			{ "GPU Time"sv, float(gpu_execution_time) },
+			{ "IA Vertices"sv, float(input_assembly_vertices) },
+			{ "IA Primitives"sv, float(input_assembly_primitives) },
+			{ "VS Calls"sv, float(vertex_shader_invocations) },
+			{ "Clip Calls"sv, float(clipping_invocations) },
+			{ "Clip Primitives"sv, float(clipping_primitives) },
+			{ "FS Calls"sv, float(fragment_shader_invocations) },
+			{ "CS Calls"sv, float(compute_shader_invocations) },
+		},
+		formatter);
 }
 
 } // namespace Disarray::Client

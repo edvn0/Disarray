@@ -1,7 +1,5 @@
 #pragma once
 
-#include <fmt/format.h>
-
 #include <cstddef>
 #include <cstdint>
 

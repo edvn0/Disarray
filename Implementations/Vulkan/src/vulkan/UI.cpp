@@ -51,15 +51,15 @@ void image_button(Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& 
 
 	const auto hash = vk_image.hash();
 	auto& cache = get_cache();
-	ImageIdentifier id = 0;
+	ImageIdentifier identifier = 0;
 	if (!get_cache().contains(hash)) {
-		id = add_image(vk_image.get_descriptor_info());
-		cache.try_emplace(hash, std::make_unique<ImageIdentifier>(id));
+		identifier = add_image(vk_image.get_descriptor_info());
+		cache.try_emplace(hash, std::make_unique<ImageIdentifier>(identifier));
 	} else {
-		id = *get_cache()[hash];
+		identifier = *get_cache()[hash];
 	}
 
-	ImGui::ImageButton("Image", id, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
+	ImGui::ImageButton("Image", identifier, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
 }
 
 void image_button(const Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
@@ -68,15 +68,15 @@ void image_button(const Image& image, glm::vec2 size, const std::array<glm::vec2
 
 	auto hash = vk_image.hash();
 	auto& cache = get_cache();
-	ImageIdentifier id = 0;
+	ImageIdentifier identifier = 0;
 	if (!get_cache().contains(hash)) {
-		id = add_image(vk_image.get_descriptor_info());
-		cache.try_emplace(hash, std::make_unique<ImageIdentifier>(id));
+		identifier = add_image(vk_image.get_descriptor_info());
+		cache.try_emplace(hash, std::make_unique<ImageIdentifier>(identifier));
 	} else {
-		id = *get_cache()[hash];
+		identifier = *get_cache()[hash];
 	}
 
-	ImGui::ImageButton("Image", id, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
+	ImGui::ImageButton("Image", identifier, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
 }
 
 void image(Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
@@ -85,15 +85,15 @@ void image(Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
 
 	const auto hash = vk_image.hash();
 	auto& cache = get_cache();
-	ImageIdentifier id = 0;
+	ImageIdentifier identifier = 0;
 	if (!get_cache().contains(hash)) {
-		id = add_image(vk_image.get_descriptor_info());
-		cache.try_emplace(hash, std::make_unique<ImageIdentifier>(id));
+		identifier = add_image(vk_image.get_descriptor_info());
+		cache.try_emplace(hash, std::make_unique<ImageIdentifier>(identifier));
 	} else {
-		id = *cache[hash];
+		identifier = *cache[hash];
 	}
 
-	ImGui::Image(id, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
+	ImGui::Image(identifier, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
 }
 
 void image_button(Texture& tex, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
@@ -171,6 +171,32 @@ auto shader_drop_button(Device& device, const std::string& button_name, ShaderTy
 	return false;
 }
 
+namespace Tabular {
+
+	auto table(std::string_view name, const Collections::StringViewMap<std::string>& map) -> bool
+	{
+		ImGui::Begin(name.data());
+		if (!ImGui::BeginTable(name.data(), 2)) {
+			ImGui::EndTable();
+			ImGui::End();
+			return false;
+		}
+
+		for (const auto& [key, value] : map) {
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			UI::text("{}", key);
+			ImGui::TableNextColumn();
+			UI::text("{}", value);
+		}
+
+		ImGui::EndTable();
+		ImGui::End();
+		return false;
+	}
+
+} // namespace Tabular
+
 auto texture_drop_button(Device& device, const Texture& out_texture) -> Ref<Disarray::Texture>
 {
 	UI::image_button(out_texture.get_image());
@@ -203,7 +229,7 @@ void remove_image(ImageIdentifier hash)
 	cache.erase(hash);
 }
 
-void InterfaceCaches::initialise() { image_descriptor_cache.reserve(100); }
+void InterfaceCaches::initialise() { }
 
 void InterfaceCaches::destruct()
 {

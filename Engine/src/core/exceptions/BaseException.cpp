@@ -18,3 +18,8 @@ BaseException::BaseException(std::string_view scope, std::string_view data)
 auto BaseException::what() const noexcept -> const char* { return message.c_str(); }
 
 } // namespace Disarray
+
+auto fmt::formatter<Disarray::BaseException>::format(const Disarray::BaseException& format, fmt::format_context& ctx) -> decltype(ctx.out())
+{
+	return fmt::formatter<std::string_view>::format(fmt::format("{}", format.what()), ctx);
+}

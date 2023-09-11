@@ -73,10 +73,13 @@ auto ImmutableEntity::get_registry() const -> const entt::registry& { return sce
 auto Entity::get_registry() -> entt::registry& { return scene->get_registry(); }
 auto Entity::get_registry() const -> const entt::registry& { return scene->get_registry(); }
 
-Entity Entity::deserialise(Disarray::Scene& scene, entt::entity handle, Disarray::Identifier entity_id, std::string_view name)
+auto Entity::deserialise(Disarray::Scene& scene, Identifier identifier, std::string_view name) -> Entity
 {
-	Entity entity { &scene, handle, name };
-	entity.get_components<Components::ID>().identifier = entity_id;
+	Entity entity { &scene, name };
+	if (!entity.has_component<Components::ID>()) {
+		throw MissingComponentException<Components::ID> {};
+	}
+	entity.get_components<Components::ID>().identifier = identifier;
 	return entity;
 }
 

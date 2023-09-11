@@ -21,6 +21,15 @@
 
 namespace Disarray::Vulkan {
 
+void Renderer::bind_pipeline(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, Disarray::PipelineBindPoint point)
+{
+	if (&pipeline != bound_pipeline) {
+		bound_pipeline = &pipeline;
+		vkCmdBindPipeline(supply_cast<Vulkan::CommandExecutor>(executor), Disarray::bit_cast<VkPipelineBindPoint>(point),
+			supply_cast<Vulkan::Pipeline>(*bound_pipeline));
+	}
+}
+
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const GeometryProperties& properties)
 {
 	draw_mesh(executor, mesh, properties.to_transform());
@@ -42,7 +51,7 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 {
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
-	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+	bind_pipeline(executor, mesh_pipeline);
 
 	auto& pc = get_graphics_resource().get_editable_push_constant();
 
@@ -82,7 +91,7 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 {
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
-	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+	bind_pipeline(executor, mesh_pipeline);
 
 	(void)texture;
 	auto& pc = get_graphics_resource().get_editable_push_constant();
