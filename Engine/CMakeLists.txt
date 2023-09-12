@@ -110,6 +110,8 @@ set(ENGINE_SOURCES
         src/graphics/IndexBuffer.cpp
         src/graphics/Texture.cpp
         src/graphics/Image.cpp
+        src/graphics/model_loaders/TinyObjModelLoader.cpp
+        src/graphics/model_loaders/AssimpModelLoader.cpp
         src/glfw/GLFWInput.cpp
         src/glfw/GLFWClock.cpp
         src/scene/Components.cpp
@@ -159,6 +161,7 @@ target_link_libraries(
         spdlog::spdlog
         Implementations::Vulkan
         thread-pool
+        assimp::assimp
         Vulkan::Vulkan
         PUBLIC
         fmt::fmt

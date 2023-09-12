@@ -481,7 +481,7 @@ void Scene::create_entities()
 
 		const auto cube_mesh = Mesh::construct(device,
 			MeshProperties {
-				.path = "Assets/Models/cube.mesh",
+				.path = "Assets/Models/cube.obj",
 			});
 		auto parent = create("Grid");
 		for (auto j = -rects / 2; j < rects / 2; j++) {
@@ -545,7 +545,7 @@ void Scene::create_entities()
 		auto v_mesh = create("Viking");
 		const auto viking = Mesh::construct(device,
 			{
-				.path = "Assets/Models/viking.mesh",
+				.path = "Assets/Models/viking.obj",
 				.initial_rotation = viking_rotation,
 			});
 		v_mesh.add_component<Components::Mesh>(viking);
@@ -593,7 +593,7 @@ void Scene::create_entities()
 		constexpr auto colours = generate_colours<point_lights>();
 		constexpr auto angles = generate_angles<point_lights>();
 
-		const auto sphere = Mesh::construct(device, { .path = "Assets/Models/sphere.mesh" });
+		const auto sphere = Mesh::construct(device, { .path = "Assets/Models/sphere.obj" });
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("point_light.vert");
 		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("point_light.frag");
 		auto pipe = Pipeline::construct(device,

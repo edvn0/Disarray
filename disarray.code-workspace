@@ -233,6 +233,7 @@
       "spdlog",
       "spirv",
       "SSBO",
+      "Submesh",
       "Subpass",
       "Subpasses",
       "subresource",

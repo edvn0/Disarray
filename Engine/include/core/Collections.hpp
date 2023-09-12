@@ -83,8 +83,7 @@ constexpr inline auto remove_if(Iterable auto& collection, auto&& predicate)
 }
 constexpr inline auto map(Iterable auto& collection, auto&& func)
 {
-	using Type = decltype(func(collection[0]));
-	std::vector<Type> output;
+	std::vector<decltype(func(*std::begin(collection)))> output;
 	const auto elements = std::distance(std::begin(collection), std::end(collection));
 	output.reserve(elements);
 
