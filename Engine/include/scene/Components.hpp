@@ -50,7 +50,7 @@ struct Transform {
 
 	[[nodiscard]] auto compute() const { return translate_matrix(position) * glm::mat4_cast(rotation) * scale_matrix(scale); }
 };
-template <> constexpr std::string_view component_name<Transform> = "Transform";
+template <> inline constexpr std::string_view component_name<Transform> = "Transform";
 
 struct Mesh {
 	Mesh() = default;
@@ -66,14 +66,14 @@ struct Material {
 	explicit Material(Ref<Disarray::Material>);
 	Ref<Disarray::Material> material { nullptr };
 };
-template <> constexpr std::string_view component_name<Material> = "Material";
+template <> inline constexpr std::string_view component_name<Material> = "Material";
 
 struct Pipeline {
 	Pipeline() = default;
 	explicit Pipeline(Ref<Disarray::Pipeline>);
 	Ref<Disarray::Pipeline> pipeline { nullptr };
 };
-template <> constexpr std::string_view component_name<Pipeline> = "Pipeline";
+template <> inline constexpr std::string_view component_name<Pipeline> = "Pipeline";
 
 struct Texture {
 	Texture() = default;
@@ -84,7 +84,7 @@ struct Texture {
 	Ref<Disarray::Texture> texture { nullptr };
 	glm::vec4 colour { 1.0f };
 };
-template <> constexpr std::string_view component_name<Texture> = "Texture";
+template <> inline constexpr std::string_view component_name<Texture> = "Texture";
 
 struct LineGeometry {
 	explicit LineGeometry(const glm::vec3& pos)
@@ -95,24 +95,24 @@ struct LineGeometry {
 	glm::vec3 to_position { 0.0f };
 	Disarray::Geometry geometry { Disarray::Geometry::Line };
 };
-template <> constexpr std::string_view component_name<LineGeometry> = "LineGeometry";
+template <> inline constexpr std::string_view component_name<LineGeometry> = "LineGeometry";
 
 struct QuadGeometry {
 	Disarray::Geometry geometry { Disarray::Geometry::Rectangle };
 };
-template <> constexpr std::string_view component_name<QuadGeometry> = "QuadGeometry";
+template <> inline constexpr std::string_view component_name<QuadGeometry> = "QuadGeometry";
 
 struct ID {
 	Identifier identifier {};
 
 	template <std::integral T> [[nodiscard]] T get_id() const { return static_cast<T>(identifier); }
 };
-template <> constexpr std::string_view component_name<ID> = "ID";
+template <> inline constexpr std::string_view component_name<ID> = "ID";
 
 struct Tag {
 	std::string name {};
 };
-template <> constexpr std::string_view component_name<Tag> = "Tag";
+template <> inline constexpr std::string_view component_name<Tag> = "Tag";
 
 struct DirectionalLight {
 	glm::vec3 direction { 1, 1, 1 };
@@ -120,13 +120,13 @@ struct DirectionalLight {
 
 	[[nodiscard]] auto compute() const -> glm::vec4 { return { glm::normalize(direction), intensity }; }
 };
-template <> constexpr std::string_view component_name<DirectionalLight> = "DirectionalLight";
+template <> inline constexpr std::string_view component_name<DirectionalLight> = "DirectionalLight";
 
 struct PointLight {
 	glm::vec3 direction { 0.f };
 	float intensity { .01f };
 };
-template <> constexpr std::string_view component_name<PointLight> = "PointLight";
+template <> inline constexpr std::string_view component_name<PointLight> = "PointLight";
 
 struct Script {
 	Script() = default;
@@ -175,7 +175,7 @@ private:
 	bool bound { false };
 	bool instantiated { false };
 };
-template <> constexpr std::string_view component_name<Script> = "Script";
+template <> inline constexpr std::string_view component_name<Script> = "Script";
 
 struct Inheritance {
 	std::unordered_set<Identifier> children {};
@@ -185,6 +185,6 @@ struct Inheritance {
 
 	[[nodiscard]] auto has_parent() const -> bool { return parent != invalid_identifier; }
 };
-template <> constexpr std::string_view component_name<Inheritance> = "Inheritance";
+template <> inline constexpr std::string_view component_name<Inheritance> = "Inheritance";
 
 } // namespace Disarray::Components
