@@ -93,6 +93,7 @@ namespace {
 				}
 				deserialise_component<Components::QuadGeometry>(components, entity);
 				deserialise_component<Components::LineGeometry>(components, entity);
+				deserialise_component<Components::Script>(components, entity);
 				deserialise_component<Components::Transform>(components, entity);
 				deserialise_component<Components::Pipeline>(components, entity);
 				deserialise_component<Components::Texture>(components, entity);
@@ -138,7 +139,7 @@ namespace {
 	};
 } // namespace
 
-using SceneDeserialiser = Deserialiser<TextureDeserialiser, MeshDeserialiser, TransformDeserialiser, InheritanceDeserialiser,
+using SceneDeserialiser = Deserialiser<TextureDeserialiser, ScriptDeserialiser, MeshDeserialiser, TransformDeserialiser, InheritanceDeserialiser,
 	LineGeometryDeserialiser, QuadGeometryDeserialiser>;
 
 } // namespace Disarray

@@ -15,7 +15,11 @@ public:
 	auto get_indices() const -> Disarray::IndexBuffer& override { return *indices; }
 	auto get_vertices() const -> Disarray::VertexBuffer& override { return *vertices; }
 
+	void force_recreation() override;
+
 private:
+	void load_and_initialise_model();
+
 	const Disarray::Device& device;
 
 	Scope<Disarray::VertexBuffer> vertices;

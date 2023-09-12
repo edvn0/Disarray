@@ -5,6 +5,7 @@
 #include <fstream>
 
 #include "core/Ensure.hpp"
+#include "graphics/ShaderCompiler.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Shader.hpp"
 #include "vulkan/Structures.hpp"
@@ -61,6 +62,22 @@ Shader::Shader(const Disarray::Device& dev, ShaderProperties properties)
 		auto read = Shader::read_file(props.path.value());
 		create_module(cast_to<Vulkan::Device>(device), read, shader_module);
 	}
+
+	stage = {};
+	stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	stage.stage = type;
+	stage.module = shader_module;
+	stage.pName = props.entry_point.data();
+}
+
+Shader::Shader(const Disarray::Device& dev, const std::filesystem::path& path)
+	: device(dev)
+{
+	props.type = to_shader_type(path);
+	auto type = to_stage(props.type);
+	props.identifier = path;
+	props.code = Runtime::ShaderCompiler {}.compile(path, props.type);
+	create_module(cast_to<Vulkan::Device>(device), *props.code, shader_module);
 
 	stage = {};
 	stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

@@ -31,6 +31,15 @@ MoveInCircleScript::MoveInCircleScript(const Collections::StringViewMap<Paramete
 	angle = glm::degrees(std::get<float>(stored_angle));
 }
 
+void MoveInCircleScript::reload()
+{
+	const auto& local_radius = get_parameters().at("local_radius"sv);
+	const auto& stored_angle = get_parameters().at("angle"sv);
+
+	radius = std::get<std::uint32_t>(local_radius);
+	angle = glm::degrees(std::get<float>(stored_angle));
+}
+
 void MoveInCircleScript::on_create() { }
 
 void MoveInCircleScript::on_update(float time_step)
@@ -49,6 +58,17 @@ LinearMovementScript::~LinearMovementScript() = default;
 
 LinearMovementScript::LinearMovementScript(const Collections::StringViewMap<Parameter>& params)
 	: CppScript(params)
+{
+	const auto& axis_as_uint8 = get_parameters().at("axis"sv);
+	const auto& min_input = get_parameters().at("min"sv);
+	const auto& max_input = get_parameters().at("max"sv);
+
+	min = std::get<float>(min_input);
+	max = std::get<float>(max_input);
+	axis = static_cast<Axis>(std::get<std::uint8_t>(axis_as_uint8));
+}
+
+void LinearMovementScript::reload()
 {
 	const auto& axis_as_uint8 = get_parameters().at("axis"sv);
 	const auto& min_input = get_parameters().at("min"sv);

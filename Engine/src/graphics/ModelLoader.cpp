@@ -73,6 +73,10 @@ ModelLoader::ModelLoader(const std::filesystem::path& path, const glm::mat4& ini
 	if (needs_rotate) {
 		Collections::parallel_for_each(vertices, [&rot = initial_rotation](auto& vertex) { vertex.rotate_by(rot); });
 	}
+
+	if (get_vertices_count() == 0 || get_indices_count() == 0) {
+		throw CouldNotLoadModelException("Model was empty.");
+	}
 }
 
 auto ModelLoader::get_vertices_count() const -> std::size_t { return vertices.size(); }

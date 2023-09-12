@@ -82,6 +82,10 @@ function(add_spdlog)
     add_subdirectory(spdlog)
 endfunction()
 
+function(add_tiny_file_dialogs)
+    add_subdirectory(libtinyfiledialogs)
+endfunction()
+
 add_glfw()
 add_glm()
 add_vma()
@@ -97,6 +101,7 @@ add_fmt()
 add_spirvcross()
 add_glslang()
 add_spdlog()
+add_tiny_file_dialogs()
 
 if (DISARRAY_BUILD_TESTS)
     add_approval_tests()

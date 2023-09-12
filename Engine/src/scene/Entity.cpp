@@ -75,7 +75,7 @@ auto Entity::get_registry() const -> const entt::registry& { return scene->get_r
 
 auto Entity::deserialise(Disarray::Scene& scene, Identifier identifier, std::string_view name) -> Entity
 {
-	Entity entity { &scene, name };
+	auto entity = scene.create(name);
 	if (!entity.has_component<Components::ID>()) {
 		throw MissingComponentException<Components::ID> {};
 	}

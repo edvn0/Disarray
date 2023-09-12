@@ -7,7 +7,9 @@
 #include <vulkan/vulkan.h>
 
 #include <imgui.h>
+#include <tinyfiledialogs.h>
 
+#include <filesystem>
 #include <unordered_map>
 
 #include "Forward.hpp"
@@ -109,6 +111,7 @@ void image(Texture& tex, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
 }
 
 void text(const std::string& formatted) { ImGui::Text("%s", formatted.c_str()); }
+void text_wrapped(const std::string& formatted) { ImGui::TextWrapped("%s", formatted.c_str()); }
 
 void scope(std::string_view name, UIFunction&& func)
 {
@@ -152,17 +155,12 @@ auto checkbox(const std::string& name, bool& value) -> bool { return ImGui::Chec
 
 auto shader_drop_button(Device& device, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader) -> bool
 {
+	UI::text_wrapped("Current shader: {}", out_shader->get_properties().identifier);
 	ImGui::Button(button_name.c_str());
-	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".spv" })) {
-		// We know that it is a spv file :)
-		auto shader_path = *dropped;
-		auto ext = shader_path.replace_extension();
-		if (ext.extension() == shader_type_extension(shader_type)) {
-			auto shader = Shader::construct(device,
-				ShaderProperties {
-					.path = *dropped,
-					.type = ShaderType::Vertex,
-				});
+	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".vert", ".frag" })) {
+		const auto& shader_path = *dropped;
+		if (shader_path.extension() == shader_type_extension(shader_type)) {
+			auto shader = Shader::compile(device, shader_path);
 			out_shader = shader;
 			return true;
 		}
@@ -196,6 +194,47 @@ namespace Tabular {
 	}
 
 } // namespace Tabular
+
+namespace Popup {
+
+	auto select_file(const ExtensionSet& allowed, const std::filesystem::path& base) -> std::optional<std::filesystem::path>
+	{
+		// Create a file open dialog object.
+		auto absolute = std::filesystem::absolute(base);
+		std::vector<const char*> extensions {};
+		extensions.reserve(allowed.size());
+		for (const auto& ext : allowed) {
+			extensions.push_back(ext.c_str());
+		}
+		const char* str = tinyfd_openFileDialog("File selector", absolute.string().c_str(), 1, extensions.data(), nullptr, 0);
+
+		if (str != nullptr) {
+			return { std::filesystem::path { str } };
+		}
+
+		return std::nullopt;
+	}
+
+} // namespace Popup
+
+namespace Input {
+
+	auto general_slider(std::string_view name, int count, float* base, float min, float max) -> bool
+	{
+		return ImGui::SliderScalarN(name.data(), ImGuiDataType_Float, base, static_cast<int>(count), &min, &max);
+	}
+
+	auto general_drag(std::string_view name, int count, float* base, float velocity, float min, float max) -> bool
+	{
+		return ImGui::DragScalarN(name.data(), ImGuiDataType_Float, base, static_cast<int>(count), velocity, &min, &max);
+	}
+
+	auto general_input(std::string_view name, int count, float* base, float velocity, float min, float max) -> bool
+	{
+		return ImGui::InputScalarN(name.data(), ImGuiDataType_Float, base, static_cast<int>(count), &min, &max);
+	}
+
+} // namespace Input
 
 auto texture_drop_button(Device& device, const Texture& out_texture) -> Ref<Disarray::Texture>
 {

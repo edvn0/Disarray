@@ -26,7 +26,7 @@ set(APP_SOURCES
 add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/src/Application.cpp
         ${APP_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE include)
-target_link_libraries(${PROJECT_NAME} PRIVATE Engine argparse::argparse)
+target_link_libraries(${PROJECT_NAME} PRIVATE Engine spdlog::spdlog argparse::argparse)
 target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_FORCE_RADIANS)
 
 default_compile_flags()

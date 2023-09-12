@@ -288,7 +288,8 @@ private:
 			auto& current_scene = *get_scene();
 			current_scene.clear();
 			Scene::deserialise_into(current_scene, get_device(), get_path());
-		} catch (const std::exception&) {
+		} catch (const std::exception& exc) {
+			Log::error("SceneHandler", "Exception: {}", exc.what());
 		}
 	}
 

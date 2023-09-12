@@ -1,13 +1,16 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <fmt/core.h>
 #include <magic_enum.hpp>
 
 #include <array>
+#include <concepts>
 #include <filesystem>
 #include <functional>
+#include <limits>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -16,7 +19,10 @@
 #include "core/Concepts.hpp"
 #include "core/Hashes.hpp"
 #include "core/Input.hpp"
+#include "core/Log.hpp"
 #include "core/Window.hpp"
+#include "glm/common.hpp"
+#include "glm/detail/qualifier.hpp"
 #include "graphics/Image.hpp"
 #include "graphics/Shader.hpp"
 #include "graphics/Texture.hpp"
@@ -67,6 +73,14 @@ template <typename... Args> void text(fmt::format_string<Args...> fmt_string, Ar
 	text(formatted);
 }
 
+void text_wrapped(const std::string&);
+
+template <typename... Args> void text_wrapped(fmt::format_string<Args...> fmt_string, Args&&... args)
+{
+	auto formatted = fmt::format(fmt_string, std::forward<Args>(args)...);
+	text_wrapped(formatted);
+}
+
 static constexpr inline auto button_size = 64;
 
 void image_button(Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
@@ -98,6 +112,53 @@ namespace Tabular {
 		return table(name, temporary);
 	}
 } // namespace Tabular
+namespace Popup {
+	auto select_file(const ExtensionSet& file_types, const std::filesystem::path& base = "Assets") -> std::optional<std::filesystem::path>;
+}
+namespace Input {
+	auto general_slider(std::string_view name, int count, float* base, float min, float max) -> bool;
+
+	template <std::size_t N, std::floating_point T>
+		requires(N > 0 && N <= 4)
+	auto slider(std::string_view name, T* base, T min = 0, T max = 1) -> bool
+	{
+		return general_slider(name, N, base, min, max);
+	}
+
+	template <std::floating_point T, int N> auto slider(std::string_view name, glm::vec<N, T>& vec, T min = 0, T max = 1) -> bool
+	{
+		return general_slider(name, N, glm::value_ptr(vec), min, max);
+	}
+
+	auto general_drag(std::string_view name, int count, float* base, float velocity, float min, float max) -> bool;
+
+	template <std::size_t N, std::floating_point T>
+		requires(N >= 0 && N <= 4)
+	auto drag(std::string_view name, T* base, T velocity = T { 1 }, T min = 0, T max = 1) -> bool
+	{
+		return general_drag(name, N, base, velocity, min, max);
+	}
+
+	template <std::floating_point T, int N> auto drag(std::string_view name, glm::vec<N, T>& vec, T velocity = T { 1 }, T min = 0, T max = 1) -> bool
+	{
+		return general_drag(name, N, glm::value_ptr(vec), velocity, min, max);
+	}
+
+	auto general_input(std::string_view name, int count, float* base, float velocity, float min, float max) -> bool;
+
+	template <std::size_t N, std::floating_point T>
+		requires(N >= 0 && N <= 4)
+	auto input(std::string_view name, T* base, T velocity = T { 1 }, T min = 0, T max = 1) -> bool
+	{
+		return general_input(name, N, base, velocity, min, max);
+	}
+
+	template <std::floating_point T, int N> auto input(std::string_view name, glm::vec<N, T>& vec, T velocity = T { 1 }, T min = 0, T max = 1) -> bool
+	{
+		return general_input(name, N, glm::value_ptr(vec), velocity, min, max);
+	}
+
+} // namespace Input
 
 void scope(std::string_view name, UIFunction&& func = default_function);
 

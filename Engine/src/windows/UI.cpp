@@ -15,7 +15,6 @@ void drag_drop(const std::filesystem::path& path)
 	if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
 		const auto as_string = path.string();
 		const auto size = as_string.size() * sizeof(char);
-		Log::info("DragDrop", "Sizeof {}: {}", path, size);
 		ImGui::SetDragDropPayload("Disarray::DragDropItem", as_string.c_str(), size);
 		ImGui::EndDragDropSource();
 	}

@@ -5,6 +5,8 @@
 #include <fmt/format.h>
 #include <magic_enum.hpp>
 
+#include <streambuf>
+
 #include "vulkan/Shader.hpp"
 
 namespace fmt {
@@ -21,6 +23,11 @@ namespace Disarray {
 auto Shader::construct(const Disarray::Device& device, ShaderProperties properties) -> Ref<Disarray::Shader>
 {
 	return make_ref<Vulkan::Shader>(device, std::move(properties));
+}
+
+auto Shader::compile(const Disarray::Device& device, const std::filesystem::path& path) -> Ref<Disarray::Shader>
+{
+	return make_ref<Vulkan::Shader>(device, path);
 }
 
 } // namespace Disarray

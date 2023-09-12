@@ -61,6 +61,8 @@ class Shader : public ReferenceCountable {
 	DISARRAY_OBJECT_PROPS(Shader, ShaderProperties)
 public:
 	virtual void destroy_module() = 0;
+
+	static auto compile(const Device& device, const std::filesystem::path&) -> Ref<Shader>;
 };
 
 } // namespace Disarray

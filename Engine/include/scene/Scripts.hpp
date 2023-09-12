@@ -17,6 +17,7 @@ public:
 	void on_create() override;
 	void on_interface() override;
 	void on_update(float time_step) override;
+	void reload() override;
 
 private:
 	[[nodiscard]] auto script_name() const -> std::string_view override { return "MoveInCircle"; }
@@ -39,6 +40,7 @@ public:
 	void on_interface() override;
 	void on_render(Disarray::Renderer&) override;
 	void on_update(float time_step) override;
+	void reload() override;
 
 private:
 	[[nodiscard]] auto script_name() const -> std::string_view override { return "LinearMovement"; }

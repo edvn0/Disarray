@@ -185,13 +185,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 	create_entities();
 }
 
-Scene::~Scene()
-{
-
-	auto script_view = registry.view<Components::Script>();
-	Log::info("Scene", "Script count: {}", script_view.size());
-	SceneSerialiser scene_serialiser(this);
-}
+Scene::~Scene() { }
 
 void Scene::begin_frame(const Camera& camera)
 {
@@ -364,11 +358,13 @@ void Scene::recreate(const Extent& new_ex)
 
 void Scene::destruct()
 {
-	file_watcher.reset();
+	SceneSerialiser scene_serialiser(this);
 	auto scripts = registry.view<Components::Script>();
 	for (auto&& [entity, script] : scripts.each()) {
 		script.destroy();
 	}
+
+	file_watcher.reset();
 	command_executor.reset();
 }
 
