@@ -82,6 +82,9 @@ function(add_spdlog)
 endfunction()
 
 function(add_tiny_file_dialogs)
+    if (${DISARRAY_COMPILER} STREQUAL "GNU" OR ${DISARRAY_COMPILER} MATCHES "Clang")
+        set(TINYFILEDIALOGS_ALLOW_POINTER_BOOL_CONVERSION ON CACHE BOOL "" FORCE)
+    endif ()
     add_subdirectory(libtinyfiledialogs)
 endfunction()
 
