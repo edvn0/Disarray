@@ -48,7 +48,7 @@ public:
 	void update(float);
 	void render();
 	void interface();
-	void construct(Disarray::App&, Disarray::ThreadPool&);
+	void construct(Disarray::App&, Disarray::Threading::ThreadPool&);
 	void destruct();
 	void on_event(Disarray::Event&);
 	void recreate(const Extent& extent);
@@ -116,6 +116,9 @@ public:
 	auto get_framebuffers() -> std::array<Ref<Disarray::Framebuffer>, 2> { return { framebuffer, identity_framebuffer }; }
 
 	static auto deserialise(const Device&, std::string_view, const std::filesystem::path&) -> Scope<Scene>;
+	static auto deserialise_into(Scene&, const Device&, const std::filesystem::path&) -> void;
+
+	void clear();
 
 private:
 	const Disarray::Device& device;
@@ -142,13 +145,7 @@ private:
 	void create_entities();
 	void draw_geometry(CommandExecutor&, bool is_shadow = false);
 
-	using FuncPtr = void (*)(const Disarray::Scene*);
-	struct ThreadPoolCallback {
-		FuncPtr func { nullptr };
-		bool parallel { false };
-	};
-	std::queue<ThreadPoolCallback> thread_pool_callbacks {};
-	void setup_filewatcher_and_threadpool(ThreadPool&);
+	void setup_filewatcher_and_threadpool(Threading::ThreadPool&);
 
 	std::future<void> final_pool_callback {};
 	std::atomic_bool should_run_callbacks { true };

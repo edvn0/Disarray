@@ -1,38 +1,43 @@
 #pragma once
 
-#include "graphics/ImageProperties.hpp"
-
+#include "Forward.hpp"
+#include "core/Types.hpp"
 namespace Disarray {
 
-#define DISARRAY_OBJECT(x)                                                                                                                           \
+#define DISARRAY_MAKE_NONCOPYABLE(Type)                                                                                                              \
 public:                                                                                                                                              \
-	virtual ~x() override = default;                                                                                                                 \
-	virtual void recreate(bool, const Extent&) {};                                                                                                   \
-	virtual void force_recreation() {};
+	Type(const Type&) = delete;                                                                                                                      \
+	Type(Type&&) = delete;                                                                                                                           \
+	auto operator=(const Type&) -> Type& = delete;                                                                                                   \
+	auto operator=(Type&&) -> Type& = delete;
 
-#define DISARRAY_MAKE_NONCOPYABLE(x)                                                                                                                 \
+#define DISARRAY_OBJECT_NO_PROPS(Type)                                                                                                               \
 public:                                                                                                                                              \
-	x(const x&) = delete;                                                                                                                            \
-	x(x&&) = delete;                                                                                                                                 \
-	auto operator=(const x&)->x& = delete;                                                                                                           \
-	auto operator=(x&&)->x& = delete;
+	Type() = default;                                                                                                                                \
+	virtual ~Type() override = default;                                                                                                              \
+	DISARRAY_MAKE_NONCOPYABLE(Type)                                                                                                                  \
+	virtual auto recreate(bool, const Extent&) -> void {};                                                                                           \
+	virtual auto force_recreation() -> void {};
 
-#define DISARRAY_OBJECT_PROPS(x, p)                                                                                                                  \
+#define DISARRAY_OBJECT_PROPS(Type, PropertiesType)                                                                                                  \
 public:                                                                                                                                              \
-	x() = delete;                                                                                                                                    \
-	virtual ~x() override = default;                                                                                                                 \
-	DISARRAY_MAKE_NONCOPYABLE(x)                                                                                                                     \
-	virtual auto recreate(bool, const Extent&)->void {};                                                                                             \
-	virtual auto force_recreation()->void {};                                                                                                        \
+	virtual ~Type() override = default;                                                                                                              \
+	DISARRAY_MAKE_NONCOPYABLE(Type)                                                                                                                  \
+	virtual auto recreate(bool, const Extent&) -> void {};                                                                                           \
+	virtual auto force_recreation() -> void {};                                                                                                      \
                                                                                                                                                      \
-	auto get_properties() const->const p& { return props; };                                                                                         \
-	auto get_properties()->p& { return props; };                                                                                                     \
+	auto get_properties() const -> const PropertiesType& { return props; };                                                                          \
+	auto get_properties() -> PropertiesType& { return props; };                                                                                      \
+                                                                                                                                                     \
+	static auto construct(const Disarray::Device& device, PropertiesType properties) -> Ref<Disarray::Type>;                                         \
+	static auto construct_scoped(const Disarray::Device& device, PropertiesType properties) -> Scope<Disarray::Type>;                                \
                                                                                                                                                      \
 protected:                                                                                                                                           \
-	x(p properties)                                                                                                                                  \
+	Type() = default;                                                                                                                                \
+	Type(PropertiesType properties)                                                                                                                  \
 		: props(std::move(properties))                                                                                                               \
 	{                                                                                                                                                \
 	}                                                                                                                                                \
-	p props; // NOLINT
+	PropertiesType props; // NOLINT
 
 } // namespace Disarray

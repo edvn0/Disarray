@@ -5,7 +5,7 @@
 
 namespace Disarray {
 
-auto Material::construct(const Disarray::Device& device, const MaterialProperties& properties) -> Ref<Material>
+auto Material::construct(const Disarray::Device& device, MaterialProperties properties) -> Ref<Disarray::Material>
 {
 	return make_ref<Vulkan::Material>(device, properties);
 }

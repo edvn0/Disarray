@@ -18,7 +18,7 @@ public:
 	InterfaceLayer(Disarray::Device& dev, Disarray::Window& win, Disarray::Swapchain& swap);
 	~InterfaceLayer() override;
 
-	void construct(App&, ThreadPool&) override;
+	void construct(App&, Threading::ThreadPool&) override;
 	void handle_swapchain_recreation(Swapchain&) override;
 	void on_event(Event&) override;
 	void interface() override;

@@ -33,6 +33,9 @@ class TextureCache;
 class CppScript;
 class Camera;
 
+struct Extent;
+struct FloatExtent;
+
 namespace Components {
 	struct Tag;
 	struct Transform;

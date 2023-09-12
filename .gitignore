@@ -6,6 +6,8 @@ build
 out
 cmake-build*
 
+*pipe-bin
+
 .vs
 
 .DS_Store
@@ -20,7 +22,6 @@ cmake-*
 !App/Assets/Icons/*.png
 
 App/Assets/Textures
-App/Assets/Models
 
 __pycache__
 App/Assets/Scripts/*.pyc

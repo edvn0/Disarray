@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Forward.hpp"
-#include "core/Types.hpp"
 
 namespace Disarray {
 

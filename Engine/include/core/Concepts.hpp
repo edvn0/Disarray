@@ -5,6 +5,19 @@
 
 namespace Disarray {
 
+template <class Input, class Func, class ReturnType>
+concept SpecifiedReturnTypeFunc = requires(Func&& func, Input& input) {
+	{
+		func(input)
+	} -> std::same_as<ReturnType>;
+};
+
+template <std::size_t T, std::size_t Min, std::size_t Max>
+concept InRange = (T > Min && T <= Max);
+
+template <std::size_t T, std::size_t Value>
+concept InSingleRange = (T > -Value && T <= Value);
+
 template <typename T>
 concept IsNumber = std::is_floating_point_v<T> || std::is_integral_v<T>;
 

@@ -1,16 +1,43 @@
 #include "scene/Scripts.hpp"
 
+#include <core/Tuple.hpp>
+
+#include <cstdint>
+
 #include "graphics/RendererProperties.hpp"
+#include "scene/Entity.hpp"
 #include "ui/UI.hpp"
 
 namespace Disarray::Scripts {
 
+using namespace std::string_view_literals;
+
 MoveInCircleScript::~MoveInCircleScript() = default;
 
 MoveInCircleScript::MoveInCircleScript(std::uint32_t local_radius, std::uint32_t, float initial_angle)
-	: radius(local_radius)
+	: CppScript({ { "local_radius", local_radius }, { "angle", initial_angle } })
+	, radius(local_radius)
 	, angle(glm::degrees(initial_angle))
 {
+}
+
+MoveInCircleScript::MoveInCircleScript(const Collections::StringViewMap<Parameter>& params)
+	: CppScript(params)
+{
+	const auto& local_radius = get_parameters().at("local_radius"sv);
+	const auto& stored_angle = get_parameters().at("angle"sv);
+
+	radius = std::get<std::uint32_t>(local_radius);
+	angle = glm::degrees(std::get<float>(stored_angle));
+}
+
+void MoveInCircleScript::reload()
+{
+	const auto& local_radius = get_parameters().at("local_radius"sv);
+	const auto& stored_angle = get_parameters().at("angle"sv);
+
+	radius = std::get<std::uint32_t>(local_radius);
+	angle = glm::degrees(std::get<float>(stored_angle));
 }
 
 void MoveInCircleScript::on_create() { }
@@ -29,8 +56,32 @@ void MoveInCircleScript::on_interface() { }
 
 LinearMovementScript::~LinearMovementScript() = default;
 
+LinearMovementScript::LinearMovementScript(const Collections::StringViewMap<Parameter>& params)
+	: CppScript(params)
+{
+	const auto& axis_as_uint8 = get_parameters().at("axis"sv);
+	const auto& min_input = get_parameters().at("min"sv);
+	const auto& max_input = get_parameters().at("max"sv);
+
+	min = std::get<float>(min_input);
+	max = std::get<float>(max_input);
+	axis = static_cast<Axis>(std::get<std::uint8_t>(axis_as_uint8));
+}
+
+void LinearMovementScript::reload()
+{
+	const auto& axis_as_uint8 = get_parameters().at("axis"sv);
+	const auto& min_input = get_parameters().at("min"sv);
+	const auto& max_input = get_parameters().at("max"sv);
+
+	min = std::get<float>(min_input);
+	max = std::get<float>(max_input);
+	axis = static_cast<Axis>(std::get<std::uint8_t>(axis_as_uint8));
+}
+
 LinearMovementScript::LinearMovementScript(float min_axis, float max_axis, Axis chosen)
-	: axis(chosen)
+	: CppScript({ { "min", min_axis }, { "max", max_axis }, { "axis", static_cast<std::uint8_t>(chosen) } })
+	, axis(chosen)
 	, min(min_axis)
 	, max(max_axis)
 {

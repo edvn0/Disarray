@@ -16,6 +16,7 @@
 namespace Disarray::Vulkan {
 
 class Framebuffer : public Disarray::Framebuffer, public PropertySupplier<VkFramebuffer> {
+	DISARRAY_MAKE_NONCOPYABLE(Framebuffer)
 public:
 	Framebuffer(const Disarray::Device&, FramebufferProperties);
 	~Framebuffer() override;
@@ -26,8 +27,10 @@ public:
 	{
 		props.extent = extent;
 		recreate_framebuffer(should_clean);
-		for (auto& registered_callback : get_callbacks()) {
-			registered_callback(*this);
+		auto& cbs = get_callbacks();
+		auto* this_framebuffer = this;
+		for (auto& registered_callback : cbs) {
+			registered_callback(*this_framebuffer);
 		}
 	}
 

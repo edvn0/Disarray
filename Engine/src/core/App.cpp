@@ -13,7 +13,7 @@
 #include "core/Log.hpp"
 #include "core/ThreadPool.hpp"
 #include "core/Window.hpp"
-#include "graphics/Renderer.hpp"
+#include "graphics/Swapchain.hpp"
 #include "ui/InterfaceLayer.hpp"
 #include "ui/UI.hpp"
 
@@ -21,8 +21,8 @@ namespace Disarray {
 
 App::App(const Disarray::ApplicationProperties& props)
 {
-	DISARRAY_LOG_INFO("App", "Working directory configured to: {}", props.working_directory);
-	std::filesystem::current_path(props.working_directory);
+	const auto& path = props.working_directory;
+	std::filesystem::current_path(path);
 
 	window = Window::construct({ .width = props.width, .height = props.height, .name = props.name, .is_fullscreen = props.is_fullscreen });
 	device = Device::construct(*window);
@@ -36,24 +36,31 @@ App::App(const Disarray::ApplicationProperties& props)
 void App::on_event(Event& event)
 {
 	for (const auto& layer : layers) {
-		if (event.handled)
+		if (event.handled) {
 			return;
+		}
 
 		layer->on_event(event);
 	}
 }
 
+auto AppDeleter::operator()(Disarray::App* ptr) -> void
+{
+	Log::info("App", "{}", "Successfully exited application.");
+	delete ptr;
+}
+
 App::~App()
 {
+	destroy_debug_applications();
 	destroy_allocator();
-	std::flush(std::cout);
 }
 
 void App::run()
 {
 	on_attach();
 
-	ThreadPool pool { 8 };
+	Threading::ThreadPool pool { {}, 2 };
 
 	auto ui_layer = add_layer<UI::InterfaceLayer>();
 
@@ -67,8 +74,9 @@ void App::run()
 	while (!window->should_close()) {
 		window->update();
 
-		if (!could_prepare_frame())
+		if (!could_prepare_frame()) {
 			continue;
+		}
 
 		const auto needs_recreation = swapchain->needs_recreation();
 		float time_step = Clock::ms() - current_time;
@@ -110,8 +118,9 @@ void App::run()
 auto App::could_prepare_frame() -> bool
 {
 	const auto could_prepare = swapchain->prepare_frame();
-	if (could_prepare)
+	if (could_prepare) {
 		return true;
+	}
 
 	for (auto& layer : layers) {
 		layer->handle_swapchain_recreation(*swapchain);

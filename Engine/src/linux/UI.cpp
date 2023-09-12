@@ -26,14 +26,17 @@ std::optional<std::filesystem::path> accept_drag_drop(const std::string& payload
 		ImGui::EndDragDropTarget();
 	}
 
-	if (!fp)
+	if (!fp) {
 		return {};
+	}
 
-	if (allowed_extensions.contains("*"))
+	if (allowed_extensions.contains("*")) {
 		return fp;
+	}
 
-	if (allowed_extensions.contains(fp->extension()))
+	if (allowed_extensions.contains(fp->extension())) {
 		return {};
+	}
 
 	return fp;
 }

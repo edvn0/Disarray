@@ -3,7 +3,7 @@
 namespace Disarray {
 class Clock {
 public:
-	static float ms();
-	static float ns();
+	static auto ms() -> float;
+	static auto ns() -> float;
 };
 } // namespace Disarray

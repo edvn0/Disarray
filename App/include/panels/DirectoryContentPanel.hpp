@@ -25,7 +25,7 @@ public:
 	bool traverse_up(bool force_reload = false);
 	bool can_traverse_up() const;
 
-	void construct(App&, ThreadPool&) override;
+	void construct(App&, Threading::ThreadPool&) override;
 	void update(float time_step) override;
 	void interface() override;
 	void destruct() override;

@@ -31,7 +31,7 @@ Texture::Texture(const Disarray::Device& dev, Disarray::TextureProperties proper
 		});
 }
 
-Texture::~Texture() { DISARRAY_LOG_DEBUG("Texture-Destructor", "Destroyed texture {}", props.debug_name); }
+Texture::~Texture() { }
 
 void Texture::recreate_texture(bool should_clean) { image->recreate(should_clean, props.extent); }
 

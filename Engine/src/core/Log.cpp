@@ -3,26 +3,56 @@
 #include "core/Log.hpp"
 
 #include <fmt/chrono.h>
+#include <magic_enum.hpp>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
 #include <cstdarg>
 #include <cstddef>
-#include <iostream>
-#include <stdexcept>
 #include <vector>
 
+#include "core/PointerDefinition.hpp"
 #include "core/exceptions/GeneralExceptions.hpp"
 
 namespace Disarray {
 
-#ifdef DISARRAY_ALLOW_SLOW_LOGGING
-void Logging::Logger::debug(const std::string& message) { std::cout << message << std::endl; }
-void Logging::Logger::info(const std::string& message) { std::cout << message << std::endl; }
-void Logging::Logger::error(const std::string& message) { std::cerr << message << std::endl; }
-#else
-void Logging::Logger::debug(const std::string& message) { std::cout << message << "\n"; }
-void Logging::Logger::info(const std::string& message) { std::cout << message << "\n"; }
-void Logging::Logger::error(const std::string& message) { std::cerr << message << "\n"; }
-#endif
+namespace Logging {
+
+	using LoggerType = std::shared_ptr<spdlog::logger>;
+	struct Logger::LoggerDataPimpl {
+		LoggerType engine_logger { nullptr };
+		LoggerType std_err_logger { nullptr };
+	};
+
+	Logger::Logger()
+	{
+		logger_data = make_scope<LoggerDataPimpl, PimplDeleter<LoggerDataPimpl>>();
+
+		logger_data->engine_logger = spdlog::stdout_color_mt("Disarray");
+		logger_data->std_err_logger = spdlog::stderr_color_mt("Error");
+
+		logger_data->engine_logger->critical("Logging engine level set to: {}", spdlog::level::to_string_view(spdlog::get_level()));
+	}
+
+	auto Logger::Logger::debug(const std::string& message) -> void { logger_data->engine_logger->debug(message); }
+
+	auto Logger::Logger::info(const std::string& message) -> void { logger_data->engine_logger->info(message); }
+
+	auto Logger::Logger::error(const std::string& message) -> void
+	{
+		logger_data->engine_logger->error(message);
+		logger_data->std_err_logger->error(message);
+	}
+
+	void Logger::initialise_logger(const std::string& log_level)
+	{
+		auto level = spdlog::level::from_str(log_level);
+		spdlog::set_level(level);
+	}
+
+} // namespace Logging
+
+template <> auto PimplDeleter<Logging::Logger::LoggerDataPimpl>::operator()(Logging::Logger::LoggerDataPimpl* ptr) noexcept -> void { delete ptr; }
 
 namespace Log {
 	auto current_time(bool include_ms) -> std::string

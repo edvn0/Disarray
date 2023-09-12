@@ -12,10 +12,10 @@
 #include "graphics/RenderPass.hpp"
 #include "util/Timer.hpp"
 #include "vulkan/Device.hpp"
+#include "vulkan/Image.hpp"
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Shader.hpp"
-#include "vulkan/Swapchain.hpp"
 
 namespace Disarray::Vulkan {
 
@@ -140,10 +140,8 @@ Pipeline::Pipeline(const Disarray::Device& dev, Disarray::PipelineProperties pro
 	: Disarray::Pipeline(std::move(properties))
 	, device(dev)
 {
-	props.framebuffer->register_on_framebuffer_change([this](Disarray::Framebuffer& frame_buffer) {
-		DISARRAY_LOG_INFO("Pipeline - FB Change", "{}", get_properties().hash());
-		recreate_pipeline(true, frame_buffer.get_properties().extent);
-	});
+	props.framebuffer->register_on_framebuffer_change(
+		[this](Disarray::Framebuffer& frame_buffer) { recreate_pipeline(true, frame_buffer.get_properties().extent); });
 
 	recreate_pipeline(false, {});
 }
@@ -266,8 +264,7 @@ void Pipeline::construct_layout(const Extent& extent)
 		blend_attachment_states[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 	} else {
 		for (size_t i = 0; i < color_attachment_count; i++) {
-			static constexpr auto full_mask = 0xf;
-			blend_attachment_states[i].colorWriteMask = full_mask;
+			blend_attachment_states[i].colorWriteMask = blend_all_factors;
 
 			if (!fb_props.should_blend) {
 				break;
@@ -339,7 +336,7 @@ void Pipeline::construct_layout(const Extent& extent)
 			.size = pc_layout.size,
 		};
 	}
-	pipeline_layout_info.pushConstantRangeCount = static_cast<std::uint32_t>(props.push_constant_layout.size()); // Optional
+	pipeline_layout_info.pushConstantRangeCount = static_cast<std::uint32_t>(result.size()); // Optional
 	pipeline_layout_info.pPushConstantRanges = result.data(); // Optional
 
 	verify(vkCreatePipelineLayout(supply_cast<Vulkan::Device>(device), &pipeline_layout_info, nullptr, &layout));
@@ -384,7 +381,7 @@ Pipeline::~Pipeline()
 	vkGetPipelineCacheData(supply_cast<Vulkan::Device>(device), cache, &size, data.data());
 
 	const auto pipeline_name = fmt::format(
-		"Pipeline-{}-{}", props.vertex_shader->get_properties().path.filename(), props.fragment_shader->get_properties().path.filename());
+		"Pipeline-{}-{}", props.vertex_shader->get_properties().identifier.filename(), props.fragment_shader->get_properties().identifier.filename());
 
 	const auto name = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", pipeline_name, props.hash());
 	FS::write_to_file(name, size, std::span { data });
@@ -435,7 +432,6 @@ void Pipeline::try_find_or_recreate_cache()
 	cache_create_info.pInitialData = buffer.data();
 	cache_create_info.initialDataSize = buffer.size() * sizeof(unsigned char);
 	vkCreatePipelineCache(supply_cast<Vulkan::Device>(device), &cache_create_info, nullptr, &cache);
-	DISARRAY_LOG_INFO("Pipeline - Cache", "Time elapsed: {}ms", timer.elapsed<Granularity::Millis>());
 }
 
 } // namespace Disarray::Vulkan

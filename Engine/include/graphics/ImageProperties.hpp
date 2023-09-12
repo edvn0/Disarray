@@ -1,7 +1,5 @@
 #pragma once
 
-#include <fmt/format.h>
-
 #include <cstddef>
 #include <cstdint>
 
@@ -54,6 +52,6 @@ template <IsNumber T> struct IExtent {
 struct Extent : public IExtent<std::uint32_t> { };
 struct FloatExtent : public IExtent<float> { };
 
-enum class ImageFormat { SRGB, RGB, SBGR, BGR, SRGB32, RGB32, Depth, DepthStencil, Uint };
+enum class ImageFormat : std::uint8_t { SRGB, RGB, SBGR, BGR, SRGB32, RGB32, Depth, DepthStencil, Uint };
 
 } // namespace Disarray

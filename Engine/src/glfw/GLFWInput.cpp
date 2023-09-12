@@ -4,33 +4,34 @@
 
 namespace Disarray {
 
-struct WindowData {
+struct Input::WindowData {
 	GLFWwindow* window;
 };
 
-static std::unique_ptr<WindowData> window_data { nullptr };
+auto Input::WindowDataDeleter::operator()(WindowData* ptr) -> void { delete ptr; }
 
 void Input::construct(const Disarray::Window& window)
 {
-	window_data = std::make_unique<WindowData>();
+	window_data = make_scope<WindowData, WindowDataDeleter>();
 	window_data->window = static_cast<GLFWwindow*>(window.native());
 }
 
 void Input::destruct() { window_data.reset(); }
 
-glm::vec2 Input::mouse_position()
+auto Input::mouse_position() -> glm::vec2
 {
-	double xpos, ypos;
+	double xpos { 0 };
+	double ypos { 0 };
 	glfwGetCursorPos(window_data->window, &xpos, &ypos);
 	return glm::vec2 { xpos, ypos };
 }
 
-bool Input::button_pressed(MouseCode code) { return glfwGetMouseButton(window_data->window, static_cast<int>(code)) == GLFW_PRESS; }
+auto Input::button_pressed(MouseCode code) -> bool { return glfwGetMouseButton(window_data->window, static_cast<int>(code)) == GLFW_PRESS; }
 
-bool Input::key_pressed(KeyCode code) { return glfwGetKey(window_data->window, static_cast<int>(code)) == GLFW_PRESS; }
+auto Input::key_pressed(KeyCode code) -> bool { return glfwGetKey(window_data->window, static_cast<int>(code)) == GLFW_PRESS; }
 
-bool Input::button_released(MouseCode code) { return glfwGetMouseButton(window_data->window, static_cast<int>(code)) == GLFW_RELEASE; }
+auto Input::button_released(MouseCode code) -> bool { return glfwGetMouseButton(window_data->window, static_cast<int>(code)) == GLFW_RELEASE; }
 
-bool Input::key_released(KeyCode code) { return glfwGetKey(window_data->window, static_cast<int>(code)) == GLFW_RELEASE; }
+auto Input::key_released(KeyCode code) -> bool { return glfwGetKey(window_data->window, static_cast<int>(code)) == GLFW_RELEASE; }
 
 } // namespace Disarray

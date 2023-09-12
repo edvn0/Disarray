@@ -7,6 +7,7 @@
 #include <string_view>
 
 #include "core/Ensure.hpp"
+#include "entt/entity/entity.hpp"
 #include "scene/Component.hpp"
 
 namespace Disarray {
@@ -15,47 +16,46 @@ class Scene;
 
 class Entity {
 public:
-	Entity()
-		: scene(nullptr)
-	{
-	}
+	Entity() = default;
 	Entity(Scene*, std::string_view);
 	Entity(Scene*, entt::entity, std::string_view);
 	Entity(Scene*, entt::entity);
-	Entity(Scene* s, entt::id_type id)
-		: Entity(s, static_cast<entt::entity>(id)) {};
+	Entity(Scene* input_scene, entt::id_type input_id)
+		: Entity(input_scene, static_cast<entt::entity>(input_id)) {};
 	Entity(Scene*);
 
-	static Entity deserialise(Scene&, entt::entity, Identifier, std::string_view = "Empty");
+	static auto deserialise(Scene&, Identifier, std::string_view = "Empty") -> Entity;
 
 	auto get_registry() -> entt::registry&;
-	auto get_registry() const -> const entt::registry&;
+	[[nodiscard]] auto get_registry() const -> const entt::registry&;
 
-	bool is_valid() const { return get_registry().valid(identifier); }
-	template <ValidComponent... T> decltype(auto) has_any() { return get_registry().any_of<T...>(identifier); }
-	template <ValidComponent... T> decltype(auto) has_all() { return get_registry().all_of<T...>(identifier); }
-	template <ValidComponent... T> decltype(auto) has_any() const { return get_registry().any_of<T...>(identifier); }
-	template <ValidComponent... T> decltype(auto) has_all() const { return get_registry().all_of<T...>(identifier); }
-	template <ValidComponent... T> decltype(auto) get_components() { return get_registry().get<T...>(identifier); }
-	template <ValidComponent... T> decltype(auto) get_components() const { return get_registry().get<T...>(identifier); }
-	template <ValidComponent T> decltype(auto) has_component() { return get_registry().any_of<T>(identifier); }
-	template <ValidComponent T> decltype(auto) has_component() const { return get_registry().any_of<T>(identifier); }
+	auto is_valid() const -> bool { return get_registry().valid(identifier); }
+	template <ValidComponent... T> auto has_any() -> decltype(auto) { return get_registry().any_of<T...>(identifier); }
+	template <ValidComponent... T> auto has_all() -> decltype(auto) { return get_registry().all_of<T...>(identifier); }
+	template <ValidComponent... T> auto has_any() const -> decltype(auto) { return get_registry().any_of<T...>(identifier); }
+	template <ValidComponent... T> auto has_all() const -> decltype(auto) { return get_registry().all_of<T...>(identifier); }
+	template <ValidComponent... T> auto get_components() -> decltype(auto) { return get_registry().get<T...>(identifier); }
+	template <ValidComponent... T> auto get_components() const -> decltype(auto) { return get_registry().get<T...>(identifier); }
+	template <ValidComponent T> auto has_component() -> decltype(auto) { return get_registry().any_of<T>(identifier); }
+	template <ValidComponent T> [[nodiscard]] auto has_component() const -> decltype(auto) { return get_registry().any_of<T>(identifier); }
 
-	template <ValidComponent T, typename... Args> decltype(auto) add_component(Args&&... args)
+	template <ValidComponent T, typename... Args> auto add_component(Args&&... args) -> decltype(auto)
 	{
-		if (has_component<T>())
+		if (has_component<T>()) {
 			return get_components<T>();
+		}
 		return emplace_component<T>(std::forward<Args>(args)...);
 	}
 
-	template <ValidComponent T, typename... Args> decltype(auto) try_add_component(Args&&... args)
+	template <ValidComponent T, typename... Args> auto try_add_component(Args&&... args) -> decltype(auto)
 	{
-		if (has_component<T>())
+		if (has_component<T>()) {
 			return;
+		}
 		emplace_component<T>(std::forward<Args>(args)...);
 	}
 
-	template <ValidComponent T, typename... Args> decltype(auto) emplace_component(Args&&... args)
+	template <ValidComponent T, typename... Args> auto emplace_component(Args&&... args) -> decltype(auto)
 	{
 		auto& registry = get_registry();
 		return registry.emplace<T>(identifier, std::forward<Args>(args)...);
@@ -63,8 +63,9 @@ public:
 
 	template <DeletableComponent T> void remove_component()
 	{
-		if (!has_component<T>())
+		if (!has_component<T>()) {
 			return;
+		}
 		auto& registry = get_registry();
 		registry.erase<T>(identifier);
 	}
@@ -85,12 +86,12 @@ public:
 	auto operator==(const Entity& other) const { return identifier == other.identifier; }
 	auto operator!=(const Entity& other) const { return !operator==(other); }
 
-	auto get_identifier() const -> const auto& { return identifier; }
+	[[nodiscard]] auto get_identifier() const -> const auto& { return identifier; }
 
 private:
-	Scene* scene;
-	std::string name;
-	entt::entity identifier;
+	Scene* scene { nullptr };
+	std::string name {};
+	entt::entity identifier { entt::null };
 
 	friend class CppScript;
 };
@@ -99,27 +100,27 @@ class ImmutableEntity {
 public:
 	ImmutableEntity(const Scene*, entt::entity, std::string_view);
 	ImmutableEntity(const Scene*, entt::entity);
-	ImmutableEntity(const Scene* s, entt::id_type id)
-		: ImmutableEntity(s, static_cast<entt::entity>(id)) {};
+	ImmutableEntity(const Scene* input_scene, entt::id_type input_id)
+		: ImmutableEntity(input_scene, static_cast<entt::entity>(input_id)) {};
 	ImmutableEntity(const Scene*);
 
-	auto get_registry() const -> const entt::registry&;
+	[[nodiscard]] auto get_registry() const -> const entt::registry&;
 
-	bool is_valid() const { return get_registry().valid(identifier); }
-	template <ValidComponent... T> decltype(auto) has_any() const { return get_registry().any_of<T...>(identifier); }
-	template <ValidComponent... T> decltype(auto) has_all() const { return get_registry().all_of<T...>(identifier); }
-	template <ValidComponent... T> decltype(auto) get_components() const { return get_registry().get<T...>(identifier); }
-	template <ValidComponent T> decltype(auto) has_component() const { return get_registry().any_of<T>(identifier); }
+	[[nodiscard]] auto is_valid() const -> bool { return get_registry().valid(identifier); }
+	template <ValidComponent... T> auto has_any() const -> decltype(auto) { return get_registry().any_of<T...>(identifier); }
+	template <ValidComponent... T> auto has_all() const -> decltype(auto) { return get_registry().all_of<T...>(identifier); }
+	template <ValidComponent... T> auto get_components() const -> decltype(auto) { return get_registry().get<T...>(identifier); }
+	template <ValidComponent T> auto has_component() const -> decltype(auto) { return get_registry().any_of<T>(identifier); }
 
 	auto operator==(const ImmutableEntity& other) const { return identifier == other.identifier; }
 	auto operator!=(const ImmutableEntity& other) const { return !operator==(other); }
 
-	auto get_identifier() const -> const auto& { return identifier; }
+	[[nodiscard]] auto get_identifier() const -> const auto& { return identifier; }
 
 private:
-	const Scene* scene;
-	std::string name;
-	entt::entity identifier;
+	const Scene* scene { nullptr };
+	std::string name {};
+	entt::entity identifier { entt::null };
 
 	friend class CppScript;
 };

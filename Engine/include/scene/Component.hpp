@@ -23,4 +23,12 @@ template <class T>
 concept DeletableComponent
 	= ValidComponent<T> && (!std::is_same_v<std::remove_const<T>, Components::ID> && !std::is_same_v<std::remove_const<T>, Components::Tag>);
 
+template <ValidComponent T> class MissingComponentException : public BaseException {
+public:
+	explicit MissingComponentException()
+		: BaseException("MissingComponentException", fmt::format("Missing component {}", Components::component_name<T>))
+	{
+	}
+};
+
 } // namespace Disarray

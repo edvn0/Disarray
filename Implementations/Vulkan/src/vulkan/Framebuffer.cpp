@@ -10,6 +10,7 @@
 
 #include "Forward.hpp"
 #include "core/Types.hpp"
+#include "fmt/core.h"
 #include "graphics/ImageProperties.hpp"
 #include "graphics/PhysicalDevice.hpp"
 #include "graphics/RenderPass.hpp"
@@ -35,13 +36,13 @@ Framebuffer::Framebuffer(const Disarray::Device& dev, FramebufferProperties prop
 			spec.format = attachment_spec.format;
 			spec.extent = props.extent;
 			spec.debug_name = fmt::format("{0}-depth{1}", props.debug_name, attachment_index);
-			depth_attachment = std::make_unique<Vulkan::Image>(device, std::move(spec));
+			depth_attachment = make_scope<Vulkan::Image>(device, std::move(spec));
 		} else {
 			ImageProperties spec;
 			spec.format = attachment_spec.format;
 			spec.extent = props.extent;
 			spec.debug_name = fmt::format("{0}-color{1}", props.debug_name, attachment_index);
-			attachments.emplace_back(std::make_unique<Vulkan::Image>(device, std::move(spec)));
+			attachments.emplace_back(make_scope<Vulkan::Image>(device, std::move(spec)));
 		}
 		attachment_index++;
 	}
@@ -183,7 +184,10 @@ void Framebuffer::recreate_framebuffer(bool should_clean)
 	// render_pass_info.dependencyCount = static_cast<uint32_t>(dependencies.size());
 	// render_pass_info.pDependencies = dependencies.data();
 
-	render_pass = RenderPass::construct(device);
+	render_pass = RenderPass::construct(device,
+		{
+			.debug_name = fmt::format("RenderPass-{}", props.debug_name),
+		});
 	auto& vk_render_pass = cast_to<Vulkan::RenderPass>(*render_pass);
 	vk_render_pass.create_with(render_pass_info);
 

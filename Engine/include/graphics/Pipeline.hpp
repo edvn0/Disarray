@@ -19,9 +19,14 @@ using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;
 
 namespace Disarray {
 
-enum class PolygonMode { Fill, Line, Point };
+enum class PipelineBindPoint : std::uint8_t {
+	BindPointGraphics = 0,
+	BindPointCompute = 1,
+};
 
-enum class DepthCompareOperator {
+enum class PolygonMode : std::uint8_t { Fill, Line, Point };
+
+enum class DepthCompareOperator : std::uint8_t {
 	None = 0,
 	Never,
 	NotEqual,
@@ -33,10 +38,10 @@ enum class DepthCompareOperator {
 	Always,
 };
 
-enum class CullMode { Back, Front, None, Both };
-enum class FaceMode { Clockwise, CounterClockwise };
+enum class CullMode : std::uint8_t { Back, Front, None, Both };
+enum class FaceMode : std::uint8_t { Clockwise, CounterClockwise };
 
-enum class ElementType {
+enum class ElementType : std::uint8_t {
 	Float,
 	Double,
 	Float2,
@@ -70,12 +75,12 @@ static constexpr auto to_size(ElementType type)
 }
 
 struct LayoutElement {
-	LayoutElement(ElementType t, const std::string& debug = "Empty")
-		: type(t)
-		, debug_name(debug)
-	{
-		size = to_size(type);
-	};
+	LayoutElement(ElementType element_type, std::string debug = "Empty")
+		: type(element_type)
+		, debug_name(std::move(debug))
+		, size(to_size(type)) {
+
+		};
 
 	ElementType type;
 	std::string debug_name;
@@ -83,7 +88,7 @@ struct LayoutElement {
 	std::uint32_t offset { 0 };
 };
 
-enum class InputRate { Vertex, Instance };
+enum class InputRate : std::uint8_t { Vertex, Instance };
 
 struct VertexBinding {
 	std::uint32_t binding { 0 };
@@ -103,14 +108,7 @@ struct VertexLayout {
 		binding.stride = total_size;
 	}
 
-	VertexLayout(const VertexLayout& layout)
-	{
-		total_size = layout.total_size;
-		elements = layout.elements;
-		binding = layout.binding;
-	};
-
-	const VertexBinding& construct_binding() { return binding; }
+	[[nodiscard]] auto construct_binding() const -> const VertexBinding& { return binding; }
 
 	std::uint32_t total_size { 0 };
 	std::vector<LayoutElement> elements;
@@ -130,7 +128,7 @@ struct PipelineProperties {
 	PushConstantLayout push_constant_layout {};
 	Extent extent { 0, 0 };
 	PolygonMode polygon_mode { PolygonMode::Fill };
-	float line_width { 1.0f };
+	float line_width { 1.0F };
 	SampleCount samples { SampleCount::One };
 	DepthCompareOperator depth_comparison_operator { DepthCompareOperator::Less };
 	CullMode cull_mode { CullMode::Front };
@@ -139,7 +137,7 @@ struct PipelineProperties {
 	bool test_depth { true };
 	std::vector<VkDescriptorSetLayout> descriptor_set_layouts;
 
-	std::size_t hash() const
+	auto hash() const -> std::size_t
 	{
 		std::size_t seed { 0 };
 		hash_combine(
@@ -166,8 +164,6 @@ public:
 		auto frag = get_properties().fragment_shader->get_properties().identifier;
 		return vert.string() == name || frag.string() == name;
 	}
-
-	static auto construct(const Disarray::Device&, PipelineProperties) -> Ref<Pipeline>;
 };
 
 } // namespace Disarray

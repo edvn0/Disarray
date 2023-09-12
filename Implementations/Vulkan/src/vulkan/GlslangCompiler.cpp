@@ -2,12 +2,16 @@
 
 #include <SPIRV/GlslangToSpv.h>
 #include <SPIRV/SpvTools.h>
+
 #include <glslang/MachineIndependent/Versions.h>
 #include <glslang/Public/ResourceLimits.h>
 #include <glslang/Public/ShaderLang.h>
 
 #include <exception>
+#include <filesystem>
+#include <unordered_set>
 
+#include "core/Collections.hpp"
 #include "core/Ensure.hpp"
 #include "core/Formatters.hpp"
 #include "core/Log.hpp"
@@ -43,12 +47,7 @@ struct Detail::CompilerIntrinsics {
 	}
 };
 
-auto Detail::data_deleter(Detail::CompilerIntrinsics* ptr) -> void
-{
-	DISARRAY_LOG_DEBUG("Detail::data_deleter", "Deleted compiler_intrinsics ptr at: {}", fmt::ptr(ptr));
-
-	delete ptr;
-}
+auto ShaderCompiler::Deleter::operator()(Detail::CompilerIntrinsics* ptr) -> void { delete ptr; }
 
 auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, ShaderType type) -> std::vector<std::uint32_t>
 {
@@ -62,7 +61,6 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 
 	std::string output;
 	if (!FS::read_from_file(path_to_shader.string(), output)) {
-		DISARRAY_LOG_ERROR("ShaderCompiler", "Could not read shader: {}", path_to_shader);
 		throw CouldNotOpenStreamException { fmt::format("Could not read shader: {}", path_to_shader) };
 	}
 	add_include_extension(output);
@@ -83,9 +81,9 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	EProfile default_profile = ECoreProfile;
 
 	std::string preprocessed_str;
-	if (!shader->preprocess(resources, default_version, default_profile, false, forward_compatible, EShMsgDefault, &preprocessed_str,
-			*compiler_data->include_dir_includer)) {
-		DISARRAY_LOG_ERROR("ShaderCompiler", "Failed to preprocess shader: {}. Info:{}", path_to_shader.string(), shader->getInfoLog());
+	glslang::TShader::ForbidIncluder forbid_includer {};
+	if (!shader->preprocess(
+			resources, default_version, default_profile, false, forward_compatible, EShMsgDefault, &preprocessed_str, forbid_includer)) {
 		return {};
 	}
 
@@ -93,14 +91,12 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	shader->setStrings(strings.data(), 1);
 
 	if (!shader->parse(resources, default_version, default_profile, false, forward_compatible, EShMsgDefault)) {
-		DISARRAY_LOG_ERROR("ShaderCompiler", "Failed to parse shader: {}. Info: {}", path_to_shader.string(), shader->getInfoLog());
 		return {};
 	}
 
 	glslang::TProgram program;
 	program.addShader(shader.get());
 	if (!program.link(EShMsgDefault)) {
-		DISARRAY_LOG_ERROR("ShaderCompiler", "Failed to link shader: {}. Info:{}", path_to_shader.string(), program.getInfoLog());
 		return {};
 	}
 
@@ -112,10 +108,6 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	options.generateDebugInfo = true;
 	spv::SpvBuildLogger logger;
 	glslang::GlslangToSpv(intermediate_ref, spirv, &logger, &options);
-
-	if (const auto all_messages = logger.getAllMessages(); !all_messages.empty()) {
-		DISARRAY_LOG_INFO("ShaderCompiler", "SpvBuildLogger messages  \n{}\n", logger.getAllMessages());
-	}
 
 	return spirv;
 }
@@ -129,11 +121,9 @@ auto ShaderCompiler::try_compile(const std::filesystem::path& path, Disarray::Sh
 		}
 		return { true, compiled };
 
-	} catch (const BaseException& exc) {
-		DISARRAY_LOG_ERROR("ShaderCompiler::try_compile", "Error: {}", exc.what());
+	} catch (const BaseException&) {
 		return { false, {} };
-	} catch (const std::exception& exc) {
-		DISARRAY_LOG_ERROR("ShaderCompiler::try_compile", "Error: {}", exc.what());
+	} catch (const std::exception&) {
 		return { false, {} };
 	}
 }
@@ -153,28 +143,64 @@ void ShaderCompiler::destroy()
 	}
 }
 
-void ShaderCompiler::add_include_extension(std::vector<char>& glsl_code)
+static auto replace(std::string& output, const std::string_view from, const std::string& replacement) -> bool
 {
-	static constexpr std::string_view extension = "\n#version 460\n#extension GL_GOOGLE_include_directive:require\n";
-	std::string output;
-	output += extension;
-	for (char character : glsl_code) {
-		output += character;
+	size_t start_pos = output.find(from);
+	if (start_pos == std::string::npos) {
+		return false;
 	}
-	output.shrink_to_fit();
+	output.replace(start_pos, from.length(), replacement.c_str());
+	return true;
+}
 
-	glsl_code = { output.begin(), output.end() };
+auto BasicIncluder::check_and_replace(std::string& io_string, std::string_view to_find)
+{
+	if (io_string.find(fmt::format("#include \"{}\"\n", to_find)) == std::string::npos) {
+		return;
+	}
+
+	auto include = fmt::format("#include \"{}\"\n", to_find);
+	ensure(include_include_source_map.contains(to_find), fmt::format("Could not find key {}", to_find));
+	const auto include_string = include_include_source_map.at(std::string { to_find });
+
+	replace(io_string, include, fmt::format("\n{}\n", include_string));
+}
+
+BasicIncluder::BasicIncluder(std::filesystem::path directory)
+{
+	FS::for_each_in_directory(
+		std::move(directory),
+		[&inc = include_include_source_map](const std::filesystem::directory_entry& entry) {
+			const auto& path = entry.path();
+			inc[path.filename().string()] = {};
+			if (!FS::read_from_file(path.string(), inc[path.filename().string()])) { }
+		},
+		[](const std::filesystem::directory_entry& entry) { return extensions.contains(entry.path().extension().string()); });
+
+	ensure(include_include_source_map.size() == 4, "We currently have 4 include files");
+}
+
+void BasicIncluder::replace_all_includes(std::string& io_string)
+{
+	Collections::for_each(include_include_source_map, [&str = io_string, this](const auto& pair) {
+		auto&& [view, string] = pair;
+		check_and_replace(str, view);
+	});
 }
 
 void ShaderCompiler::add_include_extension(std::string& glsl_code)
 {
 	ensure(glsl_code.find("#version") == std::string::npos, "Shader has a #version directive");
-	static constexpr std::string_view extension = "#version 460\n#extension GL_GOOGLE_include_directive: require\n";
+	static constexpr std::string_view extension = "#version 460\n";
 	glsl_code.insert(0, extension);
+
+	using namespace std::string_view_literals;
+	includer.replace_all_includes(glsl_code);
 }
 
 ShaderCompiler::ShaderCompiler()
-	: compiler_data(make_scope<Detail::CompilerIntrinsics, Deleter>())
+	: includer("Assets/Shaders/Include")
+	, compiler_data(make_scope<Detail::CompilerIntrinsics, Deleter>())
 {
 }
 

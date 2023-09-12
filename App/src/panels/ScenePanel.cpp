@@ -140,8 +140,7 @@ void ScenePanel::interface()
 		any_changed |= ImGui::DragFloat4("Clear colour", glm::value_ptr(props.clear_colour));
 
 		for (auto& attachment : props.attachments.texture_attachments) {
-			const auto& blend_attachment = attachment.format;
-			const auto formatted = fmt::format("{}: Should blend", blend_attachment);
+			auto formatted = fmt::format("{}", magic_enum::enum_name(attachment.format));
 			any_changed |= UI::checkbox(formatted, attachment.blend);
 			any_changed |= UI::combo_choice<FramebufferBlendMode>("Blend mode", attachment.blend_mode);
 		}
@@ -241,6 +240,50 @@ void ScenePanel::for_all_components(Entity& entity)
 
 		if (ImGui::DragFloat3("Direction", glm::value_ptr(direction), 0.05f, -glm::pi<float>(), glm::pi<float>())) { }
 		if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.01f, 0.2f)) { }
+	});
+
+	draw_component<Components::Mesh>(entity, "Mesh", [](Components::Mesh& mesh_component) {
+		auto& [mesh] = mesh_component;
+
+		auto& [path, pipeline, _] = mesh->get_properties();
+
+		bool any_changed = false;
+		std::optional<std::filesystem::path> selected { std::nullopt };
+		if (ImGui::Button("Choose path", { 80, 30 })) {
+			selected = UI::Popup::select_file({ "*.mesh" });
+			any_changed |= selected.has_value();
+		}
+
+		if (any_changed) {
+			if (selected.has_value()) {
+				path = *selected;
+			}
+			mesh->force_recreation();
+		}
+	});
+
+	draw_component<Components::Script>(entity, "Script", [](Components::Script& script_component) {
+		UI::text("Script name: {}", script_component.get_script().identifier());
+		auto& parameters = script_component.get_script().get_parameters();
+		bool any_changed = false;
+		for (auto&& [key, value] : parameters) {
+			any_changed |= switch_parameter<glm::vec2>(value, [key](glm::vec2& vector) { return UI::Input::slider(key, vector, 0.1F); });
+			any_changed |= switch_parameter<glm::vec3>(value, [key](glm::vec3& vector) { return UI::Input::slider(key, vector, 0.1F); });
+			any_changed |= switch_parameter<glm::vec4>(value, [key](glm::vec4& vector) { return UI::Input::slider(key, vector, 0.1F); });
+			any_changed |= switch_parameter<float>(value, [key](float& vector) { return UI::Input::slider<1>(key, &vector, 0.1F); });
+			any_changed |= switch_parameter<double>(value, [key](double& vector) {
+				auto as_float = static_cast<float>(vector);
+				bool changed = ImGui::DragFloat(key.data(), &as_float, 0.1f);
+				if (changed) {
+					vector = static_cast<double>(as_float);
+				}
+				return changed;
+			});
+		}
+
+		if (any_changed) {
+			script_component.get_script().reload();
+		}
 	});
 
 	draw_component<Components::Pipeline>(entity, "Pipeline", [&dev = device](Components::Pipeline& pipeline) {

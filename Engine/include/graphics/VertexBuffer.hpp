@@ -2,20 +2,14 @@
 
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
-#include "core/Types.hpp"
 #include "graphics/BufferProperties.hpp"
 
 namespace Disarray {
 
-class Device;
-class Swapchain;
-class PhysicalDevice;
-
 class VertexBuffer : public ReferenceCountable {
-	DISARRAY_OBJECT(VertexBuffer)
+	DISARRAY_OBJECT_PROPS(VertexBuffer, BufferProperties)
 public:
-	static Ref<VertexBuffer> construct(const Disarray::Device&, const Disarray::BufferProperties&);
-	virtual std::size_t size() const = 0;
+	virtual auto size() const -> std::size_t = 0;
 	virtual void set_data(const void*, std::uint32_t) = 0;
 };
 

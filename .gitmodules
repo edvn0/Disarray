@@ -25,9 +25,6 @@
 [submodule "ThirdParty/googletest"]
 	path = ThirdParty/googletest
 	url = https://github.com/google/googletest
-[submodule "ThirdParty/ApprovalTests"]
-	path = ThirdParty/ApprovalTests
-	url = https://github.com/approvals/ApprovalTests.cpp
 [submodule "ThirdParty/magic_enum"]
 	path = ThirdParty/magic_enum
 	url = https://github.com/Neargye/magic_enum
@@ -37,3 +34,9 @@
 [submodule "ThirdParty/glslang"]
 	path = ThirdParty/glslang
 	url = https://github.com/edvn0/glslang
+[submodule "ThirdParty/spdlog"]
+	path = ThirdParty/spdlog
+	url = git@github.com:gabime/spdlog.git
+[submodule "ThirdParty/libtinyfiledialogs"]
+	path = ThirdParty/libtinyfiledialogs
+	url = git@github.com:edvn0/libtinyfiledialogs.git

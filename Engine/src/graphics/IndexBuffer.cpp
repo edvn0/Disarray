@@ -6,9 +6,14 @@
 
 namespace Disarray {
 
-Ref<IndexBuffer> IndexBuffer::construct(const Disarray::Device& device, const Disarray::BufferProperties& props)
+auto IndexBuffer::construct(const Disarray::Device& device, Disarray::BufferProperties properties) -> Ref<Disarray::IndexBuffer>
 {
-	return make_ref<Vulkan::IndexBuffer>(device, props);
+	return make_ref<Vulkan::IndexBuffer>(device, properties);
+}
+
+auto IndexBuffer::construct_scoped(const Disarray::Device& device, Disarray::BufferProperties properties) -> Scope<Disarray::IndexBuffer>
+{
+	return make_scope<Vulkan::IndexBuffer>(device, properties);
 }
 
 } // namespace Disarray

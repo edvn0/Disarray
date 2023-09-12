@@ -2,19 +2,20 @@
 
 #include <vk_mem_alloc.h>
 
-#include "PropertySupplier.hpp"
-#include "core/ReferenceCounted.hpp"
+#include "core/DisarrayObject.hpp"
 #include "graphics/BufferProperties.hpp"
 #include "graphics/Device.hpp"
-#include "graphics/Swapchain.hpp"
+#include "vulkan/PropertySupplier.hpp"
 
 namespace Disarray::Vulkan {
 
 #define MAKE_SUB_BUFFER(x)                                                                                                                           \
+	DISARRAY_MAKE_NONCOPYABLE(x)                                                                                                                     \
+                                                                                                                                                     \
 public:                                                                                                                                              \
-	auto supply() const->VkBuffer override { return BaseBuffer::supply(); }                                                                          \
+	auto supply() const -> VkBuffer override { return BaseBuffer::supply(); }                                                                        \
 	void set_data(const void* data, std::uint32_t size) override { BaseBuffer::set_data(data, size); }                                               \
-	auto size() const->std::size_t override { return BaseBuffer::size(); }                                                                           \
+	auto size() const -> std::size_t override { return BaseBuffer::size(); }                                                                         \
 	~x() override { BaseBuffer::destroy_buffer(); }
 
 class BaseBuffer : public PropertySupplier<VkBuffer> {
@@ -22,16 +23,9 @@ public:
 	~BaseBuffer() override = default;
 
 protected:
-	BaseBuffer(const Disarray::Device&, BufferType type, const Disarray::BufferProperties&);
+	BaseBuffer(const Disarray::Device&, BufferType type, Disarray::BufferProperties);
 
-	[[nodiscard]] virtual auto size() const -> std::size_t
-	{
-		if (type == BufferType::Uniform) {
-			return props.size;
-		}
-
-		return count;
-	}
+	[[nodiscard]] virtual auto size() const -> std::size_t;
 
 	virtual void set_data(const void*, std::uint32_t);
 	void destroy_buffer();

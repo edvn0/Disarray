@@ -21,7 +21,7 @@ template <class T, class... Args> inline auto make_ref(Args&&... args) -> Ref<T>
 template <class T, class... Args> Ref<T> make_ref(Args&&... args) { return std::shared_ptr<T> { new T { std::forward<Args>(args)... } }; }
 #endif
 
-template <class T, class D = std::default_delete<T>, class... Args> inline auto make_scope(Args&&... args) -> Scope<T, D>
+template <class T, class D = DefaultDelete<T>, class... Args> inline auto make_scope(Args&&... args) -> Scope<T, D>
 {
 	return Scope<T, D> { new T { std::forward<Args>(args)... } };
 }

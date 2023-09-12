@@ -11,7 +11,7 @@ namespace Disarray::Vulkan {
 class VertexBuffer : public Disarray::VertexBuffer, public Vulkan::BaseBuffer {
 	MAKE_SUB_BUFFER(VertexBuffer)
 public:
-	VertexBuffer(const Disarray::Device&, const BufferProperties&);
+	VertexBuffer(const Disarray::Device&, BufferProperties);
 };
 
 } // namespace Disarray::Vulkan

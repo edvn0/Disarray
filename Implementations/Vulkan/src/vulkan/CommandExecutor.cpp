@@ -9,6 +9,7 @@
 
 #include "core/Log.hpp"
 #include "core/Types.hpp"
+#include "graphics/CommandExecutor.hpp"
 #include "vulkan/Config.hpp"
 #include "vulkan/DebugMarker.hpp"
 #include "vulkan/Device.hpp"
@@ -20,25 +21,15 @@ namespace Disarray::Vulkan {
 
 // Random tag data
 struct DemoTag {
-	const char name[17] = "debug marker tag";
+	char name[17] = "debug marker tag";
 } demo;
 
-CommandExecutor::CommandExecutor(Disarray::Device& dev, Disarray::Swapchain& sc, const Disarray::CommandExecutorProperties& properties)
-	: device(dev)
+CommandExecutor::CommandExecutor(const Disarray::Device& dev, const Disarray::Swapchain* sc, Disarray::CommandExecutorProperties properties)
+	: Disarray::CommandExecutor(properties)
+	, device(dev)
 	, swapchain(sc)
 	, indexes(device.get_physical_device().get_queue_family_indexes())
-	, props(properties)
-	, is_frame_dependent_executor(properties.count.has_value() && *properties.count > 1 && !properties.owned_by_swapchain)
-{
-	recreate_executor(false);
-}
-
-CommandExecutor::CommandExecutor(const Disarray::Device& dev, const Disarray::Swapchain& sc, const Disarray::CommandExecutorProperties& properties)
-	: device(dev)
-	, swapchain(sc)
-	, indexes(device.get_physical_device().get_queue_family_indexes())
-	, props(properties)
-	, is_frame_dependent_executor(properties.count.has_value() && *properties.count > 1 && !properties.owned_by_swapchain)
+	, is_frame_dependent_executor(props.count.has_value() && *props.count > 1 && !props.owned_by_swapchain)
 {
 	recreate_executor(false);
 }
@@ -140,7 +131,8 @@ void CommandExecutor::create_base_structures()
 
 	verify(vkCreateCommandPool(vk_device, &pool_info, nullptr, &command_pool));
 
-	auto count = props.count ? *props.count : swapchain.image_count();
+	auto sc_image_count = swapchain != nullptr ? swapchain->image_count() : Config::max_frames_in_flight;
+	auto count = props.count ? *props.count : sc_image_count;
 	if (count > Config::max_frames_in_flight) {
 		count = Config::max_frames_in_flight;
 	}
@@ -182,7 +174,7 @@ void CommandExecutor::begin()
 	begin_info.pInheritanceInfo = nullptr; // Optional
 
 	if (props.owned_by_swapchain) {
-		active = cast_to<Vulkan::Swapchain>(swapchain).get_drawbuffer();
+		active = cast_to<Vulkan::Swapchain>(*swapchain).get_drawbuffer();
 	} else {
 		active = command_buffers[buffer_index()];
 	}
@@ -194,7 +186,7 @@ void CommandExecutor::begin()
 void CommandExecutor::begin(VkCommandBufferBeginInfo begin_info)
 {
 	if (props.owned_by_swapchain) {
-		active = cast_to<Vulkan::Swapchain>(swapchain).get_drawbuffer();
+		active = cast_to<Vulkan::Swapchain>(*swapchain).get_drawbuffer();
 	} else {
 		active = command_buffers[buffer_index()];
 	}

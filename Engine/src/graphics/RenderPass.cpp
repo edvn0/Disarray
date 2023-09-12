@@ -6,9 +6,9 @@
 
 namespace Disarray {
 
-Ref<RenderPass> RenderPass::construct(const Disarray::Device& device, const Disarray::RenderPassProperties& props)
+auto RenderPass::construct(const Disarray::Device& device, Disarray::RenderPassProperties properties) -> Ref<Disarray::RenderPass>
 {
-	return make_ref<Vulkan::RenderPass>(device, props);
+	return make_ref<Vulkan::RenderPass>(device, std::move(properties));
 }
 
 } // namespace Disarray

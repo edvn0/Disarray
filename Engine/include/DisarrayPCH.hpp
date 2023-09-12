@@ -1,5 +1,7 @@
 #pragma once
 
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -7,8 +9,6 @@
 #include <glm/gtx/quaternion.hpp>
 #include <vulkan/vulkan.h>
 
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_vulkan.h>
 #include <fmt/chrono.h>
 #include <fmt/format.h>
 #include <imgui.h>

@@ -11,6 +11,7 @@
 #include <unordered_set>
 
 #include "Forward.hpp"
+#include "core/Collections.hpp"
 #include "core/Concepts.hpp"
 #include "core/Log.hpp"
 #include "core/Types.hpp"
@@ -21,8 +22,11 @@
 #include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "graphics/Texture.hpp"
+#include "scene/CppScript.hpp"
 
 namespace Disarray::Components {
+
+template <class T> static inline constexpr std::string_view component_name = "";
 
 namespace {
 	const auto default_rotation = glm::angleAxis(0.f, glm::vec3 { 0.f, 0.f, 1.0f });
@@ -46,6 +50,7 @@ struct Transform {
 
 	[[nodiscard]] auto compute() const { return translate_matrix(position) * glm::mat4_cast(rotation) * scale_matrix(scale); }
 };
+template <> inline constexpr std::string_view component_name<Transform> = "Transform";
 
 struct Mesh {
 	Mesh() = default;
@@ -61,12 +66,14 @@ struct Material {
 	explicit Material(Ref<Disarray::Material>);
 	Ref<Disarray::Material> material { nullptr };
 };
+template <> inline constexpr std::string_view component_name<Material> = "Material";
 
 struct Pipeline {
 	Pipeline() = default;
 	explicit Pipeline(Ref<Disarray::Pipeline>);
 	Ref<Disarray::Pipeline> pipeline { nullptr };
 };
+template <> inline constexpr std::string_view component_name<Pipeline> = "Pipeline";
 
 struct Texture {
 	Texture() = default;
@@ -77,6 +84,7 @@ struct Texture {
 	Ref<Disarray::Texture> texture { nullptr };
 	glm::vec4 colour { 1.0f };
 };
+template <> inline constexpr std::string_view component_name<Texture> = "Texture";
 
 struct LineGeometry {
 	explicit LineGeometry(const glm::vec3& pos)
@@ -87,20 +95,24 @@ struct LineGeometry {
 	glm::vec3 to_position { 0.0f };
 	Disarray::Geometry geometry { Disarray::Geometry::Line };
 };
+template <> inline constexpr std::string_view component_name<LineGeometry> = "LineGeometry";
 
 struct QuadGeometry {
 	Disarray::Geometry geometry { Disarray::Geometry::Rectangle };
 };
+template <> inline constexpr std::string_view component_name<QuadGeometry> = "QuadGeometry";
 
 struct ID {
 	Identifier identifier {};
 
 	template <std::integral T> [[nodiscard]] T get_id() const { return static_cast<T>(identifier); }
 };
+template <> inline constexpr std::string_view component_name<ID> = "ID";
 
 struct Tag {
 	std::string name {};
 };
+template <> inline constexpr std::string_view component_name<Tag> = "Tag";
 
 struct DirectionalLight {
 	glm::vec3 direction { 1, 1, 1 };
@@ -108,13 +120,14 @@ struct DirectionalLight {
 
 	[[nodiscard]] auto compute() const -> glm::vec4 { return { glm::normalize(direction), intensity }; }
 };
+template <> inline constexpr std::string_view component_name<DirectionalLight> = "DirectionalLight";
 
 struct PointLight {
 	glm::vec3 direction { 0.f };
 	float intensity { .01f };
 };
+template <> inline constexpr std::string_view component_name<PointLight> = "PointLight";
 
-void script_deleter(CppScript*);
 struct Script {
 	Script() = default;
 
@@ -123,6 +136,16 @@ struct Script {
 	void bind(Args&&... args)
 	{
 		instance_slot = ScriptPtr { new ChildScript { std::forward<Args>(args)... } };
+		setup_entity_creation();
+		setup_entity_destruction();
+		bound = true;
+	}
+
+	template <class ChildScript>
+		requires std::is_base_of_v<CppScript, ChildScript>
+	void bind(const Collections::StringViewMap<Parameter>& script_parameters)
+	{
+		instance_slot = ScriptPtr { new ChildScript { script_parameters } };
 		setup_entity_creation();
 		setup_entity_destruction();
 		bound = true;
@@ -137,7 +160,7 @@ struct Script {
 private:
 	friend class Disarray::Entity;
 	struct Deleter {
-		void operator()(CppScript* ptr) { script_deleter(ptr); }
+		void operator()(CppScript* script) noexcept;
 	};
 	using ScriptPtr = std::unique_ptr<CppScript, Deleter>;
 
@@ -152,6 +175,7 @@ private:
 	bool bound { false };
 	bool instantiated { false };
 };
+template <> inline constexpr std::string_view component_name<Script> = "Script";
 
 struct Inheritance {
 	std::unordered_set<Identifier> children {};
@@ -161,5 +185,6 @@ struct Inheritance {
 
 	[[nodiscard]] auto has_parent() const -> bool { return parent != invalid_identifier; }
 };
+template <> inline constexpr std::string_view component_name<Inheritance> = "Inheritance";
 
 } // namespace Disarray::Components

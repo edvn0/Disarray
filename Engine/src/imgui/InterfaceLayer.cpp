@@ -2,6 +2,7 @@
 
 #include "ui/InterfaceLayer.hpp"
 
+#include <glm/gtc/color_space.hpp>
 #include <vulkan/vulkan.h>
 
 #include <ImGuizmo.h>
@@ -44,9 +45,9 @@ InterfaceLayer::InterfaceLayer(Device& dev, Window& win, Swapchain& swap)
 
 InterfaceLayer::~InterfaceLayer() { }
 
-void InterfaceLayer::construct(App&, ThreadPool&)
+void InterfaceLayer::construct(App&, Threading::ThreadPool&)
 {
-	command_executor = CommandExecutor::construct(device, swapchain,
+	command_executor = CommandExecutor::construct(device, nullptr,
 		{
 			.count = 3,
 			.is_primary = false,
@@ -79,6 +80,11 @@ void InterfaceLayer::construct(App&, ThreadPool&)
 	// io.ConfigViewportsNoTaskBarIcon = true;
 
 	ImGui::StyleColorsDark();
+	for (int i = 0; i < ImGuiCol_COUNT; ++i) { // NOLINT
+		auto& colour = ImGui::GetStyle().Colors[i]; // NOLINT
+		const auto corrected = glm::convertSRGBToLinear(glm::vec4 { colour.x, colour.y, colour.z, colour.w });
+		colour = { corrected.x, corrected.y, corrected.z, corrected.w };
+	}
 
 	ImGuiStyle& style = ImGui::GetStyle();
 	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {

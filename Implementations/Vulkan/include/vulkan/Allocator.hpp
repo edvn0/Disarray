@@ -48,38 +48,37 @@ enum class Creation : std::uint32_t {
 	STRATEGY_MASK = STRATEGY_MIN_MEMORY_BIT | STRATEGY_MIN_TIME_BIT | STRATEGY_MIN_OFFSET_BIT,
 };
 
-inline constexpr Creation operator|(Creation left, Creation right)
+inline constexpr auto operator|(Creation left, Creation right) -> Creation
 {
 	return static_cast<Creation>(static_cast<std::uint32_t>(left) | static_cast<std::uint32_t>(right));
 }
 
-inline constexpr Creation& operator|=(Creation& a, Creation b) { return a = a | b; }
+inline constexpr auto operator|=(Creation& left, Creation right) -> Creation& { return left = left | right; }
 
 struct AllocationProperties {
-	Usage usage;
-	Creation creation;
+	Usage usage { Usage::AUTO };
+	Creation creation { Creation::HOST_ACCESS_RANDOM_BIT };
 };
 
 class Allocator {
 public:
 	Allocator(const std::string& resource_name = "Unknown Resource");
-	~Allocator();
 
 	static void initialise(Vulkan::Device&, Vulkan::PhysicalDevice&, Vulkan::Instance&);
 	static void shutdown();
 
-	template <typename T = UnkownData> T* map_memory(VmaAllocation allocation)
+	template <typename T = UnkownData> auto map_memory(VmaAllocation allocation) -> T*
 	{
 		T* data { nullptr };
 		vmaMapMemory(allocator, allocation, Disarray::bit_cast<void**>(&data));
 		return data;
 	}
 
-	void unmap_memory(VmaAllocation allocation) { vmaUnmapMemory(allocator, allocation); }
+	void unmap_memory(VmaAllocation allocation);
 
-	VmaAllocation allocate_buffer(VkBuffer&, VkBufferCreateInfo, const AllocationProperties&);
-	VmaAllocation allocate_buffer(VkBuffer&, VmaAllocationInfo&, VkBufferCreateInfo, const AllocationProperties&);
-	VmaAllocation allocate_image(VkImage&, VkImageCreateInfo, const AllocationProperties&);
+	auto allocate_buffer(VkBuffer&, VkBufferCreateInfo, const AllocationProperties&) -> VmaAllocation;
+	auto allocate_buffer(VkBuffer&, VmaAllocationInfo&, VkBufferCreateInfo, const AllocationProperties&) -> VmaAllocation;
+	auto allocate_image(VkImage&, VkImageCreateInfo, const AllocationProperties&) -> VmaAllocation;
 
 	void deallocate_buffer(VmaAllocation, VkBuffer&);
 	void deallocate_image(VmaAllocation, VkImage&);

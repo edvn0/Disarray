@@ -19,7 +19,7 @@ public:
 	}
 };
 
-enum class SerialiserType : std::uint8_t { Faulty, Pipeline, Texture, Mesh, Transform, LineGeometry, QuadGeometry, Inheritance };
+enum class SerialiserType : std::uint8_t { Faulty, Pipeline, Script, Texture, Mesh, Transform, LineGeometry, QuadGeometry, Inheritance };
 template <class T> inline constexpr SerialiserType serialiser_type_for = SerialiserType::Faulty;
 
 template <ValidComponent T, class Child> struct ComponentSerialiser {
@@ -58,12 +58,13 @@ namespace {
 	struct Name : public ComponentDeserialiser<Components::ComponentType, Name> {                                                                    \
 		static constexpr SerialiserType type = SerialiserType::ComponentType;                                                                        \
 		void deserialise_impl(const nlohmann::json&, Components::ComponentType&, const Device&);                                                     \
-		bool should_add_component_impl(const nlohmann::json& object_for_the_component);                                                              \
+		auto should_add_component_impl(const nlohmann::json& object_for_the_component) -> bool;                                                      \
 	};
 
 } // namespace
 
 MAKE_SERIALISER(PipelineSerialiser, Pipeline)
+MAKE_SERIALISER(ScriptSerialiser, Script)
 MAKE_SERIALISER(MeshSerialiser, Mesh)
 MAKE_SERIALISER(TextureSerialiser, Texture)
 MAKE_SERIALISER(TransformSerialiser, Transform)
@@ -72,6 +73,7 @@ MAKE_SERIALISER(QuadGeometrySerialiser, QuadGeometry)
 MAKE_SERIALISER(InheritanceSerialiser, Inheritance)
 
 MAKE_DESERIALISER(PipelineDeserialiser, Pipeline)
+MAKE_DESERIALISER(ScriptDeserialiser, Script)
 MAKE_DESERIALISER(MeshDeserialiser, Mesh)
 MAKE_DESERIALISER(TextureDeserialiser, Texture)
 MAKE_DESERIALISER(TransformDeserialiser, Transform)

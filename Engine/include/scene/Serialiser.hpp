@@ -42,8 +42,7 @@ namespace {
 		{
 			try {
 				serialised_object = serialise();
-			} catch (const CouldNotSerialiseException& exc) {
-				DISARRAY_LOG_ERROR("Scene Serialiser", "Could not serialise scene. Message: {}", exc.what());
+			} catch (const CouldNotSerialiseException&) {
 				return;
 			}
 
@@ -56,7 +55,6 @@ namespace {
 			auto full_path = path / scene_name;
 			std::ofstream output { full_path };
 			if (!output) {
-				DISARRAY_LOG_ERROR("Scene Serialiser", "Could not open {} for writing.", full_path.string());
 				return;
 			}
 
@@ -79,13 +77,14 @@ namespace {
 			MSTimer timer {};
 			std::vector<EntityAndKey> output;
 			output.reserve(view.size_hint());
-			view.each([&](const auto handle, const auto& id, const auto& tag) {
+			view.each([this, &output](const auto handle, const auto& id, const auto& tag) {
 				ImmutableEntity entity { scene, handle, tag.name };
 				auto key = fmt::format("{}__disarray__{}", id.identifier, tag.name);
 				json entity_object;
 				json components;
 				serialise_component<Components::Pipeline>(entity, components);
 				serialise_component<Components::Texture>(entity, components);
+				serialise_component<Components::Script>(entity, components);
 				serialise_component<Components::Mesh>(entity, components);
 				serialise_component<Components::Transform>(entity, components);
 				serialise_component<Components::LineGeometry>(entity, components);
@@ -102,8 +101,6 @@ namespace {
 
 			root["entities"] = entities;
 
-			DISARRAY_LOG_DEBUG("Serialiser", "Serialising took {}s", elapsed);
-
 			return root;
 		}
 
@@ -111,8 +108,9 @@ namespace {
 		{
 			static constexpr auto type = serialiser_type_for<T>;
 			auto result = std::apply(
-				[](auto... ts) {
-					return std::tuple_cat(std::conditional_t<(decltype(ts)::type == type), std::tuple<decltype(ts)>, std::tuple<>> {}...);
+				[](auto... remaining) {
+					return std::tuple_cat(
+						std::conditional_t<(decltype(remaining)::type == type), std::tuple<decltype(remaining)>, std::tuple<>> {}...);
 				},
 				serialisers);
 			Tuple::static_for(result, [&entity, &components](auto, auto& serialiser) {
@@ -135,7 +133,7 @@ namespace {
 	};
 } // namespace
 
-using SceneSerialiser = Serialiser<PipelineSerialiser, TextureSerialiser, MeshSerialiser, TransformSerialiser, InheritanceSerialiser,
-	LineGeometrySerialiser, QuadGeometrySerialiser>;
+using SceneSerialiser = Serialiser<PipelineSerialiser, ScriptSerialiser, TextureSerialiser, MeshSerialiser, TransformSerialiser,
+	InheritanceSerialiser, LineGeometrySerialiser, QuadGeometrySerialiser>;
 
 } // namespace Disarray

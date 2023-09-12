@@ -6,6 +6,8 @@
 #include <tuple>
 
 #include "Forward.hpp"
+#include "graphics/CommandExecutor.hpp"
+#include "graphics/Pipeline.hpp"
 #include "graphics/RendererProperties.hpp"
 
 using VkDescriptorSet = struct VkDescriptorSet_T*;
@@ -47,6 +49,8 @@ public:
 
 	virtual void on_resize() = 0;
 
+	virtual void bind_pipeline(Disarray::CommandExecutor&, const Disarray::Pipeline&, PipelineBindPoint = PipelineBindPoint::BindPointGraphics) = 0;
+
 	virtual void draw_planar_geometry(Geometry, const GeometryProperties&) = 0;
 	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const GeometryProperties&) = 0;
 	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const glm::mat4& transform = glm::identity<glm::mat4>()) = 0;
@@ -76,8 +80,8 @@ public:
 
 	auto get_graphics_resource() -> IGraphicsResource& { return *graphics_resource; }
 
-	static auto construct(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&) -> Ref<Renderer>;
-	static auto construct_unique(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&) -> Scope<Renderer>;
+	static auto construct(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&) -> Ref<Disarray::Renderer>;
+	static auto construct_unique(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&) -> Scope<Disarray::Renderer>;
 
 protected:
 	Renderer(Scope<IGraphicsResource> resource)

@@ -16,13 +16,13 @@ public:
 	void recreate(bool, const Disarray::Extent&) override { }
 	void force_recreation() override { }
 
-	Disarray::QueueFamilyIndex& get_queue_family_indexes() override { return *queue_family_index; }
-	const Disarray::QueueFamilyIndex& get_queue_family_indexes() const override { return *queue_family_index; }
+	auto get_queue_family_indexes() -> Disarray::QueueFamilyIndex& override { return *queue_family_index; }
+	auto get_queue_family_indexes() const -> const Disarray::QueueFamilyIndex& override { return *queue_family_index; }
 
-	VkPhysicalDevice supply() const override { return physical_device; }
+	auto supply() const -> VkPhysicalDevice override { return physical_device; }
 
-	VkPhysicalDeviceLimits get_limits() const { return device_properties.limits; }
-	SampleCount get_sample_count() const { return samples; }
+	auto get_limits() const -> VkPhysicalDeviceLimits { return device_properties.limits; }
+	auto get_sample_count() const -> SampleCount { return samples; }
 
 private:
 	VkPhysicalDevice physical_device;

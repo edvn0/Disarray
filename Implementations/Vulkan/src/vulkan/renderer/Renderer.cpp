@@ -4,26 +4,20 @@
 
 #include <array>
 
-#include "core/Collections.hpp"
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Swapchain.hpp"
-#include "vulkan/Device.hpp"
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/GraphicsResource.hpp"
-#include "vulkan/IndexBuffer.hpp"
-#include "vulkan/Mesh.hpp"
-#include "vulkan/RenderPass.hpp"
 #include "vulkan/Renderer.hpp"
-#include "vulkan/UniformBuffer.hpp"
 
 namespace Disarray::Vulkan {
 
 Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, const Disarray::RendererProperties& properties)
-	: Disarray::Renderer(std::make_unique<GraphicsResource>(dev, sc))
+	: Disarray::Renderer(make_scope<GraphicsResource>(dev, sc))
 	, device(dev)
 	, swapchain(sc)
 	, props(properties)
@@ -70,7 +64,7 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 		pipeline_properties.fragment_shader_key = "line.frag";
 		pipeline_properties.write_depth = false;
 		pipeline_properties.test_depth = false;
-		pipeline_properties.line_width = 3.0f;
+		pipeline_properties.line_width = 3.0F;
 		pipeline_properties.polygon_mode = PolygonMode::Line;
 		pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" } };
 		resource.get_pipeline_cache().put(pipeline_properties);

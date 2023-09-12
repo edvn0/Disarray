@@ -7,19 +7,16 @@
 
 #include <core/Ensure.hpp>
 
-#include <array>
-
 #include "core/Types.hpp"
-#include "graphics/ImageProperties.hpp"
+#include "graphics/RenderPass.hpp"
 #include "vulkan/Device.hpp"
-#include "vulkan/Image.hpp"
 #include "vulkan/Verify.hpp"
 
 namespace Disarray::Vulkan {
 
-RenderPass::RenderPass(const Disarray::Device& dev, const Disarray::RenderPassProperties& properties)
-	: device(dev)
-	, props(properties)
+RenderPass::RenderPass(const Disarray::Device& dev, Disarray::RenderPassProperties properties)
+	: Disarray::RenderPass(std::move(properties))
+	, device(dev)
 {
 }
 

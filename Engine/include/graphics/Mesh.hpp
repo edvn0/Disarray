@@ -22,17 +22,10 @@ struct MeshProperties {
 };
 
 class Mesh : public ReferenceCountable {
-	DISARRAY_OBJECT(Mesh)
+	DISARRAY_OBJECT_PROPS(Mesh, MeshProperties)
 public:
-	virtual VertexBuffer& get_vertices() = 0;
-	virtual IndexBuffer& get_indices() = 0;
-	virtual const VertexBuffer& get_vertices() const = 0;
-	virtual const IndexBuffer& get_indices() const = 0;
-
-	virtual const MeshProperties& get_properties() const = 0;
-	virtual MeshProperties& get_properties() = 0;
-
-	static Ref<Mesh> construct(const Disarray::Device&, const MeshProperties& = {});
+	virtual auto get_vertices() const -> VertexBuffer& = 0;
+	virtual auto get_indices() const -> IndexBuffer& = 0;
 };
 
 } // namespace Disarray

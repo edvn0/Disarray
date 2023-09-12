@@ -5,13 +5,13 @@
 
 namespace Disarray::Vulkan {
 
-BaseBuffer::BaseBuffer(const Disarray::Device& dev, BufferType t, const Disarray::BufferProperties& properties)
+BaseBuffer::BaseBuffer(const Disarray::Device& dev, BufferType buffer_type, Disarray::BufferProperties properties)
 	: device(dev)
-	, type(t)
+	, type(buffer_type)
 	, props(properties)
 	, count(properties.count)
 {
-	if (props.data) {
+	if (props.data != nullptr) {
 		create_with_valid_data();
 	} else {
 		create_with_empty_data();
@@ -26,7 +26,7 @@ void BaseBuffer::create_with_valid_data()
 	buffer_create_info.size = props.size;
 	buffer_create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	VkBuffer staging_buffer;
+	VkBuffer staging_buffer {};
 	VmaAllocation staging_buffer_allocation = allocator.allocate_buffer(staging_buffer, buffer_create_info, { Usage::CPU_TO_GPU });
 
 	{
@@ -65,8 +65,9 @@ void BaseBuffer::create_with_empty_data()
 
 	auto usage = is_uniform ? Usage::AUTO_PREFER_HOST : Usage::CPU_TO_GPU;
 	auto creation = Creation::MAPPED_BIT;
-	if (is_uniform)
+	if (is_uniform) {
 		creation |= Creation::HOST_ACCESS_RANDOM_BIT;
+	}
 
 	allocation = allocator.allocate_buffer(buffer, vma_allocation_info, buffer_create_info, { .usage = usage, .creation = creation });
 }
@@ -79,8 +80,8 @@ void BaseBuffer::set_data(const void* data, std::uint32_t size)
 	}
 
 	Allocator allocator { "mapper" };
-	auto* d = allocator.map_memory<std::byte>(allocation);
-	std::memcpy(d, data, size);
+	auto* output = allocator.map_memory<std::byte>(allocation);
+	std::memcpy(output, data, size);
 	allocator.unmap_memory(allocation);
 }
 
@@ -90,9 +91,9 @@ void BaseBuffer::destroy_buffer()
 	allocator.deallocate_buffer(allocation, buffer);
 }
 
-VkBufferUsageFlags BaseBuffer::to_vulkan_usage(BufferType t)
+auto BaseBuffer::to_vulkan_usage(BufferType buffer_type) -> VkBufferUsageFlags
 {
-	switch (t) {
+	switch (buffer_type) {
 	case BufferType::Vertex:
 		return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 	case BufferType::Index:
@@ -104,4 +105,12 @@ VkBufferUsageFlags BaseBuffer::to_vulkan_usage(BufferType t)
 	}
 }
 
+auto BaseBuffer::size() const -> std::size_t
+{
+	if (type == BufferType::Uniform) {
+		return props.size;
+	}
+
+	return count;
+}
 } // namespace Disarray::Vulkan

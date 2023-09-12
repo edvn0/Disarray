@@ -6,13 +6,14 @@
 
 namespace Disarray {
 
-auto Renderer::construct(const Disarray::Device& device, const Disarray::Swapchain& swapchain, const RendererProperties& props) -> Ref<Renderer>
+auto Renderer::construct(const Disarray::Device& device, const Disarray::Swapchain& swapchain, const RendererProperties& props)
+	-> Ref<Disarray::Renderer>
 {
 	return make_ref<Vulkan::Renderer>(device, swapchain, props);
 }
 
 auto Renderer::construct_unique(const Disarray::Device& device, const Disarray::Swapchain& swapchain, const RendererProperties& props)
-	-> Scope<Renderer>
+	-> Scope<Disarray::Renderer>
 {
 	return make_scope<Vulkan::Renderer>(device, swapchain, props);
 }

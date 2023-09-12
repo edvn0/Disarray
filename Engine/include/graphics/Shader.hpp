@@ -10,7 +10,6 @@
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
-#include "graphics/Device.hpp"
 
 namespace Disarray {
 
@@ -51,8 +50,8 @@ inline auto to_shader_type(const std::filesystem::path& path_like)
 }
 
 struct ShaderProperties {
-	std::optional<std::vector<std::uint32_t>> code;
-	std::filesystem::path path;
+	std::optional<std::vector<std::uint32_t>> code { std::nullopt };
+	std::optional<std::filesystem::path> path { std::nullopt };
 	std::filesystem::path identifier;
 	ShaderType type { ShaderType::Vertex };
 	std::string entry_point = "main";
@@ -63,7 +62,7 @@ class Shader : public ReferenceCountable {
 public:
 	virtual void destroy_module() = 0;
 
-	static auto construct(const Disarray::Device& device, const ShaderProperties&) -> Ref<Disarray::Shader>;
+	static auto compile(const Device& device, const std::filesystem::path&) -> Ref<Shader>;
 };
 
 } // namespace Disarray

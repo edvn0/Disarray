@@ -70,7 +70,7 @@ Scene::Scene(const Device& dev, std::string_view name)
 	selected_entity = make_scope<Entity>(this);
 }
 
-void Scene::setup_filewatcher_and_threadpool(ThreadPool& pool)
+void Scene::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
 {
 	file_watcher = make_scope<FileWatcher>(pool, "Assets/Shaders", Collections::StringSet { ".vert", ".frag" }, std::chrono::milliseconds(200));
 	file_watcher->on_modified([&dev = device, &reg = registry, &mutex = registry_access](const FileInformation& entry) {
@@ -84,41 +84,37 @@ void Scene::setup_filewatcher_and_threadpool(ThreadPool& pool)
 			unique_pipelines_sharing_this_files.insert(&pipeline);
 		}
 
+		if (unique_pipelines_sharing_this_files.empty()) {
+			return;
+		}
+
 		Runtime::ShaderCompiler compiler;
+		ShaderType type = to_shader_type(entry.path);
+		auto&& [could, code] = compiler.try_compile(entry.path, type);
+		if (!could) {
+			return;
+		}
+
+		auto shader = Shader::construct(dev,
+			{
+				.code = std::move(code),
+				.identifier = entry.path,
+				.type = type,
+			});
+
 		for (auto* pipe : unique_pipelines_sharing_this_files) {
 			auto& [pipeline] = *pipe;
-			ShaderType type = to_shader_type(entry.path);
 			auto& pipe_props = pipeline->get_properties();
-
-			auto&& [could, code] = compiler.try_compile(entry.path, type);
-			if (!could) {
-				continue;
-			}
 
 			switch (type) {
 			case ShaderType::Vertex: {
-				pipe_props.vertex_shader = Shader::construct(dev,
-					{
-						.code = std::move(code),
-						.identifier = entry.path,
-						.type = type,
-					});
+				pipe_props.vertex_shader = shader;
 			}
 			case ShaderType::Fragment: {
-				pipe_props.fragment_shader = Shader::construct(dev,
-					{
-						.code = std::move(code),
-						.identifier = entry.path,
-						.type = type,
-					});
+				pipe_props.fragment_shader = shader;
 			}
 			case ShaderType::Compute: {
-				pipe_props.compute_shader = Shader::construct(dev,
-					{
-						.code = std::move(code),
-						.identifier = entry.path,
-						.type = type,
-					});
+				pipe_props.compute_shader = shader;
 			}
 			}
 		}
@@ -129,37 +125,16 @@ void Scene::setup_filewatcher_and_threadpool(ThreadPool& pool)
 		}
 		wait_for_idle(dev);
 	});
-
-	final_pool_callback = pool.submit([this]() {
-		using namespace std::chrono_literals;
-		while (should_run_callbacks) {
-			std::unique_lock lock { callback_mutex };
-			std::vector<ThreadPoolCallback> parallels {};
-			while (!thread_pool_callbacks.empty()) {
-				ThreadPoolCallback& front = thread_pool_callbacks.front();
-				if (front.parallel) {
-					parallels.push_back(front);
-				} else {
-					front.func(this);
-				}
-				thread_pool_callbacks.pop();
-			}
-
-			auto* scene = this;
-			Collections::parallel_for_each(parallels, [scene](auto& func_wrapper) { func_wrapper.func(scene); });
-			callback_cv.wait_for(lock, 10s);
-		}
-	});
 }
 
-void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
+void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 {
 	scene_renderer = Renderer::construct_unique(device, app.get_swapchain(), {});
 
 	setup_filewatcher_and_threadpool(pool);
 
 	extent = app.get_swapchain().get_extent();
-	command_executor = CommandExecutor::construct(device, app.get_swapchain(), { .count = 3, .is_primary = true, .record_stats = true });
+	command_executor = CommandExecutor::construct(device, &app.get_swapchain(), { .count = 3, .is_primary = true, .record_stats = true });
 	scene_renderer->on_batch_full([&exec = *command_executor](Renderer& r) { r.flush_batch(exec); });
 
 	framebuffer = Framebuffer::construct(device,
@@ -210,13 +185,7 @@ void Scene::construct(Disarray::App& app, Disarray::ThreadPool& pool)
 	create_entities();
 }
 
-Scene::~Scene()
-{
-	std::lock_guard<std::mutex> guard(callback_mutex);
-	should_run_callbacks = false;
-	callback_cv.notify_all();
-	SceneSerialiser scene_serialiser(this);
-}
+Scene::~Scene() { }
 
 void Scene::begin_frame(const Camera& camera)
 {
@@ -265,7 +234,7 @@ void Scene::update(float time_step)
 		}
 
 		auto& instantiated = script.get_script();
-		instantiated.update_entity(Entity { scene, entity });
+		instantiated.update_entity(scene, entity);
 		instantiated.on_update(step);
 	});
 }
@@ -370,12 +339,9 @@ void Scene::draw_geometry(CommandExecutor& executor, bool is_shadow)
 void Scene::on_event(Event& event)
 {
 	EventDispatcher dispatcher { event };
-	dispatcher.dispatch<KeyPressedEvent>([this](KeyPressedEvent&) {
+	dispatcher.dispatch<KeyPressedEvent>([scene = this](KeyPressedEvent&) {
 		if (Input::all<KeyCode::LeftControl, KeyCode::LeftShift, KeyCode::S>()) {
-			thread_pool_callbacks.push({
-				.func = [](const Scene* scene) { SceneSerialiser scene_serialiser(scene); },
-				.parallel = false,
-			});
+			SceneSerialiser scene_serialiser(scene);
 		}
 		return true;
 	});
@@ -392,11 +358,13 @@ void Scene::recreate(const Extent& new_ex)
 
 void Scene::destruct()
 {
-	file_watcher.reset();
+	SceneSerialiser scene_serialiser(this);
 	auto scripts = registry.view<Components::Script>();
 	for (auto&& [entity, script] : scripts.each()) {
 		script.destroy();
 	}
+
+	file_watcher.reset();
 	command_executor.reset();
 }
 
@@ -415,6 +383,11 @@ auto Scene::deserialise(const Device& device, std::string_view name, const std::
 	Scope<Scene> created = make_scope<Scene>(device, name);
 	SceneDeserialiser deserialiser { *created, device, filename };
 	return created;
+}
+
+auto Scene::deserialise_into(Scene& output_scene, const Device& device, const std::filesystem::path& filename) -> void
+{
+	SceneDeserialiser deserialiser { output_scene, device, filename };
 }
 
 void Scene::update_picked_entity(std::uint32_t handle) { picked_entity = make_scope<Entity>(this, handle == 0 ? entt::null : handle); }
@@ -468,6 +441,12 @@ auto Scene::get_by_identifier(Identifier identifier) -> std::optional<Entity>
 	}
 
 	return std::nullopt;
+}
+
+void Scene::clear()
+{
+	std::scoped_lock lock { registry_access };
+	registry.clear();
 }
 
 void Scene::create_entities()

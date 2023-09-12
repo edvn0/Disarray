@@ -1,13 +1,16 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <fmt/core.h>
 #include <magic_enum.hpp>
 
 #include <array>
+#include <concepts>
 #include <filesystem>
 #include <functional>
+#include <limits>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -16,12 +19,28 @@
 #include "core/Concepts.hpp"
 #include "core/Hashes.hpp"
 #include "core/Input.hpp"
+#include "core/Log.hpp"
 #include "core/Window.hpp"
+#include "glm/common.hpp"
+#include "glm/detail/qualifier.hpp"
 #include "graphics/Image.hpp"
 #include "graphics/Shader.hpp"
 #include "graphics/Texture.hpp"
 
 namespace Disarray::UI {
+
+namespace Detail {
+	template <class Formatter, class T>
+	concept ArgumentFormatter = requires(const Formatter& formatter, const T& value) {
+		{
+			formatter.operator()(value)
+		} -> std::same_as<std::string>;
+	};
+
+	template <class T> struct DefaultFormatter {
+		auto operator()(const T& value) const -> std::string { return fmt::format("{}", value); }
+	};
+} // namespace Detail
 
 using ExtensionSet = Collections::StringSet;
 using ImageIdentifier = std::uint64_t;
@@ -37,8 +56,8 @@ public:
 	static auto font_cache() -> auto& { return font_map; }
 
 private:
-	inline static ImageCache image_descriptor_cache {};
-	inline static Collections::StringMap<ImFont*> font_map {};
+	static inline ImageCache image_descriptor_cache {};
+	static inline Collections::StringMap<ImFont*> font_map {};
 };
 
 static constexpr std::array<glm::vec2, 2> default_uvs = { glm::vec2 { 0.f, 0.f }, glm::vec2 { 1.f, 1.f } };
@@ -54,20 +73,101 @@ template <typename... Args> void text(fmt::format_string<Args...> fmt_string, Ar
 	text(formatted);
 }
 
-void image_button(Image&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
-void image_button(const Image&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
-void image(Image&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
-void image_button(Texture&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
-void image(Texture&, glm::vec2 size = { 64, 64 }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+void text_wrapped(const std::string&);
+
+template <typename... Args> void text_wrapped(fmt::format_string<Args...> fmt_string, Args&&... args)
+{
+	auto formatted = fmt::format(fmt_string, std::forward<Args>(args)...);
+	text_wrapped(formatted);
+}
+
+static constexpr inline auto button_size = 64;
+
+void image_button(Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+void image_button(const Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+void image(Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+void image_button(Texture&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+void image(Texture&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+
+namespace Tabular {
+	auto table(std::string_view name, const Collections::StringViewMap<std::string>& map) -> bool;
+
+	template <class T>
+	auto table(std::string_view name, const Collections::StringViewMap<T>& map, Detail::ArgumentFormatter<T> auto formatter) -> bool
+	{
+		Collections::StringViewMap<std::string> temporary {};
+		for (const auto& [key, value] : map) {
+			temporary.try_emplace(key, formatter(value));
+		}
+		return table(name, temporary);
+	}
+
+	template <class T> auto table(std::string_view name, const Collections::StringViewMap<T>& map) -> bool
+	{
+		Collections::StringViewMap<std::string> temporary {};
+		auto formatter = Detail::DefaultFormatter<T> {};
+		for (const auto& [key, value] : map) {
+			temporary.try_emplace(key, formatter(value));
+		}
+		return table(name, temporary);
+	}
+} // namespace Tabular
+namespace Popup {
+	auto select_file(const ExtensionSet& file_types, const std::filesystem::path& base = "Assets") -> std::optional<std::filesystem::path>;
+}
+namespace Input {
+	auto general_slider(std::string_view name, int count, float* base, float min, float max) -> bool;
+
+	template <std::size_t N, std::floating_point T>
+		requires(N > 0 && N <= 4)
+	auto slider(std::string_view name, T* base, T min = 0, T max = 1) -> bool
+	{
+		return general_slider(name, N, base, min, max);
+	}
+
+	template <std::floating_point T, int N> auto slider(std::string_view name, glm::vec<N, T>& vec, T min = 0, T max = 1) -> bool
+	{
+		return general_slider(name, N, glm::value_ptr(vec), min, max);
+	}
+
+	auto general_drag(std::string_view name, int count, float* base, float velocity, float min, float max) -> bool;
+
+	template <std::size_t N, std::floating_point T>
+		requires(N >= 0 && N <= 4)
+	auto drag(std::string_view name, T* base, T velocity = T { 1 }, T min = 0, T max = 1) -> bool
+	{
+		return general_drag(name, N, base, velocity, min, max);
+	}
+
+	template <std::floating_point T, int N> auto drag(std::string_view name, glm::vec<N, T>& vec, T velocity = T { 1 }, T min = 0, T max = 1) -> bool
+	{
+		return general_drag(name, N, glm::value_ptr(vec), velocity, min, max);
+	}
+
+	auto general_input(std::string_view name, int count, float* base, float velocity, float min, float max) -> bool;
+
+	template <std::size_t N, std::floating_point T>
+		requires(N >= 0 && N <= 4)
+	auto input(std::string_view name, T* base, T velocity = T { 1 }, T min = 0, T max = 1) -> bool
+	{
+		return general_input(name, N, base, velocity, min, max);
+	}
+
+	template <std::floating_point T, int N> auto input(std::string_view name, glm::vec<N, T>& vec, T velocity = T { 1 }, T min = 0, T max = 1) -> bool
+	{
+		return general_input(name, N, glm::value_ptr(vec), velocity, min, max);
+	}
+
+} // namespace Input
 
 void scope(std::string_view name, UIFunction&& func = default_function);
 
 void begin(std::string_view);
 void end();
 
-bool begin_combo(std::string_view name, std::string_view data);
+auto begin_combo(std::string_view name, std::string_view data) -> bool;
 void end_combo();
-auto is_selectable(std::string_view name, const bool is_selected) -> bool;
+auto is_selectable(std::string_view name, bool is_selected) -> bool;
 void set_item_default_focus();
 
 void drag_drop(const std::filesystem::path& path);
@@ -146,7 +246,7 @@ template <IsEnum T> auto combo_choice(std::string_view name, std::reference_wrap
 auto checkbox(const std::string&, bool&) -> bool;
 
 auto shader_drop_button(Device&, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader) -> bool;
-auto texture_drop_button(Device&, const Texture& texture) -> Ref<Texture>;
+auto texture_drop_button(Device&, const Texture& texture) -> Ref<Disarray::Texture>;
 
 auto is_maximised(Window& window) -> bool;
 void remove_image(const Texture& texture);

@@ -2,12 +2,14 @@
 
 #include "ui/UI.hpp"
 
-#include <vulkan/vulkan.h>
-
 #include <GLFW/glfw3.h>
 #include <backends/imgui_impl_vulkan.h>
-#include <imgui.h>
+#include <vulkan/vulkan.h>
 
+#include <imgui.h>
+#include <tinyfiledialogs.h>
+
+#include <filesystem>
 #include <unordered_map>
 
 #include "Forward.hpp"
@@ -51,15 +53,15 @@ void image_button(Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& 
 
 	const auto hash = vk_image.hash();
 	auto& cache = get_cache();
-	ImageIdentifier id = 0;
+	ImageIdentifier identifier = 0;
 	if (!get_cache().contains(hash)) {
-		id = add_image(vk_image.get_descriptor_info());
-		cache.try_emplace(hash, std::make_unique<ImageIdentifier>(id));
+		identifier = add_image(vk_image.get_descriptor_info());
+		cache.try_emplace(hash, std::make_unique<ImageIdentifier>(identifier));
 	} else {
-		id = *get_cache()[hash];
+		identifier = *get_cache()[hash];
 	}
 
-	ImGui::ImageButton("Image", id, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
+	ImGui::ImageButton("Image", identifier, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
 }
 
 void image_button(const Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
@@ -68,15 +70,15 @@ void image_button(const Image& image, glm::vec2 size, const std::array<glm::vec2
 
 	auto hash = vk_image.hash();
 	auto& cache = get_cache();
-	ImageIdentifier id = 0;
+	ImageIdentifier identifier = 0;
 	if (!get_cache().contains(hash)) {
-		id = add_image(vk_image.get_descriptor_info());
-		cache.try_emplace(hash, std::make_unique<ImageIdentifier>(id));
+		identifier = add_image(vk_image.get_descriptor_info());
+		cache.try_emplace(hash, std::make_unique<ImageIdentifier>(identifier));
 	} else {
-		id = *get_cache()[hash];
+		identifier = *get_cache()[hash];
 	}
 
-	ImGui::ImageButton("Image", id, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
+	ImGui::ImageButton("Image", identifier, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
 }
 
 void image(Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
@@ -85,15 +87,15 @@ void image(Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
 
 	const auto hash = vk_image.hash();
 	auto& cache = get_cache();
-	ImageIdentifier id = 0;
+	ImageIdentifier identifier = 0;
 	if (!get_cache().contains(hash)) {
-		id = add_image(vk_image.get_descriptor_info());
-		cache.try_emplace(hash, std::make_unique<ImageIdentifier>(id));
+		identifier = add_image(vk_image.get_descriptor_info());
+		cache.try_emplace(hash, std::make_unique<ImageIdentifier>(identifier));
 	} else {
-		id = *cache[hash];
+		identifier = *cache[hash];
 	}
 
-	ImGui::Image(id, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
+	ImGui::Image(identifier, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
 }
 
 void image_button(Texture& tex, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
@@ -109,6 +111,7 @@ void image(Texture& tex, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
 }
 
 void text(const std::string& formatted) { ImGui::Text("%s", formatted.c_str()); }
+void text_wrapped(const std::string& formatted) { ImGui::TextWrapped("%s", formatted.c_str()); }
 
 void scope(std::string_view name, UIFunction&& func)
 {
@@ -152,17 +155,12 @@ auto checkbox(const std::string& name, bool& value) -> bool { return ImGui::Chec
 
 auto shader_drop_button(Device& device, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader) -> bool
 {
+	UI::text_wrapped("Current shader: {}", out_shader->get_properties().identifier);
 	ImGui::Button(button_name.c_str());
-	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".spv" })) {
-		// We know that it is a spv file :)
-		auto shader_path = *dropped;
-		auto ext = shader_path.replace_extension();
-		if (ext.extension() == shader_type_extension(shader_type)) {
-			auto shader = Shader::construct(device,
-				ShaderProperties {
-					.path = *dropped,
-					.type = ShaderType::Vertex,
-				});
+	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".vert", ".frag" })) {
+		const auto& shader_path = *dropped;
+		if (shader_path.extension() == shader_type_extension(shader_type)) {
+			auto shader = Shader::compile(device, shader_path);
 			out_shader = shader;
 			return true;
 		}
@@ -171,12 +169,83 @@ auto shader_drop_button(Device& device, const std::string& button_name, ShaderTy
 	return false;
 }
 
-auto texture_drop_button(Device& device, const Texture& out_texture) -> Ref<Texture>
+namespace Tabular {
+
+	auto table(std::string_view name, const Collections::StringViewMap<std::string>& map) -> bool
+	{
+		ImGui::Begin(name.data());
+		if (!ImGui::BeginTable(name.data(), 2)) {
+			ImGui::EndTable();
+			ImGui::End();
+			return false;
+		}
+
+		for (const auto& [key, value] : map) {
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			UI::text("{}", key);
+			ImGui::TableNextColumn();
+			UI::text("{}", value);
+		}
+
+		ImGui::EndTable();
+		ImGui::End();
+		return false;
+	}
+
+} // namespace Tabular
+
+namespace Popup {
+
+	auto select_file(const ExtensionSet& allowed, const std::filesystem::path& base) -> std::optional<std::filesystem::path>
+	{
+		// Create a file open dialog object.
+		auto absolute = std::filesystem::absolute(base);
+		std::vector<const char*> extensions {};
+		extensions.reserve(allowed.size());
+		for (const auto& ext : allowed) {
+			extensions.push_back(ext.c_str());
+		}
+		const char* str = tinyfd_openFileDialog("File selector", absolute.string().c_str(), 1, extensions.data(), nullptr, 0);
+
+		if (str != nullptr) {
+			return { std::filesystem::path { str } };
+		}
+
+		return std::nullopt;
+	}
+
+} // namespace Popup
+
+namespace Input {
+
+	auto general_slider(std::string_view name, int count, float* base, float min, float max) -> bool
+	{
+		return ImGui::SliderScalarN(name.data(), ImGuiDataType_Float, base, static_cast<int>(count), &min, &max);
+	}
+
+	auto general_drag(std::string_view name, int count, float* base, float velocity, float min, float max) -> bool
+	{
+		return ImGui::DragScalarN(name.data(), ImGuiDataType_Float, base, static_cast<int>(count), velocity, &min, &max);
+	}
+
+	auto general_input(std::string_view name, int count, float* base, float velocity, float min, float max) -> bool
+	{
+		return ImGui::InputScalarN(name.data(), ImGuiDataType_Float, base, static_cast<int>(count), &min, &max);
+	}
+
+} // namespace Input
+
+auto texture_drop_button(Device& device, const Texture& out_texture) -> Ref<Disarray::Texture>
 {
 	UI::image_button(out_texture.get_image());
 	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".png", ".jpg", ".jpeg" })) {
 		const auto& texture_path = *dropped;
-		return Texture::construct(device, { .path = std::filesystem::path(texture_path) });
+		return Texture::construct(device,
+			{
+				.path = std::filesystem::path(texture_path),
+				.debug_name = texture_path.string(),
+			});
 	}
 
 	return nullptr;
@@ -199,7 +268,7 @@ void remove_image(ImageIdentifier hash)
 	cache.erase(hash);
 }
 
-void InterfaceCaches::initialise() { image_descriptor_cache.reserve(100); }
+void InterfaceCaches::initialise() { }
 
 void InterfaceCaches::destruct()
 {

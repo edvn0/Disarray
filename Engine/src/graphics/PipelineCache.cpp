@@ -42,7 +42,6 @@ PipelineCache::PipelineCache(const Disarray::Device& dev, const std::filesystem:
 			});
 
 		if (!shader) {
-			DISARRAY_LOG_ERROR("Pipeline Cache - Shader Loading", "Tried to load shader {} but could not.", shader_path.string());
 			continue;
 		}
 

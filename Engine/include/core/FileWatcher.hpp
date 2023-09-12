@@ -58,10 +58,10 @@ struct FileWatcherCallback {
 
 class FileWatcher {
 public:
-	FileWatcher(ThreadPool&, const std::filesystem::path&, std::chrono::duration<int, std::milli> = std::chrono::milliseconds(2000));
-	FileWatcher(ThreadPool&, const std::filesystem::path&, const Collections::StringSet& extensions,
+	FileWatcher(Threading::ThreadPool&, const std::filesystem::path&, std::chrono::duration<int, std::milli> = std::chrono::milliseconds(2000));
+	FileWatcher(Threading::ThreadPool&, const std::filesystem::path&, const Collections::StringSet& extensions,
 		std::chrono::duration<int, std::milli> = std::chrono::milliseconds(2000));
-	~FileWatcher() { stop(); }
+	~FileWatcher();
 
 	void on_created(const std::function<void(const FileInformation&)>& activation_function);
 	void on_created_or_modified(const std::function<void(const FileInformation&)>& activation_function);
@@ -69,8 +69,6 @@ public:
 	void on_deleted(const std::function<void(const FileInformation&)>& activation_function);
 	void on_created_or_deleted(const std::function<void(const FileInformation&)>& activation_function);
 	void on(FileStatus info, const std::function<void(const FileInformation&)>& activation_function);
-
-	void add_watched_paths(const std::filesystem::path& path);
 
 private:
 	static void for_each(const FileInformation& file_information, const std::vector<std::function<void(const FileInformation&)>>& funcs)
@@ -99,8 +97,7 @@ private:
 	std::filesystem::path root;
 	Collections::StringSet extensions {};
 	std::chrono::duration<int, std::milli> delay;
-	std::unordered_map<std::string, FileInformation, StringHash, std::equal_to<>> paths {};
-	std::unordered_set<std::string, StringHash> additional_paths {};
+	Collections::StringMap<FileInformation> paths {};
 	std::atomic_bool running { true };
 	std::future<void> finaliser;
 };

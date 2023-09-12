@@ -6,16 +6,16 @@
 
 namespace Disarray {
 
-enum class PushConstantKind { Vertex = 1 << 0, Fragment = 1 << 1, Both = 1 << 2 };
+enum class PushConstantKind : std::uint8_t { Vertex = 1 << 0, Fragment = 1 << 1, Both = 1 << 2 };
 
-constexpr PushConstantKind operator|(PushConstantKind a, PushConstantKind b)
+constexpr auto operator|(PushConstantKind left, PushConstantKind right) -> PushConstantKind
 {
-	return static_cast<PushConstantKind>(static_cast<std::uint32_t>(a) | static_cast<std::uint32_t>(b));
+	return static_cast<PushConstantKind>(static_cast<std::uint32_t>(left) | static_cast<std::uint32_t>(right));
 }
 
-constexpr PushConstantKind operator&(PushConstantKind a, PushConstantKind b)
+constexpr auto operator&(PushConstantKind left, PushConstantKind right) -> PushConstantKind
 {
-	return static_cast<PushConstantKind>(static_cast<std::uint32_t>(a) & static_cast<std::uint32_t>(b));
+	return static_cast<PushConstantKind>(static_cast<std::uint32_t>(left) & static_cast<std::uint32_t>(right));
 }
 
 struct PushConstantRange {
@@ -39,9 +39,9 @@ struct PushConstantRange {
 };
 
 struct PushConstantLayout {
-	PushConstantLayout(const std::initializer_list<PushConstantRange>& in);
-	const auto& get_input_ranges() const { return ranges; }
-	auto size() const { return ranges.size(); }
+	PushConstantLayout(const std::initializer_list<PushConstantRange>& ranges_in);
+	[[nodiscard]] auto get_input_ranges() const -> const std::vector<PushConstantRange>&;
+	[[nodiscard]] auto size() const -> std::size_t;
 
 private:
 	std::vector<PushConstantRange> ranges;

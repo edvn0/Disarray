@@ -1,29 +1,29 @@
 #pragma once
 
+#include "core/DisarrayObject.hpp"
 #include "graphics/Mesh.hpp"
 #include "graphics/Pipeline.hpp"
 
 namespace Disarray::Vulkan {
 
 class Mesh : public Disarray::Mesh {
+	DISARRAY_MAKE_NONCOPYABLE(Mesh)
 public:
-	Mesh(const Disarray::Device&, const MeshProperties&);
+	Mesh(const Disarray::Device&, MeshProperties);
 	~Mesh() override;
 
-	Disarray::IndexBuffer& get_indices() override { return *indices; }
-	Disarray::VertexBuffer& get_vertices() override { return *vertices; }
-	const Disarray::VertexBuffer& get_vertices() const override { return *vertices; }
-	const Disarray::IndexBuffer& get_indices() const override { return *indices; }
+	auto get_indices() const -> Disarray::IndexBuffer& override { return *indices; }
+	auto get_vertices() const -> Disarray::VertexBuffer& override { return *vertices; }
 
-	const MeshProperties& get_properties() const override { return props; }
-	MeshProperties& get_properties() override { return props; }
+	void force_recreation() override;
 
 private:
-	const Disarray::Device& device;
-	MeshProperties props;
+	void load_and_initialise_model();
 
-	Ref<Disarray::VertexBuffer> vertices;
-	Ref<Disarray::IndexBuffer> indices;
+	const Disarray::Device& device;
+
+	Scope<Disarray::VertexBuffer> vertices;
+	Scope<Disarray::IndexBuffer> indices;
 };
 
 } // namespace Disarray::Vulkan
