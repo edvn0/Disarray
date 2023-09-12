@@ -39,15 +39,13 @@ function(add_json)
 endfunction()
 
 function(add_googletest)
+    set(BUILD_GMOCK OFF)
+    set(gmock_build_tests OFF)
     add_subdirectory(googletest)
 endfunction()
 
 function(add_magic_enum)
     add_subdirectory(magic_enum)
-endfunction()
-
-function(add_approval_tests)
-    add_subdirectory(ApprovalTests)
 endfunction()
 
 function(add_fmt)
@@ -75,6 +73,7 @@ function(add_glslang)
 endfunction()
 
 function(add_spdlog)
+    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
     set(SPDLOG_NO_EXCEPTIONS ON)
     set(SPDLOG_BUILD_SHARED OFF)
     set(SPDLOG_FMT_EXTERNAL ON)
@@ -104,6 +103,5 @@ add_spdlog()
 add_tiny_file_dialogs()
 
 if (DISARRAY_BUILD_TESTS)
-    add_approval_tests()
     add_googletest()
 endif ()

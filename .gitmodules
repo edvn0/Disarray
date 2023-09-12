@@ -25,9 +25,6 @@
 [submodule "ThirdParty/googletest"]
 	path = ThirdParty/googletest
 	url = https://github.com/google/googletest
-[submodule "ThirdParty/ApprovalTests"]
-	path = ThirdParty/ApprovalTests
-	url = https://github.com/approvals/ApprovalTests.cpp
 [submodule "ThirdParty/magic_enum"]
 	path = ThirdParty/magic_enum
 	url = https://github.com/Neargye/magic_enum
