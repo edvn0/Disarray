@@ -3,6 +3,7 @@
 #include "core/Log.hpp"
 
 #include <fmt/chrono.h>
+#include <magic_enum.hpp>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
@@ -29,6 +30,8 @@ namespace Logging {
 
 		logger_data->engine_logger = spdlog::stdout_color_mt("Disarray");
 		logger_data->std_err_logger = spdlog::stderr_color_mt("Error");
+
+		logger_data->engine_logger->critical("Logging engine level set to: {}", spdlog::level::to_string_view(spdlog::get_level()));
 	}
 
 	auto Logger::Logger::debug(const std::string& message) -> void { logger_data->engine_logger->debug(message); }
@@ -39,6 +42,12 @@ namespace Logging {
 	{
 		logger_data->engine_logger->error(message);
 		logger_data->std_err_logger->error(message);
+	}
+
+	void Logger::initialise_logger(const std::string& log_level)
+	{
+		auto level = spdlog::level::from_str(log_level);
+		spdlog::set_level(level);
 	}
 
 } // namespace Logging

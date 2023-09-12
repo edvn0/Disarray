@@ -10,6 +10,7 @@
 namespace Disarray {
 
 namespace Logging {
+
 	class Logger {
 	private:
 		Logger();
@@ -21,6 +22,8 @@ namespace Logging {
 		void debug(const std::string&);
 		void info(const std::string&);
 		void error(const std::string&);
+
+		static void initialise_logger(const std::string& log_level);
 
 		static auto logger() -> Logger&
 		{
