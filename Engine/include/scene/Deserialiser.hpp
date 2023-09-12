@@ -58,10 +58,10 @@ namespace {
 			try {
 				could_serialise = try_deserialise(parsed);
 			} catch (const CouldNotDeserialiseException& exc) {
-				Log::error("Deserialiser", "Error: {}", exc);
+				Log::error("Deserialiser", "Error: {}", exc.what());
 				return;
 			} catch (const std::exception& exc) {
-				Log::error("Deserialiser", "Error: {}", exc);
+				Log::error("Deserialiser", "Error: {}", exc.what());
 				return;
 			}
 
@@ -88,7 +88,7 @@ namespace {
 				try {
 					entity = Entity::deserialise(scene, id, tag);
 				} catch (const std::exception& exc) {
-					Log::error("SceneDeserialiser", "{}", exc);
+					Log::error("SceneDeserialiser", "{}", exc.what());
 					continue;
 				}
 				deserialise_component<Components::QuadGeometry>(components, entity);
