@@ -305,8 +305,13 @@ void Scene::draw_geometry(CommandExecutor& executor, bool is_shadow)
 	auto mesh_view = registry.view<const Components::Mesh, const Components::Pipeline, const Components::Texture, const Components::Transform>();
 	for (auto&& [entity, mesh, pipeline, texture, transform] : mesh_view.each()) {
 		const auto identifier = static_cast<std::uint32_t>(entity);
-		scene_renderer->draw_mesh(*command_executor, *mesh.mesh, is_shadow ? *shadow_pipeline : *pipeline.pipeline, *texture.texture, texture.colour,
-			transform.compute(), identifier);
+		if (mesh.mesh->has_children()) {
+			scene_renderer->draw_submeshes(*command_executor, *mesh.mesh, is_shadow ? *shadow_pipeline : *pipeline.pipeline, *texture.texture,
+				texture.colour, transform.compute(), identifier);
+		} else {
+			scene_renderer->draw_mesh(*command_executor, *mesh.mesh, is_shadow ? *shadow_pipeline : *pipeline.pipeline, *texture.texture,
+				texture.colour, transform.compute(), identifier);
+		}
 	}
 
 	auto mesh_no_texture_view
@@ -535,6 +540,38 @@ void Scene::create_entities()
 			axis.add_component<Components::Texture>(glm::vec4 { 0, 0, 1, 1 });
 			unit_vectors.add_child(axis);
 		}
+	}
+
+	{
+		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("main.vert");
+		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("main.frag");
+
+		auto viking_rotation = Maths::rotate_by(glm::radians(glm::vec3 { 0, 0, 90 }));
+		auto v_mesh = create("Sponza");
+		const auto viking = Mesh::construct(device,
+			{
+				.path = "Assets/Models/sponza/sponza.obj",
+				.initial_rotation = viking_rotation,
+			});
+		v_mesh.add_component<Components::Mesh>(viking);
+		v_mesh.add_component<Components::Pipeline>(Pipeline::construct(device,
+			{
+				.vertex_shader = vert,
+				.fragment_shader = frag,
+				.framebuffer = identity_framebuffer,
+				.layout = layout,
+				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+				.extent = extent,
+				.depth_comparison_operator = DepthCompareOperator::GreaterOrEqual,
+				.cull_mode = CullMode::Back,
+				.descriptor_set_layouts = desc_layout,
+			}));
+		v_mesh.add_component<Components::Texture>();
+		v_mesh.add_component<Components::Material>(Material::construct(device,
+			{
+				.vertex_shader = vert,
+				.fragment_shader = frag,
+			}));
 	}
 
 	{

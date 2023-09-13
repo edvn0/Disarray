@@ -15,6 +15,9 @@ public:
 	auto get_indices() const -> Disarray::IndexBuffer& override { return *indices; }
 	auto get_vertices() const -> Disarray::VertexBuffer& override { return *vertices; }
 
+	auto get_submeshes() const -> std::vector<Scope<Disarray::Mesh>> override;
+	auto has_children() const -> bool override;
+
 	void force_recreation() override;
 
 private:

@@ -14,7 +14,17 @@
 				"${workspaceFolder}/App"
 			],
 			"cwd": "${workspaceFolder}",
-			"preLaunchTask": "Build CMake"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug Clang",
+			"program": "${workspaceFolder}/build-clang/App/RelWithDebInfo/App.exe",
+			"args": [
+				"--wd",
+				"${workspaceFolder}/App"
+			],
+			"cwd": "${workspaceFolder}",
 		}
 	]
 }

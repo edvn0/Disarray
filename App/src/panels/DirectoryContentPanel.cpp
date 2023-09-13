@@ -5,6 +5,8 @@
 #include <filesystem>
 #include <string_view>
 
+#include "ui/UI.hpp"
+
 namespace Disarray::Client {
 
 using namespace std::string_view_literals;
@@ -85,7 +87,7 @@ void DirectoryContentPanel::update(float time_step)
 	}
 }
 
-auto DirectoryContentPanel::can_traverse_up() const -> bool { return current != initial && depth_from_initial > 0; }
+auto DirectoryContentPanel::can_traverse_up() const -> bool { return current != initial; }
 
 void DirectoryContentPanel::interface()
 {
@@ -97,8 +99,16 @@ void DirectoryContentPanel::interface()
 
 	ImGui::Begin("Directory Content");
 
-	if (can_traverse_up() && ImGui::ArrowButton("##GoUpOneLevel", ImGuiDir_Left)) {
+	if (can_traverse_up() && ImGui::ArrowButton("##GoBack", ImGuiDir_Left)) {
 		traverse_up(force_reload);
+	}
+
+	if (ImGui::ArrowButton("##GoUpOneLevel", ImGuiDir_Up)) {
+		auto parent = current.parent_path();
+		if (std::filesystem::exists(parent)) {
+			current = parent;
+			changed = true;
+		}
 	}
 
 	static float padding = 16.0F;
@@ -145,7 +155,7 @@ void DirectoryContentPanel::interface()
 				}
 			});
 
-			ImGui::TextWrapped("%s", filename_string.c_str());
+			UI::text_wrapped("{}", filename_string);
 
 			ImGui::TableNextColumn();
 

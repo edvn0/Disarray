@@ -12,6 +12,7 @@ class Texture : public Disarray::Texture {
 	DISARRAY_MAKE_NONCOPYABLE(Texture)
 public:
 	Texture(const Disarray::Device&, TextureProperties);
+	Texture(TextureProperties);
 	~Texture() override;
 
 	void force_recreation() override { recreate_texture(); };

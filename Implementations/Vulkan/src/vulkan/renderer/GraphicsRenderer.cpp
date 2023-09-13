@@ -122,6 +122,14 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(mesh.get_indices().size()), 1, 0, 0, 0);
 }
 
+void Renderer::draw_submeshes(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
+	const Disarray::Texture& texture, const glm::vec4& colour, const glm::mat4& transform, const std::uint32_t identifier)
+{
+	for (const auto& sub : mesh.get_submeshes()) {
+		draw_mesh(executor, *sub, mesh_pipeline, texture, colour, transform, identifier);
+	}
+}
+
 void Renderer::end_pass(Disarray::CommandExecutor& executor)
 {
 	submit_batched_geometry(executor);

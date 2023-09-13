@@ -9,6 +9,7 @@
 #include "core/Types.hpp"
 #include "graphics/Device.hpp"
 #include "graphics/IndexBuffer.hpp"
+#include "graphics/ModelLoader.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/VertexBuffer.hpp"
@@ -26,6 +27,9 @@ class Mesh : public ReferenceCountable {
 public:
 	virtual auto get_vertices() const -> VertexBuffer& = 0;
 	virtual auto get_indices() const -> IndexBuffer& = 0;
+
+	virtual auto get_submeshes() const -> std::vector<Scope<Mesh>> = 0;
+	virtual auto has_children() const -> bool = 0;
 };
 
 } // namespace Disarray

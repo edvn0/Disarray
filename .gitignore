@@ -20,6 +20,7 @@ cmake-*
 
 # Our icons
 !App/Assets/Icons/*.png
+!App/Assets/Models/*.obj
 
 App/Assets/Textures
 

@@ -12,7 +12,6 @@
 #include "graphics/ModelLoader.hpp"
 #include "graphics/VertexBuffer.hpp"
 #include "graphics/model_loaders/AssimpModelLoader.hpp"
-#include "graphics/model_loaders/TinyObjModelLoader.hpp"
 
 namespace Disarray::Vulkan {
 
@@ -28,11 +27,12 @@ Mesh::Mesh(const Disarray::Device& dev, Disarray::MeshProperties properties)
 void Mesh::load_and_initialise_model()
 {
 	try {
-		ModelLoader loader { make_scope<AssimpModelLoader>() };
-		loader.import_model(props.path);
+		ModelLoader loader { make_scope<AssimpModelLoader>(), props.path };
+		loader.construct_textures(device);
+
+		submeshes = loader.get_mesh_data();
 
 		const auto& name = props.path.filename().replace_extension().string();
-		Log::info("Mesh", "Identifier: {}", name);
 
 		vertices = Disarray::VertexBuffer::construct_scoped(device,
 			BufferProperties {
@@ -53,5 +53,9 @@ void Mesh::load_and_initialise_model()
 }
 
 void Mesh::force_recreation() { load_and_initialise_model(); }
+
+auto Mesh::get_submeshes() const -> std::vector<Scope<Disarray::Mesh>> { return {}; }
+
+auto Mesh::has_children() const -> bool { return false; }
 
 } // namespace Disarray::Vulkan

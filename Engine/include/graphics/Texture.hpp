@@ -11,7 +11,6 @@
 #include "graphics/ImageProperties.hpp"
 
 namespace Disarray {
-
 struct TextureProperties {
 	Extent extent {};
 	ImageFormat format { ImageFormat::SRGB }; // TODO: This is a crazy default, just to shut up clangd...
