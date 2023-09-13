@@ -115,10 +115,6 @@ struct VertexLayout {
 	VertexBinding binding;
 };
 
-class Device;
-class Shader;
-class Swapchain;
-
 struct PipelineProperties {
 	Ref<Shader> vertex_shader { nullptr };
 	Ref<Shader> fragment_shader { nullptr };
@@ -142,6 +138,14 @@ struct PipelineProperties {
 		std::size_t seed { 0 };
 		hash_combine(
 			seed, extent.width, extent.height, cull_mode, face_mode, depth_comparison_operator, samples, write_depth, test_depth, line_width);
+
+		if (vertex_shader) {
+			hash_combine(seed, *vertex_shader);
+		}
+
+		if (fragment_shader) {
+			hash_combine(seed, *fragment_shader);
+		}
 		return seed;
 	}
 };
@@ -154,16 +158,18 @@ public:
 
 	[[nodiscard]] auto has_shader_with_name(std::string_view name) const -> bool
 	{
-		auto vert = get_properties().vertex_shader->get_properties().identifier;
-		auto frag = get_properties().fragment_shader->get_properties().identifier;
+		const auto& vert = get_properties().vertex_shader->get_properties().identifier;
+		const auto& frag = get_properties().fragment_shader->get_properties().identifier;
 		return vert.string() == name || frag.string() == name;
 	}
 	[[nodiscard]] auto has_shader_with_name(const std::filesystem::path& name) const -> bool
 	{
-		auto vert = get_properties().vertex_shader->get_properties().identifier;
-		auto frag = get_properties().fragment_shader->get_properties().identifier;
+		const auto& vert = get_properties().vertex_shader->get_properties().identifier;
+		const auto& frag = get_properties().fragment_shader->get_properties().identifier;
 		return vert.string() == name || frag.string() == name;
 	}
+
+	auto operator==(const Pipeline& other) const -> bool { return other.get_properties().hash() == get_properties().hash(); }
 };
 
 } // namespace Disarray

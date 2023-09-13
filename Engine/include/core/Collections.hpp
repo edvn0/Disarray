@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "core/Hashes.hpp"
+#include "core/PointerDefinition.hpp"
 
 #ifdef DISARRAY_WINDOWS
 #include <execution>
@@ -19,6 +20,10 @@ namespace Disarray::Collections {
 
 template <class Value> using StringViewMap = std::unordered_map<std::string_view, Value, StringHash, std::equal_to<>>;
 template <class Value> using StringMap = std::unordered_map<std::string, Value, StringHash, std::equal_to<>>;
+template <class Value> using ScopedStringViewMap = std::unordered_map<std::string_view, Scope<Value>, StringHash, std::equal_to<>>;
+template <class Value> using ScopedStringMap = std::unordered_map<std::string, Scope<Value>, StringHash, std::equal_to<>>;
+template <class Value> using ReferencedStringViewMap = std::unordered_map<std::string_view, Ref<Value>, StringHash, std::equal_to<>>;
+template <class Value> using ReferencedStringMap = std::unordered_map<std::string, Ref<Value>, StringHash, std::equal_to<>>;
 using StringViewSet = std::unordered_set<std::string_view, StringHash>;
 using StringSet = std::unordered_set<std::string, StringHash>;
 

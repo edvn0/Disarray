@@ -26,26 +26,20 @@ PipelineCache::PipelineCache(const Disarray::Device& dev, const std::filesystem:
 	Runtime::ShaderCompiler compiler {};
 
 	for (const auto& shader_path : as_vector) {
-		auto name = shader_path.filename();
-		if (shader_cache.contains(name.string())) {
+		if (auto name = shader_path.filename(); shader_cache.contains(name.string())) {
 			break;
 		}
 
-		ShaderType type = to_shader_type(shader_path);
-		auto code = compiler.compile(shader_path, type);
+		const auto relative_path = std::filesystem::relative(shader_path);
+		ShaderType type = to_shader_type(relative_path);
+		auto code = compiler.compile(relative_path, type);
 
-		auto shader = Shader::construct(get_device(),
-			{
-				.code = code,
-				.identifier = shader_path,
-				.type = type,
-			});
-
+		auto shader = Shader::compile(get_device(), relative_path);
 		if (!shader) {
 			continue;
 		}
 
-		auto filename = shader_path.filename().string();
+		auto filename = relative_path.filename().string();
 		shader_cache.try_emplace(filename, std::move(shader));
 	}
 }

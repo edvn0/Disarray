@@ -16,10 +16,10 @@ struct ModelVertex {
 		return pos == other.pos && color == other.color && uvs == other.uvs && normals == other.normals;
 	}
 
-	void rotate_by(glm::mat4 rotation)
+	template <class T> void rotate_by(T&& rotation)
 	{
-		pos = glm::vec4(pos, 1.0f) * rotation;
-		normals = glm::vec4(normals, 1.0f) * rotation;
+		pos = glm::vec4(pos, 1.0F) * std::forward<T>(rotation);
+		normals = glm::vec4(normals, 1.0F) * std::forward<T>(rotation);
 	}
 };
 

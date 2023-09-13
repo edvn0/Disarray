@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <span>
 
+#include "core/Collections.hpp"
 #include "core/Formatters.hpp"
 #include "core/Log.hpp"
 #include "graphics/Texture.hpp"
@@ -24,7 +25,7 @@ auto load_texture(aiMaterial* mat, const std::filesystem::path& base_directory, 
 		const auto as_path = std::filesystem::relative(base_directory / std::filesystem::path { str.C_Str() });
 
 		if (!std::filesystem::exists(as_path)) {
-			Log::info("AssimpModelLoader", "Could not find texture with path {}", as_path);
+			Log::debug("AssimpModelLoader", "Could not find texture with path {}", as_path);
 			continue;
 		}
 
@@ -77,13 +78,12 @@ auto process_mesh(aiMesh* mesh, const std::filesystem::path& base_directory, con
 
 	// process material
 
+	constexpr auto texture_types = magic_enum::enum_values<aiTextureType>();
 	const auto has_materials = mesh->mMaterialIndex > 0;
-	Log::info("AssimpModelLoader", "Material index: {}", mesh->mMaterialIndex);
+	Log::debug("AssimpModelLoader", "Material index: {}", mesh->mMaterialIndex);
 	if (has_materials) {
 		std::span materials { scene->mMaterials, scene->mNumMaterials };
 		aiMaterial* material = materials[mesh->mMaterialIndex];
-
-		constexpr auto texture_types = magic_enum::enum_values<aiTextureType>();
 
 		for (const auto& type : texture_types) {
 			auto texture_type_properties = load_texture(material, base_directory, type, "");
@@ -113,7 +113,6 @@ auto process_current_node(ImportedMesh& mesh_map, const std::filesystem::path& b
 		name.resize(mesh_name.length);
 		mesh_map.try_emplace(name, process_mesh(ai_mesh, base_directory, scene));
 	}
-	// then do the same for each of its children
 
 	std::span children { current_node->mChildren, current_node->mNumChildren };
 	for (const auto& child : children) {
@@ -126,13 +125,22 @@ auto AssimpModelLoader::import(const std::filesystem::path& path) -> ImportedMes
 	ImportedMesh output {};
 
 	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile(path.string().c_str(), aiProcess_Triangulate | aiProcess_FlipUVs);
+	const aiScene* scene = importer.ReadFile(
+		path.string().c_str(), aiProcess_CalcTangentSpace | aiProcess_SplitLargeMeshes | aiProcess_Triangulate | aiProcess_FlipUVs);
 
 	if ((scene == nullptr) || ((scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) != 0U) || (scene->mRootNode == nullptr)) {
 		throw CouldNotLoadModelException(fmt::format("Error: {}", importer.GetErrorString()));
 	}
 	const auto base_directory = path.parent_path();
 	process_current_node(output, base_directory, scene->mRootNode, scene);
+
+	Collections::for_each(output, [&rot = initial_rotation](auto& kv_pair) {
+		auto&& [key, mesh] = kv_pair;
+
+		for (ModelVertex& vertex : mesh.vertices) {
+			vertex.rotate_by(rot);
+		}
+	});
 
 	return output;
 }

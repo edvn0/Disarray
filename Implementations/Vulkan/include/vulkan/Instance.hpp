@@ -17,16 +17,15 @@ public:
 	Instance(const std::vector<const char*>& vec = { "VK_LAYER_KHRONOS_validation" });
 	~Instance() override;
 
-	VkInstance supply() const override { return instance; }
+	[[nodiscard]] auto supply() const -> VkInstance override { return instance; }
 
 private:
 	bool check_validation_layer_support() const;
 	void setup_debug_messenger();
 
-private:
 	std::vector<const char*> requested_layers {};
-	VkInstance instance;
-	VkDebugUtilsMessengerEXT debug_messenger;
+	VkInstance instance {};
+	VkDebugUtilsMessengerEXT debug_messenger {};
 };
 
 } // namespace Disarray::Vulkan

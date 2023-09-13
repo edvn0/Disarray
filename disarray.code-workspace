@@ -15,7 +15,9 @@
     ]
   },
   "settings": {
-    "githubPullRequests.ignoredPullRequestBranches": ["dev"],
+    "githubPullRequests.ignoredPullRequestBranches": [
+      "dev"
+    ],
     "github-actions.workflows.pinned.workflows": [
       ".github/workflows/lint.yml",
       ".github/workflows/default_pipeline.yml"
@@ -235,6 +237,7 @@
       "spirv",
       "SSBO",
       "Submesh",
+      "submeshes",
       "Subpass",
       "Subpasses",
       "subresource",

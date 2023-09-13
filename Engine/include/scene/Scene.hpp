@@ -143,7 +143,7 @@ private:
 	std::mutex registry_access;
 	entt::registry registry;
 	void create_entities();
-	void draw_geometry(CommandExecutor&, bool is_shadow = false);
+	void draw_geometry(bool is_shadow = false);
 
 	void setup_filewatcher_and_threadpool(Threading::ThreadPool&);
 

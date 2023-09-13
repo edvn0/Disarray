@@ -130,8 +130,8 @@ public:
 		return *this;
 	}
 
-	operator bool() { return instance != nullptr; }
-	operator bool() const { return instance != nullptr; }
+	explicit(false) operator bool() { return instance != nullptr; }
+	explicit(false) operator bool() const { return instance != nullptr; }
 
 	auto operator->() -> T* { return instance; }
 	auto operator->() const -> const T* { return instance; }

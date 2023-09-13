@@ -25,7 +25,6 @@ layout(location = 0) in vec4 fragColor;
 layout(location = 1) in vec2 uvs;
 layout(location = 2) in vec3 outNormals;
 layout(location = 3) in vec3 fragPosition;
-layout(location = 4) in flat uint identifer;
 
 layout(location = 0) out vec4 colour;
 layout(location = 1) out uint id;
@@ -79,7 +78,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 
 void main() {
 	Uniform ubo = UBO.ubo;
-  PushConstant pc = PC.pc;
+    PushConstant pc = PC.pc;
 
 	vec3 out_vec = vec3(0.0);
 	vec3 viewDir = normalize(vec3(CBO.camera.position) - fragPosition);
@@ -90,12 +89,12 @@ void main() {
 	light.diffuse = vec3(0.1, 0.9, 0.9);
 	light.specular = vec3(0.1, 0.9, 0.1);
 	out_vec += CalcDirLight(light, outNormals, viewDir);
-	for (uint i = 0; i < pc.max_point_lights; i++) {
-		PointLight light = PLBO.lights[i];
-		out_vec += CalcPointLight(light, outNormals, fragPosition, viewDir);
-	}
+	//for (uint i = 0; i < pc.max_point_lights; i++) {
+	//	PointLight light = PLBO.lights[i];
+	//	out_vec += CalcPointLight(light, outNormals, fragPosition, viewDir);
+	//}
 
-	colour = fragColor * vec4(out_vec, 1.0);
+	colour = pc.colour * vec4(out_vec, 1.0);
 
-	id = identifer;
+	id = 0;
 }

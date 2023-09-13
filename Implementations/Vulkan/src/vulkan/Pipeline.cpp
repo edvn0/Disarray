@@ -3,6 +3,7 @@
 #include "graphics/Pipeline.hpp"
 
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 #include "core/Formatters.hpp"
 #include "core/Types.hpp"
@@ -361,7 +362,11 @@ void Pipeline::construct_layout(const Extent& extent)
 	pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipeline_create_info.basePipelineIndex = -1; // Optional
 
-	verify(vkCreateGraphicsPipelines(supply_cast<Vulkan::Device>(device), cache, 1, &pipeline_create_info, nullptr, &pipeline));
+	try {
+		vkCreateGraphicsPipelines(supply_cast<Vulkan::Device>(device), cache, 1, &pipeline_create_info, nullptr, &pipeline);
+	} catch (const std::exception& exc) {
+		Log::error("Scene", "Could not construct pipeline because: {}", exc.what());
+	}
 }
 
 Pipeline::~Pipeline()

@@ -67,6 +67,10 @@ public:
 
 } // namespace Disarray
 
+template <> struct std::hash<Disarray::Shader> {
+	auto operator()(const Disarray::Shader& shader) const -> std::size_t { return std::filesystem::hash_value(shader.get_properties().identifier); }
+};
+
 template <> struct fmt::formatter<Disarray::ShaderType> : fmt::formatter<std::string_view> {
 	auto format(const Disarray::ShaderType& format, format_context& ctx) -> decltype(ctx.out());
 };

@@ -45,7 +45,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverity
 		Disarray::Log::info("Validation", "Validation layer: {}", std::string(callback_data->pMessage));
 		return VK_FALSE;
 	default:
-		Disarray::Log::error("Validation", "Validation layer: {}", std::string(callback_data->pMessage));
+		Disarray::Log::info("Validation", "Validation layer: {}", std::string(callback_data->pMessage));
 		return VK_FALSE;
 	}
 }

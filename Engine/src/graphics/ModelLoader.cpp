@@ -38,31 +38,4 @@ void ModelLoader::construct_textures(const Disarray::Device& device)
 	}
 }
 
-auto ModelLoader::get_indices_size(const std::string& mesh_identifier) const -> std::size_t
-{
-	return mesh_data.at(mesh_identifier).indices.size() * sizeof(std::uint32_t);
-}
-
-auto ModelLoader::get_vertices_size(const std::string& mesh_identifier) const -> std::size_t
-{
-	return mesh_data.at(mesh_identifier).vertices.size() * sizeof(ModelVertex);
-}
-
-auto ModelLoader::get_textures_size(const std::string& mesh_identifier) const -> std::size_t
-{
-	return mesh_data.at(mesh_identifier).textures.size() * sizeof(ModelVertex);
-}
-
-auto ModelLoader::get_vertices_count(const std::string& mesh_identifier) const -> std::size_t
-{
-	return mesh_data.at(mesh_identifier).vertices.size();
-}
-
-auto ModelLoader::get_indices_count(const std::string& mesh_identifier) const -> std::size_t { return mesh_data.at(mesh_identifier).indices.size(); }
-
-auto ModelLoader::get_textures_count(const std::string& mesh_identifier) const -> std::size_t
-{
-	return mesh_data.at(mesh_identifier).textures.size();
-}
-
 } // namespace Disarray
