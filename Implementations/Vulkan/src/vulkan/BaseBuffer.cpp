@@ -5,6 +5,21 @@
 
 namespace Disarray::Vulkan {
 
+static auto to_vulkan_usage(BufferType buffer_type) -> VkBufferUsageFlags
+{
+	switch (buffer_type) {
+	case BufferType::Vertex:
+		return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	case BufferType::Index:
+		return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+	case BufferType::Uniform:
+		return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	default:
+		unreachable();
+	}
+}
+
+
 BaseBuffer::BaseBuffer(const Disarray::Device& dev, BufferType buffer_type, Disarray::BufferProperties properties)
 	: device(dev)
 	, type(buffer_type)
@@ -89,20 +104,6 @@ void BaseBuffer::destroy_buffer()
 {
 	Allocator allocator { "Buffer[" + std::to_string(count) + "]" };
 	allocator.deallocate_buffer(allocation, buffer);
-}
-
-auto BaseBuffer::to_vulkan_usage(BufferType buffer_type) -> VkBufferUsageFlags
-{
-	switch (buffer_type) {
-	case BufferType::Vertex:
-		return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	case BufferType::Index:
-		return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-	case BufferType::Uniform:
-		return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	default:
-		unreachable();
-	}
 }
 
 auto BaseBuffer::size() const -> std::size_t

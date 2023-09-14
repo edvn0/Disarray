@@ -67,9 +67,9 @@ VkResult create_debug_messenger_ext(VkInstance instance, const VkDebugUtilsMesse
 	auto func = Disarray::bit_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
 	if (func != nullptr) {
 		return func(instance, create_info, allocator, debug_messenger);
-	} else {
-		return VK_ERROR_EXTENSION_NOT_PRESENT;
-	}
+  }
+  
+  return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
 
 void destroy_debug_messenger_ext(VkInstance instance, VkDebugUtilsMessengerEXT debug_messenger, const VkAllocationCallbacks* allocator)

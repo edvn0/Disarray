@@ -36,7 +36,7 @@ struct DirLight {
 	vec3 specular;
 };
 
-vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
+vec3 calc_dir_light(DirLight light, vec3 normal, vec3 viewDir)
 {
 	vec3 lightDir = normalize(-light.direction);
 	// diffuse shading
@@ -51,7 +51,7 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
 	return (ambient + diffuse + specular);
 }
 
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
+vec3 calc_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 	vec3 lightDir = normalize(vec3(light.position) - fragPos);
 	// diffuse shading
 	float diff = max(dot(normal, vec3(lightDir)), 0.0);
@@ -78,7 +78,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 
 void main() {
 	Uniform ubo = UBO.ubo;
-    PushConstant pc = PC.pc;
+  PushConstant pc = PC.pc;
 
 	vec3 out_vec = vec3(0.0);
 	vec3 viewDir = normalize(vec3(CBO.camera.position) - fragPosition);
@@ -87,14 +87,15 @@ void main() {
 	light.direction = vec3(ubo.sun_direction_and_intensity);
 	light.ambient = vec3(ubo.sun_colour);
 	light.diffuse = vec3(0.1, 0.9, 0.9);
-	light.specular = vec3(0.1, 0.9, 0.1);
-	out_vec += CalcDirLight(light, outNormals, viewDir);
-	//for (uint i = 0; i < pc.max_point_lights; i++) {
-	//	PointLight light = PLBO.lights[i];
-	//	out_vec += CalcPointLight(light, outNormals, fragPosition, viewDir);
-	//}
+	light.specular = vec3(0.1, 0.9, 0.9);
+	out_vec += calc_dir_light(light, outNormals, viewDir);
+	for (uint i = 0; i < 1; i++) {
+		PointLight light = PLBO.lights[i];
+		out_vec += calc_point_light(light, outNormals, fragPosition, viewDir);
+	}
 
-	colour = pc.colour * vec4(out_vec, 1.0);
+	//colour = pc.colour * vec4(out_vec, 1.0f);
+  colour = vec4(pc.max_point_lights, 1.0f, 1.0f, 1.0f);
 
-	id = 0;
+	id = pc.current_identifier;
 }

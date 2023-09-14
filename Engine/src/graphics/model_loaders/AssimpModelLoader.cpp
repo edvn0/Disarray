@@ -1,5 +1,7 @@
 #include "graphics/model_loaders/AssimpModelLoader.hpp"
 
+#include <glm/gtx/string_cast.hpp>
+
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -154,7 +156,7 @@ auto AssimpModelLoader::import(const std::filesystem::path& path) -> ImportedMes
 	});
 
 	const auto seconds = timer.elapsed<Granularity::Seconds>();
-	Log::info("AssimpModelLoader", "Model loading took: {}", seconds);
+	Log::info("AssimpModelLoader", "Model {} loading took: {}", path, seconds);
 
 	return output;
 }

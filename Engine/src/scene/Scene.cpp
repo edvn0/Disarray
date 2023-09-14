@@ -141,7 +141,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 	framebuffer = Framebuffer::construct(device,
 		{
 			.extent = extent,
-			.attachments = { { Disarray::ImageFormat::SBGR, false }, { ImageFormat::Depth, false } },
+			.attachments = { { Disarray::ImageFormat::SBGR }, { ImageFormat::Depth } },
 			.clear_colour_on_load = false,
 			.clear_depth_on_load = false,
 			.debug_name = "FirstFramebuffer",
@@ -149,7 +149,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 	shadow_framebuffer = Framebuffer::construct(device,
 		{
 			.extent = extent,
-			.attachments = { { ImageFormat::Depth, false } },
+			.attachments = { { ImageFormat::Depth } },
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
 			.debug_name = "ShadowFramebuffer",
@@ -177,7 +177,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 	identity_framebuffer = Framebuffer::construct(device,
 		{
 			.extent = extent,
-			.attachments = { { ImageFormat::SBGR, false }, { ImageFormat::Uint, false }, { ImageFormat::Depth, false } },
+			.attachments = { { ImageFormat::SBGR }, { ImageFormat::Uint }, { ImageFormat::Depth } },
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
 			.debug_name = "IdentityFramebuffer",
@@ -186,13 +186,13 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 	create_entities();
 }
 
-Scene::~Scene() { }
+Scene::~Scene() = default;
 
 void Scene::begin_frame(const Camera& camera)
 {
 	scene_renderer->begin_frame(camera);
 	auto [ubo, camera_ubo, light_ubos] = scene_renderer->get_graphics_resource().get_editable_ubos();
-	auto& pc = scene_renderer->get_graphics_resource().get_editable_push_constant();
+	auto& push_constant = scene_renderer->get_graphics_resource().get_editable_push_constant();
 
 	for (auto sun_component_view = registry.view<const Components::DirectionalLight, const Components::Texture>();
 		 auto&& [entity, sun, texture] : sun_component_view.each()) {
@@ -208,7 +208,7 @@ void Scene::begin_frame(const Camera& camera)
 		light.position = glm::vec4 { pos.position, 0.F };
 		light.ambient = texture.colour;
 	}
-	pc.max_point_lights = static_cast<std::uint32_t>(light_index);
+	push_constant.max_point_lights = static_cast<std::uint32_t>(light_index);
 
 	scene_renderer->get_graphics_resource().update_ubo();
 }
@@ -245,11 +245,13 @@ void Scene::update(float time_step)
 void Scene::render()
 {
 	command_executor->begin();
+#ifdef SHADOWPASS_SUPPORTED
 	{
 		scene_renderer->begin_pass(*command_executor, *shadow_framebuffer);
 		draw_geometry(true);
 		scene_renderer->end_pass(*command_executor);
 	}
+#endif
 	{
 		scene_renderer->begin_pass(*command_executor, *framebuffer, true);
 
@@ -541,15 +543,16 @@ void Scene::create_entities()
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("sponza.vert");
 		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("sponza.frag");
 
-		auto viking_rotation = Maths::rotate_by(glm::radians(glm::vec3 { 180, 0, 0 }));
+		const auto rotation = Maths::rotate_by(glm::radians(glm::vec3 { 180, 0, 0 }));
+
 		auto v_mesh = create("Sponza");
 		auto viking = Mesh::construct(device,
 			{
 				.path = "Assets/Models/sponza/sponza.obj",
-				.initial_rotation = viking_rotation,
+				.initial_rotation = rotation,
 			});
 		v_mesh.add_component<Components::Mesh>(viking);
-		v_mesh.get_components<Components::Transform>().scale = glm::vec3 { 0.005F };
+		v_mesh.get_components<Components::Transform>().scale = glm::vec3 { 1.00F };
 		auto sponza_pipeline = Pipeline::construct(device,
 			{
 				.vertex_shader = vert,
@@ -558,6 +561,7 @@ void Scene::create_entities()
 				.layout = layout,
 				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 				.extent = extent,
+				.polygon_mode = PolygonMode::Line,
 				.depth_comparison_operator = DepthCompareOperator::GreaterOrEqual,
 				.cull_mode = CullMode::Back,
 				.descriptor_set_layouts = desc_layout,
@@ -575,7 +579,7 @@ void Scene::create_entities()
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("main.vert");
 		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("main.frag");
 
-		auto viking_rotation = Maths::rotate_by(glm::radians(glm::vec3 { 0, 0, 90 }));
+		auto viking_rotation = Maths::rotate_by(glm::radians(glm::vec3 { 90, 0, 0 }));
 		auto v_mesh = create("Viking");
 		const auto viking = Mesh::construct(device,
 			{
