@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "core/Log.hpp"
+#include "graphics/CommandExecutor.hpp"
 #include "graphics/Image.hpp"
 #include "graphics/ImageLoader.hpp"
 #include "vulkan/Image.hpp"
@@ -27,8 +28,34 @@ Texture::Texture(const Disarray::Device& dev, Disarray::TextureProperties proper
 			.data = DataBuffer { pixels },
 			.mips = *props.mips,
 			.locked_extent = props.locked_extent,
+			.should_initialise_directly = props.should_initialise_directly,
 			.debug_name = props.debug_name,
 		});
+
+	pixels.reset();
+}
+
+Texture::Texture(const CommandExecutor* command_executor, const Disarray::Device& dev, Disarray::TextureProperties properties)
+	: Disarray::Texture(std::move(properties))
+	, device(dev)
+{
+	load_pixels();
+
+	if (!props.mips) {
+		props.mips = static_cast<std::uint32_t>(std::floor(std::log2(std::max(props.extent.width, props.extent.height)))) + 1;
+	}
+	image = make_scope<Vulkan::Image>(command_executor, device,
+		ImageProperties {
+			.extent = props.extent,
+			.format = props.format,
+			.data = DataBuffer { pixels },
+			.mips = *props.mips,
+			.locked_extent = props.locked_extent,
+			.should_initialise_directly = props.should_initialise_directly,
+			.debug_name = props.debug_name,
+		});
+
+	pixels.reset();
 }
 
 Texture::~Texture() { }

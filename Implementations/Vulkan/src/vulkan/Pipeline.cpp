@@ -174,14 +174,10 @@ auto Pipeline::initialise_blend_states() -> std::vector<VkPipelineColorBlendAtta
 			break;
 		}
 
-		const auto& attachment_spec = fb_props.attachments.texture_attachments[i];
+		const auto& attachment_spec = fb_props.attachments[i];
 		FramebufferBlendMode blend_mode = fb_props.blend_mode == FramebufferBlendMode::None ? attachment_spec.blend_mode : fb_props.blend_mode;
 
 		blend_attachment_states[i].blendEnable = static_cast<VkBool32>(attachment_spec.blend);
-		if (!attachment_spec.blend) {
-			continue;
-		}
-
 		blend_attachment_states[i].colorBlendOp = VK_BLEND_OP_ADD;
 		blend_attachment_states[i].alphaBlendOp = VK_BLEND_OP_ADD;
 		blend_attachment_states[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;

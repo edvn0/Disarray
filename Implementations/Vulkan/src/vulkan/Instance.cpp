@@ -5,15 +5,11 @@
 #include <GLFW/glfw3.h>
 
 #include <cstring>
-#include <iostream>
-#include <stdexcept>
 #include <vector>
 
 #include "core/Log.hpp"
-#include "graphics/PhysicalDevice.hpp"
 #include "util/BitCast.hpp"
 #include "vulkan/Config.hpp"
-#include "vulkan/QueueFamilyIndex.hpp"
 #include "vulkan/Verify.hpp"
 #include "vulkan/exceptions/VulkanExceptions.hpp"
 
@@ -42,10 +38,10 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverity
 	switch (severity) {
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-		Disarray::Log::info("Validation", "Validation layer: {}", std::string(callback_data->pMessage));
+		Disarray::Log::error("Validation", "Validation layer: {}", std::string(callback_data->pMessage));
 		return VK_FALSE;
 	default:
-		Disarray::Log::info("Validation", "Validation layer: {}", std::string(callback_data->pMessage));
+		Disarray::Log::error("Validation", "Validation layer: {}", std::string(callback_data->pMessage));
 		return VK_FALSE;
 	}
 }
@@ -61,15 +57,15 @@ void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT& cr
 	create_info.pfnUserCallback = debug_callback;
 }
 
-VkResult create_debug_messenger_ext(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* create_info,
-	const VkAllocationCallbacks* allocator, VkDebugUtilsMessengerEXT* debug_messenger)
+auto create_debug_messenger_ext(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* create_info, const VkAllocationCallbacks* allocator,
+	VkDebugUtilsMessengerEXT* debug_messenger) -> VkResult
 {
 	auto func = Disarray::bit_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
 	if (func != nullptr) {
 		return func(instance, create_info, allocator, debug_messenger);
-  }
-  
-  return VK_ERROR_EXTENSION_NOT_PRESENT;
+	}
+
+	return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
 
 void destroy_debug_messenger_ext(VkInstance instance, VkDebugUtilsMessengerEXT debug_messenger, const VkAllocationCallbacks* allocator)

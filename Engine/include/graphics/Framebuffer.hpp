@@ -25,6 +25,8 @@ struct FramebufferAttachmentSpecification {
 	{
 	}
 
+	constexpr auto operator[](std::size_t index) const { return texture_attachments.at(index); }
+
 	std::vector<FramebufferTextureSpecification> texture_attachments {};
 };
 
@@ -32,7 +34,7 @@ struct FramebufferProperties {
 	Extent extent { 0, 0 };
 	FramebufferAttachmentSpecification attachments {};
 	glm::vec4 clear_colour { 0.0F, 0.0F, 0.0F, 0.0F };
-	float depth_clear_value { 0.0F };
+	float depth_clear_value { 1.0F };
 	bool clear_colour_on_load { true };
 	bool clear_depth_on_load { true };
 	bool should_blend { false };

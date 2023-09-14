@@ -32,6 +32,13 @@ Image::Image(const Disarray::Device& dev, ImageProperties properties)
 	recreate_image(false);
 }
 
+Image::Image(const Disarray::CommandExecutor* command_executor, const Disarray::Device& dev, ImageProperties properties)
+	: Disarray::Image(std::move(properties))
+	, device(dev)
+{
+	recreate_image(false, command_executor);
+}
+
 Image::~Image() { destroy_resources(); }
 
 void Image::destroy_resources()
@@ -151,7 +158,7 @@ auto Image::read_pixel(const glm::vec2& pos) const -> PixelReadData
 	return read_data;
 }
 
-void Image::recreate_image(bool should_clean)
+void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor* command_executor)
 {
 	if (should_clean) {
 		destroy_resources();
@@ -244,7 +251,7 @@ void Image::recreate_image(bool should_clean)
 		AllocationMapper<std::byte> mapper { staging_allocator, staging_allocation, get_properties().data };
 	}
 
-	{
+	if (command_executor == nullptr) {
 		auto executor = construct_immediate(device);
 		VkImageSubresourceRange subresource_range = {};
 		subresource_range.aspectMask = aspect_mask;
@@ -282,6 +289,44 @@ void Image::recreate_image(bool should_clean)
 		auto image_layout = to_vulkan_layout(get_properties().format);
 		if (is_depth_format(get_properties().format)) {
 			set_image_layout(executor->supply(), info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, image_layout, subresource_range);
+		}
+	} else {
+		VkImageSubresourceRange subresource_range = {};
+		subresource_range.aspectMask = aspect_mask;
+		subresource_range.baseMipLevel = 0;
+		subresource_range.levelCount = get_properties().mips;
+		subresource_range.layerCount = 1;
+
+		VkImageMemoryBarrier image_memory_barrier {};
+		image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		image_memory_barrier.image = info.image;
+		image_memory_barrier.subresourceRange = subresource_range;
+		image_memory_barrier.srcAccessMask = 0;
+		image_memory_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+		auto* cast = supply_cast<Vulkan::CommandExecutor>(*command_executor);
+		vkCmdPipelineBarrier(cast, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+
+		VkBufferImageCopy buffer_copy_region = {};
+		buffer_copy_region.imageSubresource.aspectMask = aspect_mask;
+		buffer_copy_region.imageSubresource.mipLevel = 0;
+		buffer_copy_region.imageSubresource.baseArrayLayer = 0;
+		buffer_copy_region.imageSubresource.layerCount = 1;
+		buffer_copy_region.imageExtent.width = get_properties().extent.width;
+		buffer_copy_region.imageExtent.height = get_properties().extent.height;
+		buffer_copy_region.imageExtent.depth = 1;
+		buffer_copy_region.bufferOffset = 0;
+
+		set_image_layout(cast, info.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
+		vkCmdCopyBufferToImage(cast, staging, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &buffer_copy_region);
+
+		auto image_layout = to_vulkan_layout(get_properties().format);
+		if (is_depth_format(get_properties().format)) {
+			set_image_layout(cast, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, image_layout, subresource_range);
 		}
 	}
 

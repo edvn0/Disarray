@@ -155,8 +155,8 @@ auto AssimpModelLoader::import(const std::filesystem::path& path) -> ImportedMes
 		}
 	});
 
-	const auto seconds = timer.elapsed<Granularity::Seconds>();
-	Log::info("AssimpModelLoader", "Model {} loading took: {}", path, seconds);
+	const auto seconds = timer.elapsed<Granularity::Millis>();
+	Log::info("AssimpModelLoader", "Model {} loading took: {}ms", path, seconds);
 
 	return output;
 }

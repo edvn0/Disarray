@@ -4,6 +4,7 @@
 
 #include "PropertySupplier.hpp"
 #include "core/UniquelyIdentifiable.hpp"
+#include "graphics/CommandExecutor.hpp"
 #include "graphics/Image.hpp"
 #include "vulkan/MemoryAllocator.hpp"
 
@@ -108,6 +109,7 @@ class Image : public Disarray::Image, public PropertySupplier<VkImage> {
 	DISARRAY_MAKE_NONCOPYABLE(Image)
 public:
 	Image(const Disarray::Device&, ImageProperties);
+	Image(const Disarray::CommandExecutor*, const Disarray::Device&, ImageProperties);
 	~Image() override;
 
 	void force_recreation() override { recreate(true, get_properties().extent); };
@@ -126,8 +128,10 @@ public:
 		return bit_cast<std::uint64_t>(descriptor_info.imageView) ^ bit_cast<std::uint64_t>(descriptor_info.sampler);
 	};
 
+	void construct_using(CommandExecutor&) override {};
+
 private:
-	void recreate_image(bool should_clean);
+	void recreate_image(bool should_clean, const Disarray::CommandExecutor* = nullptr);
 	void update_descriptor();
 	void destroy_resources();
 	void create_mips();

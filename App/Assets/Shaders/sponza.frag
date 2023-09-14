@@ -21,6 +21,8 @@ layout(push_constant) uniform PushConstantBlock
 }
 PC;
 
+layout(set = 2, binding = 0) uniform texture2D textures[25];
+
 layout(location = 0) in vec4 fragColor;
 layout(location = 1) in vec2 uvs;
 layout(location = 2) in vec3 outNormals;
@@ -95,7 +97,7 @@ void main() {
 	}
 
 	//colour = pc.colour * vec4(out_vec, 1.0f);
-  colour = vec4(pc.max_point_lights, 1.0f, 1.0f, 1.0f);
+  	colour = vec4(uvs, 1.0f, 1.0f);
 
 	id = pc.current_identifier;
 }

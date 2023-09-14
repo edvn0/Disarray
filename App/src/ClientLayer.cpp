@@ -45,8 +45,6 @@ ClientLayer::~ClientLayer() = default;
 void ClientLayer::construct(App& app, Threading::ThreadPool& pool)
 {
 	scene = make_scope<Scene>(device, "Default scene");
-
-	ensure(scene != nullptr, "Forgot to initialise scene");
 	scene->construct(app, pool);
 
 	auto stats_panel = app.add_panel<StatisticsPanel>(app.get_statistics());

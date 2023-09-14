@@ -7,6 +7,7 @@
 #include "Forward.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
+#include "graphics/CommandExecutor.hpp"
 #include "graphics/Image.hpp"
 #include "graphics/ImageProperties.hpp"
 
@@ -17,6 +18,12 @@ struct TextureProperties {
 	std::optional<std::uint32_t> mips { std::nullopt };
 	std::filesystem::path path {};
 	bool locked_extent { false };
+
+	/**
+	 * @brief To bake large commands buffers, we can batch textures with this set to false!
+	 */
+	bool should_initialise_directly { true };
+
 	std::string debug_name;
 };
 
@@ -25,6 +32,8 @@ class Texture : public ReferenceCountable {
 public:
 	virtual auto get_image() -> Image& = 0;
 	virtual auto get_image() const -> const Image& = 0;
+
+	virtual void construct_using(CommandExecutor&) = 0;
 };
 
 } // namespace Disarray

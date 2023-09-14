@@ -33,8 +33,9 @@ void DataBuffer::reset()
 
 void DataBuffer::copy_from(const DataBuffer& buffer)
 {
-	if (!buffer.is_valid())
+	if (!buffer.is_valid()) {
 		return;
+	}
 
 	reset();
 	size = buffer.size;
@@ -64,7 +65,7 @@ auto DataBuffer::operator=(DataBuffer other) -> DataBuffer&
 	return *this;
 }
 
-DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept
+auto DataBuffer::operator=(DataBuffer&& other) noexcept -> DataBuffer&
 {
 	swap(*this, other);
 

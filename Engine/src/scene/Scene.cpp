@@ -476,7 +476,6 @@ void Scene::create_entities()
 				.layout = layout,
 				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 				.extent = extent,
-				.depth_comparison_operator = DepthCompareOperator::GreaterOrEqual,
 				.cull_mode = CullMode::Back,
 				.descriptor_set_layouts = desc_layout,
 			});
@@ -562,7 +561,6 @@ void Scene::create_entities()
 				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 				.extent = extent,
 				.polygon_mode = PolygonMode::Line,
-				.depth_comparison_operator = DepthCompareOperator::GreaterOrEqual,
 				.cull_mode = CullMode::Back,
 				.descriptor_set_layouts = desc_layout,
 			});
@@ -595,7 +593,6 @@ void Scene::create_entities()
 				.layout = layout,
 				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 				.extent = extent,
-				.depth_comparison_operator = DepthCompareOperator::GreaterOrEqual,
 				.cull_mode = CullMode::Back,
 				.descriptor_set_layouts = desc_layout,
 			}));
@@ -631,7 +628,6 @@ void Scene::create_entities()
 				.layout = layout,
 				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 				.extent = extent,
-				.depth_comparison_operator = DepthCompareOperator::GreaterOrEqual,
 				.cull_mode = CullMode::Back,
 				.descriptor_set_layouts = desc_layout,
 			}));
@@ -660,7 +656,6 @@ void Scene::create_entities()
 				.layout = layout,
 				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 				.extent = extent,
-				.depth_comparison_operator = DepthCompareOperator::GreaterOrEqual,
 				.cull_mode = CullMode::Back,
 				.descriptor_set_layouts = desc_layout,
 			});
