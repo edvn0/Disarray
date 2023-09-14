@@ -9,7 +9,6 @@
 #include "core/ReferenceCounted.hpp"
 #include "graphics/ImageProperties.hpp"
 
-
 namespace Disarray {
 
 enum class FramebufferBlendMode : std::uint8_t { None, OneZero, SrcAlphaOneMinusSrcAlpha, Additive, Zero_SrcColor };
@@ -36,7 +35,7 @@ struct FramebufferProperties {
 	float depth_clear_value { 0.0F };
 	bool clear_colour_on_load { true };
 	bool clear_depth_on_load { true };
-	bool should_blend { true };
+	bool should_blend { false };
 	FramebufferBlendMode blend_mode { FramebufferBlendMode::None };
 	bool should_present { false };
 	SampleCount samples { SampleCount::One };

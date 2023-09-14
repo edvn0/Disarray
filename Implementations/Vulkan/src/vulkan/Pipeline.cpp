@@ -147,6 +147,70 @@ Pipeline::Pipeline(const Disarray::Device& dev, Disarray::PipelineProperties pro
 	recreate_pipeline(false, {});
 }
 
+auto Pipeline::initialise_blend_states() -> std::vector<VkPipelineColorBlendAttachmentState>
+{
+	const auto& fb_props = props.framebuffer->get_properties();
+	const auto should_present = fb_props.should_present;
+	std::size_t color_attachment_count = should_present ? 1 : props.framebuffer->get_colour_attachment_count();
+	std::vector<VkPipelineColorBlendAttachmentState> blend_attachment_states(color_attachment_count);
+	static constexpr auto blend_all_factors
+		= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	if (should_present) {
+		blend_attachment_states[0].colorWriteMask = blend_all_factors;
+		blend_attachment_states[0].blendEnable = static_cast<VkBool32>(true);
+		blend_attachment_states[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		blend_attachment_states[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		blend_attachment_states[0].colorBlendOp = VK_BLEND_OP_ADD;
+		blend_attachment_states[0].alphaBlendOp = VK_BLEND_OP_ADD;
+		blend_attachment_states[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		blend_attachment_states[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+
+		return blend_attachment_states;
+	}
+	for (size_t i = 0; i < color_attachment_count; i++) {
+		blend_attachment_states[i].colorWriteMask = blend_all_factors;
+
+		if (!fb_props.should_blend) {
+			break;
+		}
+
+		const auto& attachment_spec = fb_props.attachments.texture_attachments[i];
+		FramebufferBlendMode blend_mode = fb_props.blend_mode == FramebufferBlendMode::None ? attachment_spec.blend_mode : fb_props.blend_mode;
+
+		blend_attachment_states[i].blendEnable = static_cast<VkBool32>(attachment_spec.blend);
+		if (!attachment_spec.blend) {
+			continue;
+		}
+
+		blend_attachment_states[i].colorBlendOp = VK_BLEND_OP_ADD;
+		blend_attachment_states[i].alphaBlendOp = VK_BLEND_OP_ADD;
+		blend_attachment_states[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		blend_attachment_states[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+
+		switch (blend_mode) {
+		case FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha:
+			blend_attachment_states[i].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+			blend_attachment_states[i].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			blend_attachment_states[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+			blend_attachment_states[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			break;
+		case FramebufferBlendMode::OneZero:
+			blend_attachment_states[i].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+			blend_attachment_states[i].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+			break;
+		case FramebufferBlendMode::Zero_SrcColor:
+			blend_attachment_states[i].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+			blend_attachment_states[i].dstColorBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
+			break;
+
+		default:
+			unreachable();
+		}
+	}
+
+	return blend_attachment_states;
+}
+
 void Pipeline::construct_layout(const Extent& extent)
 {
 	if (cache == nullptr) {
@@ -248,70 +312,13 @@ void Pipeline::construct_layout(const Extent& extent)
 	multisampling.alphaToCoverageEnable = static_cast<VkBool32>(false); // Optional
 	multisampling.alphaToOneEnable = static_cast<VkBool32>(false); // Optional
 
-	const auto& fb_props = props.framebuffer->get_properties();
-	const auto should_present = fb_props.should_present;
-	std::size_t color_attachment_count = should_present ? 1 : props.framebuffer->get_colour_attachment_count();
-	std::vector<VkPipelineColorBlendAttachmentState> blend_attachment_states(color_attachment_count);
-	static constexpr auto blend_all_factors
-		= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	if (should_present) {
-		blend_attachment_states[0].colorWriteMask = blend_all_factors;
-		blend_attachment_states[0].blendEnable = static_cast<VkBool32>(true);
-		blend_attachment_states[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		blend_attachment_states[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		blend_attachment_states[0].colorBlendOp = VK_BLEND_OP_ADD;
-		blend_attachment_states[0].alphaBlendOp = VK_BLEND_OP_ADD;
-		blend_attachment_states[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		blend_attachment_states[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	} else {
-		for (size_t i = 0; i < color_attachment_count; i++) {
-			blend_attachment_states[i].colorWriteMask = blend_all_factors;
-
-			if (!fb_props.should_blend) {
-				break;
-			}
-
-			const auto& attachment_spec = fb_props.attachments.texture_attachments[i];
-			FramebufferBlendMode blend_mode = fb_props.blend_mode == FramebufferBlendMode::None ? attachment_spec.blend_mode : fb_props.blend_mode;
-
-			blend_attachment_states[i].blendEnable = static_cast<VkBool32>(attachment_spec.blend);
-			blend_attachment_states[i].colorBlendOp = VK_BLEND_OP_ADD;
-			blend_attachment_states[i].alphaBlendOp = VK_BLEND_OP_ADD;
-			blend_attachment_states[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-			blend_attachment_states[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-
-			switch (blend_mode) {
-			case FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha:
-				blend_attachment_states[i].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-				blend_attachment_states[i].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-				blend_attachment_states[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-				blend_attachment_states[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-				break;
-			case FramebufferBlendMode::OneZero:
-				blend_attachment_states[i].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-				blend_attachment_states[i].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-				break;
-			case FramebufferBlendMode::Zero_SrcColor:
-				blend_attachment_states[i].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-				blend_attachment_states[i].dstColorBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
-				break;
-
-			default:
-				unreachable();
-			}
-		}
-	}
-
 	VkPipelineColorBlendStateCreateInfo color_blending {};
+	auto blend_states = initialise_blend_states();
 	color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	color_blending.logicOpEnable = static_cast<VkBool32>(fb_props.should_blend);
 	color_blending.logicOp = VK_LOGIC_OP_COPY;
-	color_blending.attachmentCount = static_cast<std::uint32_t>(blend_attachment_states.size());
-	color_blending.pAttachments = blend_attachment_states.data();
-	color_blending.blendConstants[0] = 0.0F;
-	color_blending.blendConstants[1] = 0.0F;
-	color_blending.blendConstants[2] = 0.0F;
-	color_blending.blendConstants[3] = 0.0F;
+	color_blending.logicOpEnable = static_cast<VkBool32>(props.framebuffer->get_properties().should_blend);
+	color_blending.pAttachments = blend_states.data();
+	color_blending.attachmentCount = static_cast<std::uint32_t>(blend_states.size());
 
 	VkPipelineLayoutCreateInfo pipeline_layout_info {};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

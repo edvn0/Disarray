@@ -136,12 +136,12 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 
 	extent = app.get_swapchain().get_extent();
 	command_executor = CommandExecutor::construct(device, &app.get_swapchain(), { .count = 3, .is_primary = true, .record_stats = true });
-	scene_renderer->on_batch_full([&exec = *command_executor](Renderer& r) { r.flush_batch(exec); });
+	scene_renderer->on_batch_full([&exec = *command_executor](Renderer& renderer) { renderer.flush_batch(exec); });
 
 	framebuffer = Framebuffer::construct(device,
 		{
 			.extent = extent,
-			.attachments = { { Disarray::ImageFormat::SBGR }, { ImageFormat::Depth } },
+			.attachments = { { Disarray::ImageFormat::SBGR, false }, { ImageFormat::Depth, false } },
 			.clear_colour_on_load = false,
 			.clear_depth_on_load = false,
 			.debug_name = "FirstFramebuffer",
@@ -149,7 +149,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 	shadow_framebuffer = Framebuffer::construct(device,
 		{
 			.extent = extent,
-			.attachments = { { ImageFormat::Depth } },
+			.attachments = { { ImageFormat::Depth, false } },
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
 			.debug_name = "ShadowFramebuffer",
@@ -177,7 +177,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 	identity_framebuffer = Framebuffer::construct(device,
 		{
 			.extent = extent,
-			.attachments = { { ImageFormat::SBGR }, { ImageFormat::Uint, false }, { ImageFormat::Depth } },
+			.attachments = { { ImageFormat::SBGR, false }, { ImageFormat::Uint, false }, { ImageFormat::Depth, false } },
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
 			.debug_name = "IdentityFramebuffer",

@@ -6,12 +6,14 @@
 #include <magic_enum.hpp>
 
 #include <filesystem>
+#include <mutex>
 #include <span>
 
 #include "core/Collections.hpp"
 #include "core/Formatters.hpp"
 #include "core/Log.hpp"
 #include "graphics/Texture.hpp"
+#include "util/Timer.hpp"
 
 namespace Disarray {
 
@@ -80,7 +82,6 @@ auto process_mesh(aiMesh* mesh, const std::filesystem::path& base_directory, con
 
 	constexpr auto texture_types = magic_enum::enum_values<aiTextureType>();
 	const auto has_materials = mesh->mMaterialIndex > 0;
-	Log::debug("AssimpModelLoader", "Material index: {}", mesh->mMaterialIndex);
 	if (has_materials) {
 		std::span materials { scene->mMaterials, scene->mNumMaterials };
 		aiMaterial* material = materials[mesh->mMaterialIndex];
@@ -94,6 +95,12 @@ auto process_mesh(aiMesh* mesh, const std::filesystem::path& base_directory, con
 	return Submesh(vertices, indices, textures);
 }
 
+inline auto get_mutex() -> std::mutex&
+{
+	static std::mutex mutex;
+	return mutex;
+}
+
 auto process_current_node(ImportedMesh& mesh_map, const std::filesystem::path& base_directory, aiNode* current_node, const aiScene* scene)
 {
 	if (scene == nullptr) {
@@ -102,26 +109,27 @@ auto process_current_node(ImportedMesh& mesh_map, const std::filesystem::path& b
 
 	std::span node_meshes { current_node->mMeshes, current_node->mNumMeshes };
 	std::span scene_meshes { scene->mMeshes, scene->mNumMeshes };
+	std::span children { current_node->mChildren, current_node->mNumChildren };
 
-	for (const auto& mesh_index : node_meshes) {
+	auto& mutex = get_mutex();
+	Collections::parallel_for_each(node_meshes, [&mutex, &scene_meshes, &mesh_map, &base_directory, &scene](const auto& mesh_index) {
+		std::scoped_lock lock { mutex };
 		aiMesh* ai_mesh = scene_meshes[mesh_index];
 		const aiString mesh_name = ai_mesh->mName;
 		std::string name(mesh_name.length, '\0');
-
 		std::memcpy(name.data(), mesh_name.C_Str(), mesh_name.length);
-
 		name.resize(mesh_name.length);
-		mesh_map.try_emplace(name, process_mesh(ai_mesh, base_directory, scene));
-	}
 
-	std::span children { current_node->mChildren, current_node->mNumChildren };
-	for (const auto& child : children) {
-		process_current_node(mesh_map, base_directory, child, scene);
-	}
+		mesh_map.try_emplace(name, process_mesh(ai_mesh, base_directory, scene));
+	});
+
+	Collections::parallel_for_each(
+		children, [&scene, &mesh_map, &base_directory](auto* child) { process_current_node(mesh_map, base_directory, child, scene); });
 }
 
 auto AssimpModelLoader::import(const std::filesystem::path& path) -> ImportedMesh
 {
+	MSTimer timer;
 	ImportedMesh output {};
 
 	Assimp::Importer importer;
@@ -132,15 +140,21 @@ auto AssimpModelLoader::import(const std::filesystem::path& path) -> ImportedMes
 		throw CouldNotLoadModelException(fmt::format("Error: {}", importer.GetErrorString()));
 	}
 	const auto base_directory = path.parent_path();
+
+	std::vector<aiNode*> children {};
+
 	process_current_node(output, base_directory, scene->mRootNode, scene);
 
-	Collections::for_each(output, [&rot = initial_rotation](auto& kv_pair) {
+	Collections::parallel_for_each(output, [&rot = initial_rotation](auto& kv_pair) {
 		auto&& [key, mesh] = kv_pair;
 
 		for (ModelVertex& vertex : mesh.vertices) {
 			vertex.rotate_by(rot);
 		}
 	});
+
+	const auto seconds = timer.elapsed<Granularity::Seconds>();
+	Log::info("AssimpModelLoader", "Model loading took: {}", seconds);
 
 	return output;
 }
