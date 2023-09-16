@@ -97,7 +97,7 @@ void main() {
 	}
 
 	//colour = pc.colour * vec4(out_vec, 1.0f);
-  	colour = vec4(uvs, 1.0f, 1.0f);
+  	colour = pc.colour * vec4(out_vec ,1.0f) * vec4(uvs, 1.0f, 1.0f);
 
 	id = pc.current_identifier;
 }

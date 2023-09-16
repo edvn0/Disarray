@@ -72,6 +72,7 @@ public:
 
 private:
 	Scope<IModelImporter> importer { nullptr };
+	std::filesystem::path mesh_path {};
 	ImportedMesh mesh_data {};
 };
 

@@ -65,7 +65,9 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 
 	// material.get_descriptor_sets();
 	auto* second_desc = get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1);
-	const std::array<VkDescriptorSet, 2> desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0), second_desc };
+	auto* third_desc = get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 2);
+	const std::array<VkDescriptorSet, 3> desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0), second_desc,
+		third_desc };
 	vkCmdBindDescriptorSets(
 		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
 
@@ -105,8 +107,9 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &pc);
 
-	const std::array<VkDescriptorSet, 2> desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0),
-		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1) };
+	const std::array desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0),
+		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1),
+		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 2) };
 	vkCmdBindDescriptorSets(
 		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
 
@@ -141,8 +144,9 @@ void Renderer::draw_submesh(Disarray::CommandExecutor& executor, const Disarray:
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &pc);
 
-	const std::array<VkDescriptorSet, 2> desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0),
-		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1) };
+	const std::array desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0),
+		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1),
+		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 2) };
 	vkCmdBindDescriptorSets(
 		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
 

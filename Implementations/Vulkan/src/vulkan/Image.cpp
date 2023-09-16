@@ -238,6 +238,9 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor* c
 		auto& buffer = get_properties().data;
 		buffer.allocate(size);
 	}
+
+	Log::info("Image", "Creating image of size {}", size);
+
 	VkBuffer staging {};
 	VkBufferCreateInfo staging_create_info {};
 	staging_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;

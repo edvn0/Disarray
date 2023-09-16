@@ -26,6 +26,7 @@
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Maths.hpp"
+#include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/PushConstantLayout.hpp"
 #include "graphics/Renderer.hpp"
@@ -551,7 +552,7 @@ void Scene::create_entities()
 				.initial_rotation = rotation,
 			});
 		v_mesh.add_component<Components::Mesh>(viking);
-		v_mesh.get_components<Components::Transform>().scale = glm::vec3 { 1.00F };
+		v_mesh.get_components<Components::Transform>().scale = glm::vec3 { 0.1F };
 		auto sponza_pipeline = Pipeline::construct(device,
 			{
 				.vertex_shader = vert,
@@ -560,7 +561,7 @@ void Scene::create_entities()
 				.layout = layout,
 				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 				.extent = extent,
-				.polygon_mode = PolygonMode::Line,
+				.polygon_mode = PolygonMode::Fill,
 				.cull_mode = CullMode::Back,
 				.descriptor_set_layouts = desc_layout,
 			});

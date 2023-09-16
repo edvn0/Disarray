@@ -14,7 +14,7 @@
 namespace Disarray::Vulkan {
 
 // TODO: Make this dynamic
-static constexpr auto set_count = 2;
+static constexpr auto set_count = 3;
 
 class GraphicsResource : public IGraphicsResource {
 	DISARRAY_MAKE_NONCOPYABLE(GraphicsResource)

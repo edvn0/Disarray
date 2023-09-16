@@ -226,6 +226,7 @@
       "MILLIS",
       "Multisample",
       "normalised",
+      "Pathlike",
       "quat",
       "renderable",
       "renderables",

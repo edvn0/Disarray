@@ -25,6 +25,13 @@
 				"${workspaceFolder}/App"
 			],
 			"cwd": "${workspaceFolder}",
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug Benchmark",
+			"program": "${workspaceFolder}/build/Benchmarks/RelWithDebInfo/DisarrayBenchmarks.exe",
+			"cwd": "${workspaceFolder}/App",
 		}
 	]
 }
