@@ -26,8 +26,8 @@ public:
 	virtual auto get_pipeline_cache() -> PipelineCache& = 0;
 	virtual auto get_texture_cache() -> TextureCache& = 0;
 
-	virtual void expose_to_shaders(Image&) = 0;
-	virtual void expose_to_shaders(Texture&) = 0;
+	virtual void expose_to_shaders(const Image&) = 0;
+	virtual void expose_to_shaders(const Texture&) = 0;
 	[[nodiscard]] virtual auto get_descriptor_set(std::uint32_t, std::uint32_t) const -> VkDescriptorSet = 0;
 	[[nodiscard]] virtual auto get_descriptor_set() const -> VkDescriptorSet = 0;
 	[[nodiscard]] virtual auto get_descriptor_set_layouts() const -> const std::vector<VkDescriptorSetLayout>& = 0;

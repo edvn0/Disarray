@@ -1,5 +1,6 @@
 #include "graphics/model_loaders/AssimpModelLoader.hpp"
 
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 
 #include <assimp/Importer.hpp>

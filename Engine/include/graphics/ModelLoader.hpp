@@ -11,15 +11,16 @@
 
 namespace Disarray {
 
+template <class T>
+concept SubmeshMember = AnyOf<T, ModelVertex, std::uint32_t, Disarray::TextureProperties>;
+
 struct Submesh {
 	std::vector<ModelVertex> vertices {};
 	std::vector<uint32_t> indices {};
 	std::vector<Disarray::TextureProperties> texture_properties {};
 	std::vector<Ref<Disarray::Texture>> textures {};
 
-	template <class T>
-		requires(AnyOf<T, ModelVertex, std::uint32_t, Disarray::TextureProperties>)
-	[[nodiscard]] auto count() const -> std::size_t
+	template <SubmeshMember T> [[nodiscard]] auto count() const -> std::size_t
 	{
 		if constexpr (std::is_same_v<T, ModelVertex>) {
 			return vertices.size();
@@ -34,16 +35,9 @@ struct Submesh {
 		}
 	}
 
-	template <class T>
-		requires(AnyOf<T, ModelVertex, std::uint32_t, Disarray::TextureProperties>)
-	[[nodiscard]] auto size() const -> std::size_t
-	{
-		return count<T>() * sizeof(T);
-	}
+	template <SubmeshMember T> [[nodiscard]] auto size() const -> std::size_t { return count<T>() * sizeof(T); }
 
-	template <class T>
-		requires(AnyOf<T, ModelVertex, std::uint32_t, Disarray::TextureProperties>)
-	[[nodiscard]] auto data() const -> const T*
+	template <SubmeshMember T> [[nodiscard]] auto data() const -> const T*
 	{
 		if constexpr (std::is_same_v<T, ModelVertex>) {
 			return vertices.data();

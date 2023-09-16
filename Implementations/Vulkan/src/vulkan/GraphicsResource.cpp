@@ -199,7 +199,7 @@ void GraphicsResource::initialise_descriptors()
 	}
 }
 
-void GraphicsResource::expose_to_shaders(Disarray::Image& image)
+void GraphicsResource::expose_to_shaders(const Disarray::Image& image)
 {
 	// const auto& descriptor_info = cast_to<Vulkan::Image>(image).get_descriptor_info();
 	// Check if we can just add it to the descriptor sets

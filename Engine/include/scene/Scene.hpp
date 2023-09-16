@@ -70,7 +70,7 @@ public:
 	void delete_entity(entt::entity);
 	void delete_entity(const Entity& entity);
 
-	auto get_image(std::uint32_t index) -> Disarray::Image&
+	auto get_image(std::uint32_t index) const -> const Disarray::Image&
 	{
 		if (index == 0) {
 			return identity_framebuffer->get_image(0);

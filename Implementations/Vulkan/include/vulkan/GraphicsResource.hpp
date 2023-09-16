@@ -25,8 +25,8 @@ public:
 	[[nodiscard]] auto get_pipeline_cache() -> PipelineCache& override { return pipeline_cache; }
 	[[nodiscard]] auto get_texture_cache() -> TextureCache& override { return texture_cache; }
 
-	void expose_to_shaders(Disarray::Image&) override;
-	void expose_to_shaders(Disarray::Texture& tex) override { expose_to_shaders(tex.get_image()); };
+	void expose_to_shaders(const Disarray::Image&) override;
+	void expose_to_shaders(const Disarray::Texture& tex) override { expose_to_shaders(tex.get_image()); };
 	[[nodiscard]] auto get_descriptor_set(std::uint32_t frame_index, std::uint32_t set) const -> VkDescriptorSet override
 	{
 		return descriptor_sets[(frame_index * set_count) + set];

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glm/common.hpp>
+#include <glm/detail/qualifier.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -21,8 +23,6 @@
 #include "core/Input.hpp"
 #include "core/Log.hpp"
 #include "core/Window.hpp"
-#include "glm/common.hpp"
-#include "glm/detail/qualifier.hpp"
 #include "graphics/Image.hpp"
 #include "graphics/Shader.hpp"
 #include "graphics/Texture.hpp"
@@ -83,11 +83,10 @@ template <typename... Args> void text_wrapped(fmt::format_string<Args...> fmt_st
 
 static constexpr inline auto button_size = 64;
 
-void image_button(Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
-void image_button(const Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
-void image(Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
-void image_button(Texture&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
-void image(Texture&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+void image_button(const Disarray::Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+void image(const Disarray::Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+void image_button(const Disarray::Texture&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+void image(const Disarray::Texture&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
 
 namespace Tabular {
 	auto table(std::string_view name, const Collections::StringViewMap<std::string>& map) -> bool;

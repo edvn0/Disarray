@@ -49,10 +49,9 @@ using FramebufferChangeCallback = std::function<void(Framebuffer&)>;
 class Framebuffer : public ReferenceCountable {
 	DISARRAY_OBJECT_PROPS(Framebuffer, FramebufferProperties)
 public:
-	auto get_image() -> Disarray::Image& { return get_image(0); };
-
-	virtual auto get_image(std::uint32_t index) -> Disarray::Image& = 0;
-	virtual auto get_depth_image() -> Disarray::Image& = 0;
+	auto get_image() const -> const Disarray::Image& { return get_image(0); };
+	virtual auto get_image(std::uint32_t index) const -> const Disarray::Image& = 0;
+	virtual auto get_depth_image() const -> const Disarray::Image& = 0;
 
 	virtual auto get_render_pass() -> Disarray::RenderPass& = 0;
 

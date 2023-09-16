@@ -41,7 +41,7 @@ void ModelLoader::construct_textures(const Disarray::Device& device)
 {
 	Timer<float> texture_timer;
 	for (auto& [key, value] : mesh_data) {
-		Collections::parallel_for_each(value.texture_properties,
+		Collections::for_each(value.texture_properties,
 			[&dev = device, &texts = value.textures](const TextureProperties& props) { texts.emplace_back(make_ref<Vulkan::Texture>(dev, props)); });
 	}
 	Log::info("ModelLoader", "Loading textures took {}ms", texture_timer.elapsed<Granularity::Millis>());

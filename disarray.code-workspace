@@ -236,6 +236,8 @@
       "spdlog",
       "spirv",
       "SSBO",
+      "stbi",
+      "Stringlike",
       "Submesh",
       "submeshes",
       "Subpass",

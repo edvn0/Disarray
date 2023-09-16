@@ -27,16 +27,13 @@ public:
 	}
 	auto get_view() -> VkImageView { return image->get_descriptor_info().imageView; }
 
-	auto get_image() -> Disarray::Image& override { return *image; }
 	auto get_image() const -> const Disarray::Image& override { return *image; }
 
 	void construct_using(Disarray::CommandExecutor&) override {};
 
 private:
 	void recreate_texture(bool should_clean = true);
-	void load_pixels();
-
-	DataBuffer pixels;
+	auto load_pixels() -> DataBuffer;
 
 	const Disarray::Device& device;
 

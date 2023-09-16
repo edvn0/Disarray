@@ -40,7 +40,7 @@ void Mesh::load_and_initialise_model()
 {
 	try {
 		ModelLoader loader { make_scope<AssimpModelLoader>(props.initial_rotation), props.path };
-		loader.construct_textures(device);
+		// loader.construct_textures(device);
 
 		for (const auto& mesh_data = loader.get_mesh_data(); const auto& [key, submesh] : mesh_data) {
 			auto vertex_buffer = VertexBuffer::construct_scoped(device,

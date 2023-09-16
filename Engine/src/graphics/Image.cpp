@@ -17,7 +17,7 @@ void Image::write_to_file(std::string_view path, const Image& image, const void*
 {
 	const auto& props = image.get_properties();
 	const auto& [w, h] = props.extent;
-	stbi_write_bmp(path.data(), w, h, 4, data);
+	stbi_write_bmp(path.data(), static_cast<int>(w), static_cast<int>(h), 4, data);
 }
 
 } // namespace Disarray

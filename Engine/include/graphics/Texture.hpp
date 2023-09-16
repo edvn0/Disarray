@@ -15,6 +15,7 @@ namespace Disarray {
 struct TextureProperties {
 	Extent extent {};
 	ImageFormat format { ImageFormat::SRGB }; // TODO: This is a crazy default, just to shut up clangd...
+	bool generate_mips { false };
 	std::optional<std::uint32_t> mips { std::nullopt };
 	std::filesystem::path path {};
 	bool locked_extent { false };
@@ -30,7 +31,6 @@ struct TextureProperties {
 class Texture : public ReferenceCountable {
 	DISARRAY_OBJECT_PROPS(Texture, TextureProperties)
 public:
-	virtual auto get_image() -> Image& = 0;
 	virtual auto get_image() const -> const Image& = 0;
 
 	virtual void construct_using(CommandExecutor&) = 0;

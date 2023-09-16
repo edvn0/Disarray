@@ -4,7 +4,6 @@
 
 #include <filesystem>
 
-#include "glm/ext/matrix_transform.hpp"
 #include "graphics/ModelLoader.hpp"
 
 namespace Disarray {
