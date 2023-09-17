@@ -9,7 +9,6 @@
 #include "core/ReferenceCounted.hpp"
 #include "graphics/ImageProperties.hpp"
 
-
 namespace Disarray {
 
 enum class FramebufferBlendMode : std::uint8_t { None, OneZero, SrcAlphaOneMinusSrcAlpha, Additive, Zero_SrcColor };
@@ -26,6 +25,8 @@ struct FramebufferAttachmentSpecification {
 	{
 	}
 
+	constexpr auto operator[](std::size_t index) const { return texture_attachments.at(index); }
+
 	std::vector<FramebufferTextureSpecification> texture_attachments {};
 };
 
@@ -33,10 +34,10 @@ struct FramebufferProperties {
 	Extent extent { 0, 0 };
 	FramebufferAttachmentSpecification attachments {};
 	glm::vec4 clear_colour { 0.0F, 0.0F, 0.0F, 0.0F };
-	float depth_clear_value { 0.0F };
+	float depth_clear_value { 1.0F };
 	bool clear_colour_on_load { true };
 	bool clear_depth_on_load { true };
-	bool should_blend { true };
+	bool should_blend { false };
 	FramebufferBlendMode blend_mode { FramebufferBlendMode::None };
 	bool should_present { false };
 	SampleCount samples { SampleCount::One };
@@ -48,10 +49,9 @@ using FramebufferChangeCallback = std::function<void(Framebuffer&)>;
 class Framebuffer : public ReferenceCountable {
 	DISARRAY_OBJECT_PROPS(Framebuffer, FramebufferProperties)
 public:
-	auto get_image() -> Disarray::Image& { return get_image(0); };
-
-	virtual auto get_image(std::uint32_t index) -> Disarray::Image& = 0;
-	virtual auto get_depth_image() -> Disarray::Image& = 0;
+	auto get_image() const -> const Disarray::Image& { return get_image(0); };
+	virtual auto get_image(std::uint32_t index) const -> const Disarray::Image& = 0;
+	virtual auto get_depth_image() const -> const Disarray::Image& = 0;
 
 	virtual auto get_render_pass() -> Disarray::RenderPass& = 0;
 

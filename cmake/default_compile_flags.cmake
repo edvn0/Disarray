@@ -2,7 +2,7 @@ function(default_compile_flags)
     if (DISARRAY_COMPILER MATCHES "Clang")
         target_compile_options(
                 ${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness
-                -Wno-unused-variable -Wno-unknown-attributes)
+                -Wno-unused-variable -Wno-unknown-attributes -Wno-deprecated-declarations)
 
         if (DISARRAY_OS STREQUAL "Linux")
             find_package(TBB REQUIRED)
@@ -22,7 +22,7 @@ function(default_compile_flags)
 
         target_compile_options(
                 ${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness
-                -Wno-unused-variable -Wno-unknown-attributes)
+                -Wno-unused-variable -Wno-unknown-attributes -Wno-deprecated-declarations)
         target_link_libraries(${PROJECT_NAME} PRIVATE tbb)
         target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_LINUX)
     elseif (DISARRAY_COMPILER STREQUAL "MSVC")

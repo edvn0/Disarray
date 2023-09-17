@@ -14,6 +14,7 @@ class Image;
 class IndexBuffer;
 class Instance;
 class Mesh;
+struct Submesh;
 class PhysicalDevice;
 class Pipeline;
 class QueueFamilyIndex;

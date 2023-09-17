@@ -1,6 +1,8 @@
 #include "PC.glsl"
 #include "UBO.glsl"
 
+#define NAME SHADOW
+
 layout(set = 0, binding = 0) uniform UniformBlock {
 	Uniform ubo;
 } UBO;
@@ -24,7 +26,9 @@ void main() {
 	Uniform ubo = UBO.ubo;
 	PushConstant pc = PC.pc;
 
-	gl_Position = ubo.view_projection * pc.object_transform * vec4(pos, 1.0);
+  mat4 vp = ubo.view_projection;
+
+	gl_Position = vp * pc.object_transform * vec4(pos, 1.0);
 	fragColor = pc.colour;
 	uvs = uv;
 	outNormals = normals;

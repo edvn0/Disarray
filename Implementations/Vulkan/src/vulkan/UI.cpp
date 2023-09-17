@@ -47,7 +47,7 @@ static auto add_image(VkSampler sampler, VkImageView view, VkImageLayout layout)
 
 static auto add_image(VkDescriptorImageInfo info) -> ImageIdentifier { return add_image(info.sampler, info.imageView, info.imageLayout); }
 
-void image_button(Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
+void image_button(const Disarray::Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
 {
 	auto& vk_image = cast_to<Vulkan::Image>(image);
 
@@ -64,24 +64,7 @@ void image_button(Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& 
 	ImGui::ImageButton("Image", identifier, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
 }
 
-void image_button(const Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
-{
-	const auto& vk_image = cast_to<Vulkan::Image>(image);
-
-	auto hash = vk_image.hash();
-	auto& cache = get_cache();
-	ImageIdentifier identifier = 0;
-	if (!get_cache().contains(hash)) {
-		identifier = add_image(vk_image.get_descriptor_info());
-		cache.try_emplace(hash, std::make_unique<ImageIdentifier>(identifier));
-	} else {
-		identifier = *get_cache()[hash];
-	}
-
-	ImGui::ImageButton("Image", identifier, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
-}
-
-void image(Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
+void image(const Disarray::Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
 {
 	auto& vk_image = cast_to<Vulkan::Image>(image);
 
@@ -98,13 +81,13 @@ void image(Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
 	ImGui::Image(identifier, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
 }
 
-void image_button(Texture& tex, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
+void image_button(const Disarray::Texture& tex, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
 {
 	auto& vk_image = cast_to<Vulkan::Image>(tex.get_image());
 	image_button(vk_image, size, uvs);
 }
 
-void image(Texture& tex, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
+void image(const Disarray::Texture& tex, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
 {
 	auto& vk_image = cast_to<Vulkan::Image>(tex.get_image());
 	image(vk_image, size, uvs);

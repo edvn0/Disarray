@@ -40,3 +40,9 @@
 [submodule "ThirdParty/libtinyfiledialogs"]
 	path = ThirdParty/libtinyfiledialogs
 	url = git@github.com:edvn0/libtinyfiledialogs.git
+[submodule "ThirdParty/assimp"]
+	path = ThirdParty/assimp
+	url = git@github.com:assimp/assimp.git
+[submodule "Benchmarks/ThirdParty/benchmark"]
+	path = Benchmarks/ThirdParty/benchmark
+	url = git@github.com:google/benchmark.git

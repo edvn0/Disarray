@@ -6,6 +6,7 @@
 
 #include <entt/entt.hpp>
 
+#include <future>
 #include <memory>
 #include <string_view>
 #include <unordered_set>
@@ -57,8 +58,10 @@ struct Mesh {
 	// Deserialisation constructor :)
 	explicit Mesh(Device&, std::string_view path);
 	explicit Mesh(Ref<Disarray::Mesh>);
+
 	Ref<Disarray::Mesh> mesh { nullptr };
 };
+template <> inline constexpr std::string_view component_name<Mesh> = "Mesh";
 
 struct Material {
 	Material() = default;

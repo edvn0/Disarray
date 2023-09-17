@@ -243,9 +243,7 @@ void ScenePanel::for_all_components(Entity& entity)
 	});
 
 	draw_component<Components::Mesh>(entity, "Mesh", [](Components::Mesh& mesh_component) {
-		auto& [mesh] = mesh_component;
-
-		auto& [path, pipeline, _] = mesh->get_properties();
+		auto& [path, pipeline, _] = mesh_component.mesh->get_properties();
 
 		bool any_changed = false;
 		std::optional<std::filesystem::path> selected { std::nullopt };
@@ -258,7 +256,7 @@ void ScenePanel::for_all_components(Entity& entity)
 			if (selected.has_value()) {
 				path = *selected;
 			}
-			mesh->force_recreation();
+			mesh_component.mesh->force_recreation();
 		}
 	});
 

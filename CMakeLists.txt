@@ -28,6 +28,10 @@ add_subdirectory(Engine)
 add_subdirectory(ThirdParty)
 add_subdirectory(App)
 
+if(DISARRAY_BUILD_BENCHMARKS)
+    add_subdirectory(Benchmarks)
+endif()
+
 if(${CMAKE_GENERATOR} STREQUAL "Ninja")
   option(CMAKE_EXPORT_COMPILE_COMMANDS ON)
   add_custom_command(

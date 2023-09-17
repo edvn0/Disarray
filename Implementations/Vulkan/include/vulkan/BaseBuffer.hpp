@@ -37,8 +37,6 @@ protected:
 private:
 	void create_with_valid_data();
 	void create_with_empty_data();
-	auto to_vulkan_usage(BufferType type) -> VkBufferUsageFlags;
-
 	const Disarray::Device& device;
 
 	BufferType type;
@@ -46,8 +44,8 @@ private:
 	std::size_t count { 0 };
 
 	VmaAllocationInfo vma_allocation_info {};
-	VkBuffer buffer;
-	VmaAllocation allocation;
+	VkBuffer buffer {};
+	VmaAllocation allocation{};
 };
 
 } // namespace Disarray::Vulkan

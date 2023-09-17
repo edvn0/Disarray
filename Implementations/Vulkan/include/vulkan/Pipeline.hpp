@@ -1,5 +1,9 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+
+#include <vector>
+
 #include "PropertySupplier.hpp"
 #include "graphics/Pipeline.hpp"
 
@@ -25,6 +29,7 @@ private:
 	void construct_layout(const Extent&);
 	void try_find_or_recreate_cache();
 	void recreate_pipeline(bool, const Extent&);
+	auto initialise_blend_states() -> std::vector<VkPipelineColorBlendAttachmentState>;
 
 	static auto retrieve_shader_stages(Ref<Disarray::Shader> vertex, Ref<Disarray::Shader> fragment)
 		-> std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo>;

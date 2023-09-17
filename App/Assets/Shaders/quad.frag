@@ -15,6 +15,12 @@ layout(set = 0, binding = 2) uniform PointLightBlock {
 	PointLight[MAX_POINT_LIGHTS] lights;
 } PLBO;
 
+layout(push_constant) uniform PushConstantBlock
+{
+	PushConstant pc;
+}
+PC;
+
 layout(location = 0) in vec4 fragColor;
 layout(location = 1) in vec2 uvs;
 layout(location = 2) in vec3 outNormals;
@@ -73,6 +79,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 
 void main() {
 	Uniform ubo = UBO.ubo;
+  PushConstant pc = PC.pc;
 
 	vec3 out_vec = vec3(0.0);
 	vec3 viewDir = normalize(vec3(CBO.camera.position) - fragPosition);
@@ -83,7 +90,7 @@ void main() {
 	light.diffuse = vec3(0.1, 0.9, 0.9);
 	light.specular = vec3(0.1, 0.9, 0.1);
 	out_vec += CalcDirLight(light, outNormals, viewDir);
-	for (int i = 0; i < MAX_POINT_LIGHTS; i++) {
+	for (uint i = 0; i < pc.max_point_lights; i++) {
 		PointLight light = PLBO.lights[i];
 		out_vec += CalcPointLight(light, outNormals, fragPosition, viewDir);
 	}

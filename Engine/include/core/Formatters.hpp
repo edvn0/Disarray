@@ -1,10 +1,12 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include <fmt/core.h>
 
 #include <filesystem>
+#include <string_view>
 
 #include "graphics/ImageProperties.hpp"
 
@@ -30,6 +32,19 @@ template <> struct fmt::formatter<glm::vec3> : fmt::formatter<std::string_view> 
 
 template <> struct fmt::formatter<glm::vec4> : fmt::formatter<std::string_view> {
 	auto format(const glm::vec4& vec, format_context& ctx) -> decltype(ctx.out());
+};
+
+template <> struct fmt::formatter<glm::mat<1, 1, float, glm::defaultp>> : fmt::formatter<std::string_view> {
+	auto format(const glm::mat<1, 1, float>& mat, format_context& ctx) -> decltype(ctx.out());
+};
+template <> struct fmt::formatter<glm::mat<2, 2, float, glm::defaultp>> : fmt::formatter<std::string_view> {
+	auto format(const glm::mat<2, 2, float>& mat, format_context& ctx) -> decltype(ctx.out());
+};
+template <> struct fmt::formatter<glm::mat<3, 3, float, glm::defaultp>> : fmt::formatter<std::string_view> {
+	auto format(const glm::mat<3, 3, float>& mat, format_context& ctx) -> decltype(ctx.out());
+};
+template <> struct fmt::formatter<glm::mat<4, 4, float, glm::defaultp>> : fmt::formatter<std::string_view> {
+	auto format(const glm::mat<4, 4, float>& mat, format_context& ctx) -> decltype(ctx.out());
 };
 
 template <> struct fmt::formatter<glm::quat> : fmt::formatter<std::string_view> {

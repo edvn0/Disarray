@@ -1,11 +1,13 @@
 #include "DisarrayPCH.hpp"
 
 // clang-format off
+#include "graphics/IndexBuffer.hpp"
 #include "graphics/Texture.hpp"
 #include "vulkan/Renderer.hpp"
 // clang-format on
 
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 #include <array>
 
@@ -63,7 +65,9 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 
 	// material.get_descriptor_sets();
 	auto* second_desc = get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1);
-	const std::array<VkDescriptorSet, 2> desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0), second_desc };
+	auto* third_desc = get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 2);
+	const std::array<VkDescriptorSet, 3> desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0), second_desc,
+		third_desc };
 	vkCmdBindDescriptorSets(
 		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
 
@@ -103,15 +107,16 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &pc);
 
-	const std::array<VkDescriptorSet, 2> desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0),
-		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1) };
+	const std::array desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0),
+		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1),
+		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 2) };
 	vkCmdBindDescriptorSets(
 		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
 
 	std::array<VkBuffer, 1> arr {};
 	arr[0] = supply_cast<Vulkan::VertexBuffer>(mesh.get_vertices());
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets);
+	const std::array offsets = { VkDeviceSize { 0 } };
+	vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets.data());
 
 	if (pipeline.get_properties().polygon_mode == PolygonMode::Line) {
 		vkCmdSetLineWidth(command_buffer, pipeline.get_properties().line_width);
@@ -120,6 +125,52 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 	vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(mesh.get_indices()), 0, VK_INDEX_TYPE_UINT32);
 
 	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(mesh.get_indices().size()), 1, 0, 0, 0);
+}
+
+void Renderer::draw_submesh(Disarray::CommandExecutor& executor, const Disarray::VertexBuffer& vertex_buffer,
+	const Disarray::IndexBuffer& index_buffer, const Disarray::Pipeline& mesh_pipeline, const Disarray::Texture& texture, const glm::vec4& colour,
+	const glm::mat4& transform, const std::uint32_t identifier)
+{
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
+	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
+	bind_pipeline(executor, mesh_pipeline);
+
+	(void)texture;
+	auto& pc = get_graphics_resource().get_editable_push_constant();
+
+	pc.object_transform = transform;
+	pc.colour = colour;
+	pc.current_identifier = identifier;
+	vkCmdPushConstants(
+		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &pc);
+
+	const std::array desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0),
+		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1),
+		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 2) };
+	vkCmdBindDescriptorSets(
+		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
+
+	std::array<VkBuffer, 1> arr {};
+	arr[0] = supply_cast<Vulkan::VertexBuffer>(vertex_buffer);
+	const std::array offsets = { VkDeviceSize { 0 } };
+	vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets.data());
+
+	if (pipeline.get_properties().polygon_mode == PolygonMode::Line) {
+		vkCmdSetLineWidth(command_buffer, pipeline.get_properties().line_width);
+	}
+
+	vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(index_buffer), 0, VK_INDEX_TYPE_UINT32);
+
+	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(index_buffer.size()), 1, 0, 0, 0);
+}
+
+void Renderer::draw_submeshes(Disarray::CommandExecutor& executor, const Disarray::Mesh& parent_mesh, const Disarray::Pipeline& mesh_pipeline,
+	const Disarray::Texture& texture, const glm::vec4& colour, const glm::mat4& transform, const std::uint32_t identifier)
+{
+	for (const auto& sub : parent_mesh.get_submeshes()) {
+		auto&& [key, mesh] = sub;
+		draw_submesh(executor, *mesh->vertices, *mesh->indices, mesh_pipeline, texture, colour, transform, identifier);
+	}
 }
 
 void Renderer::end_pass(Disarray::CommandExecutor& executor)
@@ -182,12 +233,12 @@ void Renderer::begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebu
 	}
 
 	VkViewport viewport {};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
+	viewport.x = 0.0F;
+	viewport.y = 0.0F;
 	viewport.width = static_cast<float>(extent.width);
 	viewport.height = static_cast<float>(extent.height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
+	viewport.minDepth = 0.0F;
+	viewport.maxDepth = 1.0F;
 	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
 
 	VkRect2D scissor {};

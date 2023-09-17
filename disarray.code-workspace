@@ -15,7 +15,9 @@
     ]
   },
   "settings": {
-    "githubPullRequests.ignoredPullRequestBranches": ["dev"],
+    "githubPullRequests.ignoredPullRequestBranches": [
+      "dev"
+    ],
     "github-actions.workflows.pinned.workflows": [
       ".github/workflows/lint.yml",
       ".github/workflows/default_pipeline.yml"
@@ -202,6 +204,7 @@
       "**/node_modules/*/**": true
     },
     "cSpell.words": [
+      "Assimp",
       "backface",
       "bitangent",
       "Blit",
@@ -223,6 +226,7 @@
       "MILLIS",
       "Multisample",
       "normalised",
+      "Pathlike",
       "quat",
       "renderable",
       "renderables",
@@ -233,6 +237,10 @@
       "spdlog",
       "spirv",
       "SSBO",
+      "stbi",
+      "Stringlike",
+      "Submesh",
+      "submeshes",
       "Subpass",
       "Subpasses",
       "subresource",

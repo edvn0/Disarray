@@ -74,6 +74,7 @@ Shader::Shader(const Disarray::Device& dev, const std::filesystem::path& path)
 	: device(dev)
 {
 	props.type = to_shader_type(path);
+	props.path = path;
 	auto type = to_stage(props.type);
 	props.identifier = path;
 	props.code = Runtime::ShaderCompiler {}.compile(path, props.type);

@@ -96,7 +96,7 @@ void QuadVertexBatch::submit_impl(Renderer& renderer, CommandExecutor& command_e
 
 	resources.get_editable_push_constant().max_identifiers = submitted_objects;
 
-	auto command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
 
 	const auto& vb = vertex_buffer;
 	const auto& ib = index_buffer;

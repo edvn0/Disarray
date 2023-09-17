@@ -32,17 +32,17 @@ Framebuffer::Framebuffer(const Disarray::Device& dev, FramebufferProperties prop
 	std::uint32_t attachment_index = 0;
 	for (auto& attachment_spec : props.attachments.texture_attachments) {
 		if (is_depth_format(attachment_spec.format)) {
-			ImageProperties spec;
+			TextureProperties spec {};
 			spec.format = attachment_spec.format;
 			spec.extent = props.extent;
 			spec.debug_name = fmt::format("{0}-depth{1}", props.debug_name, attachment_index);
-			depth_attachment = make_scope<Vulkan::Image>(device, std::move(spec));
+			depth_attachment = make_scope<Vulkan::Texture>(device, std::move(spec));
 		} else {
-			ImageProperties spec;
+			TextureProperties spec {};
 			spec.format = attachment_spec.format;
 			spec.extent = props.extent;
 			spec.debug_name = fmt::format("{0}-color{1}", props.debug_name, attachment_index);
-			attachments.emplace_back(make_scope<Vulkan::Image>(device, std::move(spec)));
+			attachments.emplace_back(make_scope<Vulkan::Texture>(device, std::move(spec)));
 		}
 		attachment_index++;
 	}
@@ -181,8 +181,8 @@ void Framebuffer::recreate_framebuffer(bool should_clean)
 	render_pass_info.pAttachments = attachment_descriptions.data();
 	render_pass_info.subpassCount = 1;
 	render_pass_info.pSubpasses = &subpass_description;
-	// render_pass_info.dependencyCount = static_cast<uint32_t>(dependencies.size());
-	// render_pass_info.pDependencies = dependencies.data();
+	render_pass_info.dependencyCount = static_cast<uint32_t>(dependencies.size());
+	render_pass_info.pDependencies = dependencies.data();
 
 	render_pass = RenderPass::construct(device,
 		{
@@ -194,12 +194,12 @@ void Framebuffer::recreate_framebuffer(bool should_clean)
 	std::vector<VkImageView> attachment_views;
 	for (auto& image : attachments) {
 		auto& view = attachment_views.emplace_back();
-		view = cast_to<Vulkan::Image>(*image).get_descriptor_info().imageView;
+		view = cast_to<Vulkan::Image>(image->get_image()).get_descriptor_info().imageView;
 	}
 
 	if (depth_attachment) {
 		auto& depth_view = attachment_views.emplace_back();
-		depth_view = cast_to<Vulkan::Image>(*depth_attachment).get_descriptor_info().imageView;
+		depth_view = cast_to<Vulkan::Image>(depth_attachment->get_image()).get_descriptor_info().imageView;
 	}
 
 	auto framebuffer_create_info = vk_structures<VkFramebufferCreateInfo>()();

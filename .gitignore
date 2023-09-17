@@ -77,5 +77,6 @@ compile_commands.json
 build*
 
 App/Assets/Scene/*.json
-
 !App/Assets/Editor/*.png
+!App/Assets/Models/*.obj
+!App/Assets/Models/*.fbx

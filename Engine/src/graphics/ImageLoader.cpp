@@ -20,6 +20,7 @@ ImageLoader::ImageLoader(const std::filesystem::path& path, Disarray::DataBuffer
 
 	if (!std::filesystem::exists(path)) {
 		data = nullptr;
+		Log::error("ImageLoader", "Texture {} did not exist.", path);
 		return;
 	}
 

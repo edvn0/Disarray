@@ -27,7 +27,7 @@ struct TextureCacheCreationProperties {
 class TextureCache : public ResourceCache<Ref<Disarray::Texture>, TextureCacheCreationProperties, TextureCache, std::string, StringHash> {
 public:
 	TextureCache(const Disarray::Device& device, std::filesystem::path path)
-		: ResourceCache(device, path, { ".png", ".jpg" })
+		: ResourceCache(device, std::move(path), { ".png", ".jpg" })
 	{
 		auto files = get_unique_files_recursively();
 		for (const auto& p : files) {
@@ -49,8 +49,13 @@ public:
 
 	auto create_from_impl(const TextureCacheCreationProperties& props) -> Ref<Disarray::Texture>
 	{
+		if (contains(props.key)) {
+			return get(props.key);
+		}
+
 		return Texture::construct(get_device(),
 			TextureProperties {
+				.generate_mips = true,
 				.path = props.path.string(),
 				.locked_extent = true,
 				.debug_name = props.debug_name,

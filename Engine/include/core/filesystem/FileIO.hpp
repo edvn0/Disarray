@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <span>
+#include <string>
 #include <string_view>
 
 #include "core/Concepts.hpp"
@@ -62,6 +63,16 @@ template <AllowedVectorTypes T> [[nodiscard]] auto read_from_file(std::string_vi
 }
 
 [[nodiscard]] inline auto read_from_file(std::string_view path, std::string& output) -> bool { return read_from_file<char>(path, output); }
+
+[[nodiscard]] inline auto file_size(Pathlike auto pathlike) -> std::size_t
+{
+	std::ifstream opened_stream { pathlike, std::fstream::ate | std::fstream::in };
+	if (!opened_stream) {
+		return 0;
+	}
+
+	return static_cast<std::size_t>(opened_stream.tellg());
+}
 
 template <typename Func, typename ExtensionIncludeFunc, bool Recursive = false, bool IncludeDirectories = false>
 auto for_each_in_directory(auto path, Func&& func, ExtensionIncludeFunc&& ext) -> void

@@ -14,7 +14,24 @@
 				"${workspaceFolder}/App"
 			],
 			"cwd": "${workspaceFolder}",
-			"preLaunchTask": "Build CMake"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug Clang",
+			"program": "${workspaceFolder}/build-clang/App/RelWithDebInfo/App.exe",
+			"args": [
+				"--wd",
+				"${workspaceFolder}/App"
+			],
+			"cwd": "${workspaceFolder}",
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug Benchmark",
+			"program": "${workspaceFolder}/build/Benchmarks/RelWithDebInfo/DisarrayBenchmarks.exe",
+			"cwd": "${workspaceFolder}/App",
 		}
 	]
 }

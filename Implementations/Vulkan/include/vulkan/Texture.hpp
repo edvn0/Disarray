@@ -2,6 +2,7 @@
 
 #include "core/DataBuffer.hpp"
 #include "core/Formatters.hpp"
+#include "graphics/CommandExecutor.hpp"
 #include "graphics/Texture.hpp"
 #include "vulkan/Image.hpp"
 #include "vulkan/PropertySupplier.hpp"
@@ -12,6 +13,7 @@ class Texture : public Disarray::Texture {
 	DISARRAY_MAKE_NONCOPYABLE(Texture)
 public:
 	Texture(const Disarray::Device&, TextureProperties);
+	Texture(const Disarray::CommandExecutor*, const Disarray::Device&, TextureProperties);
 	~Texture() override;
 
 	void force_recreation() override { recreate_texture(); };
@@ -25,14 +27,13 @@ public:
 	}
 	auto get_view() -> VkImageView { return image->get_descriptor_info().imageView; }
 
-	auto get_image() -> Disarray::Image& override { return *image; }
 	auto get_image() const -> const Disarray::Image& override { return *image; }
+
+	void construct_using(Disarray::CommandExecutor&) override {};
 
 private:
 	void recreate_texture(bool should_clean = true);
-	void load_pixels();
-
-	DataBuffer pixels;
+	auto load_pixels() -> DataBuffer;
 
 	const Disarray::Device& device;
 

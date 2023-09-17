@@ -10,6 +10,7 @@
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "core/UniquelyIdentifiable.hpp"
+#include "graphics/CommandExecutor.hpp"
 #include "graphics/ImageProperties.hpp"
 
 namespace Disarray {
@@ -23,6 +24,7 @@ struct ImageProperties {
 	SampleCount samples { SampleCount::One };
 	Tiling tiling { Tiling::DeviceOptimal };
 	bool locked_extent { false };
+	bool should_initialise_directly { true };
 	std::string debug_name;
 };
 
@@ -34,6 +36,8 @@ class Image : public ReferenceCountable {
 public:
 	virtual auto read_pixel(const glm::vec2&) const -> PixelReadData = 0;
 	virtual auto hash() const -> Identifier = 0;
+
+	virtual void construct_using(CommandExecutor&) = 0;
 
 	static void write_to_file(std::string_view path, const Image& image, const void* data);
 };

@@ -5,13 +5,13 @@
 #include "Forward.hpp"
 #include "graphics/Device.hpp"
 #include "graphics/Framebuffer.hpp"
-#include "graphics/Image.hpp"
 #include "graphics/ImageProperties.hpp"
 #include "graphics/RenderPass.hpp"
 #include "graphics/Swapchain.hpp"
 #include "vulkan/Image.hpp"
 #include "vulkan/PropertySupplier.hpp"
 #include "vulkan/RenderPass.hpp"
+#include "vulkan/Texture.hpp"
 
 namespace Disarray::Vulkan {
 
@@ -35,8 +35,8 @@ public:
 	}
 
 	auto supply() const -> VkFramebuffer override { return framebuffer; }
-	auto get_image(std::uint32_t index) -> Image& override { return *attachments.at(index); }
-	auto get_depth_image() -> Disarray::Image& override { return *depth_attachment; }
+	auto get_image(std::uint32_t index) const -> const Disarray::Image& override { return attachments.at(index)->get_image(); }
+	auto get_depth_image() const -> const Disarray::Image& override { return depth_attachment->get_image(); }
 
 	auto has_depth() -> bool override { return static_cast<bool>(depth_attachment); }
 	auto get_colour_attachment_count() const -> std::uint32_t override { return colour_count; }
@@ -52,8 +52,8 @@ private:
 	std::vector<VkClearValue> clear_values {};
 
 	std::uint32_t colour_count {};
-	std::vector<Scope<Vulkan::Image>> attachments;
-	Scope<Vulkan::Image> depth_attachment;
+	std::vector<Scope<Vulkan::Texture>> attachments;
+	Scope<Vulkan::Texture> depth_attachment;
 };
 
 } // namespace Disarray::Vulkan

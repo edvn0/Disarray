@@ -5,6 +5,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 #include "core/Collections.hpp"
 #include "core/Ensure.hpp"
@@ -20,7 +21,7 @@ concept CacheableResource = requires(T t, bool should_clean, const Extent& exten
 	or requires(T t, bool should_clean, const Extent& extent) { (*t).recreate(should_clean, extent); };
 
 template <CacheableResource Resource, class Props, class Child, class Key = std::string, class Hash = StringHash> class ResourceCache {
-	using ResourceMap = std::unordered_map<Key, Resource, Hash, std::equal_to<>>;
+	using ResourceMap = std::unordered_map<Key, Resource, Hash, std::equal_to<>, Collections::DefaultAllocator<std::pair<const Key, Resource>>>;
 	using UniquePathSet = std::unordered_set<std::filesystem::path, FileSystemPathHasher>;
 
 public:
@@ -31,6 +32,8 @@ public:
 		ensure(storage.contains(key), "Key missing from the resource cache.");
 		return storage[key];
 	}
+
+	auto contains(const Key& key) -> bool { return storage.contains(key); }
 
 	auto put(const Props& props) -> const Resource&
 	{
@@ -55,9 +58,9 @@ public:
 
 protected:
 	ResourceCache(
-		const Disarray::Device& dev, const std::filesystem::path& p, const std::unordered_set<std::string>& exts = { ".spv", ".png", ".jpg" })
+		const Disarray::Device& dev, std::filesystem::path input_path, const std::unordered_set<std::string>& exts = { ".spv", ".png", ".jpg" })
 		: device(dev)
-		, path(p)
+		, path(std::move(input_path))
 		, extensions(exts)
 	{
 	}

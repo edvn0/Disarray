@@ -45,8 +45,6 @@ ClientLayer::~ClientLayer() = default;
 void ClientLayer::construct(App& app, Threading::ThreadPool& pool)
 {
 	scene = make_scope<Scene>(device, "Default scene");
-
-	ensure(scene != nullptr, "Forgot to initialise scene");
 	scene->construct(app, pool);
 
 	auto stats_panel = app.add_panel<StatisticsPanel>(app.get_statistics());
@@ -59,7 +57,7 @@ void ClientLayer::construct(App& app, Threading::ThreadPool& pool)
 	scene_panel->construct(app, pool);
 	execution_stats_panel->construct(app, pool);
 
-	constexpr auto angles = generate_angles_client<30>();
+	constexpr auto angles = generate_angles_client<5>();
 
 	auto point_lights = scene->entities_with<Components::PointLight>();
 	std::size_t index { 0 };

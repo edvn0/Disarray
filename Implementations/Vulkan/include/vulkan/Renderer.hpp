@@ -40,6 +40,9 @@ public:
 		const std::uint32_t) override;
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&, const glm::vec4&,
 		const glm::mat4&, const std::uint32_t) override;
+
+	void draw_submeshes(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&, const glm::vec4&,
+		const glm::mat4&, const std::uint32_t) override;
 	void draw_planar_geometry(Disarray::Geometry, const Disarray::GeometryProperties&) override;
 	void submit_batched_geometry(Disarray::CommandExecutor&) override;
 	void on_batch_full(std::function<void(Disarray::Renderer&)>&& func) override { on_batch_full_func = func; }
@@ -60,6 +63,9 @@ public:
 
 private:
 	void add_geometry_to_batch(Geometry, const GeometryProperties&);
+
+	void draw_submesh(Disarray::CommandExecutor&, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&,
+		const Disarray::Texture&, const glm::vec4&, const glm::mat4&, const std::uint32_t);
 
 	const Disarray::Device& device;
 	const Disarray::Swapchain& swapchain;

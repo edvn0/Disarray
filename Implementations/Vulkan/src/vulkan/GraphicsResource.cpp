@@ -92,6 +92,12 @@ void GraphicsResource::initialise_descriptors()
 	image_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	image_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
+	auto image_array_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
+	image_array_binding.descriptorCount = 64;
+	image_array_binding.binding = 0;
+	image_array_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	image_array_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
 	auto layout_create_info = vk_structures<VkDescriptorSetLayoutCreateInfo> {}();
 	std::array<VkDescriptorSetLayoutBinding, 3> set_zero_bindings = { default_binding, camera_binding, point_light_binding };
 	layout_create_info.bindingCount = static_cast<std::uint32_t>(set_zero_bindings.size());
@@ -99,13 +105,18 @@ void GraphicsResource::initialise_descriptors()
 
 	VkDescriptorSetLayout set_zero_layout = nullptr;
 	VkDescriptorSetLayout image_layout = nullptr;
+	VkDescriptorSetLayout image_array_layout = nullptr;
 	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &set_zero_layout));
 
 	layout_create_info.bindingCount = 1;
 	layout_create_info.pBindings = &image_binding;
 	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &image_layout));
 
-	layouts = { set_zero_layout, image_layout };
+	layout_create_info.bindingCount = 1;
+	layout_create_info.pBindings = &image_array_binding;
+	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &image_array_layout));
+
+	layouts = { set_zero_layout, image_layout, image_array_layout };
 	static constexpr auto descriptor_pool_max_size = 1000;
 
 	const std::array<VkDescriptorPoolSize, 12> sizes = [](auto size) {
@@ -134,9 +145,10 @@ void GraphicsResource::initialise_descriptors()
 	verify(vkCreateDescriptorPool(vk_device, &pool_create_info, nullptr, &pool));
 
 	std::vector<VkDescriptorSetLayout> desc_layouts(set_count * swapchain.image_count());
-	for (std::size_t i = 0; i < desc_layouts.size() - 1; i += set_count) {
+	for (std::size_t i = 0; i < desc_layouts.size() - (set_count - 1); i += set_count) {
 		desc_layouts[i] = layouts[0];
 		desc_layouts[i + 1] = layouts[1];
+		desc_layouts[i + 2] = layouts[2];
 	}
 
 	VkDescriptorSetAllocateInfo alloc_info {};
@@ -199,7 +211,7 @@ void GraphicsResource::initialise_descriptors()
 	}
 }
 
-void GraphicsResource::expose_to_shaders(Disarray::Image& image)
+void GraphicsResource::expose_to_shaders(const Disarray::Image& image)
 {
 	// const auto& descriptor_info = cast_to<Vulkan::Image>(image).get_descriptor_info();
 	// Check if we can just add it to the descriptor sets
