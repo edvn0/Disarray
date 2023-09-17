@@ -34,11 +34,17 @@ template <> struct fmt::formatter<glm::vec4> : fmt::formatter<std::string_view> 
 	auto format(const glm::vec4& vec, format_context& ctx) -> decltype(ctx.out());
 };
 
-template <int N> struct fmt::formatter<glm::mat<N, N, float, glm::defaultp>> : fmt::formatter<std::string_view> {
-	auto format(const glm::mat<N, N, float>& mat, format_context& ctx) -> decltype(ctx.out())
-	{
-		return fmt::formatter<std::string_view>::format(fmt::format("{}", glm::to_string(mat)), ctx);
-	}
+template <> struct fmt::formatter<glm::mat<1, 1, float, glm::defaultp>> : fmt::formatter<std::string_view> {
+	auto format(const glm::mat<1, 1, float>& mat, format_context& ctx) -> decltype(ctx.out());
+};
+template <> struct fmt::formatter<glm::mat<2, 2, float, glm::defaultp>> : fmt::formatter<std::string_view> {
+	auto format(const glm::mat<2, 2, float>& mat, format_context& ctx) -> decltype(ctx.out());
+};
+template <> struct fmt::formatter<glm::mat<3, 3, float, glm::defaultp>> : fmt::formatter<std::string_view> {
+	auto format(const glm::mat<3, 3, float>& mat, format_context& ctx) -> decltype(ctx.out());
+};
+template <> struct fmt::formatter<glm::mat<4, 4, float, glm::defaultp>> : fmt::formatter<std::string_view> {
+	auto format(const glm::mat<4, 4, float>& mat, format_context& ctx) -> decltype(ctx.out());
 };
 
 template <> struct fmt::formatter<glm::quat> : fmt::formatter<std::string_view> {
