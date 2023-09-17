@@ -551,7 +551,8 @@ void Scene::create_entities()
 				.path = "Assets/Models/sponza/sponza.obj",
 				.initial_rotation = rotation,
 			});
-		v_mesh.add_component<Components::Mesh>(viking);
+		auto& mesh = v_mesh.add_component<Components::Mesh>(viking);
+		mesh.mesh.write_textures(*scene_renderer);
 		v_mesh.get_components<Components::Transform>().scale = glm::vec3 { 0.1F };
 		auto sponza_pipeline = Pipeline::construct(device,
 			{
@@ -641,7 +642,7 @@ void Scene::create_entities()
 
 	{
 		static constexpr auto max_radius = 8U;
-		static constexpr auto point_lights = 5U;
+		static constexpr auto point_lights = 30U;
 
 		constexpr auto colours = generate_colours<point_lights>();
 		constexpr auto angles = generate_angles<point_lights>();

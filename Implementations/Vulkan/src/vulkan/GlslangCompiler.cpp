@@ -83,7 +83,7 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	std::string preprocessed_str;
 	if (glslang::TShader::ForbidIncluder forbid_includer {}; !shader->preprocess(
 			resources, default_version, default_profile, false, forward_compatible, EShMsgDefault, &preprocessed_str, forbid_includer)) {
-		Log::error("ShaderCompiler", "Could not preprocess shader: {}", shader->getInfoLog());
+		Log::error("ShaderCompiler", "Could not preprocess shader: {}, because {}", path_to_shader.string(), shader->getInfoLog());
 		return {};
 	}
 
@@ -91,14 +91,14 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	shader->setStrings(strings.data(), 1);
 
 	if (!shader->parse(resources, default_version, default_profile, false, forward_compatible, EShMsgDefault)) {
-		Log::error("ShaderCompiler", "Could not parse shader: {}", shader->getInfoLog());
+		Log::error("ShaderCompiler", "Could not parse shader: {}, because: {}", path_to_shader.string(), shader->getInfoLog());
 		return {};
 	}
 
 	glslang::TProgram program;
 	program.addShader(shader.get());
 	if (!program.link(EShMsgDefault)) {
-		Log::error("ShaderCompiler", "Could not link shader: {}", shader->getInfoLog());
+		Log::error("ShaderCompiler", "Could not link shader: {}, because {}", path_to_shader.string(), shader->getInfoLog());
 		return {};
 	}
 

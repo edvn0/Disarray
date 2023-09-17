@@ -63,9 +63,12 @@ void GraphicsResource::initialise_descriptors()
 {
 	auto* vk_device = supply_cast<Vulkan::Device>(device);
 
-	TextureCacheCreationProperties texture_properties { .key = "viking", .debug_name = "viking" };
-	texture_properties.path = "Assets/Textures/viking_room.png";
-	texture_properties.format = ImageFormat::SBGR;
+	TextureCacheCreationProperties texture_properties {
+		.key = "viking",
+		.debug_name = "viking",
+		.path = "Assets/Textures/viking_room.png",
+		.format = ImageFormat::SBGR,
+	};
 	const auto& viking_room = texture_cache.put(texture_properties);
 
 	auto default_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();

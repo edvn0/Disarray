@@ -66,7 +66,8 @@ vec3 calc_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 	float constant = light.factors.x;
 	float lin = light.factors.y;
 	float quadratic = light.factors.z;
-	float attenuation = 1.0 / (constant + lin * distance + quadratic * (distance * distance));
+	// float attenuation = 1.0 / (constant + lin * distance + quadratic * (distance * distance));
+	float attenuation = 1.0 / (distance * 0.1);
 	// combine results
 	vec3 ambient  = vec3(light.ambient);
 	vec3 diffuse  = vec3(light.diffuse)  * diff;
@@ -80,7 +81,7 @@ vec3 calc_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 
 void main() {
 	Uniform ubo = UBO.ubo;
-  PushConstant pc = PC.pc;
+  	PushConstant pc = PC.pc;
 
 	vec3 out_vec = vec3(0.0);
 	vec3 viewDir = normalize(vec3(CBO.camera.position) - fragPosition);
@@ -91,7 +92,7 @@ void main() {
 	light.diffuse = vec3(0.1, 0.9, 0.9);
 	light.specular = vec3(0.1, 0.9, 0.9);
 	out_vec += calc_dir_light(light, outNormals, viewDir);
-	for (uint i = 0; i < 1; i++) {
+	for (uint i = 0; i < pc.max_point_lights; i++) {
 		PointLight light = PLBO.lights[i];
 		out_vec += calc_point_light(light, outNormals, fragPosition, viewDir);
 	}

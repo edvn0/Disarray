@@ -3,7 +3,6 @@
 #include <glm/glm.hpp>
 
 #include "core/Collections.hpp"
-#include "core/Log.hpp"
 #include "scene/CppScript.hpp"
 
 namespace Disarray::Scripts {

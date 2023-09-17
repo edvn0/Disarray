@@ -48,8 +48,8 @@ void MoveInCircleScript::on_update(float time_step)
 	angle = angle + vel * time_step;
 	rad = std::fmod(angle, 360);
 	const auto radians = glm::radians(rad);
-	pos.x = radius * glm::sin(radians);
-	pos.z = radius * glm::cos(radians);
+	pos.x = static_cast<float>(radius) * glm::sin(radians);
+	pos.z = static_cast<float>(radius) * glm::cos(radians);
 }
 
 void MoveInCircleScript::on_interface() { }
