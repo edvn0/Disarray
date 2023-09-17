@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 
+#include <concepts>
+
 #include "core/Collections.hpp"
 #include "scene/CppScript.hpp"
 
@@ -10,6 +12,11 @@ namespace Disarray::Scripts {
 class MoveInCircleScript final : public CppScript {
 public:
 	~MoveInCircleScript() override;
+	MoveInCircleScript(std::integral auto local_radius, std::floating_point auto initial_angle)
+		: MoveInCircleScript(static_cast<std::uint32_t>(local_radius), static_cast<float>(initial_angle))
+	{
+	}
+
 	MoveInCircleScript(std::uint32_t local_radius, float initial_angle);
 	MoveInCircleScript(const Collections::StringViewMap<Parameter>& parameters);
 

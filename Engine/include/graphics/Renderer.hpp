@@ -39,7 +39,7 @@ public:
 	[[nodiscard]] virtual auto get_push_constant() const -> const PushConstant* = 0;
 	virtual auto get_editable_push_constant() -> PushConstant& = 0;
 
-	virtual auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&> = 0;
+	virtual auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&, ShadowPassUBO&, DirectionalLightUBO&> = 0;
 
 	virtual void update_ubo() = 0;
 };

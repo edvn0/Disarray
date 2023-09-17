@@ -20,8 +20,6 @@ void UBO::reset_impl()
 	view = identity_matrix;
 	proj = identity_matrix;
 	view_projection = identity_matrix;
-	sun_direction_and_intensity = one_vector;
-	sun_colour = one_vector;
 }
 
 void CameraUBO::reset_impl() { }

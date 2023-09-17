@@ -117,7 +117,7 @@ namespace Popup {
 namespace Input {
 	auto general_slider(std::string_view name, int count, float* base, float min, float max) -> bool;
 
-	template <std::size_t N, std::floating_point T>
+	template <std::size_t N = 1, std::floating_point T = float>
 		requires(N > 0 && N <= 4)
 	auto slider(std::string_view name, T* base, T min = 0, T max = 1) -> bool
 	{
@@ -163,6 +163,9 @@ void scope(std::string_view name, UIFunction&& func = default_function);
 
 void begin(std::string_view);
 void end();
+
+void shift_cursor_y(float by);
+void shift_cursor_y(std::floating_point auto by) { shift_cursor_y(static_cast<float>(by)); }
 
 auto begin_combo(std::string_view name, std::string_view data) -> bool;
 void end_combo();

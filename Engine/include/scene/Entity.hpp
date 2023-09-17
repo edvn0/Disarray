@@ -9,6 +9,7 @@
 #include "core/Ensure.hpp"
 #include "entt/entity/entity.hpp"
 #include "scene/Component.hpp"
+#include "scene/Components.hpp"
 
 namespace Disarray {
 
@@ -28,16 +29,17 @@ public:
 
 	auto get_registry() -> entt::registry&;
 	[[nodiscard]] auto get_registry() const -> const entt::registry&;
-
-	auto is_valid() const -> bool { return get_registry().valid(identifier); }
+	[[nodiscard]] auto is_valid() const -> bool { return get_registry().valid(identifier); }
 	template <ValidComponent... T> auto has_any() -> decltype(auto) { return get_registry().any_of<T...>(identifier); }
 	template <ValidComponent... T> auto has_all() -> decltype(auto) { return get_registry().all_of<T...>(identifier); }
 	template <ValidComponent... T> auto has_any() const -> decltype(auto) { return get_registry().any_of<T...>(identifier); }
 	template <ValidComponent... T> auto has_all() const -> decltype(auto) { return get_registry().all_of<T...>(identifier); }
 	template <ValidComponent... T> auto get_components() -> decltype(auto) { return get_registry().get<T...>(identifier); }
-	template <ValidComponent... T> auto get_components() const -> decltype(auto) { return get_registry().get<T...>(identifier); }
+	template <ValidComponent... T> [[nodiscard]] auto get_components() const -> decltype(auto) { return get_registry().get<T...>(identifier); }
 	template <ValidComponent T> auto has_component() -> decltype(auto) { return get_registry().any_of<T>(identifier); }
 	template <ValidComponent T> [[nodiscard]] auto has_component() const -> decltype(auto) { return get_registry().any_of<T>(identifier); }
+
+	auto get_transform() -> decltype(auto) { return get_components<Components::Transform>(); }
 
 	template <ValidComponent T, typename... Args> auto add_component(Args&&... args) -> decltype(auto)
 	{

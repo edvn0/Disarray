@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -18,6 +19,11 @@ struct TextureProperties {
 	bool generate_mips { false };
 	std::optional<std::uint32_t> mips { std::nullopt };
 	std::filesystem::path path {};
+	std::array<SamplerMode, 3> sampler_modes {
+		SamplerMode::Repeat,
+		SamplerMode::Repeat,
+		SamplerMode::Repeat,
+	};
 	bool locked_extent { false };
 
 	/**

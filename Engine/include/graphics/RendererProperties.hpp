@@ -82,15 +82,15 @@ namespace Detail {
 	};
 } // namespace Detail
 
-static constexpr auto count_point_lights = 30;
-using PointLights = Detail::PointLights<count_point_lights>;
+static constexpr auto max_point_lights = 30;
+static constexpr auto count_point_lights = 5;
+static constexpr auto point_light_radius = 3;
+using PointLights = Detail::PointLights<max_point_lights>;
 
 struct UBO : Resettable<UBO> {
 	glm::mat4 view;
 	glm::mat4 proj;
 	glm::mat4 view_projection;
-	glm::vec4 sun_direction_and_intensity { 1.0 };
-	glm::vec4 sun_colour { 1.0F };
 
 	void reset_impl();
 };
@@ -109,6 +109,36 @@ struct ImageIndicesUBO : Resettable<ImageIndicesUBO> {
 	alignas(default_alignment) std::array<glm::uvec4, max_allowed_texture_indices> image_indices { glm::uvec4 { 0, 0, 0, 0 } };
 
 	void reset_impl();
+};
+
+struct ShadowPassUBO : Resettable<ShadowPassUBO> {
+	glm::mat4 view {};
+	glm::mat4 projection {};
+	glm::mat4 view_projection {};
+
+	void reset_impl()
+	{
+		view = {};
+		projection = {};
+		view_projection = {};
+	}
+};
+
+struct DirectionalLightUBO : Resettable<DirectionalLightUBO> {
+	glm::vec4 position { 0 };
+	glm::vec4 direction { 0 };
+	glm::vec4 ambient;
+	glm::vec4 diffuse;
+	glm::vec4 specular;
+
+	void reset_impl()
+	{
+		position = {};
+		direction = {};
+		ambient = {};
+		diffuse = {};
+		specular = {};
+	}
 };
 
 } // namespace Disarray

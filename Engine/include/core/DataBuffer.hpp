@@ -27,23 +27,16 @@ public:
 
 	void reset();
 
-	template <typename T>
-		requires(!std::is_same_v<T, bool>)
-	auto read(std::size_t element_offset = 0) -> T&
-	{
-		return *bit_cast<T*>(*data + element_offset * sizeof(T));
-	}
-
 	friend void swap(DataBuffer& first, DataBuffer& second) noexcept;
 
 	[[nodiscard]] auto get_size() const -> std::size_t { return size; }
-	[[nodiscard]] auto get_data() const { return *data; }
+	[[nodiscard]] auto get_data() const { return data.get(); }
 
 	explicit(false) operator bool() const { return is_valid(); }
 	[[nodiscard]] auto is_valid() const -> bool { return size != 0 && data != nullptr; }
 
 private:
-	std::unique_ptr<std::byte*> data { nullptr };
+	std::unique_ptr<std::byte[]> data { nullptr };
 	std::size_t size { 0 };
 };
 

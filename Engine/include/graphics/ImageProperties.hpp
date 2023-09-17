@@ -8,6 +8,14 @@
 
 namespace Disarray {
 
+enum class SamplerMode : std::uint8_t {
+	Repeat = 0,
+	MirroredRepeat = 1,
+	ClampToEdge = 2,
+	ClampToBorder = 3,
+	MirrorClampToEdge = 4,
+};
+
 enum class SampleCount {
 	One = 0x00000001,
 	Two = 0x00000002,

@@ -43,7 +43,7 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 		.fragment_shader_key = "quad.frag",
 		.framebuffer = geometry_framebuffer,
 		.layout = { { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float3, "normals" },
-			{ ElementType::Float4, "colour" }, { ElementType::Uint, "identifier" } },
+			{ ElementType::Float4, "colour" }, { ElementType::Uint, "identifier" }, },
 		.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, sizeof(PushConstant) } },
 		.extent = swapchain.get_extent(),
 		.descriptor_set_layouts = get_graphics_resource().get_descriptor_set_layouts(),
@@ -91,8 +91,8 @@ void Renderer::on_resize()
 
 	get_texture_cache().force_recreate(extent);
 
-	get_pipeline_cache().for_each_in_storage([new_descs = get_graphics_resource().get_descriptor_set_layouts()](auto&& kv) {
-		auto& [key, pipeline] = kv;
+	get_pipeline_cache().for_each_in_storage([new_descs = get_graphics_resource().get_descriptor_set_layouts()](auto&& key_value_pair) {
+		auto& [key, pipeline] = key_value_pair;
 		pipeline->get_properties().descriptor_set_layouts = new_descs;
 	});
 	get_pipeline_cache().force_recreate(extent);
@@ -103,7 +103,7 @@ void Renderer::on_resize()
 
 void Renderer::begin_frame(const Camera& camera)
 {
-	auto [ubo, camera_ubo, lights] = get_graphics_resource().get_editable_ubos();
+	auto [ubo, camera_ubo, lights, _, __] = get_graphics_resource().get_editable_ubos();
 	camera_ubo.position = glm::vec4 { camera.get_position(), 1.0F };
 	camera_ubo.direction = glm::vec4 { camera.get_direction(), 1.0F };
 
@@ -115,7 +115,7 @@ void Renderer::begin_frame(const glm::mat4& view, const glm::mat4& proj, const g
 	// TODO: Move to some kind of scene scope?
 	batch_renderer.reset();
 
-	auto [ubo, camera, lights] = get_graphics_resource().get_editable_ubos();
+	auto [ubo, camera, lights, _, __] = get_graphics_resource().get_editable_ubos();
 
 	ubo.view = view;
 	ubo.proj = proj;
@@ -128,11 +128,12 @@ void Renderer::begin_frame(const glm::mat4& view, const glm::mat4& proj, const g
 
 void Renderer::end_frame()
 {
-	auto [ubo, camera_ubo, lights] = get_graphics_resource().get_editable_ubos();
+	auto [ubo, camera_ubo, lights, shadow_pass, _] = get_graphics_resource().get_editable_ubos();
 
 	ubo.reset();
 	camera_ubo.reset();
 	lights.reset();
+	shadow_pass.reset();
 }
 
 void Renderer::force_recreation() { on_resize(); }
@@ -149,9 +150,8 @@ void Renderer::submit_batched_geometry(Disarray::CommandExecutor& executor)
 void Renderer::draw_planar_geometry(Geometry geometry, const GeometryProperties& properties)
 {
 	if (batch_renderer.would_be_full()) {
-		add_geometry_to_batch(geometry, properties);
 		on_batch_full_func(*this);
-	} else {
+
 		add_geometry_to_batch(geometry, properties);
 	}
 }

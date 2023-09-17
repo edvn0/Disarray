@@ -7,14 +7,10 @@ StatisticsPanel::StatisticsPanel(Device&, Window&, Swapchain&, const Application
 
 void StatisticsPanel::update(float time_step)
 {
-	should_update_counter += time_step;
-	if (should_update_counter > update_interval_ms) {
-		should_update_counter = 0;
-		const auto& [cpu_time, frame_time, presentation_time] = statistics;
-		cpu_time_average(cpu_time);
-		frame_time_average(frame_time);
-		presentation_time_average(presentation_time);
-	}
+	const auto& [cpu_time, frame_time, presentation_time] = statistics;
+	cpu_time_average(cpu_time);
+	frame_time_average(frame_time);
+	presentation_time_average(presentation_time);
 }
 
 void StatisticsPanel::interface()

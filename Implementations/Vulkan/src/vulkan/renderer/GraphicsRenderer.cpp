@@ -26,8 +26,11 @@ namespace Disarray::Vulkan {
 
 void Renderer::bind_pipeline(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, Disarray::PipelineBindPoint point)
 {
-	if (&pipeline != bound_pipeline) {
+	if (bound_pipeline == nullptr || pipeline != *bound_pipeline) {
 		bound_pipeline = &pipeline;
+	}
+
+	if (bound_pipeline != nullptr) {
 		vkCmdBindPipeline(
 			supply_cast<Vulkan::CommandExecutor>(executor), static_cast<VkPipelineBindPoint>(point), supply_cast<Vulkan::Pipeline>(*bound_pipeline));
 	}

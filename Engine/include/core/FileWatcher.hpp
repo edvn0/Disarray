@@ -52,10 +52,6 @@ struct FileInformation {
 	[[nodiscard]] auto has_extension(std::string_view ext) const { return to_path().extension().string() == ext; }
 };
 
-struct FileWatcherCallback {
-	auto operator()(const FileInformation& info) -> void;
-};
-
 class FileWatcher {
 public:
 	FileWatcher(Threading::ThreadPool&, const std::filesystem::path&, std::chrono::duration<int, std::milli> = std::chrono::milliseconds(2000));

@@ -41,12 +41,16 @@ public:
 	[[nodiscard]] auto get_push_constant() const -> const PushConstant* override { return &pc; }
 	auto get_editable_push_constant() -> PushConstant& override { return pc; }
 
-	auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&> override { return { uniform, camera_ubo, lights }; }
+	auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&, ShadowPassUBO&, DirectionalLightUBO&> override
+	{
+		return { uniform, camera_ubo, lights, shadow_pass_ubo, directional_light_ubo };
+	}
 
 	void update_ubo() override;
 
 private:
 	void cleanup_graphics_resource();
+	auto descriptor_write_sets_per_frame(std::size_t descriptor_set) -> std::vector<VkWriteDescriptorSet>;
 
 	const Disarray::Device& device;
 	const Disarray::Swapchain& swapchain;
@@ -61,7 +65,9 @@ private:
 	UBO uniform {};
 	CameraUBO camera_ubo {};
 	PointLights lights {};
-	using UBOArray = std::array<Scope<Vulkan::UniformBuffer>, 3>;
+	ShadowPassUBO shadow_pass_ubo {};
+	DirectionalLightUBO directional_light_ubo {};
+	using UBOArray = std::array<Scope<Vulkan::UniformBuffer>, 5>;
 	std::unordered_map<std::size_t, UBOArray> frame_index_ubo_map {};
 
 	std::unordered_map<std::size_t, std::vector<VkDescriptorSet>> descriptor_sets;

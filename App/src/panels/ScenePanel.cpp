@@ -20,49 +20,6 @@
 
 namespace Disarray::Client {
 
-template <ValidComponent T> void draw_component(Entity& entity, const std::string& name, auto&& ui_function)
-{
-	if (!entity.has_component<T>())
-		return;
-
-	const ImGuiTreeNodeFlags tree_node_flags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth
-		| ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
-	auto& component = entity.get_components<T>();
-	ImVec2 content_region_available = ImGui::GetContentRegionAvail();
-
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2 { 4, 4 });
-	float line_height = 10 + 2 + 1 * 2.0f;
-	ImGui::Separator();
-
-	const auto leaf_id = (const void*)typeid(T).hash_code();
-	bool open = ImGui::TreeNodeEx(leaf_id, tree_node_flags, "%s", name.c_str());
-	ImGui::PopStyleVar();
-	ImGui::SameLine(content_region_available.x - line_height * 0.5f);
-	if (ImGui::Button("+", ImVec2 { line_height, line_height })) {
-		ImGui::OpenPopup("Component Settings");
-	}
-
-	bool remove_component = false;
-	if (ImGui::BeginPopup("Component Settings")) {
-		if (ImGui::MenuItem("Remove component")) {
-			remove_component = true;
-		}
-
-		ImGui::EndPopup();
-	}
-
-	if (open) {
-		ui_function(component);
-		ImGui::TreePop();
-	}
-
-	if (remove_component) {
-		if constexpr (DeletableComponent<T>) {
-			entity.remove_component<T>();
-		}
-	}
-}
-
 ScenePanel::ScenePanel(Device& dev, Window&, Swapchain&, Scene* s)
 	: device(dev)
 	, scene(s)
@@ -75,9 +32,10 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_pa
 {
 	static constexpr auto max_recursion = 4;
 	const auto has_inheritance = entity.has_component<Components::Inheritance>();
+	const auto has_children = has_inheritance ? entity.get_components<Components::Inheritance>().has_children() : false;
 	const auto has_hit_max_recursion = depth >= max_recursion;
 	if (!has_hit_max_recursion && check_if_has_parent && has_inheritance) {
-		auto inheritance = entity.get_components<Components::Inheritance>();
+		const auto& inheritance = entity.get_components<Components::Inheritance>();
 		if (inheritance.has_parent()) {
 			return;
 		}
@@ -85,7 +43,11 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_pa
 	const auto& tag = entity.get_components<Components::Tag>().name;
 
 	const auto is_same = (*selected_entity == entity.get_identifier());
-	ImGuiTreeNodeFlags flags = (is_same ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
+	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | (is_same ? ImGuiTreeNodeFlags_Selected : 0);
+	if (!has_children) {
+		flags |= ImGuiTreeNodeFlags_Leaf;
+	}
+
 	flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
 	const auto& id_component = entity.get_components<Components::ID>();
 	bool opened = ImGui::TreeNodeEx(Disarray::bit_cast<const void*>(id_component.identifier), flags, "%s", tag.c_str());
@@ -107,7 +69,7 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_pa
 			return;
 		}
 
-		const auto children = entity.get_components<Components::Inheritance>();
+		const auto& children = entity.get_components<Components::Inheritance>();
 		for (const auto& child : children.children) {
 			auto child_entity = scene->get_by_identifier(child);
 			if (!child_entity) {
@@ -128,7 +90,6 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_pa
 
 void ScenePanel::interface()
 {
-
 	UI::begin("Scene");
 	scene->for_all_entities([this](entt::entity entity_id) {
 		Entity entity { scene, entity_id };
@@ -211,13 +172,18 @@ void ScenePanel::for_all_components(Entity& entity)
 	});
 
 	draw_component<Components::DirectionalLight>(entity, "Directional Light", [](Components::DirectionalLight& directional) {
-		auto& [direction, intensity] = directional;
+		if (ImGui::ColorEdit4("Ambient", glm::value_ptr(directional.ambient))) { }
+		if (ImGui::ColorEdit4("Diffuse", glm::value_ptr(directional.diffuse))) { }
+		if (ImGui::ColorEdit4("Specular", glm::value_ptr(directional.specular))) { }
+		if (ImGui::DragFloat3("Direction", glm::value_ptr(directional.direction), 0.1F, -glm::pi<float>(), glm::pi<float>())) { }
+		if (ImGui::DragFloat3("Position", glm::value_ptr(directional.position))) { }
+	});
 
-		if (glm::all(glm::isnan(direction)))
-			direction = glm::vec3(0.0f);
-
-		if (ImGui::DragFloat3("Direction", glm::value_ptr(direction), 0.05f, -glm::pi<float>(), glm::pi<float>())) { }
-		if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.01f, 0.2f)) { }
+	draw_component<Components::PointLight>(entity, "Point Light", [](Components::PointLight& point) {
+		if (UI::Input::drag("Factors", point.factors, 0.1F, 0.F, 10.F)) { }
+		if (ImGui::ColorEdit4("Ambient", glm::value_ptr(point.ambient))) { }
+		if (ImGui::ColorEdit4("Diffuse", glm::value_ptr(point.diffuse))) { }
+		if (ImGui::ColorEdit4("Specular", glm::value_ptr(point.specular))) { }
 	});
 
 	draw_component<Components::PointLight>(entity, "Point Light", [](Components::PointLight& point) {

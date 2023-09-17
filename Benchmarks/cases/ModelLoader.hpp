@@ -11,7 +11,7 @@
 #include "graphics/ModelVertex.hpp"
 #include "graphics/model_loaders/AssimpModelLoader.hpp"
 
-inline void benchmark_template_base(benchmark::State& state)
+inline void benchmark_model_loader(benchmark::State& state)
 {
 	using namespace Disarray;
 	Logging::Logger::initialise_logger("info");

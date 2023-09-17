@@ -422,7 +422,10 @@ auto Pipeline::get_render_pass() -> Disarray::RenderPass& { return props.framebu
 void Pipeline::try_find_or_recreate_cache()
 {
 	const auto hash = props.hash();
-	const auto name = fmt::format("Assets/Pipelines/PipelineCache-{}.pipe-bin", hash);
+	const auto pipeline_name = fmt::format(
+		"Pipeline-{}-{}", props.vertex_shader->get_properties().identifier.filename(), props.fragment_shader->get_properties().identifier.filename());
+
+	const auto name = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", pipeline_name, props.hash());
 
 	std::ifstream input_stream { name, std::fstream::ate | std::fstream::binary };
 	if (!input_stream) {
@@ -440,6 +443,8 @@ void Pipeline::try_find_or_recreate_cache()
 	cache_create_info.pInitialData = buffer.data();
 	cache_create_info.initialDataSize = buffer.size() * sizeof(unsigned char);
 	vkCreatePipelineCache(supply_cast<Vulkan::Device>(device), &cache_create_info, nullptr, &cache);
+
+	Log::info("Pipeline", "Loading cache with id {} took {}s", name, timer.elapsed());
 }
 
 } // namespace Disarray::Vulkan

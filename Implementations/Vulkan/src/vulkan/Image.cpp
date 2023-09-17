@@ -19,6 +19,25 @@
 #include "vulkan/Image.hpp"
 
 namespace Disarray::Vulkan {
+
+static constexpr auto to_vulkan_sampler_mode(SamplerMode mode)
+{
+	switch (mode) {
+	case SamplerMode::Repeat:
+		return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	case SamplerMode::MirroredRepeat:
+		return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+	case SamplerMode::ClampToEdge:
+		return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	case SamplerMode::ClampToBorder:
+		return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+	case SamplerMode::MirrorClampToEdge:
+		return VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE;
+	default:
+		unreachable(fmt::format("Missing mapping for Sampler Mode {}", static_cast<std::uint8_t>(mode)));
+	};
+}
+
 using Disarray::ImageProperties;
 
 static void set_image_layout(VkCommandBuffer command_buffer, VkImage image, VkImageLayout old_image_layout, VkImageLayout new_image_layout,
@@ -129,18 +148,12 @@ auto Image::read_pixel(const glm::vec2& pos) const -> PixelReadData
 			vk_cmd, staging_image->supply(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, subresource_range);
 		vkCmdCopyImageToBuffer(vk_cmd, staging_image->supply(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, pixel_data_buffer, 1, &buffer_copy_region);
 
-		VkImageSubresource subresource {};
-		subresource.aspectMask = aspect_mask;
-		subresource.mipLevel = 0;
-		VkSubresourceLayout subresource_layout {};
-		vkGetImageSubresourceLayout(supply_cast<Vulkan::Device>(device), staging_image->supply(), &subresource, &subresource_layout);
-
 		auto* data = allocator.map_memory<std::byte>(allocation);
 
 		const auto to_float_extent = get_properties().extent.as<float>();
 		auto offset_x = static_cast<std::uint32_t>(pos[0] * to_float_extent.width);
 		auto offset_y = static_cast<std::uint32_t>(pos[1] * to_float_extent.height);
-		std::size_t offset = (offset_y * get_properties().extent.width + offset_x) * sizeof(float);
+		std::size_t offset = (static_cast<std::size_t>(offset_y) * get_properties().extent.width + offset_x) * sizeof(float);
 
 		ensure(data != nullptr);
 
@@ -217,10 +230,14 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor* c
 	sampler_create_info.magFilter = VK_FILTER_LINEAR;
 	sampler_create_info.minFilter = VK_FILTER_LINEAR;
 	sampler_create_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	sampler_create_info.compareEnable = VK_TRUE;
+	sampler_create_info.compareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
-	sampler_create_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	sampler_create_info.addressModeV = sampler_create_info.addressModeU;
-	sampler_create_info.addressModeW = sampler_create_info.addressModeU;
+	auto&& [u, v, w] = get_properties().sampler_modes;
+
+	sampler_create_info.addressModeU = to_vulkan_sampler_mode(u);
+	sampler_create_info.addressModeV = to_vulkan_sampler_mode(v);
+	sampler_create_info.addressModeW = to_vulkan_sampler_mode(w);
 	sampler_create_info.mipLodBias = 0.0F;
 	sampler_create_info.maxAnisotropy = 1.0F;
 	sampler_create_info.minLod = 0.0F;

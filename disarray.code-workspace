@@ -241,6 +241,7 @@
       "Serialisers",
       "spdlog",
       "spirv",
+      "sponza",
       "SSBO",
       "stbi",
       "Stringlike",

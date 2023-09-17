@@ -92,7 +92,7 @@ enum class InputRate : std::uint8_t { Vertex, Instance };
 
 struct VertexBinding {
 	std::uint32_t binding { 0 };
-	std::uint32_t stride {};
+	std::uint32_t stride { 0 };
 	InputRate input_rate { InputRate::Vertex };
 };
 
@@ -147,6 +147,24 @@ struct PipelineProperties {
 			hash_combine(seed, *fragment_shader);
 		}
 		return seed;
+	}
+
+	void set_shader_with_type(ShaderType type, const Ref<Disarray::Shader>& shader)
+	{
+		switch (type) {
+		case ShaderType::Vertex: {
+			vertex_shader = shader;
+			break;
+		}
+		case ShaderType::Fragment: {
+			fragment_shader = shader;
+			break;
+		}
+		case ShaderType::Compute: {
+			compute_shader = shader;
+			break;
+		}
+		}
 	}
 };
 

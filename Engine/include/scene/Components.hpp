@@ -28,10 +28,10 @@
 
 namespace Disarray::Components {
 
-template <class T> static inline constexpr std::string_view component_name = "";
+template <class T> static inline constexpr std::string_view component_name;
 
 namespace {
-	const auto default_rotation = glm::angleAxis(0.f, glm::vec3 { 0.f, 0.f, 1.0f });
+	const auto default_rotation = glm::angleAxis(0.0F, glm::vec3 { 0.0F, 0.0F, 1.0F });
 	constexpr auto identity = glm::identity<glm::mat4>();
 	inline auto scale_matrix(const auto& vec) { return glm::scale(identity, vec); }
 	inline auto translate_matrix(const auto& vec) { return glm::translate(identity, vec); }
@@ -39,8 +39,8 @@ namespace {
 
 struct Transform {
 	glm::quat rotation { default_rotation };
-	glm::vec3 position { 0.0f };
-	glm::vec3 scale { 1.0f };
+	glm::vec3 position { 0.0F };
+	glm::vec3 scale { 1.0F };
 
 	Transform() = default;
 	Transform(const glm::vec3& euler, const glm::vec3& pos, const glm::vec3& scl)
@@ -81,12 +81,12 @@ template <> inline constexpr std::string_view component_name<Pipeline> = "Pipeli
 
 struct Texture {
 	Texture() = default;
-	explicit Texture(Ref<Disarray::Texture>, const glm::vec4& = glm::vec4 { 1.0f });
+	explicit Texture(Ref<Disarray::Texture>, const glm::vec4& = glm::vec4 { 1.0F });
 	explicit Texture(const glm::vec4&);
 	// Deserialisation constructor :)
 	explicit Texture(Device&, std::string_view path);
 	Ref<Disarray::Texture> texture { nullptr };
-	glm::vec4 colour { 1.0f };
+	glm::vec4 colour { 1.0F };
 };
 template <> inline constexpr std::string_view component_name<Texture> = "Texture";
 
@@ -96,7 +96,7 @@ struct LineGeometry {
 	{
 	}
 	LineGeometry() = default;
-	glm::vec3 to_position { 0.0f };
+	glm::vec3 to_position { 0.0F };
 	Disarray::Geometry geometry { Disarray::Geometry::Line };
 };
 template <> inline constexpr std::string_view component_name<LineGeometry> = "LineGeometry";
@@ -119,10 +119,17 @@ struct Tag {
 template <> inline constexpr std::string_view component_name<Tag> = "Tag";
 
 struct DirectionalLight {
-	glm::vec3 direction { 1, 1, 1 };
-	float intensity { .05f };
+	glm::vec4 position { 0 };
+	glm::vec4 direction { 1 };
+	glm::vec4 ambient { 1 };
+	glm::vec4 diffuse { 1 };
+	glm::vec4 specular { 1 };
 
-	[[nodiscard]] auto compute() const -> glm::vec4 { return { glm::normalize(direction), intensity }; }
+	DirectionalLight() = default;
+	DirectionalLight(const glm::vec4& ambience)
+		: ambient(ambience)
+	{
+	}
 };
 template <> inline constexpr std::string_view component_name<DirectionalLight> = "DirectionalLight";
 
@@ -190,6 +197,7 @@ struct Inheritance {
 	void add_child(Entity&);
 
 	[[nodiscard]] auto has_parent() const -> bool { return parent != invalid_identifier; }
+	[[nodiscard]] auto has_children() const -> bool { return !children.empty(); }
 };
 template <> inline constexpr std::string_view component_name<Inheritance> = "Inheritance";
 

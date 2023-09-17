@@ -20,7 +20,7 @@ public:
 	}
 	~Timer() = default;
 
-	template <Granularity Other> auto elapsed() -> T
+	template <Granularity Other = Granularity::Seconds> auto elapsed() -> T
 	{
 		const double current_nanos = nanos();
 		constexpr auto factor = convert_from_nano_seconds_to_factor<Other>;

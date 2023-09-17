@@ -16,6 +16,7 @@
 #include "core/Collections.hpp"
 #include "core/Log.hpp"
 #include "graphics/Renderer.hpp"
+#include "graphics/RendererProperties.hpp"
 #include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
 #include "panels/ScenePanel.hpp"
@@ -63,8 +64,7 @@ void ClientLayer::construct(App& app, Threading::ThreadPool& pool)
 	std::size_t index { 0 };
 	ensure(angles.size() == point_lights.size());
 	for (auto&& point_light : point_lights) {
-		constexpr std::uint32_t radius = 25;
-		point_light.add_script<Scripts::MoveInCircleScript>(radius, angles.at(index++));
+		point_light.add_script<Scripts::MoveInCircleScript>(static_cast<std::uint32_t>(point_light_radius), angles.at(index++));
 	}
 };
 
@@ -110,7 +110,7 @@ void ClientLayer::interface()
 		auto viewport_size = ImGui::GetContentRegionAvail();
 		// camera.set_viewport_size<FloatExtent>({ viewport_size.x, viewport_size.y });
 
-		auto& image = scene->get_image(0);
+		const auto& image = scene->get_image(0);
 		UI::image(image, { viewport_size.x, viewport_size.y });
 
 		if (const auto& entity = scene->get_selected_entity(); entity->is_valid()) {

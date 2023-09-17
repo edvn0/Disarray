@@ -29,6 +29,7 @@ Texture::Texture(const Disarray::Device& dev, Disarray::TextureProperties proper
 			.data = std::move(pixels),
 			.mips = props.generate_mips ? *props.mips : 1,
 			.locked_extent = props.locked_extent,
+			.sampler_modes = props.sampler_modes,
 			.should_initialise_directly = props.should_initialise_directly,
 			.debug_name = props.debug_name,
 		});

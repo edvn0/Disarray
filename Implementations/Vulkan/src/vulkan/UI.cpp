@@ -120,6 +120,8 @@ void begin(std::string_view name) { ImGui::Begin(name.data(), nullptr); }
 
 void end() { ImGui::End(); }
 
+void shift_cursor_y(float by) { ImGui::SetCursorPosY(ImGui::GetCursorPosY() + by); }
+
 auto begin_combo(std::string_view name, std::string_view data) -> bool { return ImGui::BeginCombo(name.data(), data.data()); }
 
 void end_combo() { ImGui::EndCombo(); }

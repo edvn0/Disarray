@@ -52,6 +52,14 @@ public:
 	}
 };
 
+class CouldNotCompileShaderException : public BaseException {
+public:
+	explicit CouldNotCompileShaderException(std::string_view msg)
+		: BaseException("CouldNotCompileShaderException", msg)
+	{
+	}
+};
+
 class CouldNotOpenStreamException : public BaseException {
 public:
 	explicit CouldNotOpenStreamException(std::string_view msg)

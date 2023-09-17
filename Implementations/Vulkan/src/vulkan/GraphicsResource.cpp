@@ -48,6 +48,14 @@ GraphicsResource::GraphicsResource(const Disarray::Device& dev, const Disarray::
 			BufferProperties {
 				.size = sizeof(PointLights),
 			});
+		current_frame_ubos[3] = make_scope<Vulkan::UniformBuffer>(device,
+			BufferProperties {
+				.size = sizeof(ShadowPassUBO),
+			});
+		current_frame_ubos[4] = make_scope<Vulkan::UniformBuffer>(device,
+			BufferProperties {
+				.size = sizeof(DirectionalLightUBO),
+			});
 		frame_index_ubo_map.try_emplace(i, std::move(current_frame_ubos));
 	}
 
@@ -56,22 +64,8 @@ GraphicsResource::GraphicsResource(const Disarray::Device& dev, const Disarray::
 
 void GraphicsResource::recreate(bool should_clean, const Extent& extent) { initialise_descriptors(should_clean); }
 
-void GraphicsResource::initialise_descriptors(bool should_clean)
+static auto create_set_zero_bindings()
 {
-	if (should_clean) {
-		cleanup_graphics_resource();
-	}
-
-	auto* vk_device = supply_cast<Vulkan::Device>(device);
-
-	TextureCacheCreationProperties texture_properties {
-		.key = "viking",
-		.debug_name = "viking",
-		.path = FS::texture("viking_room.png"),
-		.format = ImageFormat::SBGR,
-	};
-	const auto& viking_room = texture_cache.put(texture_properties);
-
 	auto default_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
 	default_binding.descriptorCount = 1;
 	default_binding.binding = 0;
@@ -90,12 +84,39 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 	point_light_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	point_light_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
 
-	auto image_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
-	image_binding.descriptorCount = 1;
-	image_binding.binding = 0;
-	image_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	image_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	auto shadow_pass_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
+	shadow_pass_binding.descriptorCount = 1;
+	shadow_pass_binding.binding = 3;
+	shadow_pass_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	shadow_pass_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
 
+	auto directional_light_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
+	directional_light_binding.descriptorCount = 1;
+	directional_light_binding.binding = 4;
+	directional_light_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	directional_light_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+
+	return std::array { default_binding, camera_binding, point_light_binding, shadow_pass_binding, directional_light_binding };
+}
+
+static auto create_set_one_bindings()
+{
+	auto image_binding_0 = vk_structures<VkDescriptorSetLayoutBinding> {}();
+	image_binding_0.descriptorCount = 1;
+	image_binding_0.binding = 0;
+	image_binding_0.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	image_binding_0.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	auto image_binding_1 = vk_structures<VkDescriptorSetLayoutBinding> {}();
+	image_binding_1.descriptorCount = 1;
+	image_binding_1.binding = 1;
+	image_binding_1.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	image_binding_1.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	return std::array { image_binding_0, image_binding_1 };
+}
+
+static auto create_set_two_bindings()
+{
 	auto image_array_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
 	image_array_binding.descriptorCount = max_allowed_texture_indices;
 	image_array_binding.binding = 0;
@@ -107,27 +128,47 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 	image_array_sampler_binding.binding = 1;
 	image_array_sampler_binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
 	image_array_sampler_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	return std::array { image_array_binding, image_array_sampler_binding };
+}
+
+void GraphicsResource::initialise_descriptors(bool should_clean)
+{
+	if (should_clean) {
+		cleanup_graphics_resource();
+	}
+
+	auto* vk_device = supply_cast<Vulkan::Device>(device);
+
+	TextureCacheCreationProperties texture_properties {
+		.key = "viking",
+		.debug_name = "viking",
+		.path = FS::texture("viking_room.png"),
+		.format = ImageFormat::SBGR,
+	};
+	const auto& viking_room = texture_cache.put(texture_properties);
+
+	auto set_zero_bindings = create_set_zero_bindings();
+	auto set_one_bindings = create_set_one_bindings();
+	auto set_two_bindings = create_set_two_bindings();
 
 	auto layout_create_info = vk_structures<VkDescriptorSetLayoutCreateInfo> {}();
-	std::array set_zero_bindings = { default_binding, camera_binding, point_light_binding };
 	layout_create_info.bindingCount = static_cast<std::uint32_t>(set_zero_bindings.size());
 	layout_create_info.pBindings = set_zero_bindings.data();
 
-	VkDescriptorSetLayout set_zero_layout = nullptr;
-	VkDescriptorSetLayout image_layout = nullptr;
-	VkDescriptorSetLayout image_array_layout = nullptr;
-	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &set_zero_layout));
+	VkDescriptorSetLayout set_zero_ubos_layout = nullptr;
+	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &set_zero_ubos_layout));
 
-	layout_create_info.bindingCount = 1;
-	layout_create_info.pBindings = &image_binding;
-	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &image_layout));
+	layout_create_info.bindingCount = static_cast<std::uint32_t>(set_one_bindings.size());
+	layout_create_info.pBindings = set_one_bindings.data();
+	VkDescriptorSetLayout set_one_images_layout = nullptr;
+	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &set_one_images_layout));
 
-	std::array set_two_bindings = { image_array_binding, image_array_sampler_binding };
 	layout_create_info.bindingCount = static_cast<std::uint32_t>(set_two_bindings.size());
 	layout_create_info.pBindings = set_two_bindings.data();
-	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &image_array_layout));
+	VkDescriptorSetLayout set_two_image_array_layout = nullptr;
+	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &set_two_image_array_layout));
 
-	layouts = { set_zero_layout, image_layout, image_array_layout };
+	layouts = { set_zero_ubos_layout, set_one_images_layout, set_two_image_array_layout };
 	static constexpr auto descriptor_pool_max_size = 1000;
 
 	const std::array<VkDescriptorPoolSize, 12> sizes = [](auto size) {
@@ -192,7 +233,17 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 		point_light_buffer.offset = 0;
 		point_light_buffer.range = sizeof(PointLights);
 
-		auto write_sets = vk_structures<VkWriteDescriptorSet, 4> {}.multiple();
+		VkDescriptorBufferInfo shadow_pass_buffer {};
+		shadow_pass_buffer.buffer = supply_cast<Vulkan::UniformBuffer>(*ubos[3]);
+		shadow_pass_buffer.offset = 0;
+		shadow_pass_buffer.range = sizeof(ShadowPassUBO);
+
+		VkDescriptorBufferInfo directional_light_buffer {};
+		directional_light_buffer.buffer = supply_cast<Vulkan::UniformBuffer>(*ubos[4]);
+		directional_light_buffer.offset = 0;
+		directional_light_buffer.range = sizeof(DirectionalLightUBO);
+
+		auto write_sets = vk_structures<VkWriteDescriptorSet, 6> {}.multiple();
 		write_sets[0].dstSet = frame_descriptor_sets.at(0);
 		write_sets[0].dstBinding = 0;
 		write_sets[0].dstArrayElement = 0;
@@ -214,13 +265,27 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 		write_sets[2].descriptorCount = 1;
 		write_sets[2].pBufferInfo = &point_light_buffer;
 
-		VkDescriptorImageInfo image_info = cast_to<Vulkan::Image>(viking_room->get_image()).get_descriptor_info();
-		write_sets[3].dstSet = frame_descriptor_sets.at(1);
-		write_sets[3].dstBinding = 0;
+		write_sets[3].dstSet = frame_descriptor_sets.at(0);
+		write_sets[3].dstBinding = 3;
 		write_sets[3].dstArrayElement = 0;
-		write_sets[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		write_sets[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		write_sets[3].descriptorCount = 1;
-		write_sets[3].pImageInfo = &image_info;
+		write_sets[3].pBufferInfo = &shadow_pass_buffer;
+
+		write_sets[4].dstSet = frame_descriptor_sets.at(0);
+		write_sets[4].dstBinding = 4;
+		write_sets[4].dstArrayElement = 0;
+		write_sets[4].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		write_sets[4].descriptorCount = 1;
+		write_sets[4].pBufferInfo = &directional_light_buffer;
+
+		VkDescriptorImageInfo image_info = cast_to<Vulkan::Image>(viking_room->get_image()).get_descriptor_info();
+		write_sets[5].dstSet = frame_descriptor_sets.at(1);
+		write_sets[5].dstBinding = 0;
+		write_sets[5].dstArrayElement = 0;
+		write_sets[5].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		write_sets[5].descriptorCount = 1;
+		write_sets[5].pImageInfo = &image_info;
 
 		vkUpdateDescriptorSets(vk_device, static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
 	}
@@ -228,7 +293,20 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 
 void GraphicsResource::expose_to_shaders(const Disarray::Image& image)
 {
-	// TODO!
+	auto write_sets = descriptor_write_sets_per_frame(1);
+	const auto& info = cast_to<Vulkan::Image>(image).get_descriptor_info();
+
+	static std::uint32_t binding = 1;
+	for (auto& write_set : write_sets) {
+		write_set.dstBinding = binding;
+		write_set.dstArrayElement = 0;
+		write_set.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		write_set.descriptorCount = 1;
+		write_set.pImageInfo = &info;
+	}
+
+	binding++;
+	vkUpdateDescriptorSets(supply_cast<Vulkan::Device>(device), static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
 }
 
 void GraphicsResource::expose_to_shaders(std::span<const Ref<Disarray::Texture>> span)
@@ -282,6 +360,8 @@ void GraphicsResource::update_ubo()
 	current_uniform.at(0)->set_data(&uniform, sizeof(UBO));
 	current_uniform.at(1)->set_data(&camera_ubo, sizeof(CameraUBO));
 	current_uniform.at(2)->set_data(&lights, sizeof(PointLights));
+	current_uniform.at(3)->set_data(&shadow_pass_ubo, sizeof(ShadowPassUBO));
+	current_uniform.at(4)->set_data(&directional_light_ubo, sizeof(DirectionalLightUBO));
 }
 
 void GraphicsResource::cleanup_graphics_resource()
@@ -293,5 +373,16 @@ void GraphicsResource::cleanup_graphics_resource()
 }
 
 GraphicsResource::~GraphicsResource() { cleanup_graphics_resource(); }
+
+auto GraphicsResource::descriptor_write_sets_per_frame(std::size_t descriptor_set) -> std::vector<VkWriteDescriptorSet>
+{
+	std::vector<VkWriteDescriptorSet> output {};
+	for (std::size_t i = 0; i < swapchain_image_count; i++) {
+		auto& write_set = output.emplace_back();
+		write_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		write_set.dstSet = descriptor_sets.at(i).at(descriptor_set);
+	}
+	return output;
+}
 
 } // namespace Disarray::Vulkan
