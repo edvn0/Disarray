@@ -25,10 +25,12 @@ void main() {
 	Uniform ubo = UBO.ubo;
 	PushConstant pc = PC.pc;
 
-	gl_Position = ubo.view_projection * pc.object_transform* vec4(pos, 1.0);
-	fragPos = pos;
+	vec4 temp_pos = vec4(pos, 1.0);
+
+	gl_Position = ubo.view_projection * pc.object_transform * temp_pos;
+	fragPos = vec3(pc.object_transform * temp_pos);
 	fragColor = colour;
 	uvs = uv;
-	outNormals = normals;
+	outNormals = normalize(normals);
 }
 

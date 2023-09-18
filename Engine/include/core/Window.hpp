@@ -2,7 +2,6 @@
 
 #include <utility>
 
-#include "core/Types.hpp"
 #include "graphics/Instance.hpp"
 #include "graphics/Surface.hpp"
 
@@ -21,25 +20,26 @@ class Window {
 public:
 	virtual ~Window() = default;
 
-	const WindowProperties& get_properties();
+	auto get_properties() -> const WindowProperties&;
 
-	virtual bool should_close() const = 0;
+	[[nodiscard]] virtual auto should_close() const -> bool = 0;
 	virtual void update() = 0;
-	virtual Surface& get_surface() = 0;
-	virtual Instance& get_instance() = 0;
+	virtual void handle_input(float time_step) = 0;
+	virtual auto get_surface() -> Surface& = 0;
+	virtual auto get_instance() -> Instance& = 0;
 
 	virtual void register_event_handler(App&) = 0;
 
-	virtual bool was_resized() const = 0;
+	[[nodiscard]] virtual auto was_resized() const -> bool = 0;
 	virtual void reset_resize_status() = 0;
 
 	virtual void wait_for_minimisation() = 0;
 
-	virtual void* native() = 0;
-	virtual void* native() const = 0;
+	virtual auto native() -> void* = 0;
+	[[nodiscard]] virtual auto native() const -> void* = 0;
 
-	virtual std::pair<int, int> get_framebuffer_size() = 0;
-	virtual std::pair<float, float> get_framebuffer_scale() = 0;
+	virtual auto get_framebuffer_size() -> std::pair<int, int> = 0;
+	virtual auto get_framebuffer_scale() -> std::pair<float, float> = 0;
 
 protected:
 	Window(const WindowProperties&);
@@ -48,7 +48,7 @@ private:
 	WindowProperties props;
 
 public:
-	static Scope<Disarray::Window> construct(const WindowProperties&);
+	static auto construct(const WindowProperties&) -> Scope<Disarray::Window>;
 };
 
 } // namespace Disarray

@@ -116,9 +116,9 @@ void Window::register_event_handler(Disarray::App& app)
 		data.callback(event);
 	});
 
-	glfwSetCursorPosCallback(window, [](GLFWwindow* win, double x, double y) {
+	glfwSetCursorPosCallback(window, [](GLFWwindow* win, double cursor_x, double cursor_y) {
 		auto& data = *static_cast<UserData*>(glfwGetWindowUserPointer(win));
-		MouseMovedEvent event((float)x, (float)y);
+		MouseMovedEvent event(static_cast<float>(cursor_x), static_cast<float>(cursor_y));
 		data.callback(event);
 	});
 
@@ -132,7 +132,7 @@ void Window::register_event_handler(Disarray::App& app)
 Window::Window(const Disarray::WindowProperties& properties)
 	: Disarray::Window(properties)
 {
-	if (const auto initialised = glfwInit(); !initialised) {
+	if (const auto initialised = glfwInit(); initialised == GLFW_FALSE) {
 		throw CouldNotInitialiseWindowingAPI("Could not initialise GLFW.");
 	}
 
@@ -179,8 +179,9 @@ Window::Window(const Disarray::WindowProperties& properties)
 		glfwSetWindowIcon(window, 1, images.data());
 	}
 
-	if (window == nullptr)
+	if (window == nullptr) {
 		throw WindowingAPIException("Window was nullptr");
+	}
 
 	instance = make_scope<Vulkan::Instance>();
 	surface = make_scope<Vulkan::Surface>(*instance, window);
@@ -195,14 +196,16 @@ Window::~Window()
 	glfwTerminate();
 }
 
-void Window::update() { glfwPollEvents(); }
+void Window::update() { }
 
-bool Window::should_close() const { return glfwWindowShouldClose(window); }
+void Window::handle_input(float) { glfwPollEvents(); }
 
-std::pair<int, int> Window::get_framebuffer_size()
+auto Window::should_close() const -> bool { return glfwWindowShouldClose(window) != GLFW_FALSE; }
+
+auto Window::get_framebuffer_size() -> std::pair<int, int>
 {
-	int width;
-	int height;
+	int width = 0;
+	int height = 0;
 	glfwGetFramebufferSize(window, &width, &height);
 	return { width, height };
 }
@@ -213,7 +216,8 @@ bool Window::was_resized() const { return user_data.was_resized; }
 
 void Window::wait_for_minimisation()
 {
-	int width = 0, height = 0;
+	int width = 0;
+	int height = 0;
 	glfwGetFramebufferSize(window, &width, &height);
 	while (width == 0 || height == 0) {
 		glfwGetFramebufferSize(window, &width, &height);
@@ -223,8 +227,8 @@ void Window::wait_for_minimisation()
 
 std::pair<float, float> Window::get_framebuffer_scale()
 {
-	float width;
-	float height;
+	float width = 0.0F;
+	float height = 0.0F;
 	glfwGetWindowContentScale(window, &width, &height);
 	return { width, height };
 }

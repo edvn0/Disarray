@@ -19,6 +19,7 @@
 #include "core/Ensure.hpp"
 #include "core/Formatters.hpp"
 #include "core/Input.hpp"
+#include "core/Random.hpp"
 #include "core/ThreadPool.hpp"
 #include "core/events/Event.hpp"
 #include "core/events/KeyEvent.hpp"
@@ -41,13 +42,13 @@
 #include "scene/Entity.hpp"
 #include "scene/Scripts.hpp"
 #include "scene/Serialiser.hpp"
+#include "ui/UI.hpp"
 
-template <std::size_t Count> static consteval auto generate_colours() -> std::array<glm::vec4, Count>
+template <std::size_t Count> static auto generate_colours() -> std::array<glm::vec4, Count>
 {
 	std::array<glm::vec4, Count> colours {};
-	constexpr auto division = 1.F / static_cast<float>(Count);
 	for (std::size_t i = 0; i < Count; i++) {
-		colours.at(i) = glm::vec4 { division * i, division * i, 0.3, 1 };
+		colours.at(i) = Disarray::Random::colour();
 	}
 	return colours;
 }
@@ -203,11 +204,15 @@ void Scene::begin_frame(const Camera& camera)
 
 	std::size_t light_index { 0 };
 	auto& lights = light_ubos.lights;
-	for (auto point_light_view = registry.view<const Components::PointLight, const Components::Transform, const Components::Texture>();
+	for (auto point_light_view = registry.view<const Components::PointLight, const Components::Transform, Components::Texture>();
 		 auto&& [entity, point_light, pos, texture] : point_light_view.each()) {
 		auto& light = lights.at(light_index++);
 		light.position = glm::vec4 { pos.position, 0.F };
-		light.ambient = texture.colour;
+		light.ambient = point_light.ambient;
+		light.diffuse = point_light.diffuse;
+		light.specular = point_light.specular;
+		light.factors = point_light.factors;
+		texture.colour = light.ambient;
 	}
 	push_constant.max_point_lights = static_cast<std::uint32_t>(light_index);
 
@@ -648,7 +653,7 @@ void Scene::create_entities()
 		static constexpr auto max_radius = 8U;
 		static constexpr auto point_lights = 30U;
 
-		constexpr auto colours = generate_colours<point_lights>();
+		auto colours = generate_colours<point_lights>();
 		constexpr auto angles = generate_angles<point_lights>();
 
 		const auto sphere = Mesh::construct(device, { .path = "Assets/Models/sphere.obj" });
@@ -668,7 +673,11 @@ void Scene::create_entities()
 		auto pl_system = create("PointLightSystem");
 		for (std::uint32_t i = 0; i < colours.size(); i++) {
 			auto point_light = create("PointLight-{}", i);
-			point_light.add_component<Components::PointLight>();
+			auto& light_component = point_light.add_component<Components::PointLight>();
+			light_component.ambient = colours.at(i);
+			light_component.diffuse = colours.at(i);
+			light_component.specular = colours.at(i);
+
 			auto& transform = point_light.get_components<Components::Transform>();
 			const auto divided = angles.at(i);
 			transform.position = { glm::sin(divided), 0, glm::cos(divided) };

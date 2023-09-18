@@ -35,23 +35,24 @@ public:
 	Window(const Disarray::WindowProperties&);
 	~Window() override;
 
-	bool should_close() const override;
+	[[nodiscard]] auto should_close() const -> bool override;
 	void update() override;
-	Disarray::Surface& get_surface() override { return *surface; };
-	Disarray::Instance& get_instance() override { return *instance; };
+	void handle_input(float time_step) override;
+	auto get_surface() -> Disarray::Surface& override { return *surface; };
+	auto get_instance() -> Disarray::Instance& override { return *instance; };
 
 	void register_event_handler(App&) override;
 
 	void reset_resize_status() override;
-	bool was_resized() const override;
+	[[nodiscard]] auto was_resized() const -> bool override;
 
 	void wait_for_minimisation() override;
 
-	void* native() override { return window; }
-	void* native() const override { return window; }
+	auto native() -> void* override { return window; }
+	[[nodiscard]] auto native() const -> void* override { return window; }
 
-	std::pair<int, int> get_framebuffer_size() override;
-	std::pair<float, float> get_framebuffer_scale() override;
+	auto get_framebuffer_size() -> std::pair<int, int> override;
+	auto get_framebuffer_scale() -> std::pair<float, float> override;
 
 private:
 	UserData user_data;

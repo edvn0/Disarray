@@ -38,45 +38,8 @@ struct DirLight {
 	vec3 specular;
 };
 
-vec3 calc_dir_light(DirLight light, vec3 normal, vec3 viewDir)
-{
-	vec3 lightDir = normalize(-light.direction);
-	// diffuse shading
-	float diff = max(dot(normal, lightDir), 0.0);
-	// specular shading
-	vec3 reflectDir = reflect(-lightDir, normal);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
-	// combine results
-	vec3 ambient  = light.ambient;
-	vec3 diffuse  = light.diffuse  * diff;
-	vec3 specular = light.specular * spec;
-	return (ambient + diffuse + specular);
-}
-
-vec3 calc_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
-	vec3 lightDir = normalize(vec3(light.position) - fragPos);
-	// diffuse shading
-	float diff = max(dot(normal, vec3(lightDir)), 0.0);
-	// specular shading
-	vec3 reflectDir = reflect(-lightDir, normal);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
-	// attenuation
-	float distance    = length(vec3(light.position) - fragPos);
-
-	float constant = light.factors.x;
-	float lin = light.factors.y;
-	float quadratic = light.factors.z;
-	// float attenuation = 1.0 / (constant + lin * distance + quadratic * (distance * distance));
-	float attenuation = 1.0 / (distance * 0.1);
-	// combine results
-	vec3 ambient  = vec3(light.ambient);
-	vec3 diffuse  = vec3(light.diffuse)  * diff;
-	vec3 specular = vec3(light.specular) * spec;
-	ambient  *= attenuation;
-	diffuse  *= attenuation;
-	specular *= attenuation;
-	return (ambient + diffuse + specular);
-}
+vec3 calc_dir_light(DirLight light, vec3 normal, vec3 viewDir, uint spec_pow);
+vec3 calc_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
 
 void main() {
@@ -89,16 +52,55 @@ void main() {
 	DirLight light;
 	light.direction = vec3(ubo.sun_direction_and_intensity);
 	light.ambient = vec3(ubo.sun_colour);
-	light.diffuse = vec3(0.1, 0.9, 0.9);
-	light.specular = vec3(0.1, 0.9, 0.9);
-	out_vec += calc_dir_light(light, outNormals, viewDir);
+	light.diffuse = vec3(0.9);
+	light.specular = vec3(0.9);
+	out_vec += vec3(pc.colour) * calc_dir_light(light, outNormals, viewDir, 32);
 	for (uint i = 0; i < pc.max_point_lights; i++) {
 		PointLight light = PLBO.lights[i];
 		out_vec += calc_point_light(light, outNormals, fragPosition, viewDir);
 	}
 
-	//colour = pc.colour * vec4(out_vec, 1.0f);
-  	colour = pc.colour * vec4(out_vec ,1.0f) * vec4(uvs, 1.0f, 1.0f);
+	colour = pc.colour * vec4(out_vec, 1.0f);
+  	// colour = vec4(out_vec, 1.0f);
 
 	id = pc.current_identifier;
+}
+
+vec3 calc_dir_light(DirLight light, vec3 normal, vec3 viewDir, uint spec_pow)
+{
+	vec3 lightDir = normalize(-light.direction);
+	// diffuse shading
+	float diff = max(dot(normal, lightDir), 0.0);
+	// specular shading
+	vec3 reflectDir = reflect(lightDir, normal);
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), spec_pow);
+	// combine results
+	vec3 ambient  = light.ambient;
+	vec3 diffuse  = light.diffuse  * diff;
+	vec3 specular = light.specular * spec;
+	return (ambient + diffuse + specular);
+}
+
+vec3 calc_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
+	vec3 light_to_frag_vector = vec3(light.position) - fragPos;
+	vec3 lightDir = normalize(light_to_frag_vector);
+	// diffuse shading
+	float diff = max(dot(normal, vec3(lightDir)), 0.0);
+	// specular shading
+	vec3 reflectDir = reflect(-lightDir, normal);
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+	// attenuation
+	float distance    = length(light_to_frag_vector);
+
+	float factors = 0.1 + dot(vec3(light.factors), vec3(1, distance, distance * distance));
+	float attenuation = 1 / factors;
+
+	// combine results
+	vec4 ambient  = light.ambient;
+	vec4 diffuse  = light.diffuse  * diff;
+	vec4 specular = light.specular * spec;
+	ambient  *= attenuation;
+	diffuse  *= attenuation;
+	specular *= attenuation;
+	return vec3(ambient + diffuse + specular);
 }

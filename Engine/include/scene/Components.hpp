@@ -17,6 +17,7 @@
 #include "core/Log.hpp"
 #include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
+#include "glm/fwd.hpp"
 #include "graphics/Material.hpp"
 #include "graphics/Mesh.hpp"
 #include "graphics/Pipeline.hpp"
@@ -126,8 +127,10 @@ struct DirectionalLight {
 template <> inline constexpr std::string_view component_name<DirectionalLight> = "DirectionalLight";
 
 struct PointLight {
-	glm::vec3 direction { 0.f };
-	float intensity { .01f };
+	glm::vec4 diffuse { 0.F };
+	glm::vec4 specular { 0.F };
+	glm::vec4 ambient { 0.F };
+	glm::vec4 factors { 1, 1, 0, 0 };
 };
 template <> inline constexpr std::string_view component_name<PointLight> = "PointLight";
 

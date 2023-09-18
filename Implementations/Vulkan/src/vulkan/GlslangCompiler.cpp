@@ -51,6 +51,7 @@ auto ShaderCompiler::Deleter::operator()(Detail::CompilerIntrinsics* ptr) -> voi
 
 auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, ShaderType type) -> std::vector<std::uint32_t>
 {
+	Log::info("ShaderCompiler", "Compiling {}", path_to_shader);
 	ensure(was_initialised(), "Compiler was not initialised");
 
 	const TBuiltInResource* resources = GetDefaultResources();
@@ -98,7 +99,7 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	glslang::TProgram program;
 	program.addShader(shader.get());
 	if (!program.link(EShMsgDefault)) {
-		Log::error("ShaderCompiler", "Could not link shader: {}, because {}", path_to_shader.string(), shader->getInfoLog());
+		Log::error("ShaderCompiler", "Could not link shader: {}, because {}", path_to_shader.string(), program.getInfoLog());
 		return {};
 	}
 

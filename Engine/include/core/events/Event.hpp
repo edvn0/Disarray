@@ -1,11 +1,13 @@
 #pragma once
 
+#include <cstdint>
+#include <functional>
 #include <string>
 #include <string_view>
 
 namespace Disarray {
 
-enum class EventType {
+enum class EventType : std::uint8_t {
 	None = 0,
 	WindowClose,
 	WindowMinimize,
@@ -32,7 +34,7 @@ enum class EventType {
 	SelectionChanged
 };
 
-enum EventCategory {
+enum EventCategory : std::uint8_t {
 	None = 0,
 	EventCategoryApplication = (1 << 0),
 	EventCategoryInput = (1 << 1),
@@ -43,11 +45,21 @@ enum EventCategory {
 	EventCategoryEditor = (1 << 6)
 };
 
+constexpr auto operator&(EventCategory left, EventCategory right) -> EventCategory
+{
+	return static_cast<EventCategory>(static_cast<std::uint8_t>(left) & static_cast<std::uint8_t>(right));
+}
+
+constexpr auto operator|(EventCategory left, EventCategory right) -> EventCategory
+{
+	return static_cast<EventCategory>(static_cast<std::uint8_t>(left) | static_cast<std::uint8_t>(right));
+}
+
 #define EVENT_STATIC_CLASS_TYPE(type)                                                                                                                \
 public:                                                                                                                                              \
-	static EventType get_static_type() { return EventType::type; }                                                                                   \
-	virtual EventType get_event_type() const final { return get_static_type(); }                                                                     \
-	virtual std::string_view get_name() const final { return #type; }
+	static auto get_static_type() -> EventType { return EventType::type; }                                                                           \
+	[[nodiscard]] virtual auto get_event_type() const -> EventType final { return get_static_type(); }                                               \
+	[[nodiscard]] virtual auto get_name() const -> std::string_view final { return #type; }
 
 #define MAKE_EVENT(type, enum_type)                                                                                                                  \
 public:                                                                                                                                              \
@@ -55,19 +67,19 @@ public:                                                                         
 	EVENT_STATIC_CLASS_TYPE(enum_type)
 
 #define EVENT_CLASS_CATEGORY(category)                                                                                                               \
-	virtual int get_category_flags() const final { return category; }
+	virtual auto get_category_flags() const -> EventCategory final { return category; }
 
 class Event {
 public:
 	bool handled = false;
 
 	virtual ~Event() = default;
-	virtual EventType get_event_type() const = 0;
-	virtual std::string_view get_name() const = 0;
-	virtual int get_category_flags() const = 0;
-	virtual std::string to_string() const { return std::string { get_name() }; }
+	[[nodiscard]] virtual auto get_event_type() const -> EventType = 0;
+	[[nodiscard]] virtual auto get_name() const -> std::string_view = 0;
+	[[nodiscard]] virtual auto get_category_flags() const -> EventCategory = 0;
+	[[nodiscard]] virtual auto to_string() const -> std::string { return std::string { get_name() }; }
 
-	inline bool is_in_category(EventCategory category) const { return get_category_flags() & category; }
+	[[nodiscard]] auto is_in_category(EventCategory category) const -> bool { return get_category_flags() & category; }
 };
 
 template <typename T>
@@ -87,7 +99,7 @@ public:
 	{
 	}
 
-	template <HasHandledAndGetStaticType T> bool dispatch(EventCallback<T> callback)
+	template <HasHandledAndGetStaticType T> auto dispatch(EventCallback<T> callback) -> bool
 	{
 		if (event.get_event_type() == T::get_static_type() && !event.handled) {
 			auto& cast = polymorphic_cast<T>(event);
@@ -97,11 +109,11 @@ public:
 		return false;
 	}
 
-	template <HasHandledAndGetStaticType T, class Func> bool dispatch(Func&& callback)
+	template <HasHandledAndGetStaticType T, class Func> auto dispatch(Func&& callback) -> bool
 	{
 		if (event.get_event_type() == T::get_static_type() && !event.handled) {
 			auto& cast = polymorphic_cast<T>(event);
-			callback(cast);
+			std::forward<Func>(callback)(cast);
 			event.handled = false;
 			return true;
 		}
@@ -112,5 +124,4 @@ private:
 	Event& event;
 };
 
-inline std::ostream& operator<<(std::ostream& os, const Event& e) { return os << e.to_string(); }
 } // namespace Disarray

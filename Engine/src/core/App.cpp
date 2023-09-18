@@ -80,6 +80,7 @@ void App::run()
 
 		const auto needs_recreation = swapchain->needs_recreation();
 		float time_step = Clock::ms() - current_time;
+		window->handle_input(time_step);
 
 		for (auto& layer : layers) {
 			if (needs_recreation) {

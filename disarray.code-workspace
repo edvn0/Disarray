@@ -3,6 +3,10 @@
     {
       "path": ".",
       "name": "Disarray"
+    },
+    {
+      "path": "App/Assets",
+      "name": "Assets"
     }
   ],
   "extensions": {
@@ -221,6 +225,7 @@
       "framebuffer",
       "frametime",
       "Glfw",
+      "Glslang",
       "imageview",
       "Includer",
       "MILLIS",

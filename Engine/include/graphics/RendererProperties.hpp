@@ -28,7 +28,7 @@ struct GeometryProperties {
 	std::optional<std::uint32_t> identifier { std::nullopt };
 	std::optional<float> radius { std::nullopt };
 
-	template <Geometry T> bool valid()
+	template <Geometry T> auto valid() -> bool
 	{
 		if constexpr (T == Geometry::Circle) {
 			return radius.has_value();
@@ -39,7 +39,7 @@ struct GeometryProperties {
 		return false;
 	}
 
-	auto to_transform() const
+	[[nodiscard]] auto to_transform() const
 	{
 		return glm::translate(glm::mat4 { 1.0f }, position) * glm::scale(glm::mat4 { 1.0f }, scale) * glm::mat4_cast(rotation);
 	}
