@@ -33,7 +33,7 @@ auto ModelLoader::import_model(const std::filesystem::path& path) -> void
 	mesh_data = meshes;
 }
 
-void ModelLoader::construct_textures(const Disarray::Device& device)
+auto ModelLoader::construct_textures(const Disarray::Device& device) -> std::vector<Ref<Disarray::Texture>>
 {
 	TextureCache cache { device, mesh_path.parent_path() };
 	Timer<float> texture_timer;
@@ -49,6 +49,7 @@ void ModelLoader::construct_textures(const Disarray::Device& device)
 		});
 	}
 	Log::info("ModelLoader", "Loading textures took {}ms", texture_timer.elapsed<Granularity::Millis>());
+	return cache.flatten();
 }
 
 } // namespace Disarray

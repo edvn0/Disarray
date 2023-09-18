@@ -40,8 +40,7 @@ void Mesh::load_and_initialise_model()
 {
 	try {
 		ModelLoader loader { make_scope<AssimpModelLoader>(props.initial_rotation), props.path };
-		loader.construct_textures(device);
-
+		mesh_textures = loader.construct_textures(device);
 		for (const auto& mesh_data = loader.get_mesh_data(); const auto& [key, submesh] : mesh_data) {
 			auto vertex_buffer = VertexBuffer::construct_scoped(device,
 				{
@@ -71,6 +70,7 @@ auto Mesh::get_vertices() const -> Disarray::VertexBuffer& { return *submeshes.a
 
 void Mesh::force_recreation() { load_and_initialise_model(); }
 
+auto Mesh::get_textures() const -> const RefVector<Disarray::Texture>& { return mesh_textures; }
 auto Mesh::get_submeshes() const -> const Collections::ScopedStringMap<Disarray::MeshSubstructure>& { return submeshes; }
 
 auto Mesh::has_children() const -> bool { return submeshes.size() > 1ULL; }

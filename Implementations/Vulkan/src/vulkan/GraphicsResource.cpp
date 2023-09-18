@@ -96,7 +96,7 @@ void GraphicsResource::initialise_descriptors()
 	image_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	auto image_array_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
-	image_array_binding.descriptorCount = 64;
+	image_array_binding.descriptorCount = 30;
 	image_array_binding.binding = 0;
 	image_array_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	image_array_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;

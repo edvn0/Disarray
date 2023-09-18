@@ -552,7 +552,11 @@ void Scene::create_entities()
 				.initial_rotation = rotation,
 			});
 		auto& mesh = v_mesh.add_component<Components::Mesh>(viking);
-		mesh.mesh.write_textures(*scene_renderer);
+		const auto& textures = mesh.mesh->get_textures();
+		(void)textures;
+
+		Log::info("Scene", "Textures: {}", textures.size());
+
 		v_mesh.get_components<Components::Transform>().scale = glm::vec3 { 0.1F };
 		auto sponza_pipeline = Pipeline::construct(device,
 			{

@@ -35,7 +35,8 @@ public:
 	virtual auto get_vertices() const -> VertexBuffer& = 0;
 	virtual auto get_indices() const -> IndexBuffer& = 0;
 
-	virtual auto get_submeshes() const -> const Collections::ScopedStringMap<Disarray::MeshSubstructure>& = 0;
+	[[nodiscard]] virtual auto get_submeshes() const -> const Collections::ScopedStringMap<Disarray::MeshSubstructure>& = 0;
+	[[nodiscard]] virtual auto get_textures() const -> const RefVector<Disarray::Texture>& = 0;
 	virtual auto has_children() const -> bool = 0;
 
 	static auto construct_deferred(const Device&, MeshProperties) -> std::future<Ref<Mesh>>;

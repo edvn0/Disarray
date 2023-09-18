@@ -50,8 +50,19 @@ public:
 	auto create_key(const Props& props) -> Key
 	{
 		auto key = Child::create_key(props);
-		ensure(!storage.contains(key), fmt::format("Storage already contains key: {}", key));
 		return key;
+	}
+
+	[[nodiscard]] auto flatten() -> std::vector<Resource>
+	{
+		std::vector<Resource> flat {};
+		flat.reserve(storage.size());
+
+		for (const auto& [key, value] : storage) {
+			flat.push_back(value);
+		}
+
+		return flat;
 	}
 
 	auto get_device() const -> const auto& { return device; }
