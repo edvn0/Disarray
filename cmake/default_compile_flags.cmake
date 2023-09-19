@@ -1,55 +1,58 @@
 function(default_compile_flags)
-    if (DISARRAY_COMPILER MATCHES "Clang")
+    if(DISARRAY_COMPILER MATCHES "Clang")
         target_compile_options(
-                ${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness
-                -Wno-unused-variable -Wno-unknown-attributes -Wno-deprecated-declarations)
+            ${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness
+            -Wno-unused-variable -Wno-unknown-attributes -Wno-deprecated-declarations)
 
-        if (DISARRAY_OS STREQUAL "Linux")
+        if(DISARRAY_OS STREQUAL "Linux")
             find_package(TBB REQUIRED)
             target_link_libraries(${PROJECT_NAME} PRIVATE tbb)
             target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_LINUX)
-        endif ()
+        endif()
 
-        if (DISARRAY_OS STREQUAL "Windows")
+        if(DISARRAY_OS STREQUAL "Windows")
             target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_WINDOWS)
-        endif ()
+        endif()
 
-        if (DISARRAY_COMPILER STREQUAL "AppleClang")
+        if(DISARRAY_COMPILER STREQUAL "AppleClang")
             target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_MACOS)
-        endif ()
-    elseif (DISARRAY_COMPILER STREQUAL "GNU")
+        endif()
+    elseif(DISARRAY_COMPILER STREQUAL "GNU")
         find_package(TBB REQUIRED)
 
         target_compile_options(
-                ${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness
-                -Wno-unused-variable -Wno-unknown-attributes -Wno-deprecated-declarations)
+            ${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness
+            -Wno-unused-variable -Wno-unknown-attributes -Wno-deprecated-declarations)
         target_link_libraries(${PROJECT_NAME} PRIVATE tbb)
         target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_LINUX)
-    elseif (DISARRAY_COMPILER STREQUAL "MSVC")
+    elseif(DISARRAY_COMPILER STREQUAL "MSVC")
         target_compile_options(
-                ${PROJECT_NAME}
-                PRIVATE /MP
-                /W4
-                /WX
-                /wd4244
-                /wd4100
-                /wd4189
-                /wd4127
-                /wd4324
-                /wd4201
-                /wd4702)
+            ${PROJECT_NAME}
+            PRIVATE /MP
+            /W4
+            /WX
+            /wd4244
+            /wd4100
+            /wd4189
+            /wd4127
+            /wd4324
+            /wd4201
+            /wd4702)
         target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_WINDOWS)
-    endif ()
+    endif()
 
-    if (DISARRAY_LOG_ALLOCATIONS)
+    if(DISARRAY_LOG_ALLOCATIONS)
         target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG_ALLOCATIONS)
-    endif ()
+    endif()
 
-    if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")
-        target_compile_definitions(${PROJECT_NAME} PRIVATE IS_DEBUG)
-    endif ()
+    if()
+    endif()
 
-    if (DISARRAY_USE_VULKAN)
+    if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+        target_compile_definitions(${PROJECT_NAME} PRIVATE IS_RELEASE)
+    endif()
+
+    if(DISARRAY_USE_VULKAN)
         target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_VULKAN)
-    endif ()
+    endif()
 endfunction()

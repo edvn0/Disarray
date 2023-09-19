@@ -27,6 +27,7 @@ struct MeshProperties {
 struct MeshSubstructure {
 	Scope<Disarray::VertexBuffer> vertices {};
 	Scope<Disarray::IndexBuffer> indices {};
+	std::unordered_set<std::uint32_t> texture_indices {};
 };
 
 class Mesh : public ReferenceCountable {

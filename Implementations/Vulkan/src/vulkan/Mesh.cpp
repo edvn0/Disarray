@@ -38,6 +38,17 @@ Mesh::Mesh(const Disarray::Device& dev, Disarray::MeshProperties properties)
 
 void Mesh::load_and_initialise_model()
 {
+	static constexpr auto find_index = [](const std::vector<Ref<Disarray::Texture>>& haystack, const Ref<Disarray::Texture>& needle) {
+		std::uint32_t index = 0;
+		for (const auto& hay : haystack) {
+			if (hay == needle) {
+				return std::optional { index };
+			}
+			index++;
+		}
+		return std::optional<std::uint32_t> { std::nullopt };
+	};
+
 	try {
 		ModelLoader loader { make_scope<AssimpModelLoader>(props.initial_rotation), props.path };
 		mesh_textures = loader.construct_textures(device);
@@ -54,7 +65,15 @@ void Mesh::load_and_initialise_model()
 					.size = submesh.size<std::uint32_t>(),
 					.count = submesh.count<std::uint32_t>(),
 				});
-			auto substructure = make_scope<MeshSubstructure>(std::move(vertex_buffer), std::move(index_buffer));
+
+			std::unordered_set<std::uint32_t> image_indices {};
+			for (const auto& tex : submesh.textures) {
+				if (const auto found = find_index(mesh_textures, tex); found.has_value()) {
+					image_indices.insert(*found);
+				}
+			}
+
+			auto substructure = make_scope<MeshSubstructure>(std::move(vertex_buffer), std::move(index_buffer), std::move(image_indices));
 			submeshes.try_emplace(key, std::move(substructure));
 		}
 
@@ -71,6 +90,7 @@ auto Mesh::get_vertices() const -> Disarray::VertexBuffer& { return *submeshes.a
 void Mesh::force_recreation() { load_and_initialise_model(); }
 
 auto Mesh::get_textures() const -> const RefVector<Disarray::Texture>& { return mesh_textures; }
+
 auto Mesh::get_submeshes() const -> const Collections::ScopedStringMap<Disarray::MeshSubstructure>& { return submeshes; }
 
 auto Mesh::has_children() const -> bool { return submeshes.size() > 1ULL; }

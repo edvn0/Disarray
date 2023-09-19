@@ -32,11 +32,11 @@ Device::Device(Disarray::Window& window)
 
 	VkPhysicalDeviceFeatures features {};
 #ifdef DISARRAY_WINDOWS
-	features.wideLines = 1u;
-	features.logicOp = 1u;
-	features.pipelineStatisticsQuery = 1u;
-	features.fillModeNonSolid = 1u;
-	features.independentBlend = 1u;
+	features.wideLines = VK_TRUE;
+	features.logicOp = VK_TRUE;
+	features.pipelineStatisticsQuery = VK_TRUE;
+	features.fillModeNonSolid = VK_TRUE;
+	features.independentBlend = VK_TRUE;
 #endif
 
 	VkDeviceCreateInfo device_create_info {};
@@ -44,8 +44,9 @@ Device::Device(Disarray::Window& window)
 	device_create_info.queueCreateInfoCount = static_cast<std::uint32_t>(queue_create_infos.size());
 	device_create_info.pQueueCreateInfos = queue_create_infos.data();
 	device_create_info.pEnabledFeatures = &features;
-	device_create_info.enabledExtensionCount = static_cast<std::uint32_t>(Config::device_extensions.size());
-	device_create_info.ppEnabledExtensionNames = Config::device_extensions.data();
+	std::array extensions = { Config::device_extensions[0].data(), Config::device_extensions[1].data() };
+	device_create_info.enabledExtensionCount = static_cast<std::uint32_t>(extensions.size());
+	device_create_info.ppEnabledExtensionNames = extensions.data();
 
 	const auto& vk_device = cast_to<Vulkan::PhysicalDevice>(*physical_device);
 	verify(vkCreateDevice(vk_device.supply(), &device_create_info, nullptr, &device));

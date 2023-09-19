@@ -57,15 +57,14 @@ void ClientLayer::construct(App& app, Threading::ThreadPool& pool)
 	scene_panel->construct(app, pool);
 	execution_stats_panel->construct(app, pool);
 
-	constexpr auto angles = generate_angles_client<30>();
+	constexpr auto angles = generate_angles_client<count_point_lights>();
 
 	auto point_lights = scene->entities_with<Components::PointLight>();
 	std::size_t index { 0 };
 	ensure(angles.size() == point_lights.size());
 	for (auto&& point_light : point_lights) {
 		constexpr std::uint32_t radius = 25;
-		constexpr std::uint32_t count = 30;
-		point_light.add_script<Scripts::MoveInCircleScript>(radius, count, angles.at(index++));
+		point_light.add_script<Scripts::MoveInCircleScript>(radius, angles.at(index++));
 	}
 };
 

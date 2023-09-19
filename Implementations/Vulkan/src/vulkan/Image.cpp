@@ -239,7 +239,7 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor* c
 		buffer.allocate(size);
 	}
 
-	Log::info("Image", "Creating image of size {}", size);
+	Log::info("Image", "Creating image of extent: {} and size {}", props.extent, size);
 
 	VkBuffer staging {};
 	VkBufferCreateInfo staging_create_info {};

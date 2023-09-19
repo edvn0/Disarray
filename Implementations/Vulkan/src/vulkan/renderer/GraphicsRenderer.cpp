@@ -135,7 +135,6 @@ void Renderer::draw_submesh(Disarray::CommandExecutor& executor, const Disarray:
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
 	bind_pipeline(executor, mesh_pipeline);
 
-	(void)texture;
 	auto& pc = get_graphics_resource().get_editable_push_constant();
 
 	pc.object_transform = transform;
@@ -167,9 +166,23 @@ void Renderer::draw_submesh(Disarray::CommandExecutor& executor, const Disarray:
 void Renderer::draw_submeshes(Disarray::CommandExecutor& executor, const Disarray::Mesh& parent_mesh, const Disarray::Pipeline& mesh_pipeline,
 	const Disarray::Texture& texture, const glm::vec4& colour, const glm::mat4& transform, const std::uint32_t identifier)
 {
+	// draw_mesh(executor, parent_mesh, mesh_pipeline, texture, transform, identifier);
+
 	for (const auto& sub : parent_mesh.get_submeshes()) {
 		auto&& [key, mesh] = sub;
+		auto [_, __, ___, indices] = get_graphics_resource().get_editable_ubos();
+
+		std::size_t index = 0;
+		for (const auto& texture_index : mesh->texture_indices) {
+			indices.image_indices.at(index++) = glm::uvec4 { texture_index, texture_index, texture_index, texture_index };
+		}
+		indices.bound_textures = static_cast<std::uint32_t>(index);
+		get_graphics_resource().update_ubo();
+
 		draw_submesh(executor, *mesh->vertices, *mesh->indices, mesh_pipeline, texture, colour, transform, identifier);
+
+		indices.reset();
+		get_graphics_resource().update_ubo();
 	}
 }
 
@@ -181,7 +194,7 @@ void Renderer::end_pass(Disarray::CommandExecutor& executor)
 
 void Renderer::begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& fb, bool explicit_clear)
 {
-	auto command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 
 	VkRenderPassBeginInfo render_pass_begin_info {};
 	render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

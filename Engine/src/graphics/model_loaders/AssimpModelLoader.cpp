@@ -37,6 +37,7 @@ auto load_texture(aiMaterial* mat, const std::filesystem::path& base_directory, 
 		TextureProperties& props = properties.emplace_back();
 		props.debug_name = str.C_Str();
 		props.path = as_path;
+		props.mips = 1;
 	}
 	return properties;
 }
@@ -60,7 +61,15 @@ auto process_mesh(aiMesh* mesh, const std::filesystem::path& base_directory, con
 		ModelVertex model_vertex {};
 		model_vertex.pos = { mesh_vertices[i].x, mesh_vertices[i].y, mesh_vertices[i].z };
 		model_vertex.uvs = { mesh_uvs[i].x, mesh_uvs[i].y };
-		model_vertex.normals = has_normals ? glm::vec3 { mesh_normals[i].x, mesh_normals[i].y, mesh_normals[i].z } : glm::vec3 {};
+
+		model_vertex.normals = glm::vec3 {};
+		if (has_normals) {
+			model_vertex.normals = glm::vec3 {
+				mesh_normals[i].x,
+				mesh_normals[i].y,
+				mesh_normals[i].z,
+			};
+		}
 
 		model_vertex.color = glm::vec4 {};
 		if (has_colours) {
@@ -136,8 +145,9 @@ auto AssimpModelLoader::import(const std::filesystem::path& path) -> ImportedMes
 	ImportedMesh output {};
 
 	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile(
-		path.string().c_str(), aiProcess_CalcTangentSpace | aiProcess_SplitLargeMeshes | aiProcess_Triangulate | aiProcess_FlipUVs);
+	const aiScene* scene = importer.ReadFile(path.string().c_str(),
+		aiProcess_SplitLargeMeshes | aiProcess_RemoveRedundantMaterials | aiProcess_OptimizeMeshes | aiProcess_OptimizeGraph
+			| aiProcess_CalcTangentSpace | aiProcess_SplitLargeMeshes | aiProcess_Triangulate | aiProcess_FlipUVs);
 
 	if ((scene == nullptr) || ((scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) != 0U) || (scene->mRootNode == nullptr)) {
 		throw CouldNotLoadModelException(fmt::format("Error: {}", importer.GetErrorString()));

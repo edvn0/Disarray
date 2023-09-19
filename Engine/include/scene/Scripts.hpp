@@ -10,7 +10,7 @@ namespace Disarray::Scripts {
 class MoveInCircleScript final : public CppScript {
 public:
 	~MoveInCircleScript() override;
-	MoveInCircleScript(std::uint32_t local_radius, std::uint32_t count, float initial_angle);
+	MoveInCircleScript(std::uint32_t local_radius, float initial_angle);
 	MoveInCircleScript(const Collections::StringViewMap<Parameter>& parameters);
 
 	void on_create() override;

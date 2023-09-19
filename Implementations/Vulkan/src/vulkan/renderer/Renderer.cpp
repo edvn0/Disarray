@@ -95,7 +95,7 @@ void Renderer::on_resize()
 
 void Renderer::begin_frame(const Camera& camera)
 {
-	auto [ubo, camera_ubo, lights] = get_graphics_resource().get_editable_ubos();
+	auto [ubo, camera_ubo, lights, indices] = get_graphics_resource().get_editable_ubos();
 	camera_ubo.position = glm::vec4 { camera.get_position(), 1.0F };
 	camera_ubo.direction = glm::vec4 { camera.get_direction(), 1.0F };
 
@@ -107,7 +107,7 @@ void Renderer::begin_frame(const glm::mat4& view, const glm::mat4& proj, const g
 	// TODO: Move to some kind of scene scope?
 	batch_renderer.reset();
 
-	auto [ubo, camera, lights] = get_graphics_resource().get_editable_ubos();
+	auto [ubo, camera, lights, indices] = get_graphics_resource().get_editable_ubos();
 
 	ubo.view = view;
 	ubo.proj = proj;
@@ -120,11 +120,12 @@ void Renderer::begin_frame(const glm::mat4& view, const glm::mat4& proj, const g
 
 void Renderer::end_frame()
 {
-	auto [ubo, camera_ubo, lights] = get_graphics_resource().get_editable_ubos();
+	auto [ubo, camera_ubo, lights, indices] = get_graphics_resource().get_editable_ubos();
 
-	ubo = {};
-	camera_ubo = {};
-	lights.lights.fill({});
+	ubo.reset();
+	camera_ubo.reset();
+	lights.reset();
+	indices.reset();
 }
 
 void Renderer::force_recreation() { on_resize(); }

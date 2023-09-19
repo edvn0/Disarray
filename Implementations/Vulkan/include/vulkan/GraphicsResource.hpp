@@ -7,6 +7,7 @@
 #include "core/DisarrayObject.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Renderer.hpp"
+#include "graphics/RendererProperties.hpp"
 #include "graphics/Texture.hpp"
 #include "graphics/TextureCache.hpp"
 #include "vulkan/UniformBuffer.hpp"
@@ -25,6 +26,7 @@ public:
 	[[nodiscard]] auto get_pipeline_cache() -> PipelineCache& override { return pipeline_cache; }
 	[[nodiscard]] auto get_texture_cache() -> TextureCache& override { return texture_cache; }
 
+	void expose_to_shaders(std::span<const Ref<Disarray::Texture>>) override;
 	void expose_to_shaders(const Disarray::Image&) override;
 	void expose_to_shaders(const Disarray::Texture& tex) override { expose_to_shaders(tex.get_image()); };
 	[[nodiscard]] auto get_descriptor_set(std::uint32_t frame_index, std::uint32_t set) const -> VkDescriptorSet override
@@ -36,7 +38,10 @@ public:
 	[[nodiscard]] auto get_push_constant() const -> const PushConstant* override { return &pc; }
 	auto get_editable_push_constant() -> PushConstant& override { return pc; }
 
-	auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&> override { return { uniform, camera_ubo, lights }; }
+	auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&, ImageIndicesUBO&> override
+	{
+		return { uniform, camera_ubo, lights, image_indices };
+	}
 
 	void update_ubo() override;
 
@@ -53,7 +58,8 @@ private:
 	UBO uniform {};
 	CameraUBO camera_ubo {};
 	PointLights lights {};
-	std::vector<std::array<Scope<Vulkan::UniformBuffer>, 3>> frame_ubos;
+	ImageIndicesUBO image_indices {};
+	std::vector<std::array<Scope<Vulkan::UniformBuffer>, 4>> frame_ubos;
 
 	std::vector<VkDescriptorSet> descriptor_sets;
 	std::vector<VkDescriptorSetLayout> layouts;

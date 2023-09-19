@@ -42,7 +42,6 @@
 #include "scene/Entity.hpp"
 #include "scene/Scripts.hpp"
 #include "scene/Serialiser.hpp"
-#include "ui/UI.hpp"
 
 template <std::size_t Count> static auto generate_colours() -> std::array<glm::vec4, Count>
 {
@@ -146,6 +145,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 			.attachments = { { Disarray::ImageFormat::SBGR }, { ImageFormat::Depth } },
 			.clear_colour_on_load = false,
 			.clear_depth_on_load = false,
+			.should_blend = true,
 			.debug_name = "FirstFramebuffer",
 		});
 	shadow_framebuffer = Framebuffer::construct(device,
@@ -179,9 +179,10 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 	identity_framebuffer = Framebuffer::construct(device,
 		{
 			.extent = extent,
-			.attachments = { { ImageFormat::SBGR }, { ImageFormat::Uint }, { ImageFormat::Depth } },
+			.attachments = { { ImageFormat::SBGR }, { ImageFormat::Uint, false }, { ImageFormat::Depth } },
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
+			.should_blend = true,
 			.debug_name = "IdentityFramebuffer",
 		});
 
@@ -193,7 +194,7 @@ Scene::~Scene() = default;
 void Scene::begin_frame(const Camera& camera)
 {
 	scene_renderer->begin_frame(camera);
-	auto [ubo, camera_ubo, light_ubos] = scene_renderer->get_graphics_resource().get_editable_ubos();
+	auto [ubo, camera_ubo, light_ubos, indices] = scene_renderer->get_graphics_resource().get_editable_ubos();
 	auto& push_constant = scene_renderer->get_graphics_resource().get_editable_push_constant();
 
 	for (auto sun_component_view = registry.view<const Components::DirectionalLight, const Components::Texture>();
@@ -558,9 +559,8 @@ void Scene::create_entities()
 			});
 		auto& mesh = v_mesh.add_component<Components::Mesh>(viking);
 		const auto& textures = mesh.mesh->get_textures();
-		(void)textures;
-
-		Log::info("Scene", "Textures: {}", textures.size());
+		std::span texture_span { textures };
+		scene_renderer->get_graphics_resource().expose_to_shaders(texture_span);
 
 		v_mesh.get_components<Components::Transform>().scale = glm::vec3 { 0.1F };
 		auto sponza_pipeline = Pipeline::construct(device,
@@ -642,7 +642,7 @@ void Scene::create_entities()
 				.cull_mode = CullMode::Back,
 				.descriptor_set_layouts = desc_layout,
 			}));
-		sun.add_component<Components::Texture>(nullptr, glm::vec4 { 0.6, 0.8, 0.1, 1.0 });
+		sun.add_component<Components::Texture>(nullptr, glm::vec4 { 0 });
 		sun.add_component<Components::DirectionalLight>();
 		const auto mesh = Mesh::construct(device, MeshProperties { .path = "Assets/Models/arrow.obj" });
 		sun.add_component<Components::Mesh>(mesh);

@@ -90,6 +90,7 @@ set(ENGINE_SOURCES
         Disarray.hpp
         src/graphics/Shader.cpp
         src/graphics/CommandExecutor.cpp
+        src/graphics/RendererProperties.cpp
         src/graphics/RenderPass.cpp
         src/graphics/Instance.cpp
         src/graphics/PhysicalDevice.cpp
@@ -136,13 +137,13 @@ set(ENGINE_SOURCES
         src/core/Log.cpp
         src/imgui/InterfaceLayer.cpp)
 
-if (DISARRAY_OS STREQUAL "Windows")
-    list(APPEND ENGINE_SOURCES src/windows/UI.cpp)
-elseif (DISARRAY_OS STREQUAL "MacOS")
-    list(APPEND ENGINE_SOURCES src/linux/UI.cpp)
-elseif (DISARRAY_OS STREQUAL "Linux")
-    list(APPEND ENGINE_SOURCES src/linux/UI.cpp)
-endif ()
+if(DISARRAY_OS STREQUAL "Windows")
+        list(APPEND ENGINE_SOURCES src/windows/UI.cpp)
+elseif(DISARRAY_OS STREQUAL "MacOS")
+        list(APPEND ENGINE_SOURCES src/linux/UI.cpp)
+elseif(DISARRAY_OS STREQUAL "Linux")
+        list(APPEND ENGINE_SOURCES src/linux/UI.cpp)
+endif()
 
 add_library(
         ${PROJECT_NAME} STATIC
@@ -175,6 +176,6 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE
 
 default_compile_flags()
 
-if (DISARRAY_BUILD_TESTS)
-    add_subdirectory(tests)
-endif ()
+if(DISARRAY_BUILD_TESTS)
+        add_subdirectory(tests)
+endif()

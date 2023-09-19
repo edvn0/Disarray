@@ -182,7 +182,7 @@ BasicIncluder::BasicIncluder(std::filesystem::path directory)
 		},
 		[](const std::filesystem::directory_entry& entry) { return extensions.contains(entry.path().extension().string()); });
 
-	ensure(include_include_source_map.size() == 4, "We currently have 4 include files");
+	ensure(include_include_source_map.size() == 5, "We currently have 4 include files");
 }
 
 void BasicIncluder::replace_all_includes(std::string& io_string)

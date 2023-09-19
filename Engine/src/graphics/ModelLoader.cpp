@@ -43,7 +43,7 @@ auto ModelLoader::construct_textures(const Disarray::Device& device) -> std::vec
 				.key = props.path.string(),
 				.debug_name = props.debug_name,
 				.path = props.path,
-				.mips = *props.mips,
+				.mips = props.mips.has_value() ? *props.mips : 1,
 				.format = props.format,
 			}));
 		});
