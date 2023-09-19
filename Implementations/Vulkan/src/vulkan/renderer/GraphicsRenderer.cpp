@@ -168,21 +168,20 @@ void Renderer::draw_submeshes(Disarray::CommandExecutor& executor, const Disarra
 {
 	// draw_mesh(executor, parent_mesh, mesh_pipeline, texture, transform, identifier);
 
+	auto& push_constant = get_graphics_resource().get_editable_push_constant();
 	for (const auto& sub : parent_mesh.get_submeshes()) {
 		auto&& [key, mesh] = sub;
-		auto [_, __, ___, indices] = get_graphics_resource().get_editable_ubos();
 
 		std::size_t index = 0;
 		for (const auto& texture_index : mesh->texture_indices) {
-			indices.image_indices.at(index++) = glm::uvec4 { texture_index, texture_index, texture_index, texture_index };
+			push_constant.image_indices.at(index++) = static_cast<int>(texture_index);
 		}
-		indices.bound_textures = static_cast<std::uint32_t>(index);
-		get_graphics_resource().update_ubo();
+		push_constant.bound_textures = static_cast<unsigned int>(index);
 
 		draw_submesh(executor, *mesh->vertices, *mesh->indices, mesh_pipeline, texture, colour, transform, identifier);
 
-		indices.reset();
-		get_graphics_resource().update_ubo();
+		push_constant.image_indices.fill(-1);
+		push_constant.bound_textures = 0;
 	}
 }
 

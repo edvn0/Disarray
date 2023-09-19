@@ -33,6 +33,8 @@ public:
 		return storage[key];
 	}
 
+	auto size() const { return storage.size(); }
+
 	auto contains(const Key& key) -> bool { return storage.contains(key); }
 
 	auto put(const Props& props) -> const Resource&

@@ -55,6 +55,8 @@ struct PushConstant {
 	std::uint32_t max_identifiers {};
 	std::uint32_t current_identifier {};
 	std::uint32_t max_point_lights {};
+	std::uint32_t bound_textures { 0 };
+	std::array<std::int32_t, 8> image_indices { -1 };
 };
 
 template <class Child> struct BaseUBO {

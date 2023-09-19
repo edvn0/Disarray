@@ -146,8 +146,7 @@ auto AssimpModelLoader::import(const std::filesystem::path& path) -> ImportedMes
 
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile(path.string().c_str(),
-		aiProcess_SplitLargeMeshes | aiProcess_RemoveRedundantMaterials | aiProcess_OptimizeMeshes | aiProcess_OptimizeGraph
-			| aiProcess_CalcTangentSpace | aiProcess_SplitLargeMeshes | aiProcess_Triangulate | aiProcess_FlipUVs);
+		aiProcess_OptimizeGraph | aiProcess_CalcTangentSpace | aiProcess_SplitLargeMeshes | aiProcess_Triangulate | aiProcess_FlipUVs);
 
 	if ((scene == nullptr) || ((scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) != 0U) || (scene->mRootNode == nullptr)) {
 		throw CouldNotLoadModelException(fmt::format("Error: {}", importer.GetErrorString()));

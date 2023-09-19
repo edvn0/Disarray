@@ -164,7 +164,7 @@ void GraphicsResource::initialise_descriptors()
 
 	std::vector<VkDescriptorSetLayout> desc_layouts(set_count * swapchain.image_count());
 	for (std::size_t i = 0; i < desc_layouts.size(); i++) {
-		desc_layouts[i] = layouts[i % 3];
+		desc_layouts[i] = layouts[i % set_count];
 	}
 
 	VkDescriptorSetAllocateInfo alloc_info {};
@@ -259,8 +259,12 @@ void GraphicsResource::expose_to_shaders(std::span<const Ref<Disarray::Texture>>
 	write_sets[0].descriptorCount = static_cast<std::uint32_t>(image_infos.size());
 	write_sets[0].pImageInfo = image_infos.data();
 
-	write_sets[1] = write_sets[0];
 	write_sets[1].dstSet = descriptor_sets[5];
+	write_sets[1].dstBinding = 0;
+	write_sets[1].dstArrayElement = 0;
+	write_sets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	write_sets[1].descriptorCount = static_cast<std::uint32_t>(image_infos.size());
+	write_sets[1].pImageInfo = image_infos.data();
 
 	vkUpdateDescriptorSets(supply_cast<Vulkan::Device>(device), static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
 }

@@ -48,7 +48,7 @@ auto ModelLoader::construct_textures(const Disarray::Device& device) -> std::vec
 			}));
 		});
 	}
-	Log::info("ModelLoader", "Loading textures took {}ms", texture_timer.elapsed<Granularity::Millis>());
+	Log::info("ModelLoader", "Loading textures took {}ms. Constructed {} textures.", texture_timer.elapsed<Granularity::Millis>(), cache.size());
 	return cache.flatten();
 }
 

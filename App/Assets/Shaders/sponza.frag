@@ -50,7 +50,6 @@ vec3 calc_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 view_dir
 void main() {
     Uniform ubo = UBO.ubo;
     PushConstant pc = PC.pc;
-    ImageIndices image_indices = IUBO.indices;
 
     vec3 out_vec = vec3(0.0);
     vec3 view_direction = normalize(vec3(CBO.camera.position) - fragPosition);
@@ -69,13 +68,13 @@ void main() {
     colour = pc.colour * vec4(out_vec, 1.0f);
     // colour = vec4(out_vec, 1.0f);
     vec4 mean_texture_colour = vec4(0);
-    for (uint i = 0; i < image_indices.bound_textures; i++) {
-        uvec4 index = image_indices.image_indices[i];
-        mean_texture_colour += texture(textures[index.x], uvs);
+    for (uint i = 0; i < pc.bound_textures; i++) {
+        uint index = pc.image_indices[i];
+        mean_texture_colour += texture(textures[index], uvs);
     }
 	
-    if (image_indices.bound_textures > 0) {
-        colour *= mean_texture_colour / image_indices.bound_textures;
+    if (pc.bound_textures > 0) {
+        colour *= mean_texture_colour / pc.bound_textures;
     }
 
     id = pc.current_identifier;
