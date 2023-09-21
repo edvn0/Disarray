@@ -18,7 +18,7 @@ public:
 
 	void decrement_reference_count() { --reference_count; }
 
-	std::uint32_t get_reference_count() const { return reference_count; }
+	auto get_reference_count() const -> std::uint32_t { return reference_count; }
 
 private:
 	std::atomic<uint32_t> reference_count = 0;

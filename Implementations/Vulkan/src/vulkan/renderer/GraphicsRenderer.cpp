@@ -33,6 +33,15 @@ void Renderer::bind_pipeline(Disarray::CommandExecutor& executor, const Disarray
 	}
 }
 
+void Renderer::bind_descriptor_sets(Disarray::CommandExecutor& executor, VkPipelineLayout pipeline_layout)
+{
+	const std::array desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0),
+		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1),
+		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 2) };
+	vkCmdBindDescriptorSets(supply_cast<Vulkan::CommandExecutor>(executor), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0,
+		static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
+}
+
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const GeometryProperties& properties)
 {
 	draw_mesh(executor, mesh, properties.to_transform());
@@ -63,13 +72,7 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &pc);
 
-	// material.get_descriptor_sets();
-	auto* second_desc = get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1);
-	auto* third_desc = get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 2);
-	const std::array<VkDescriptorSet, 3> desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0), second_desc,
-		third_desc };
-	vkCmdBindDescriptorSets(
-		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
+	bind_descriptor_sets(executor, pipeline.get_layout());
 
 	std::array<VkBuffer, 1> arr {};
 	arr[0] = supply_cast<Vulkan::VertexBuffer>(mesh.get_vertices());
@@ -107,11 +110,7 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &pc);
 
-	const std::array desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0),
-		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1),
-		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 2) };
-	vkCmdBindDescriptorSets(
-		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
+	bind_descriptor_sets(executor, pipeline.get_layout());
 
 	std::array<VkBuffer, 1> arr {};
 	arr[0] = supply_cast<Vulkan::VertexBuffer>(mesh.get_vertices());
@@ -122,9 +121,9 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 		vkCmdSetLineWidth(command_buffer, pipeline.get_properties().line_width);
 	}
 
-	vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(mesh.get_indices()), 0, VK_INDEX_TYPE_UINT32);
-
-	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(mesh.get_indices().size()), 1, 0, 0, 0);
+	const auto& indices = cast_to<Vulkan::IndexBuffer>(mesh.get_indices());
+	vkCmdBindIndexBuffer(command_buffer, indices.supply(), 0, VK_INDEX_TYPE_UINT32);
+	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(indices.size()), 1, 0, 0, 0);
 }
 
 void Renderer::draw_submesh(Disarray::CommandExecutor& executor, const Disarray::VertexBuffer& vertex_buffer,
@@ -135,20 +134,15 @@ void Renderer::draw_submesh(Disarray::CommandExecutor& executor, const Disarray:
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
 	bind_pipeline(executor, mesh_pipeline);
 
-	(void)texture;
-	auto& pc = get_graphics_resource().get_editable_push_constant();
+	auto& push_constant = get_graphics_resource().get_editable_push_constant();
 
-	pc.object_transform = transform;
-	pc.colour = colour;
-	pc.current_identifier = identifier;
+	push_constant.object_transform = transform;
+	push_constant.colour = colour;
+	push_constant.current_identifier = identifier;
 	vkCmdPushConstants(
-		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &pc);
+		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &push_constant);
 
-	const std::array desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0),
-		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1),
-		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 2) };
-	vkCmdBindDescriptorSets(
-		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
+	bind_descriptor_sets(executor, pipeline.get_layout());
 
 	std::array<VkBuffer, 1> arr {};
 	arr[0] = supply_cast<Vulkan::VertexBuffer>(vertex_buffer);
@@ -167,9 +161,20 @@ void Renderer::draw_submesh(Disarray::CommandExecutor& executor, const Disarray:
 void Renderer::draw_submeshes(Disarray::CommandExecutor& executor, const Disarray::Mesh& parent_mesh, const Disarray::Pipeline& mesh_pipeline,
 	const Disarray::Texture& texture, const glm::vec4& colour, const glm::mat4& transform, const std::uint32_t identifier)
 {
+	// draw_mesh(executor, parent_mesh, mesh_pipeline, texture, transform, identifier);
+
+	auto& push_constant = get_graphics_resource().get_editable_push_constant();
 	for (const auto& sub : parent_mesh.get_submeshes()) {
 		auto&& [key, mesh] = sub;
+
+		std::size_t index = 0;
+		for (const auto& texture_index : mesh->texture_indices) {
+			push_constant.image_indices.at(index++) = static_cast<int>(texture_index);
+		}
+		push_constant.bound_textures = static_cast<unsigned int>(index);
 		draw_submesh(executor, *mesh->vertices, *mesh->indices, mesh_pipeline, texture, colour, transform, identifier);
+		push_constant.image_indices.fill(-1);
+		push_constant.bound_textures = 0;
 	}
 }
 
@@ -179,20 +184,20 @@ void Renderer::end_pass(Disarray::CommandExecutor& executor)
 	vkCmdEndRenderPass(supply_cast<Vulkan::CommandExecutor>(executor));
 }
 
-void Renderer::begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& fb, bool explicit_clear)
+void Renderer::begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& framebuffer, bool explicit_clear)
 {
-	auto command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 
 	VkRenderPassBeginInfo render_pass_begin_info {};
 	render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	render_pass_begin_info.renderPass = supply_cast<Vulkan::RenderPass>(fb.get_render_pass());
-	render_pass_begin_info.framebuffer = supply_cast<Vulkan::Framebuffer>(fb);
+	render_pass_begin_info.renderPass = supply_cast<Vulkan::RenderPass>(framebuffer.get_render_pass());
+	render_pass_begin_info.framebuffer = supply_cast<Vulkan::Framebuffer>(framebuffer);
 	render_pass_begin_info.renderArea.offset = { 0, 0 };
 
 	VkExtent2D extent_2_d { .width = extent.width, .height = extent.height };
 	render_pass_begin_info.renderArea.extent = extent_2_d;
 
-	auto clear_values = cast_to<Vulkan::Framebuffer>(fb).get_clear_values();
+	auto clear_values = cast_to<Vulkan::Framebuffer>(framebuffer).get_clear_values();
 
 	render_pass_begin_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
 	render_pass_begin_info.pClearValues = clear_values.data();
@@ -200,7 +205,7 @@ void Renderer::begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebu
 	vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
 	if (explicit_clear) {
-		auto& vk_framebuffer = cast_to<Vulkan::Framebuffer>(fb);
+		auto& vk_framebuffer = cast_to<Vulkan::Framebuffer>(framebuffer);
 
 		std::vector<VkClearValue> fb_clear_values = vk_framebuffer.get_clear_values();
 
@@ -214,7 +219,7 @@ void Renderer::begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebu
 			attachments[i].colorAttachment = i;
 			attachments[i].clearValue = fb_clear_values[i];
 
-			clear_rects[i].rect.offset = { (int32_t)0, (int32_t)0 };
+			clear_rects[i].rect.offset = { 0, 0 };
 			clear_rects[i].rect.extent = extent_2_d;
 			clear_rects[i].baseArrayLayer = 0;
 			clear_rects[i].layerCount = 1;

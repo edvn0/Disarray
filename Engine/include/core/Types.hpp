@@ -4,6 +4,7 @@
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
+#include <vector>
 
 #include "core/PointerDefinition.hpp"
 #include "core/PolymorphicCast.hpp"
@@ -25,6 +26,9 @@ template <class T, class D = DefaultDelete<T>, class... Args> inline auto make_s
 {
 	return Scope<T, D> { new T { std::forward<Args>(args)... } };
 }
+
+template <class T> using RefVector = std::vector<Ref<T>>;
+template <class T> using ScopeVector = std::vector<Scope<T>>;
 
 template <class To, class From>
 	requires(std::is_base_of_v<From, To>)

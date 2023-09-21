@@ -11,7 +11,10 @@
 #include "graphics/Texture.hpp"
 
 struct path_hash {
-	std::size_t operator()(const std::optional<std::filesystem::path>& path) const { return path ? std::filesystem::hash_value(path.value()) : 0; }
+	auto operator()(const std::optional<std::filesystem::path>& path) const -> std::size_t
+	{
+		return path ? std::filesystem::hash_value(path.value()) : 0;
+	}
 };
 
 namespace Disarray::Client {
@@ -21,17 +24,17 @@ public:
 	DirectoryContentPanel(Device&, Window&, Swapchain& sc, const std::filesystem::path& initial = "Assets");
 	~DirectoryContentPanel() override = default;
 
-	bool traverse_down(const std::filesystem::path& into_directory, bool force_reload = false);
-	bool traverse_up(bool force_reload = false);
-	bool can_traverse_up() const;
+	auto traverse_down(const std::filesystem::path& into_directory, bool force_reload = false) -> bool;
+	auto traverse_up(bool force_reload = false) -> bool;
+	auto can_traverse_up() const -> bool;
 
 	void construct(App&, Threading::ThreadPool&) override;
 	void update(float time_step) override;
 	void interface() override;
 	void destruct() override;
 
-	auto& get_current() { return current; }
-	std::vector<std::filesystem::path> get_files_in_directory(const std::filesystem::path& for_path) const;
+	auto get_current() -> auto& { return current; }
+	auto get_files_in_directory(const std::filesystem::path& for_path) const -> std::vector<std::filesystem::path>;
 	void draw_file_or_directory(const std::filesystem::path& path, const glm::vec2& size);
 
 private:

@@ -57,15 +57,14 @@ void ClientLayer::construct(App& app, Threading::ThreadPool& pool)
 	scene_panel->construct(app, pool);
 	execution_stats_panel->construct(app, pool);
 
-	constexpr auto angles = generate_angles_client<5>();
+	constexpr auto angles = generate_angles_client<count_point_lights>();
 
 	auto point_lights = scene->entities_with<Components::PointLight>();
 	std::size_t index { 0 };
 	ensure(angles.size() == point_lights.size());
 	for (auto&& point_light : point_lights) {
-		constexpr std::uint32_t radius = 8;
-		constexpr std::uint32_t count = 30;
-		point_light.add_script<Scripts::MoveInCircleScript>(radius, count, angles.at(index++));
+		constexpr std::uint32_t radius = 25;
+		point_light.add_script<Scripts::MoveInCircleScript>(radius, angles.at(index++));
 	}
 };
 
@@ -141,7 +140,7 @@ void ClientLayer::interface()
 	ImGui::End();
 	ImGui::PopStyleVar();
 
-	auto& depth_image = scene->get_image(2);
+	const auto& depth_image = scene->get_image(2);
 	UI::scope("Depth"sv, [&depth_image]() {
 		auto viewport_size = ImGui::GetContentRegionAvail();
 		UI::image(depth_image, { viewport_size.x, viewport_size.y });

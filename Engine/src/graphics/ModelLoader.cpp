@@ -33,22 +33,24 @@ auto ModelLoader::import_model(const std::filesystem::path& path) -> void
 	mesh_data = meshes;
 }
 
-void ModelLoader::construct_textures(const Disarray::Device& device)
+auto ModelLoader::construct_textures(const Disarray::Device& device) -> std::vector<Ref<Disarray::Texture>>
 {
 	TextureCache cache { device, mesh_path.parent_path() };
 	Timer<float> texture_timer;
 	for (auto& [key, value] : mesh_data) {
 		Collections::for_each(value.texture_properties, [&captured = cache, &texts = value.textures](const TextureProperties& props) {
+			const auto mip_count = props.generate_mips ? (props.mips.has_value() ? *props.mips : 1) : 1;
 			texts.push_back(captured.put(TextureCacheCreationProperties {
 				.key = props.path.string(),
 				.debug_name = props.debug_name,
 				.path = props.path,
-				.mips = *props.mips,
+				.mips = mip_count,
 				.format = props.format,
 			}));
 		});
 	}
-	Log::info("ModelLoader", "Loading textures took {}ms", texture_timer.elapsed<Granularity::Millis>());
+	Log::info("ModelLoader", "Loading textures took {}ms. Constructed {} textures.", texture_timer.elapsed<Granularity::Millis>(), cache.size());
+	return cache.flatten();
 }
 
 } // namespace Disarray

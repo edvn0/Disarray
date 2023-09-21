@@ -7,9 +7,9 @@
 #include <utility>
 
 #include "Forward.hpp"
-#include "ResourceCache.hpp"
 #include "core/Types.hpp"
 #include "graphics/PushConstantLayout.hpp"
+#include "graphics/ResourceCache.hpp"
 #include "graphics/Shader.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/Texture.hpp"
@@ -56,6 +56,7 @@ public:
 		return Texture::construct(get_device(),
 			TextureProperties {
 				.generate_mips = true,
+				.mips = props.mips,
 				.path = props.path.string(),
 				.locked_extent = true,
 				.debug_name = props.debug_name,

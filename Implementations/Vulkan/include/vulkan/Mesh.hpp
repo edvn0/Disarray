@@ -2,10 +2,12 @@
 
 #include "core/Collections.hpp"
 #include "core/DisarrayObject.hpp"
+#include "core/Types.hpp"
 #include "graphics/IndexBuffer.hpp"
 #include "graphics/Mesh.hpp"
 #include "graphics/ModelLoader.hpp"
 #include "graphics/Pipeline.hpp"
+#include "graphics/Texture.hpp"
 #include "graphics/VertexBuffer.hpp"
 
 namespace Disarray::Vulkan {
@@ -21,6 +23,7 @@ public:
 	auto get_vertices() const -> Disarray::VertexBuffer& override;
 
 	auto get_submeshes() const -> const Collections::ScopedStringMap<Disarray::MeshSubstructure>& override;
+	auto get_textures() const -> const RefVector<Disarray::Texture>& override;
 	auto has_children() const -> bool override;
 
 	void force_recreation() override;
@@ -32,6 +35,7 @@ private:
 
 	const Disarray::Device& device;
 
+	std::vector<Ref<Disarray::Texture>> mesh_textures;
 	Collections::ScopedStringMap<Disarray::MeshSubstructure> submeshes {};
 	std::string mesh_name {};
 };

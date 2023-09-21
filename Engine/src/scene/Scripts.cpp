@@ -14,7 +14,7 @@ using namespace std::string_view_literals;
 
 MoveInCircleScript::~MoveInCircleScript() = default;
 
-MoveInCircleScript::MoveInCircleScript(std::uint32_t local_radius, std::uint32_t, float initial_angle)
+MoveInCircleScript::MoveInCircleScript(std::uint32_t local_radius, float initial_angle)
 	: CppScript({ { "local_radius", local_radius }, { "angle", initial_angle } })
 	, radius(local_radius)
 	, angle(glm::degrees(initial_angle))
@@ -48,8 +48,8 @@ void MoveInCircleScript::on_update(float time_step)
 	angle = angle + vel * time_step;
 	rad = std::fmod(angle, 360);
 	const auto radians = glm::radians(rad);
-	pos.x = radius * glm::sin(radians);
-	pos.z = radius * glm::cos(radians);
+	pos.x = static_cast<float>(radius) * glm::sin(radians);
+	pos.z = static_cast<float>(radius) * glm::cos(radians);
 }
 
 void MoveInCircleScript::on_interface() { }

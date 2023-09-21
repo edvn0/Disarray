@@ -75,6 +75,9 @@ private:
 	Ref<Disarray::Framebuffer> geometry_framebuffer;
 	Ref<Disarray::Framebuffer> quad_framebuffer;
 
+	void bind_descriptor_sets(Disarray::CommandExecutor& executor, VkPipelineLayout pipeline_layout);
+
+	mutable std::array<VkDescriptorSet, 3> bound { nullptr };
 	mutable const Disarray::Pipeline* bound_pipeline { nullptr };
 
 	std::function<void(Disarray::Renderer&)> on_batch_full_func = [](auto&) {};

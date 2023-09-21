@@ -19,10 +19,12 @@
 #include "core/Ensure.hpp"
 #include "core/Formatters.hpp"
 #include "core/Input.hpp"
+#include "core/Random.hpp"
 #include "core/ThreadPool.hpp"
 #include "core/events/Event.hpp"
 #include "core/events/KeyEvent.hpp"
 #include "core/events/MouseEvent.hpp"
+#include "core/filesystem/AssetLocations.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Maths.hpp"
@@ -42,12 +44,11 @@
 #include "scene/Scripts.hpp"
 #include "scene/Serialiser.hpp"
 
-template <std::size_t Count> static consteval auto generate_colours() -> std::array<glm::vec4, Count>
+template <std::size_t Count> static auto generate_colours() -> std::array<glm::vec4, Count>
 {
 	std::array<glm::vec4, Count> colours {};
-	constexpr auto division = 1.F / static_cast<float>(Count);
 	for (std::size_t i = 0; i < Count; i++) {
-		colours.at(i) = glm::vec4 { division * i, division * i, 0.3, 1 };
+		colours.at(i) = Disarray::Random::colour();
 	}
 	return colours;
 }
@@ -111,12 +112,15 @@ void Scene::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
 			switch (type) {
 			case ShaderType::Vertex: {
 				pipe_props.vertex_shader = shader;
+				break;
 			}
 			case ShaderType::Fragment: {
 				pipe_props.fragment_shader = shader;
+				break;
 			}
 			case ShaderType::Compute: {
 				pipe_props.compute_shader = shader;
+				break;
 			}
 			}
 		}
@@ -145,6 +149,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 			.attachments = { { Disarray::ImageFormat::SBGR }, { ImageFormat::Depth } },
 			.clear_colour_on_load = false,
 			.clear_depth_on_load = false,
+			.should_blend = true,
 			.debug_name = "FirstFramebuffer",
 		});
 	shadow_framebuffer = Framebuffer::construct(device,
@@ -178,9 +183,10 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 	identity_framebuffer = Framebuffer::construct(device,
 		{
 			.extent = extent,
-			.attachments = { { ImageFormat::SBGR }, { ImageFormat::Uint }, { ImageFormat::Depth } },
+			.attachments = { { ImageFormat::SBGR }, { ImageFormat::Uint, false }, { ImageFormat::Depth } },
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
+			.should_blend = true,
 			.debug_name = "IdentityFramebuffer",
 		});
 
@@ -203,11 +209,15 @@ void Scene::begin_frame(const Camera& camera)
 
 	std::size_t light_index { 0 };
 	auto& lights = light_ubos.lights;
-	for (auto point_light_view = registry.view<const Components::PointLight, const Components::Transform, const Components::Texture>();
-		 auto&& [entity, point_light, pos, texture] : point_light_view.each()) {
+	for (auto&& [entity, point_light, pos, texture] :
+		registry.view<const Components::PointLight, const Components::Transform, Components::Texture>().each()) {
 		auto& light = lights.at(light_index++);
 		light.position = glm::vec4 { pos.position, 0.F };
-		light.ambient = texture.colour;
+		light.ambient = point_light.ambient;
+		light.diffuse = point_light.diffuse;
+		light.specular = point_light.specular;
+		light.factors = point_light.factors;
+		texture.colour = light.ambient;
 	}
 	push_constant.max_point_lights = static_cast<std::uint32_t>(light_index);
 
@@ -355,6 +365,10 @@ void Scene::recreate(const Extent& new_ex)
 {
 	extent = new_ex;
 
+	for (auto&& [entity, pipeline] : registry.view<Components::Pipeline>().each()) {
+		pipeline.pipeline->get_properties().descriptor_set_layouts = scene_renderer->get_graphics_resource().get_descriptor_set_layouts();
+	}
+
 	identity_framebuffer->recreate(true, extent);
 	framebuffer->recreate(true, extent);
 	command_executor->recreate(true, extent);
@@ -437,7 +451,7 @@ void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoTyp
 
 auto Scene::get_by_identifier(Identifier identifier) -> std::optional<Entity>
 {
-	for (const auto [entity, id] : registry.view<Components::ID>().each()) {
+	for (const auto& [entity, id] : registry.view<Components::ID>().each()) {
 		if (id.identifier == identifier) {
 			return Entity { this, entity };
 		}
@@ -483,7 +497,7 @@ void Scene::create_entities()
 
 		const auto cube_mesh = Mesh::construct(device,
 			MeshProperties {
-				.path = "Assets/Models/cube.obj",
+				.path = FS::model("cube.obj"),
 			});
 		auto parent = create("Grid");
 		for (auto j = -rects / 2; j < rects / 2; j++) {
@@ -503,9 +517,9 @@ void Scene::create_entities()
 					col_y += 0.2f;
 				}
 				glm::vec4 colour { col_x, 0, col_y, 1 };
-				rect.template add_component<Components::Mesh>(cube_mesh);
-				rect.template add_component<Components::Texture>(colour);
-				rect.template add_component<Components::Pipeline>(pipe);
+				rect.add_component<Components::Mesh>(cube_mesh);
+				rect.add_component<Components::Texture>(colour);
+				rect.add_component<Components::Pipeline>(pipe);
 			}
 		}
 	}
@@ -545,14 +559,18 @@ void Scene::create_entities()
 
 		const auto rotation = Maths::rotate_by(glm::radians(glm::vec3 { 180, 0, 0 }));
 
-		auto v_mesh = create("Sponza");
+		auto sponza_mesh = create("Sponza");
 		auto viking = Mesh::construct(device,
 			{
-				.path = "Assets/Models/sponza/sponza.obj",
+				.path = FS::model("sponza/sponza.obj"),
 				.initial_rotation = rotation,
 			});
-		v_mesh.add_component<Components::Mesh>(viking);
-		v_mesh.get_components<Components::Transform>().scale = glm::vec3 { 0.1F };
+		auto& mesh = sponza_mesh.add_component<Components::Mesh>(viking);
+		const auto& textures = mesh.mesh->get_textures();
+		std::span texture_span { textures };
+		scene_renderer->get_graphics_resource().expose_to_shaders(texture_span);
+
+		sponza_mesh.get_components<Components::Transform>().scale = glm::vec3 { 0.1F };
 		auto sponza_pipeline = Pipeline::construct(device,
 			{
 				.vertex_shader = vert,
@@ -565,9 +583,9 @@ void Scene::create_entities()
 				.cull_mode = CullMode::Back,
 				.descriptor_set_layouts = desc_layout,
 			});
-		v_mesh.add_component<Components::Pipeline>(sponza_pipeline);
-		v_mesh.add_component<Components::Texture>();
-		v_mesh.add_component<Components::Material>(Material::construct(device,
+		sponza_mesh.add_component<Components::Pipeline>(sponza_pipeline);
+		sponza_mesh.add_component<Components::Texture>();
+		sponza_mesh.add_component<Components::Material>(Material::construct(device,
 			{
 				.vertex_shader = vert,
 				.fragment_shader = frag,
@@ -582,7 +600,7 @@ void Scene::create_entities()
 		auto v_mesh = create("Viking");
 		const auto viking = Mesh::construct(device,
 			{
-				.path = "Assets/Models/viking.obj",
+				.path = FS::model("viking.obj"),
 				.initial_rotation = viking_rotation,
 			});
 		v_mesh.add_component<Components::Mesh>(viking);
@@ -609,7 +627,7 @@ void Scene::create_entities()
 			.format = ImageFormat::SBGR,
 			.debug_name = "viking",
 		};
-		texture_properties.path = "Assets/Textures/viking_room.png";
+		texture_properties.path = FS::texture("viking_room.png");
 		v_mesh.add_component<Components::Texture>(Texture::construct(device, texture_properties));
 		static constexpr auto val = 10.0F;
 		v_mesh.add_script<Scripts::LinearMovementScript>(-val, val);
@@ -632,21 +650,27 @@ void Scene::create_entities()
 				.cull_mode = CullMode::Back,
 				.descriptor_set_layouts = desc_layout,
 			}));
-		sun.add_component<Components::Texture>(nullptr, glm::vec4 { 0.6, 0.8, 0.1, 1.0 });
+		sun.add_component<Components::Texture>(nullptr, glm::vec4 { 0 });
 		sun.add_component<Components::DirectionalLight>();
-		const auto mesh = Mesh::construct(device, MeshProperties { .path = "Assets/Models/arrow.obj" });
+		const auto mesh = Mesh::construct(device,
+			MeshProperties {
+				.path = FS::model("arrow.obj"),
+			});
 		sun.add_component<Components::Mesh>(mesh);
 		sun.get_components<Components::Transform>().position = { 5, -5, 5 };
 	}
 
 	{
 		static constexpr auto max_radius = 8U;
-		static constexpr auto point_lights = 5U;
+		static constexpr auto point_lights = 30U;
 
-		constexpr auto colours = generate_colours<point_lights>();
+		auto colours = generate_colours<point_lights>();
 		constexpr auto angles = generate_angles<point_lights>();
 
-		const auto sphere = Mesh::construct(device, { .path = "Assets/Models/sphere.obj" });
+		const auto sphere = Mesh::construct(device,
+			{
+				.path = FS::model("sphere.obj"),
+			});
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("point_light.vert");
 		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("point_light.frag");
 		auto pipe = Pipeline::construct(device,
@@ -663,7 +687,11 @@ void Scene::create_entities()
 		auto pl_system = create("PointLightSystem");
 		for (std::uint32_t i = 0; i < colours.size(); i++) {
 			auto point_light = create("PointLight-{}", i);
-			point_light.add_component<Components::PointLight>();
+			auto& light_component = point_light.add_component<Components::PointLight>();
+			light_component.ambient = colours.at(i);
+			light_component.diffuse = colours.at(i);
+			light_component.specular = colours.at(i);
+
 			auto& transform = point_light.get_components<Components::Transform>();
 			const auto divided = angles.at(i);
 			transform.position = { glm::sin(divided), 0, glm::cos(divided) };

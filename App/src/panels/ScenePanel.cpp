@@ -44,8 +44,9 @@ template <ValidComponent T> void draw_component(Entity& entity, const std::strin
 
 	bool remove_component = false;
 	if (ImGui::BeginPopup("Component Settings")) {
-		if (ImGui::MenuItem("Remove component"))
+		if (ImGui::MenuItem("Remove component")) {
 			remove_component = true;
+		}
 
 		ImGui::EndPopup();
 	}
@@ -56,8 +57,9 @@ template <ValidComponent T> void draw_component(Entity& entity, const std::strin
 	}
 
 	if (remove_component) {
-		if constexpr (DeletableComponent<T>)
+		if constexpr (DeletableComponent<T>) {
 			entity.remove_component<T>();
+		}
 	}
 }
 
@@ -73,7 +75,7 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_pa
 {
 	static constexpr auto max_recursion = 4;
 	const auto has_inheritance = entity.has_component<Components::Inheritance>();
-	const auto has_hit_max_recursion = depth >= 4;
+	const auto has_hit_max_recursion = depth >= max_recursion;
 	if (!has_hit_max_recursion && check_if_has_parent && has_inheritance) {
 		auto inheritance = entity.get_components<Components::Inheritance>();
 		if (inheritance.has_parent()) {
@@ -126,32 +128,7 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_pa
 
 void ScenePanel::interface()
 {
-	UI::begin("Framebuffer");
-	std::size_t id { 1 };
-	auto fbs = scene->get_framebuffers();
-	for (auto& frame_buffer : fbs) {
-		ImGui::PushID(id++);
-		auto& props = frame_buffer->get_properties();
-		UI::text("{}", props.debug_name);
-		bool any_changed = false;
 
-		any_changed |= UI::checkbox("Should blend", props.should_blend);
-		any_changed |= UI::combo_choice<FramebufferBlendMode>("Blend mode", props.blend_mode);
-		any_changed |= ImGui::DragFloat4("Clear colour", glm::value_ptr(props.clear_colour));
-
-		for (auto& attachment : props.attachments.texture_attachments) {
-			auto formatted = fmt::format("{}", magic_enum::enum_name(attachment.format));
-			any_changed |= UI::checkbox(formatted, attachment.blend);
-			any_changed |= UI::combo_choice<FramebufferBlendMode>("Blend mode", attachment.blend_mode);
-		}
-
-		if (any_changed) {
-			frame_buffer->force_recreation();
-		}
-		ImGui::NewLine();
-		ImGui::PopID();
-	}
-	UI::end();
 	UI::begin("Scene");
 	scene->for_all_entities([this](entt::entity entity_id) {
 		Entity entity { scene, entity_id };
@@ -173,8 +150,9 @@ void ScenePanel::interface()
 		return;
 	}
 
-	if (auto ent = Entity(scene, *selected_entity); ent.is_valid())
+	if (auto ent = Entity(scene, *selected_entity); ent.is_valid()) {
 		for_all_components(ent);
+	}
 	UI::end();
 } // namespace Disarray::Client
 
@@ -204,12 +182,12 @@ void ScenePanel::for_all_components(Entity& entity)
 		bool any_changed = false;
 
 		any_changed |= ImGui::DragFloat3("Position", glm::value_ptr(transform.position));
-		auto euler_angles = eulerAngles(transform.rotation);
-		any_changed |= ImGui::DragFloat3("Rotation (Euler)", glm::value_ptr(euler_angles));
+		auto euler_angles = glm::degrees(eulerAngles(transform.rotation));
+		any_changed |= ImGui::DragFloat3("Rotation (Euler)", glm::value_ptr(euler_angles), 2.F, -180, 180);
 		any_changed |= ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale));
 
 		if (any_changed) {
-			transform.rotation = glm::quat(euler_angles);
+			transform.rotation = glm::quat(glm::radians(euler_angles));
 		}
 	});
 
@@ -240,6 +218,13 @@ void ScenePanel::for_all_components(Entity& entity)
 
 		if (ImGui::DragFloat3("Direction", glm::value_ptr(direction), 0.05f, -glm::pi<float>(), glm::pi<float>())) { }
 		if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.01f, 0.2f)) { }
+	});
+
+	draw_component<Components::PointLight>(entity, "Point Light", [](Components::PointLight& point) {
+		if (UI::Input::drag("Factors", point.factors, 0.1F, 0.F, 10.F)) { }
+		if (ImGui::ColorEdit4("Ambient", glm::value_ptr(point.ambient))) { }
+		if (ImGui::ColorEdit4("Diffuse", glm::value_ptr(point.diffuse))) { }
+		if (ImGui::ColorEdit4("Specular", glm::value_ptr(point.specular))) { }
 	});
 
 	draw_component<Components::Mesh>(entity, "Mesh", [](Components::Mesh& mesh_component) {

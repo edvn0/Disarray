@@ -4,6 +4,7 @@
 #include <array>
 #include <functional>
 #include <iterator>
+#include <span>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -112,13 +113,17 @@ constexpr inline auto remove_if(Iterable auto& collection, auto&& predicate)
 		}
 	}
 }
+
 constexpr inline auto map(Iterable auto& collection, auto&& func)
 {
-	std::vector<decltype(func(*std::begin(collection)))> output;
-	const auto elements = std::distance(std::begin(collection), std::end(collection));
+	using ReturnType = decltype(func(*std::begin(collection)));
+	std::vector<ReturnType> output;
+	const auto cbegin = std::cbegin(collection);
+	const auto cend = std::cend(collection);
+	const auto elements = std::distance(cbegin, cend);
 	output.reserve(elements);
 
-	for (auto it = std::begin(collection); it != std::end(collection);) {
+	for (auto it = cbegin; it != cend;) {
 		output.push_back(func(*it));
 		it++;
 	}

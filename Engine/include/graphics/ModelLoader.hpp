@@ -66,7 +66,7 @@ public:
 	explicit ModelLoader(Scope<IModelImporter>);
 	explicit ModelLoader(Scope<IModelImporter>, const std::filesystem::path&);
 	void import_model(const std::filesystem::path&);
-	void construct_textures(const Device&);
+	[[nodiscard]] auto construct_textures(const Device&) -> std::vector<Ref<Disarray::Texture>>;
 
 	[[nodiscard]] auto get_mesh_data() -> const ImportedMesh& { return mesh_data; }
 

@@ -87,10 +87,18 @@ Renderer::~Renderer() = default;
 void Renderer::on_resize()
 {
 	extent = swapchain.get_extent();
+	get_graphics_resource().recreate(true, extent);
+
+	get_texture_cache().force_recreate(extent);
+
+	get_pipeline_cache().for_each_in_storage([new_descs = get_graphics_resource().get_descriptor_set_layouts()](auto&& kv) {
+		auto& [key, pipeline] = kv;
+		pipeline->get_properties().descriptor_set_layouts = new_descs;
+	});
+	get_pipeline_cache().force_recreate(extent);
+
 	geometry_framebuffer->recreate(true, extent);
 	quad_framebuffer->recreate(true, extent);
-	get_texture_cache().force_recreate(extent);
-	get_pipeline_cache().force_recreate(extent);
 }
 
 void Renderer::begin_frame(const Camera& camera)
@@ -122,9 +130,9 @@ void Renderer::end_frame()
 {
 	auto [ubo, camera_ubo, lights] = get_graphics_resource().get_editable_ubos();
 
-	ubo = {};
-	camera_ubo = {};
-	lights.lights.fill({});
+	ubo.reset();
+	camera_ubo.reset();
+	lights.reset();
 }
 
 void Renderer::force_recreation() { on_resize(); }

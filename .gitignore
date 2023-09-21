@@ -22,6 +22,8 @@ cmake-*
 !App/Assets/Icons/*.png
 
 App/Assets/Textures
+App/Assets/Logs/*.log
+App/Assets/Logs/*.txt
 
 __pycache__
 App/Assets/Scripts/*.pyc

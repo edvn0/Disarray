@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 
 #include <functional>
+#include <span>
 #include <tuple>
 
 #include "Forward.hpp"
@@ -23,9 +24,12 @@ class IGraphicsResource {
 public:
 	virtual ~IGraphicsResource() = default;
 
+	virtual auto recreate(bool should_clean, const Extent& extent) -> void = 0;
+
 	virtual auto get_pipeline_cache() -> PipelineCache& = 0;
 	virtual auto get_texture_cache() -> TextureCache& = 0;
 
+	virtual void expose_to_shaders(std::span<const Ref<Texture>>) = 0;
 	virtual void expose_to_shaders(const Image&) = 0;
 	virtual void expose_to_shaders(const Texture&) = 0;
 	[[nodiscard]] virtual auto get_descriptor_set(std::uint32_t, std::uint32_t) const -> VkDescriptorSet = 0;
