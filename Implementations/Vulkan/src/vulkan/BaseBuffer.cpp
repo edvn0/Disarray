@@ -19,7 +19,6 @@ static auto to_vulkan_usage(BufferType buffer_type) -> VkBufferUsageFlags
 	}
 }
 
-
 BaseBuffer::BaseBuffer(const Disarray::Device& dev, BufferType buffer_type, Disarray::BufferProperties properties)
 	: device(dev)
 	, type(buffer_type)

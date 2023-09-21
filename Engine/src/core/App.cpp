@@ -87,11 +87,11 @@ void App::run()
 		render_ui(ui_layer);
 
 		swapchain->reset_recreation_status();
-		
+
 		auto begin_present_time = Clock::ns();
 		swapchain->present();
 		statistics.presentation_time = Clock::ns() - begin_present_time;
-		
+
 		statistics.frame_time = Clock::ms() - current_time;
 		current_time = Clock::ms();
 	}

@@ -19,7 +19,6 @@
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/exceptions/VulkanExceptions.hpp"
 
-
 namespace Disarray::Vulkan {
 
 void Window::register_event_handler(Disarray::App& app)

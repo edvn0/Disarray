@@ -9,7 +9,7 @@
 #include <magic_enum.hpp>
 
 #define GLM_SERIALISATION(GLMType)                                                                                                                   \
-	auto fmt::formatter<GLMType>::format(const GLMType& param, fmt::format_context& ctx)->decltype(ctx.out())                                        \
+	auto fmt::formatter<GLMType>::format(const GLMType& param, fmt::format_context& ctx) -> decltype(ctx.out())                                      \
 	{                                                                                                                                                \
 		return formatter<std::string_view>::format(fmt::format("{}", glm::to_string(param)), ctx);                                                   \
 	}

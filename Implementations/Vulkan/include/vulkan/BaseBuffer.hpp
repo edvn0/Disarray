@@ -11,7 +11,7 @@ namespace Disarray::Vulkan {
 
 #define MAKE_SUB_BUFFER(x)                                                                                                                           \
 	DISARRAY_MAKE_NONCOPYABLE(x)                                                                                                                     \
-                                                                                                                                                     \
+	\
 public:                                                                                                                                              \
 	auto supply() const -> VkBuffer override { return BaseBuffer::supply(); }                                                                        \
 	void set_data(const void* data, std::uint32_t size) override { BaseBuffer::set_data(data, size); }                                               \
