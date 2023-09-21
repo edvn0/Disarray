@@ -26,7 +26,7 @@ layout(push_constant) uniform PushConstantBlock
 }
 PC;
 
-layout(set = 2, binding = 0) uniform sampler2D textures[64];
+layout(set = 2, binding = 0) uniform sampler2D textures[50];
 
 layout(location = 0) in vec4 fragColor;
 layout(location = 1) in vec2 uvs;
@@ -72,7 +72,7 @@ void main() {
         uint index = pc.image_indices[i];
         mean_texture_colour += texture(textures[index], uvs);
     }
-	
+
     if (pc.bound_textures > 0) {
         colour *= mean_texture_colour / pc.bound_textures;
     }

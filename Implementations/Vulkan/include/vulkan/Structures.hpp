@@ -7,8 +7,8 @@
 namespace Disarray::Vulkan {
 
 template <class T, std::size_t Count = 1> struct vk_structures {
-	constexpr T operator()();
-	constexpr std::array<T, Count> multiple()
+	constexpr auto operator()() -> T;
+	constexpr auto multiple() -> std::array<T, Count>
 	{
 		std::array<T, Count> arr {};
 		arr.fill(operator()());
@@ -17,30 +17,30 @@ template <class T, std::size_t Count = 1> struct vk_structures {
 };
 
 template <> struct vk_structures<VkSubmitInfo> {
-	VkSubmitInfo operator()();
+	auto operator()() -> VkSubmitInfo;
 };
 
 template <> struct vk_structures<VkDescriptorSetAllocateInfo> {
-	VkDescriptorSetAllocateInfo operator()();
+	auto operator()() -> VkDescriptorSetAllocateInfo;
 };
 
 template <> struct vk_structures<VkPipelineColorBlendAttachmentState> {
-	VkPipelineColorBlendAttachmentState operator()();
+	auto operator()() -> VkPipelineColorBlendAttachmentState;
 };
 
 template <> struct vk_structures<VkAttachmentDescription> {
-	VkAttachmentDescription operator()();
+	auto operator()() -> VkAttachmentDescription;
 };
 
 template <std::size_t Count> struct vk_structures<VkWriteDescriptorSet, Count> {
-	VkWriteDescriptorSet operator()()
+	auto operator()() -> VkWriteDescriptorSet
 	{
 		return {
 			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 			.pNext = nullptr,
 		};
 	}
-	std::array<VkWriteDescriptorSet, Count> multiple()
+	auto multiple() -> std::array<VkWriteDescriptorSet, Count>
 	{
 		auto make = operator()();
 		std::array<VkWriteDescriptorSet, Count> array;

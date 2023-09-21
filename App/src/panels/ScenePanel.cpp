@@ -182,8 +182,8 @@ void ScenePanel::for_all_components(Entity& entity)
 		bool any_changed = false;
 
 		any_changed |= ImGui::DragFloat3("Position", glm::value_ptr(transform.position));
-		auto euler_angles = eulerAngles(transform.rotation);
-		any_changed |= ImGui::DragFloat3("Rotation (Euler)", glm::value_ptr(euler_angles));
+		auto euler_angles = glm::degrees(eulerAngles(transform.rotation));
+		any_changed |= ImGui::DragFloat3("Rotation (Euler)", glm::value_ptr(euler_angles), 2.F, -180, 180);
 		any_changed |= ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale));
 
 		if (any_changed) {

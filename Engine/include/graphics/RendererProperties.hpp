@@ -50,13 +50,15 @@ struct GeometryProperties {
 };
 
 struct PushConstant {
+	static constexpr auto max_image_indices = 8;
+
 	glm::mat4 object_transform { 1.0F };
 	glm::vec4 colour { 1.0F };
 	std::uint32_t max_identifiers {};
 	std::uint32_t current_identifier {};
 	std::uint32_t max_point_lights {};
 	std::uint32_t bound_textures { 0 };
-	std::array<std::int32_t, 8> image_indices { -1 };
+	std::array<std::int32_t, max_image_indices> image_indices { -1 };
 };
 
 template <class Child> struct BaseUBO {
@@ -73,7 +75,7 @@ struct PointLight {
 
 namespace Detail {
 	template <std::size_t N> struct PointLights : BaseUBO<PointLights<N>> {
-		std::array<PointLight, N> lights;
+		std::array<PointLight, N> lights {};
 		void reset_impl() { lights.fill(PointLight {}); }
 	};
 } // namespace Detail
@@ -98,7 +100,7 @@ struct CameraUBO : BaseUBO<CameraUBO> {
 };
 
 static constexpr auto default_alignment = 16ULL;
-static constexpr auto max_allowed_texture_indices = 64ULL;
+static constexpr auto max_allowed_texture_indices = 50ULL;
 
 struct ImageIndicesUBO : BaseUBO<ImageIndicesUBO> {
 	alignas(default_alignment) std::uint32_t bound_textures { 0 };

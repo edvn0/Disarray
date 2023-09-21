@@ -33,6 +33,15 @@ void Renderer::bind_pipeline(Disarray::CommandExecutor& executor, const Disarray
 	}
 }
 
+void Renderer::bind_descriptor_sets(Disarray::CommandExecutor& executor, VkPipelineLayout pipeline_layout, const std::array<VkDescriptorSet, 3>& desc)
+{
+	if (desc != bound) {
+		vkCmdBindDescriptorSets(supply_cast<Vulkan::CommandExecutor>(executor), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0,
+			static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
+		bound = desc;
+	}
+}
+
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const GeometryProperties& properties)
 {
 	draw_mesh(executor, mesh, properties.to_transform());
@@ -64,12 +73,10 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &pc);
 
 	// material.get_descriptor_sets();
-	auto* second_desc = get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1);
-	auto* third_desc = get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 2);
-	const std::array<VkDescriptorSet, 3> desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0), second_desc,
-		third_desc };
-	vkCmdBindDescriptorSets(
-		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
+	const std::array desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0),
+		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1),
+		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 2) };
+	bind_descriptor_sets(executor, pipeline.get_layout(), desc);
 
 	std::array<VkBuffer, 1> arr {};
 	arr[0] = supply_cast<Vulkan::VertexBuffer>(mesh.get_vertices());
@@ -110,8 +117,7 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 	const std::array desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0),
 		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1),
 		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 2) };
-	vkCmdBindDescriptorSets(
-		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
+	bind_descriptor_sets(executor, pipeline.get_layout(), desc);
 
 	std::array<VkBuffer, 1> arr {};
 	arr[0] = supply_cast<Vulkan::VertexBuffer>(mesh.get_vertices());
@@ -122,9 +128,9 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 		vkCmdSetLineWidth(command_buffer, pipeline.get_properties().line_width);
 	}
 
-	vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(mesh.get_indices()), 0, VK_INDEX_TYPE_UINT32);
-
-	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(mesh.get_indices().size()), 1, 0, 0, 0);
+	const auto& indices = cast_to<Vulkan::IndexBuffer>(mesh.get_indices());
+	vkCmdBindIndexBuffer(command_buffer, indices.supply(), 0, VK_INDEX_TYPE_UINT32);
+	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(indices.size()), 1, 0, 0, 0);
 }
 
 void Renderer::draw_submesh(Disarray::CommandExecutor& executor, const Disarray::VertexBuffer& vertex_buffer,
@@ -146,8 +152,7 @@ void Renderer::draw_submesh(Disarray::CommandExecutor& executor, const Disarray:
 	const std::array desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0),
 		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1),
 		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 2) };
-	vkCmdBindDescriptorSets(
-		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
+	bind_descriptor_sets(executor, pipeline.get_layout(), desc);
 
 	std::array<VkBuffer, 1> arr {};
 	arr[0] = supply_cast<Vulkan::VertexBuffer>(vertex_buffer);

@@ -4,6 +4,7 @@
 
 #include <fmt/chrono.h>
 #include <magic_enum.hpp>
+#include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
@@ -20,29 +21,30 @@ namespace Logging {
 
 	using LoggerType = std::shared_ptr<spdlog::logger>;
 	struct Logger::LoggerDataPimpl {
-		LoggerType engine_logger { nullptr };
-		LoggerType std_err_logger { nullptr };
+		spdlog::logger logger;
+
+		LoggerDataPimpl(spdlog::logger&& in_logger)
+			: logger(in_logger)
+		{
+		}
 	};
 
 	Logger::Logger()
 	{
-		logger_data = make_scope<LoggerDataPimpl, PimplDeleter<LoggerDataPimpl>>();
+		auto engine_logger = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+		auto err_file_logger = std::make_shared<spdlog::sinks::basic_file_sink_mt>("Assets/Logs/disarray_errors.log", true);
+		err_file_logger->set_level(spdlog::level::trace);
+		spdlog::logger logger { "Disarray", { engine_logger, err_file_logger } };
+		logger_data = make_scope<LoggerDataPimpl, PimplDeleter<LoggerDataPimpl>>(std::move(logger));
 
-		logger_data->engine_logger = spdlog::stdout_color_mt("Disarray");
-		logger_data->std_err_logger = spdlog::stderr_color_mt("Error");
-
-		logger_data->engine_logger->critical("Logging engine level set to: {}", spdlog::level::to_string_view(spdlog::get_level()));
+		logger_data->logger.critical("Logging engine level set to: {}", spdlog::level::to_string_view(spdlog::get_level()));
 	}
 
-	auto Logger::Logger::debug(const std::string& message) -> void { logger_data->engine_logger->debug(message); }
+	auto Logger::Logger::debug(const std::string& message) -> void { logger_data->logger.debug(message); }
 
-	auto Logger::Logger::info(const std::string& message) -> void { logger_data->engine_logger->info(message); }
+	auto Logger::Logger::info(const std::string& message) -> void { logger_data->logger.info(message); }
 
-	auto Logger::Logger::error(const std::string& message) -> void
-	{
-		logger_data->engine_logger->error(message);
-		logger_data->std_err_logger->error(message);
-	}
+	auto Logger::Logger::error(const std::string& message) -> void { logger_data->logger.error(message); }
 
 	void Logger::initialise_logger(const std::string& log_level)
 	{

@@ -551,18 +551,18 @@ void Scene::create_entities()
 
 		const auto rotation = Maths::rotate_by(glm::radians(glm::vec3 { 180, 0, 0 }));
 
-		auto v_mesh = create("Sponza");
+		auto sponza_mesh = create("Sponza");
 		auto viking = Mesh::construct(device,
 			{
 				.path = "Assets/Models/sponza/sponza.obj",
 				.initial_rotation = rotation,
 			});
-		auto& mesh = v_mesh.add_component<Components::Mesh>(viking);
+		auto& mesh = sponza_mesh.add_component<Components::Mesh>(viking);
 		const auto& textures = mesh.mesh->get_textures();
 		std::span texture_span { textures };
 		scene_renderer->get_graphics_resource().expose_to_shaders(texture_span);
 
-		v_mesh.get_components<Components::Transform>().scale = glm::vec3 { 0.1F };
+		sponza_mesh.get_components<Components::Transform>().scale = glm::vec3 { 0.1F };
 		auto sponza_pipeline = Pipeline::construct(device,
 			{
 				.vertex_shader = vert,
@@ -575,9 +575,9 @@ void Scene::create_entities()
 				.cull_mode = CullMode::Back,
 				.descriptor_set_layouts = desc_layout,
 			});
-		v_mesh.add_component<Components::Pipeline>(sponza_pipeline);
-		v_mesh.add_component<Components::Texture>();
-		v_mesh.add_component<Components::Material>(Material::construct(device,
+		sponza_mesh.add_component<Components::Pipeline>(sponza_pipeline);
+		sponza_mesh.add_component<Components::Texture>();
+		sponza_mesh.add_component<Components::Material>(Material::construct(device,
 			{
 				.vertex_shader = vert,
 				.fragment_shader = frag,

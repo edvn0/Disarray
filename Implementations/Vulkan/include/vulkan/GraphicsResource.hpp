@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include <unordered_map>
 #include <vector>
 
 #include "core/DisarrayObject.hpp"
@@ -31,7 +32,7 @@ public:
 	void expose_to_shaders(const Disarray::Texture& tex) override { expose_to_shaders(tex.get_image()); };
 	[[nodiscard]] auto get_descriptor_set(std::uint32_t frame_index, std::uint32_t set) const -> VkDescriptorSet override
 	{
-		return descriptor_sets[(frame_index * set_count) + set];
+		return descriptor_sets.at(frame_index).at(set);
 	}
 	[[nodiscard]] auto get_descriptor_set() const -> VkDescriptorSet override { return get_descriptor_set(swapchain.get_current_frame(), 0); };
 	[[nodiscard]] auto get_descriptor_set_layouts() const -> const std::vector<VkDescriptorSetLayout>& override { return layouts; }
@@ -59,9 +60,11 @@ private:
 	CameraUBO camera_ubo {};
 	PointLights lights {};
 	ImageIndicesUBO image_indices {};
-	std::vector<std::array<Scope<Vulkan::UniformBuffer>, 4>> frame_ubos;
 
-	std::vector<VkDescriptorSet> descriptor_sets;
+	using UBOArray = std::array<Scope<Vulkan::UniformBuffer>, 4>;
+	std::unordered_map<std::size_t, UBOArray> frame_index_ubo_map {};
+
+	std::unordered_map<std::size_t, std::vector<VkDescriptorSet>> descriptor_sets;
 	std::vector<VkDescriptorSetLayout> layouts;
 	void initialise_descriptors();
 };
