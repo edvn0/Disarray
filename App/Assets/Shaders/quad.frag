@@ -79,7 +79,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 
 void main() {
 	Uniform ubo = UBO.ubo;
-  PushConstant pc = PC.pc;
+  	PushConstant pc = PC.pc;
 
 	vec3 out_vec = vec3(0.0);
 	vec3 viewDir = normalize(vec3(CBO.camera.position) - fragPosition);

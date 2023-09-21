@@ -88,8 +88,8 @@ void InterfaceLayer::construct(App&, Threading::ThreadPool&)
 
 	ImGuiStyle& style = ImGui::GetStyle();
 	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-		style.WindowRounding = 0.0f;
-		style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+		style.WindowRounding = 0.0F;
+		style.Colors[ImGuiCol_WindowBg].w = 1.0F;
 	}
 	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.15f, 0.15f, 0.15f, style.Colors[ImGuiCol_WindowBg].w);
 
@@ -108,7 +108,6 @@ void InterfaceLayer::construct(App&, Threading::ThreadPool&)
 	ImGui_ImplVulkan_Init(&init_info, supply_cast<Vulkan::RenderPass>(swapchain.get_render_pass()));
 
 	{
-		auto executor = Vulkan::construct_immediate(device);
 		FS::for_each_in_directory(
 			std::filesystem::path { "Assets/Fonts" },
 			[&fonts = io.Fonts](const auto& entry) {
@@ -118,6 +117,7 @@ void InterfaceLayer::construct(App&, Threading::ThreadPool&)
 				}
 			},
 			[](const std::filesystem::directory_entry& entry) { return entry.path().extension() == ".ttf"; });
+		auto executor = Vulkan::construct_immediate(device);
 		ImGui_ImplVulkan_CreateFontsTexture(executor->supply());
 	}
 
@@ -169,8 +169,8 @@ void InterfaceLayer::begin()
 void InterfaceLayer::end()
 {
 	ImGui::Render();
-	static constexpr VkClearColorValue clear_colour { { 0.0f, 0.0f, 0.0f, 0.0f } };
-	static constexpr VkClearDepthStencilValue depth_stencil_clear { .depth = 1.0f, .stencil = 0 };
+	static constexpr VkClearColorValue clear_colour { { 0.0F, 0.0F, 0.0F, 0.0F } };
+	static constexpr VkClearDepthStencilValue depth_stencil_clear { .depth = 1.0F, .stencil = 0 };
 
 	std::array<VkClearValue, 2> clear_values {};
 	clear_values[0].color = clear_colour;
@@ -186,8 +186,8 @@ void InterfaceLayer::end()
 	begin_info.pNext = nullptr;
 	vkBeginCommandBuffer(draw_command_buffer, &begin_info);
 
-	auto vk_render_pass = supply_cast<Vulkan::RenderPass>(vk_swapchain.get_render_pass());
-	auto vk_framebuffer = vk_swapchain.get_current_framebuffer();
+	auto* vk_render_pass = supply_cast<Vulkan::RenderPass>(vk_swapchain.get_render_pass());
+	auto* vk_framebuffer = vk_swapchain.get_current_framebuffer();
 
 	VkRenderPassBeginInfo render_pass_begin_info = {};
 	render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -219,12 +219,12 @@ void InterfaceLayer::end()
 
 		const auto& command_buffer = imgui_buffer.supply();
 		VkViewport viewport {};
-		viewport.x = 0.0f;
+		viewport.x = 0.0F;
 		viewport.y = static_cast<float>(height);
 		viewport.height = static_cast<float>(height);
 		viewport.width = static_cast<float>(width);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
+		viewport.minDepth = 0.0F;
+		viewport.maxDepth = 1.0F;
 		vkCmdSetViewport(command_buffer, 0, 1, &viewport);
 
 		VkRect2D scissor {};
@@ -234,13 +234,13 @@ void InterfaceLayer::end()
 		scissor.offset.y = 0;
 		vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-		static float scale_x { -1.0f };
-		static float scale_y { -1.0f };
+		static float scale_x { -1.0F };
+		static float scale_y { -1.0F };
 		static bool scaled_already { false };
 
 		ImDrawData* main_draw_data = ImGui::GetDrawData();
 		if (!scaled_already) {
-			const auto&& [sx, sy] = std::make_pair(1.f, 1.f);
+			const auto&& [sx, sy] = window.get_framebuffer_scale();
 			scale_x = sx;
 			scale_y = sy;
 			scaled_already = true;
@@ -267,7 +267,7 @@ void InterfaceLayer::end()
 
 	Vulkan::verify(vkEndCommandBuffer(draw_command_buffer));
 
-	if (const ImGuiIO& io = ImGui::GetIO(); io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+	if (const ImGuiIO& imgui_io = ImGui::GetIO(); imgui_io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
 		ImGui::UpdatePlatformWindows();
 		ImGui::RenderPlatformWindowsDefault();
 	}

@@ -49,7 +49,11 @@ struct GeometryProperties {
 	}
 };
 
-struct PushConstant {
+template <class Child> struct Resettable {
+	void reset() { return static_cast<Child&>(*this).reset_impl(); }
+};
+
+struct PushConstant : Resettable<PushConstant> {
 	static constexpr auto max_image_indices = 8;
 
 	glm::mat4 object_transform { 1.0F };
@@ -59,10 +63,8 @@ struct PushConstant {
 	std::uint32_t max_point_lights {};
 	std::uint32_t bound_textures { 0 };
 	std::array<std::int32_t, max_image_indices> image_indices { -1 };
-};
 
-template <class Child> struct BaseUBO {
-	void reset() { return static_cast<Child&>(*this).reset_impl(); }
+	void reset_impl();
 };
 
 struct PointLight {
@@ -74,7 +76,7 @@ struct PointLight {
 };
 
 namespace Detail {
-	template <std::size_t N> struct PointLights : BaseUBO<PointLights<N>> {
+	template <std::size_t N> struct PointLights : Resettable<PointLights<N>> {
 		std::array<PointLight, N> lights {};
 		void reset_impl() { lights.fill(PointLight {}); }
 	};
@@ -83,7 +85,7 @@ namespace Detail {
 static constexpr auto count_point_lights = 30;
 using PointLights = Detail::PointLights<count_point_lights>;
 
-struct UBO : BaseUBO<UBO> {
+struct UBO : Resettable<UBO> {
 	glm::mat4 view;
 	glm::mat4 proj;
 	glm::mat4 view_projection;
@@ -93,16 +95,16 @@ struct UBO : BaseUBO<UBO> {
 	void reset_impl();
 };
 
-struct CameraUBO : BaseUBO<CameraUBO> {
+struct CameraUBO : Resettable<CameraUBO> {
 	glm::vec4 position { 0 };
 	glm::vec4 direction { 0 };
 	void reset_impl();
 };
 
 static constexpr auto default_alignment = 16ULL;
-static constexpr auto max_allowed_texture_indices = 50ULL;
+static constexpr auto max_allowed_texture_indices = 46ULL;
 
-struct ImageIndicesUBO : BaseUBO<ImageIndicesUBO> {
+struct ImageIndicesUBO : Resettable<ImageIndicesUBO> {
 	alignas(default_alignment) std::uint32_t bound_textures { 0 };
 	alignas(default_alignment) std::array<glm::uvec4, max_allowed_texture_indices> image_indices { glm::uvec4 { 0, 0, 0, 0 } };
 

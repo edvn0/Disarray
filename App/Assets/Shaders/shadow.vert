@@ -26,7 +26,7 @@ void main() {
 	Uniform ubo = UBO.ubo;
 	PushConstant pc = PC.pc;
 
-  mat4 vp = ubo.view_projection;
+  	mat4 vp = ubo.view_projection;
 
 	gl_Position = vp * pc.object_transform * vec4(pos, 1.0);
 	fragColor = pc.colour;

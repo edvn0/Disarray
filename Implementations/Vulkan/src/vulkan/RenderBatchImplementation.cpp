@@ -75,10 +75,10 @@ void QuadVertexBatch::create_new_impl(Geometry geometry, const GeometryPropertie
 		vertex.identifier = props.identifier.value_or(0);
 	}
 
-	glm::vec3 normals = Maths::compute_normal(vertices[start_index + 1].pos, vertices[start_index + 0].pos, vertices[start_index + 2].pos);
+	glm::vec3 normals = Maths::compute_normal(vertices.at(start_index + 1).pos, vertices.at(start_index + 0).pos, vertices.at(start_index + 2).pos);
 
 	for (std::size_t i = start_index; i < start_index + vertex_per_object_count<QuadVertex>; i++) {
-		vertices[i].normals = normals;
+		vertices.at(i).normals = normals;
 	}
 
 	submitted_indices += 6;
@@ -87,8 +87,9 @@ void QuadVertexBatch::create_new_impl(Geometry geometry, const GeometryPropertie
 
 void QuadVertexBatch::submit_impl(Renderer& renderer, CommandExecutor& command_executor)
 {
-	if (submitted_indices == 0)
+	if (submitted_indices == 0) {
 		return;
+	}
 
 	prepare_data();
 

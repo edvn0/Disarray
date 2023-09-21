@@ -39,11 +39,12 @@ auto ModelLoader::construct_textures(const Disarray::Device& device) -> std::vec
 	Timer<float> texture_timer;
 	for (auto& [key, value] : mesh_data) {
 		Collections::for_each(value.texture_properties, [&captured = cache, &texts = value.textures](const TextureProperties& props) {
+			const auto mip_count = props.generate_mips ? (props.mips.has_value() ? *props.mips : 1) : 1;
 			texts.push_back(captured.put(TextureCacheCreationProperties {
 				.key = props.path.string(),
 				.debug_name = props.debug_name,
 				.path = props.path,
-				.mips = props.mips.has_value() ? *props.mips : 1,
+				.mips = mip_count,
 				.format = props.format,
 			}));
 		});

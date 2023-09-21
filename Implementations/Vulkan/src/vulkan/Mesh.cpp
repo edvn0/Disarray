@@ -39,14 +39,14 @@ Mesh::Mesh(const Disarray::Device& dev, Disarray::MeshProperties properties)
 void Mesh::load_and_initialise_model()
 {
 	static constexpr auto find_index = [](const std::vector<Ref<Disarray::Texture>>& haystack, const Ref<Disarray::Texture>& needle) {
-		std::uint32_t index = 0;
+		std::int32_t index = 0;
 		for (const auto& hay : haystack) {
 			if (hay == needle) {
 				return std::optional { index };
 			}
 			index++;
 		}
-		return std::optional<std::uint32_t> { std::nullopt };
+		return std::optional<std::int32_t> { std::nullopt };
 	};
 
 	try {
@@ -66,7 +66,7 @@ void Mesh::load_and_initialise_model()
 					.count = submesh.count<std::uint32_t>(),
 				});
 
-			std::unordered_set<std::uint32_t> image_indices {};
+			std::unordered_set<std::int32_t> image_indices {};
 			for (const auto& tex : submesh.textures) {
 				if (const auto found = find_index(mesh_textures, tex); found.has_value()) {
 					image_indices.insert(*found);

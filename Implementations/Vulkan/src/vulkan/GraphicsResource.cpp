@@ -2,28 +2,24 @@
 
 #include "vulkan/GraphicsResource.hpp"
 
-// clang-format off
-#include "core/Collections.hpp"
-#include "graphics/RendererProperties.hpp"
-#include "vulkan/Renderer.hpp"
-// clang-format on
-
 #include <glm/ext/matrix_transform.hpp>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
 #include <array>
 
-#include "core/Clock.hpp"
+#include "core/Collections.hpp"
 #include "core/Types.hpp"
+#include "core/filesystem/AssetLocations.hpp"
 #include "graphics/PipelineCache.hpp"
-#include "vulkan/CommandExecutor.hpp"
+#include "graphics/RendererProperties.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/IndexBuffer.hpp"
 #include "vulkan/Mesh.hpp"
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/RenderPass.hpp"
+#include "vulkan/Renderer.hpp"
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/UniformBuffer.hpp"
 #include "vulkan/VertexBuffer.hpp"
@@ -33,31 +29,24 @@ namespace Disarray::Vulkan {
 GraphicsResource::GraphicsResource(const Disarray::Device& dev, const Disarray::Swapchain& sc)
 	: device(dev)
 	, swapchain(sc)
-	, pipeline_cache(dev, "Assets/Shaders")
-	, texture_cache(dev, "Assets/Textures")
+	, swapchain_image_count(swapchain.image_count())
+	, pipeline_cache(dev, FS::shader_directory())
+	, texture_cache(dev, FS::texture_directory())
 {
-	frame_index_ubo_map.reserve(sc.image_count());
-	for (std::size_t i = 0; i < swapchain.image_count(); i++) {
+	frame_index_ubo_map.reserve(swapchain_image_count);
+	for (std::size_t i = 0; i < swapchain_image_count; i++) {
 		UBOArray current_frame_ubos {};
 		current_frame_ubos[0] = make_scope<Vulkan::UniformBuffer>(device,
 			BufferProperties {
 				.size = sizeof(UBO),
-				.binding = 0,
 			});
 		current_frame_ubos[1] = make_scope<Vulkan::UniformBuffer>(device,
 			BufferProperties {
 				.size = sizeof(CameraUBO),
-				.binding = 1,
 			});
 		current_frame_ubos[2] = make_scope<Vulkan::UniformBuffer>(device,
 			BufferProperties {
 				.size = sizeof(PointLights),
-				.binding = 2,
-			});
-		current_frame_ubos[3] = make_scope<Vulkan::UniformBuffer>(device,
-			BufferProperties {
-				.size = sizeof(ImageIndicesUBO),
-				.binding = 3,
 			});
 		frame_index_ubo_map.try_emplace(i, std::move(current_frame_ubos));
 	}
@@ -65,14 +54,20 @@ GraphicsResource::GraphicsResource(const Disarray::Device& dev, const Disarray::
 	initialise_descriptors();
 }
 
-void GraphicsResource::initialise_descriptors()
+void GraphicsResource::recreate(bool should_clean, const Extent& extent) { initialise_descriptors(should_clean); }
+
+void GraphicsResource::initialise_descriptors(bool should_clean)
 {
+	if (should_clean) {
+		cleanup_graphics_resource();
+	}
+
 	auto* vk_device = supply_cast<Vulkan::Device>(device);
 
 	TextureCacheCreationProperties texture_properties {
 		.key = "viking",
 		.debug_name = "viking",
-		.path = "Assets/Textures/viking_room.png",
+		.path = FS::texture("viking_room.png"),
 		.format = ImageFormat::SBGR,
 	};
 	const auto& viking_room = texture_cache.put(texture_properties);
@@ -95,12 +90,6 @@ void GraphicsResource::initialise_descriptors()
 	point_light_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	point_light_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
 
-	auto image_indices_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
-	image_indices_binding.descriptorCount = 1;
-	image_indices_binding.binding = 3;
-	image_indices_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	image_indices_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
-
 	auto image_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
 	image_binding.descriptorCount = 1;
 	image_binding.binding = 0;
@@ -110,11 +99,17 @@ void GraphicsResource::initialise_descriptors()
 	auto image_array_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
 	image_array_binding.descriptorCount = max_allowed_texture_indices;
 	image_array_binding.binding = 0;
-	image_array_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	image_array_binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 	image_array_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
+	auto image_array_sampler_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
+	image_array_sampler_binding.descriptorCount = 1;
+	image_array_sampler_binding.binding = 1;
+	image_array_sampler_binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+	image_array_sampler_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
 	auto layout_create_info = vk_structures<VkDescriptorSetLayoutCreateInfo> {}();
-	std::array set_zero_bindings = { default_binding, camera_binding, point_light_binding, image_indices_binding };
+	std::array set_zero_bindings = { default_binding, camera_binding, point_light_binding };
 	layout_create_info.bindingCount = static_cast<std::uint32_t>(set_zero_bindings.size());
 	layout_create_info.pBindings = set_zero_bindings.data();
 
@@ -127,8 +122,9 @@ void GraphicsResource::initialise_descriptors()
 	layout_create_info.pBindings = &image_binding;
 	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &image_layout));
 
-	layout_create_info.bindingCount = 1;
-	layout_create_info.pBindings = &image_array_binding;
+	std::array set_two_bindings = { image_array_binding, image_array_sampler_binding };
+	layout_create_info.bindingCount = static_cast<std::uint32_t>(set_two_bindings.size());
+	layout_create_info.pBindings = set_two_bindings.data();
 	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &image_array_layout));
 
 	layouts = { set_zero_layout, image_layout, image_array_layout };
@@ -167,18 +163,19 @@ void GraphicsResource::initialise_descriptors()
 	VkDescriptorSetAllocateInfo alloc_info {};
 	alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	alloc_info.descriptorPool = pool;
-	alloc_info.descriptorSetCount = static_cast<uint32_t>(desc_layouts.size());
+	alloc_info.descriptorSetCount = static_cast<std::uint32_t>(desc_layouts.size());
 	alloc_info.pSetLayouts = desc_layouts.data();
 
-	for (auto i = 0U; i < swapchain.image_count(); i++) {
+	for (auto i = 0U; i < swapchain_image_count; i++) {
 		std::vector<VkDescriptorSet> desc_sets {};
 		desc_sets.resize(set_count);
 		vkAllocateDescriptorSets(vk_device, &alloc_info, desc_sets.data());
 		descriptor_sets.try_emplace(i, std::move(desc_sets));
 	}
 
-	for (std::size_t i = 0; i < swapchain.image_count(); i++) {
+	for (std::size_t i = 0; i < swapchain_image_count; i++) {
 		const auto& ubos = frame_index_ubo_map.at(i);
+		auto& frame_descriptor_sets = descriptor_sets.at(i);
 
 		VkDescriptorBufferInfo renderer_buffer {};
 		renderer_buffer.buffer = supply_cast<Vulkan::UniformBuffer>(*ubos[0]);
@@ -195,14 +192,7 @@ void GraphicsResource::initialise_descriptors()
 		point_light_buffer.offset = 0;
 		point_light_buffer.range = sizeof(PointLights);
 
-		VkDescriptorBufferInfo image_indices_buffer {};
-		image_indices_buffer.buffer = supply_cast<Vulkan::UniformBuffer>(*ubos[3]);
-		image_indices_buffer.offset = 0;
-		image_indices_buffer.range = sizeof(ImageIndicesUBO);
-
-		auto& frame_descriptor_sets = descriptor_sets.at(i);
-
-		auto write_sets = vk_structures<VkWriteDescriptorSet, 5> {}.multiple();
+		auto write_sets = vk_structures<VkWriteDescriptorSet, 4> {}.multiple();
 		write_sets[0].dstSet = frame_descriptor_sets.at(0);
 		write_sets[0].dstBinding = 0;
 		write_sets[0].dstArrayElement = 0;
@@ -224,20 +214,13 @@ void GraphicsResource::initialise_descriptors()
 		write_sets[2].descriptorCount = 1;
 		write_sets[2].pBufferInfo = &point_light_buffer;
 
-		write_sets[3].dstSet = frame_descriptor_sets.at(0);
-		write_sets[3].dstBinding = 3;
-		write_sets[3].dstArrayElement = 0;
-		write_sets[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		write_sets[3].descriptorCount = 1;
-		write_sets[3].pBufferInfo = &image_indices_buffer;
-
 		VkDescriptorImageInfo image_info = cast_to<Vulkan::Image>(viking_room->get_image()).get_descriptor_info();
-		write_sets[4].dstSet = frame_descriptor_sets.at(1);
-		write_sets[4].dstBinding = 0;
-		write_sets[4].dstArrayElement = 0;
-		write_sets[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		write_sets[4].descriptorCount = 1;
-		write_sets[4].pImageInfo = &image_info;
+		write_sets[3].dstSet = frame_descriptor_sets.at(1);
+		write_sets[3].dstBinding = 0;
+		write_sets[3].dstArrayElement = 0;
+		write_sets[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		write_sets[3].descriptorCount = 1;
+		write_sets[3].pImageInfo = &image_info;
 
 		vkUpdateDescriptorSets(vk_device, static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
 	}
@@ -251,21 +234,43 @@ void GraphicsResource::expose_to_shaders(const Disarray::Image& image)
 void GraphicsResource::expose_to_shaders(std::span<const Ref<Disarray::Texture>> span)
 {
 	auto image_infos = Collections::map(span, [](const Ref<Disarray::Texture>& texture) -> VkDescriptorImageInfo {
-		return cast_to<Vulkan::Image>(texture->get_image()).get_descriptor_info();
+		const auto& desc_info = cast_to<Vulkan::Image>(texture->get_image()).get_descriptor_info();
+		return {
+			.sampler = nullptr,
+			.imageView = desc_info.imageView,
+			.imageLayout = desc_info.imageLayout,
+		};
 	});
 
 	const auto* data = image_infos.data();
 	const auto size = static_cast<std::uint32_t>(image_infos.size());
+
 	std::vector<VkWriteDescriptorSet> write_sets {};
-	for (std::size_t i = 0; i < swapchain.image_count(); i++) {
+	static VkSampler default_sampler = cast_to<Vulkan::Image>(span[0]->get_image()).get_descriptor_info().sampler;
+	static VkDescriptorImageInfo sampler_info {
+		.sampler = default_sampler,
+		.imageView = nullptr,
+		.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+	};
+
+	for (std::size_t i = 0; i < swapchain_image_count; i++) {
 		auto& write_set = write_sets.emplace_back();
 		write_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		write_set.dstSet = descriptor_sets.at(i).at(2);
 		write_set.dstBinding = 0;
 		write_set.dstArrayElement = 0;
-		write_set.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		write_set.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 		write_set.descriptorCount = size;
 		write_set.pImageInfo = data;
+
+		auto& sampler = write_sets.emplace_back();
+		sampler.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		sampler.dstSet = descriptor_sets.at(i).at(2);
+		sampler.dstBinding = 1;
+		sampler.dstArrayElement = 0;
+		sampler.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+		sampler.descriptorCount = 1;
+		sampler.pImageInfo = &sampler_info;
 	}
 
 	vkUpdateDescriptorSets(supply_cast<Vulkan::Device>(device), static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
@@ -277,15 +282,16 @@ void GraphicsResource::update_ubo()
 	current_uniform.at(0)->set_data(&uniform, sizeof(UBO));
 	current_uniform.at(1)->set_data(&camera_ubo, sizeof(CameraUBO));
 	current_uniform.at(2)->set_data(&lights, sizeof(PointLights));
-	current_uniform.at(3)->set_data(&image_indices, sizeof(ImageIndicesUBO));
 }
 
-GraphicsResource::~GraphicsResource()
+void GraphicsResource::cleanup_graphics_resource()
 {
 	const auto& vk_device = supply_cast<Vulkan::Device>(device);
+	descriptor_sets.clear();
 	Collections::for_each(layouts, [&vk_device](VkDescriptorSetLayout& layout) { vkDestroyDescriptorSetLayout(vk_device, layout, nullptr); });
-
 	vkDestroyDescriptorPool(vk_device, pool, nullptr);
 }
+
+GraphicsResource::~GraphicsResource() { cleanup_graphics_resource(); }
 
 } // namespace Disarray::Vulkan

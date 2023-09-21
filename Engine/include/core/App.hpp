@@ -45,6 +45,10 @@ public:
 	explicit App(const ApplicationProperties&);
 	void run();
 
+	void update_layers(float time_step);
+	void render_layers();
+	void render_ui(const std::shared_ptr<Disarray::UI::InterfaceLayer>& ui_layer);
+
 	virtual void on_attach() = 0;
 	virtual void on_detach() = 0;
 

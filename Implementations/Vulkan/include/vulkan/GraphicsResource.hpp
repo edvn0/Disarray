@@ -24,6 +24,8 @@ public:
 	GraphicsResource(const Disarray::Device&, const Disarray::Swapchain&);
 	~GraphicsResource() override;
 
+	void recreate(bool should_clean, const Extent& extent) override;
+
 	[[nodiscard]] auto get_pipeline_cache() -> PipelineCache& override { return pipeline_cache; }
 	[[nodiscard]] auto get_texture_cache() -> TextureCache& override { return texture_cache; }
 
@@ -39,16 +41,16 @@ public:
 	[[nodiscard]] auto get_push_constant() const -> const PushConstant* override { return &pc; }
 	auto get_editable_push_constant() -> PushConstant& override { return pc; }
 
-	auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&, ImageIndicesUBO&> override
-	{
-		return { uniform, camera_ubo, lights, image_indices };
-	}
+	auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&> override { return { uniform, camera_ubo, lights }; }
 
 	void update_ubo() override;
 
 private:
+	void cleanup_graphics_resource();
+
 	const Disarray::Device& device;
 	const Disarray::Swapchain& swapchain;
+	std::uint32_t swapchain_image_count { 0 };
 
 	Disarray::PipelineCache pipeline_cache;
 	Disarray::TextureCache texture_cache;
@@ -59,14 +61,12 @@ private:
 	UBO uniform {};
 	CameraUBO camera_ubo {};
 	PointLights lights {};
-	ImageIndicesUBO image_indices {};
-
-	using UBOArray = std::array<Scope<Vulkan::UniformBuffer>, 4>;
+	using UBOArray = std::array<Scope<Vulkan::UniformBuffer>, 3>;
 	std::unordered_map<std::size_t, UBOArray> frame_index_ubo_map {};
 
 	std::unordered_map<std::size_t, std::vector<VkDescriptorSet>> descriptor_sets;
 	std::vector<VkDescriptorSetLayout> layouts;
-	void initialise_descriptors();
+	void initialise_descriptors(bool should_clean = false);
 };
 
 } // namespace Disarray::Vulkan

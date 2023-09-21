@@ -253,6 +253,7 @@
       "Swapchains",
       "timestep",
       "tparam",
+      "ubos",
       "Vulkan"
     ]
   }

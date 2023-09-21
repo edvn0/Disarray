@@ -127,6 +127,7 @@ set(ENGINE_SOURCES
         src/core/DataBuffer.cpp
         src/core/exceptions/BaseException.cpp
         src/core/filesystem/FileIO.cpp
+        src/core/filesystem/AssetLocations.cpp
         src/core/Layer.cpp
         src/core/ReferenceCounted.cpp
         src/core/App.cpp

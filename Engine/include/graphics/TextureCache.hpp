@@ -56,6 +56,7 @@ public:
 		return Texture::construct(get_device(),
 			TextureProperties {
 				.generate_mips = true,
+				.mips = props.mips,
 				.path = props.path.string(),
 				.locked_extent = true,
 				.debug_name = props.debug_name,

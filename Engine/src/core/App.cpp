@@ -78,29 +78,20 @@ void App::run()
 			continue;
 		}
 
-		const auto needs_recreation = swapchain->needs_recreation();
 		float time_step = Clock::ms() - current_time;
+
 		window->handle_input(time_step);
-
-		for (auto& layer : layers) {
-			if (needs_recreation) {
-				layer->handle_swapchain_recreation(*swapchain);
-			}
-			layer->update(time_step);
-			layer->render();
-		}
+		update_layers(time_step);
+		render_layers();
 		statistics.cpu_time = time_step;
+		render_ui(ui_layer);
 
-		ui_layer->begin();
-		for (auto& layer : layers) {
-			layer->interface();
-		}
-		ui_layer->end();
-
-		auto begin_present_time = Clock::ns();
 		swapchain->reset_recreation_status();
+		
+		auto begin_present_time = Clock::ns();
 		swapchain->present();
 		statistics.presentation_time = Clock::ns() - begin_present_time;
+		
 		statistics.frame_time = Clock::ms() - current_time;
 		current_time = Clock::ms();
 	}
@@ -114,6 +105,33 @@ void App::run()
 	layers.clear();
 
 	on_detach();
+}
+
+void App::update_layers(float time_step)
+{
+	const auto needs_recreation = swapchain->needs_recreation();
+	for (auto& layer : layers) {
+		if (needs_recreation) {
+			layer->handle_swapchain_recreation(*swapchain);
+		}
+		layer->update(time_step);
+	}
+}
+
+void App::render_layers()
+{
+	for (auto& layer : layers) {
+		layer->render();
+	}
+}
+
+void App::render_ui(const std::shared_ptr<Disarray::UI::InterfaceLayer>& ui_layer)
+{
+	ui_layer->begin();
+	for (auto& layer : layers) {
+		layer->interface();
+	}
+	ui_layer->end();
 }
 
 auto App::could_prepare_frame() -> bool

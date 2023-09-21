@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <string_view>
 
+#include "core/filesystem/AssetLocations.hpp"
 #include "ui/UI.hpp"
 
 namespace Disarray::Client {
@@ -175,12 +176,12 @@ void DirectoryContentPanel::construct(App&, Threading::ThreadPool& pool)
 	current_directory_content = path_and_content_cache[current];
 	directory_icon = Texture::construct(device,
 		{
-			.path = "Assets/Icons/Directory.png",
+			.path = FS::icon("Directory.png"),
 			.debug_name = "DirectoryContentPanelImage-Directory",
 		});
 	file_icon = Texture::construct(device,
 		{
-			.path = "Assets/Icons/File.png",
+			.path = FS::icon("File.png"),
 			.debug_name = "DirectoryContentPanelImage-File",
 		});
 

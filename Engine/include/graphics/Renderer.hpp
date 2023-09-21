@@ -24,6 +24,8 @@ class IGraphicsResource {
 public:
 	virtual ~IGraphicsResource() = default;
 
+	virtual auto recreate(bool should_clean, const Extent& extent) -> void = 0;
+
 	virtual auto get_pipeline_cache() -> PipelineCache& = 0;
 	virtual auto get_texture_cache() -> TextureCache& = 0;
 
@@ -37,7 +39,7 @@ public:
 	[[nodiscard]] virtual auto get_push_constant() const -> const PushConstant* = 0;
 	virtual auto get_editable_push_constant() -> PushConstant& = 0;
 
-	virtual auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&, ImageIndicesUBO&> = 0;
+	virtual auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&> = 0;
 
 	virtual void update_ubo() = 0;
 };

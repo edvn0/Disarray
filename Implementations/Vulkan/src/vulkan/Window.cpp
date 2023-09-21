@@ -15,8 +15,10 @@
 #include "core/events/KeyEvent.hpp"
 #include "core/events/MouseEvent.hpp"
 #include "core/exceptions/GeneralExceptions.hpp"
+#include "core/filesystem/AssetLocations.hpp"
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/exceptions/VulkanExceptions.hpp"
+
 
 namespace Disarray::Vulkan {
 
@@ -156,25 +158,25 @@ Window::Window(const Disarray::WindowProperties& properties)
 		user_data.fullscreen = true;
 	} else {
 		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-		window = glfwCreateWindow(width, height, name.c_str(), nullptr, nullptr);
+		window = glfwCreateWindow(static_cast<int>(width), static_cast<int>(height), name.c_str(), nullptr, nullptr);
 		user_data.fullscreen = false;
 
 		glfwSetWindowPos(window, 100, 100);
 
-		int px;
-		int py;
-		glfwGetWindowPos(window, &px, &py);
-		user_data.pos_x = px;
-		user_data.pos_y = py;
+		int pos_x {};
+		int pos_y {};
+		glfwGetWindowPos(window, &pos_x, &pos_y);
+		user_data.pos_x = pos_x;
+		user_data.pos_y = pos_y;
 		glfwShowWindow(window);
 	}
 
 	{
 		DataBuffer buffer;
-		ImageLoader loader { "Assets/Icons/Disarray_Logo.png", buffer };
+		ImageLoader loader { FS::icon("Disarray_Logo.png"), buffer };
 		std::array<GLFWimage, 1> images {};
-		images[0].width = loader.get_extent().width;
-		images[0].height = loader.get_extent().height;
+		images[0].width = static_cast<int>(loader.get_extent().width);
+		images[0].height = static_cast<int>(loader.get_extent().height);
 		images[0].pixels = Disarray::bit_cast<unsigned char*>(buffer.get_data());
 		glfwSetWindowIcon(window, 1, images.data());
 	}
@@ -212,7 +214,7 @@ auto Window::get_framebuffer_size() -> std::pair<int, int>
 
 void Window::reset_resize_status() { user_data.was_resized = false; }
 
-bool Window::was_resized() const { return user_data.was_resized; }
+auto Window::was_resized() const -> bool { return user_data.was_resized; }
 
 void Window::wait_for_minimisation()
 {
@@ -225,7 +227,7 @@ void Window::wait_for_minimisation()
 	}
 }
 
-std::pair<float, float> Window::get_framebuffer_scale()
+auto Window::get_framebuffer_scale() -> std::pair<float, float>
 {
 	float width = 0.0F;
 	float height = 0.0F;
