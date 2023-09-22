@@ -19,12 +19,23 @@
 
 namespace Disarray {
 
+auto AppDeleter::operator()(Disarray::App* ptr) -> void
+{
+	Log::info("App", "{}", "Successfully exited application.");
+	delete ptr;
+}
+
 App::App(const Disarray::ApplicationProperties& props)
 {
 	const auto& path = props.working_directory;
 	std::filesystem::current_path(path);
 
-	window = Window::construct({ .width = props.width, .height = props.height, .name = props.name, .is_fullscreen = props.is_fullscreen });
+	window = Window::construct({
+		.width = props.width,
+		.height = props.height,
+		.name = props.name,
+		.is_fullscreen = props.is_fullscreen,
+	});
 	device = Device::construct(*window);
 	window->register_event_handler(*this);
 
@@ -44,12 +55,6 @@ void App::on_event(Event& event)
 	}
 }
 
-auto AppDeleter::operator()(Disarray::App* ptr) -> void
-{
-	Log::info("App", "{}", "Successfully exited application.");
-	delete ptr;
-}
-
 App::~App()
 {
 	destroy_debug_applications();
@@ -60,7 +65,7 @@ void App::run()
 {
 	on_attach();
 
-	Threading::ThreadPool pool { {}, 2 };
+	Threading::ThreadPool pool { {}, 20 };
 
 	auto ui_layer = add_layer<UI::InterfaceLayer>();
 
