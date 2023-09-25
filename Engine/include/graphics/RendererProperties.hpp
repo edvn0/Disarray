@@ -82,7 +82,7 @@ namespace Detail {
 	};
 } // namespace Detail
 
-static constexpr auto count_point_lights = 30;
+static constexpr auto count_point_lights = 5;
 using PointLights = Detail::PointLights<count_point_lights>;
 
 struct UBO : Resettable<UBO> {

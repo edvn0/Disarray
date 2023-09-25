@@ -21,6 +21,20 @@
 
 namespace Disarray {
 
+enum class ParameterType : std::uint8_t {
+	Empty,
+	Vec2,
+	Vec3,
+	Vec4,
+	Float,
+	Double,
+	Integer,
+	Uint8,
+	Uint32,
+	Uint64,
+	String,
+};
+
 // KV-Pair with general parameters for a script: "Velocity, glm::vec3 {0,-1,0}" e.g.
 using Parameter
 	= std::variant<std::monostate, glm::vec2, glm::vec3, glm::vec4, float, double, int, std::uint8_t, std::uint32_t, std::size_t, std::string>;
@@ -57,6 +71,7 @@ public:
 
 	void update_entity(Scene*, entt::entity);
 	auto get_parameters() -> Collections::StringViewMap<Parameter>& { return parameters; }
+	[[nodiscard]] auto get_parameters() const -> const Collections::StringViewMap<Parameter>& { return parameters; }
 
 protected:
 	explicit CppScript(const Collections::StringViewMap<Parameter>& params);

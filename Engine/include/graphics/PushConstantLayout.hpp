@@ -1,5 +1,7 @@
 #pragma once
 
+#include <magic_enum.hpp>
+
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -40,10 +42,16 @@ struct PushConstantRange {
 
 struct PushConstantLayout {
 	PushConstantLayout(const std::initializer_list<PushConstantRange>& ranges_in);
+	PushConstantLayout() = default;
 	[[nodiscard]] auto get_input_ranges() const -> const std::vector<PushConstantRange>&;
 	[[nodiscard]] auto size() const -> std::size_t;
+	void set_ranges(std::vector<PushConstantRange> new_ranges) { ranges = std::move(new_ranges); }
 
 private:
-	std::vector<PushConstantRange> ranges;
+	std::vector<PushConstantRange> ranges {};
 };
 } // namespace Disarray
+
+template <> struct magic_enum::customize::enum_range<Disarray::PushConstantKind> {
+	static constexpr bool is_flags = true;
+};

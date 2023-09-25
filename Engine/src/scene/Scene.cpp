@@ -505,16 +505,16 @@ void Scene::create_entities()
 				auto rect = create(fmt::format("Rect{}-{}", i, j));
 				parent.add_child(rect);
 				auto& transform = rect.template get_components<Components::Transform>();
-				transform.position = { 5 * static_cast<float>(i) + 2.5f, -1, 5 * static_cast<float>(j) + 2.5f };
-				transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
+				transform.position = { 5 * static_cast<float>(i) + 2.5F, -1, 5 * static_cast<float>(j) + 2.5F };
+				transform.rotation = glm::angleAxis(glm::radians(90.0F), glm::vec3 { 1, 0, 0 });
 				float col_x = (i + (static_cast<float>(rects) / 2)) / static_cast<float>(rects);
 				float col_y = (j + (static_cast<float>(rects) / 2)) / static_cast<float>(rects);
 				if (col_x == 0) {
-					col_x += 0.2f;
+					col_x += 0.2F;
 				}
 
 				if (col_y == 0) {
-					col_y += 0.2f;
+					col_y += 0.2F;
 				}
 				glm::vec4 colour { col_x, 0, col_y, 1 };
 				rect.add_component<Components::Mesh>(cube_mesh);
@@ -661,11 +661,10 @@ void Scene::create_entities()
 	}
 
 	{
-		static constexpr auto max_radius = 8U;
-		static constexpr auto point_lights = 30U;
+		static constexpr auto max_radius = 3U;
 
-		auto colours = generate_colours<point_lights>();
-		constexpr auto angles = generate_angles<point_lights>();
+		auto colours = generate_colours<count_point_lights>();
+		constexpr auto angles = generate_angles<count_point_lights>();
 
 		const auto sphere = Mesh::construct(device,
 			{

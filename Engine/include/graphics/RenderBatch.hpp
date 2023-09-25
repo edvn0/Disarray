@@ -7,11 +7,9 @@
 #include "graphics/Device.hpp"
 #include "graphics/IndexBuffer.hpp"
 #include "graphics/Pipeline.hpp"
-#include "graphics/PipelineCache.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/VertexBuffer.hpp"
 #include "graphics/VertexTypes.hpp"
-#include "scene/Camera.hpp"
 
 namespace Disarray {
 
