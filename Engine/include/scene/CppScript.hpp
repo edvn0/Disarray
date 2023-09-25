@@ -11,15 +11,29 @@
 #include "core/Concepts.hpp"
 #include "core/PointerDefinition.hpp"
 
-#define DISARRAY_FOR_TYPE(Type)                                                                                                                      \
+#define DISARRAY_FOR_TYPE(label, Type)                                                                                                               \
 	if constexpr (std::is_same_v<T, Type>) {                                                                                                         \
 		if (std::holds_alternative<Type>(parameter)) {                                                                                               \
-			return func(std::get<Type>(parameter));                                                                                                  \
+			return func(name, std::get<Type>(parameter));                                                                                            \
 		}                                                                                                                                            \
 		return false;                                                                                                                                \
 	}
 
 namespace Disarray {
+
+enum class ParameterType : std::uint8_t {
+	Empty,
+	Vec2,
+	Vec3,
+	Vec4,
+	Float,
+	Double,
+	Integer,
+	Uint8,
+	Uint32,
+	Uint64,
+	String,
+};
 
 // KV-Pair with general parameters for a script: "Velocity, glm::vec3 {0,-1,0}" e.g.
 using Parameter
@@ -27,18 +41,18 @@ using Parameter
 
 template <class T>
 	requires((AnyOf<T, std::monostate, glm::vec2, glm::vec3, glm::vec4, float, double, int, std::uint8_t, std::uint32_t, std::size_t, std::string>))
-static constexpr auto switch_parameter = [](Parameter& parameter, auto&& func) -> bool {
-	DISARRAY_FOR_TYPE(std::monostate);
-	DISARRAY_FOR_TYPE(glm::vec2);
-	DISARRAY_FOR_TYPE(glm::vec3);
-	DISARRAY_FOR_TYPE(glm::vec4);
-	DISARRAY_FOR_TYPE(float);
-	DISARRAY_FOR_TYPE(double);
-	DISARRAY_FOR_TYPE(int);
-	DISARRAY_FOR_TYPE(std::uint8_t);
-	DISARRAY_FOR_TYPE(std::uint32_t);
-	DISARRAY_FOR_TYPE(std::size_t);
-	DISARRAY_FOR_TYPE(std::string);
+static constexpr auto switch_parameter = [](std::string_view name, Parameter& parameter, auto&& func) -> bool {
+	DISARRAY_FOR_TYPE(name, std::monostate);
+	DISARRAY_FOR_TYPE(name, glm::vec2);
+	DISARRAY_FOR_TYPE(name, glm::vec3);
+	DISARRAY_FOR_TYPE(name, glm::vec4);
+	DISARRAY_FOR_TYPE(name, float);
+	DISARRAY_FOR_TYPE(name, double);
+	DISARRAY_FOR_TYPE(name, int);
+	DISARRAY_FOR_TYPE(name, std::uint8_t);
+	DISARRAY_FOR_TYPE(name, std::uint32_t);
+	DISARRAY_FOR_TYPE(name, std::size_t);
+	DISARRAY_FOR_TYPE(name, std::string);
 
 	return false;
 };
@@ -57,6 +71,7 @@ public:
 
 	void update_entity(Scene*, entt::entity);
 	auto get_parameters() -> Collections::StringViewMap<Parameter>& { return parameters; }
+	[[nodiscard]] auto get_parameters() const -> const Collections::StringViewMap<Parameter>& { return parameters; }
 
 protected:
 	explicit CppScript(const Collections::StringViewMap<Parameter>& params);

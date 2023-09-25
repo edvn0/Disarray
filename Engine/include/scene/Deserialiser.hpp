@@ -91,6 +91,7 @@ namespace {
 					Log::error("SceneDeserialiser", "{}", exc.what());
 					continue;
 				}
+
 				deserialise_component<Components::QuadGeometry>(components, entity);
 				deserialise_component<Components::LineGeometry>(components, entity);
 				deserialise_component<Components::Script>(components, entity);

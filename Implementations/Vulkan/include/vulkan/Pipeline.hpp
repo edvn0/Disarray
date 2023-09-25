@@ -30,6 +30,7 @@ private:
 	void try_find_or_recreate_cache();
 	void recreate_pipeline(bool, const Extent&);
 	auto initialise_blend_states() -> std::vector<VkPipelineColorBlendAttachmentState>;
+	void register_framebuffer_callback();
 
 	static auto retrieve_shader_stages(Ref<Disarray::Shader> vertex, Ref<Disarray::Shader> fragment)
 		-> std::pair<VkPipelineShaderStageCreateInfo, VkPipelineShaderStageCreateInfo>;

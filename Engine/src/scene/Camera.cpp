@@ -58,7 +58,7 @@ EditorCamera::EditorCamera(
 
 void EditorCamera::init(EditorCamera* previous_camera)
 {
-	if (previous_camera) {
+	if (previous_camera != nullptr) {
 		position = previous_camera->position;
 		position_delta = previous_camera->position_delta;
 		yaw = previous_camera->yaw;
@@ -140,19 +140,22 @@ void EditorCamera::on_update(const float time_step)
 	yaw += yaw_delta;
 	pitch += pitch_delta;
 
-	if (camera_mode == CameraMode::Arcball)
+	if (camera_mode == CameraMode::Arcball) {
 		position = calculate_position();
+	}
 
 	update_camera_view();
 }
 
-float EditorCamera::get_camera_speed() const
+auto EditorCamera::get_camera_speed() const -> float
 {
 	float speed = normal_speed;
-	if (Input::key_pressed(KeyCode::LeftControl))
+	if (Input::key_pressed(KeyCode::LeftControl)) {
 		speed /= 2 - glm::log(normal_speed);
-	if (Input::key_pressed(KeyCode::LeftShift))
+	}
+	if (Input::key_pressed(KeyCode::LeftShift)) {
 		speed *= 2 - glm::log(normal_speed);
+	}
 
 	return glm::clamp(speed, min_speed, max_speed);
 }
@@ -162,8 +165,9 @@ void EditorCamera::update_camera_view()
 	const float yaw_sign = get_up_direction().y < 0 ? -1.0f : 1.0F;
 
 	const float cos_angle = glm::dot(get_forward_direction(), get_up_direction());
-	if (cos_angle * yaw_sign > 0.99F)
+	if (cos_angle * yaw_sign > 0.99F) {
 		pitch_delta = 0.F;
+	}
 
 	const glm::vec3 look_at = position + get_forward_direction();
 	direction = glm::normalize(look_at - position);
@@ -198,7 +202,7 @@ std::pair<float, float> EditorCamera::pan_speed() const
 	return { x_factor, y_factor };
 }
 
-float EditorCamera::rotation_speed() { return 0.3F; }
+auto EditorCamera::rotation_speed() -> float { return 0.3F; }
 
 auto EditorCamera::zoom_speed() const -> float
 {
@@ -215,7 +219,7 @@ void EditorCamera::on_event(Event& event)
 	dispatcher.dispatch<MouseScrolledEvent>([this](MouseScrolledEvent& e) { return on_mouse_scroll(e); });
 }
 
-bool EditorCamera::on_mouse_scroll(MouseScrolledEvent& e)
+auto EditorCamera::on_mouse_scroll(MouseScrolledEvent& e) -> bool
 {
 	if (Input::button_pressed(MouseCode::Right)) {
 		normal_speed += e.get_y_offset() * 0.3f * normal_speed;

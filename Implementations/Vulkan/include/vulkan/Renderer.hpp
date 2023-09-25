@@ -17,6 +17,7 @@
 #include "graphics/UniformBuffer.hpp"
 #include "graphics/VertexBuffer.hpp"
 #include "graphics/VertexTypes.hpp"
+#include "scene/Camera.hpp"
 
 namespace Disarray::Vulkan {
 

@@ -11,21 +11,15 @@ using namespace std::string_view_literals;
 auto PipelineDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return object.contains("properties"); }
 void PipelineDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Pipeline& pipeline, const Device& device)
 {
+	using Path = std::filesystem::path;
 	auto props = object["properties"];
+
 	PipelineProperties properties {
-		.vertex_shader = Shader::construct(device,
-			ShaderProperties {
-				.path = props["vertex_shader"].get<std::filesystem::path>(),
-				.identifier = props["vertex_identifier"].get<std::filesystem::path>(),
-			}),
-		.fragment_shader = Shader::construct(device,
-			ShaderProperties {
-				.path = props["fragment_shader"].get<std::filesystem::path>(),
-				.identifier = props["fragment_identifier"].get<std::filesystem::path>(),
-			}),
+		.vertex_shader = Shader::compile(device, Path { props["vertex_shader"].get<std::string>() }),
+		.fragment_shader = Shader::compile(device, Path { props["fragment_shader"].get<std::string>() }),
 		// framebuffer,
-		// layout {,
-		// push_constant_layout {,
+		.layout = props["vertex_layout"],
+		.push_constant_layout = props["push_constant_layout"],
 		.extent = props["extent"],
 		.polygon_mode = to_enum_value<PolygonMode>(props, "polygon_mode").value_or(PolygonMode::Fill),
 		.line_width = props["line_width"],
@@ -49,11 +43,22 @@ void ScriptDeserialiser::deserialise_impl(const nlohmann::json& object, Componen
 	static Collections::StringMap<Scope<CppScript>> scripts {};
 	const auto& s = scripts[identifier];
 
-	const json& json_parameters = object["parameters"];
 	Collections::StringViewMap<Parameter> parameters {};
+	
+	if (object.contains("parameters")) {
+		const json& json_parameters = object["parameters"];
+
+		for (auto&& [key, val] : json_parameters.items()) {
+			parameters.try_emplace(key, val);
+		}
+	}
 
 	if (identifier == "MoveInCircle") {
 		script.bind<Scripts::MoveInCircleScript>(parameters);
+	}
+
+	if (identifier == "LinearMovement") {
+		script.bind<Scripts::LinearMovementScript>(parameters);
 	}
 }
 

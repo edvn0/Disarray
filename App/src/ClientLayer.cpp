@@ -36,7 +36,7 @@ template <std::size_t Count> static consteval auto generate_angles_client() -> s
 
 ClientLayer::ClientLayer(Device& device, Window& win, Swapchain& swapchain)
 	: device(device)
-	, camera(60.F, static_cast<float>(swapchain.get_extent().width), static_cast<float>(swapchain.get_extent().height), 0.1F, 1000.F, nullptr)
+	, camera(90.F, static_cast<float>(swapchain.get_extent().width), static_cast<float>(swapchain.get_extent().height), 0.1F, 1000.F, nullptr)
 {
 }
 
@@ -63,7 +63,7 @@ void ClientLayer::construct(App& app, Threading::ThreadPool& pool)
 	std::size_t index { 0 };
 	ensure(angles.size() == point_lights.size());
 	for (auto&& point_light : point_lights) {
-		constexpr std::uint32_t radius = 25;
+		constexpr std::uint32_t radius = 6;
 		point_light.add_script<Scripts::MoveInCircleScript>(radius, angles.at(index++));
 	}
 };
@@ -293,14 +293,17 @@ private:
 	friend class FileHandlerBase<SceneHandler>;
 };
 
+template <class... Ts> struct construct_all {
+	auto operator()(const auto& device, auto* scene, const auto& path) { return std::tuple<Ts...> { Ts { device, scene, path }... }; }
+};
+
 using FileHandlers = std::tuple<PNGHandler, SceneHandler>;
 void ClientLayer::handle_file_drop(const std::filesystem::path& path)
 {
 	if (!std::filesystem::exists(path)) {
 		return;
 	}
-	PNGHandler { device, scene.get(), path };
-	SceneHandler { device, scene.get(), path };
+	auto tuple = construct_all<SceneHandler, PNGHandler>()(device, scene.get(), path);
 }
 
 } // namespace Disarray::Client

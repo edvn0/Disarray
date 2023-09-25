@@ -141,9 +141,7 @@ Pipeline::Pipeline(const Disarray::Device& dev, Disarray::PipelineProperties pro
 	: Disarray::Pipeline(std::move(properties))
 	, device(dev)
 {
-	props.framebuffer->register_on_framebuffer_change(
-		[this](Disarray::Framebuffer& frame_buffer) { recreate_pipeline(true, frame_buffer.get_properties().extent); });
-
+	register_framebuffer_callback();
 	recreate_pipeline(false, {});
 }
 
@@ -440,6 +438,16 @@ void Pipeline::try_find_or_recreate_cache()
 	cache_create_info.pInitialData = buffer.data();
 	cache_create_info.initialDataSize = buffer.size() * sizeof(unsigned char);
 	vkCreatePipelineCache(supply_cast<Vulkan::Device>(device), &cache_create_info, nullptr, &cache);
+}
+
+void Pipeline::register_framebuffer_callback()
+{
+	if (!props.framebuffer) {
+		return;
+	}
+
+	props.framebuffer->register_on_framebuffer_change(
+		[this](Disarray::Framebuffer& framebuffer) { recreate_pipeline(true, framebuffer.get_properties().extent); });
 }
 
 } // namespace Disarray::Vulkan

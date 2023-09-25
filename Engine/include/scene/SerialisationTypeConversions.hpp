@@ -24,13 +24,26 @@ template <class Enum> inline auto to_enum_value(const auto& object, std::string_
 	object[key].get_to(value);
 	return magic_enum::enum_cast<Enum>(value);
 }
+
 using json = nlohmann::json;
 
-void to_json(json&, const Extent&);
-void from_json(const json&, Extent&);
+void to_json(nlohmann::json&, const Extent&);
+void from_json(const nlohmann::json&, Extent&);
 
-void to_json(json&, const FloatExtent&);
-void from_json(const json&, FloatExtent&);
+void to_json(nlohmann::json&, const FloatExtent&);
+void from_json(const nlohmann::json&, FloatExtent&);
+
+void to_json(nlohmann::json&, const std::vector<LayoutElement>&);
+void from_json(const nlohmann::json&, std::vector<LayoutElement>&);
+
+void to_json(nlohmann::json&, const VertexLayout&);
+void from_json(const nlohmann::json&, VertexLayout&);
+
+void to_json(nlohmann::json&, const PushConstantLayout&);
+void from_json(const nlohmann::json&, PushConstantLayout&);
+
+void to_json(nlohmann::json&, const Parameter&);
+void from_json(const nlohmann::json&, Parameter&);
 
 } // namespace Disarray
 
@@ -110,5 +123,10 @@ template <> struct adl_serializer<std::filesystem::path> {
 		object.get_to(filename);
 		opt = std::filesystem::path(filename);
 	}
+};
+
+template <> struct adl_serializer<Disarray::Parameter> {
+	static void to_json(json& object, const Disarray::Parameter& parameter) { Disarray::to_json(object, parameter); }
+	static void from_json(const json& object, Disarray::Parameter& parameter) { Disarray::from_json(object, parameter); }
 };
 NLOHMANN_JSON_NAMESPACE_END

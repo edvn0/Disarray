@@ -5,6 +5,10 @@
 
 #include "core/PointerDefinition.hpp"
 
+#ifndef IS_RELEASE
+#define IS_DEBUG
+#endif
+
 namespace Disarray {
 
 template <class To, class From>

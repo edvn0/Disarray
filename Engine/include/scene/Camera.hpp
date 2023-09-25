@@ -167,7 +167,7 @@ private:
 	glm::vec2 initial_mouse_position {};
 
 	float distance;
-	float normal_speed { 0.002f };
+	float normal_speed { 0.2f };
 
 	float pitch = glm::radians(-30.0f);
 	float yaw = 0;
@@ -184,7 +184,7 @@ private:
 	std::uint32_t viewport_height { 720 };
 
 	constexpr static float min_speed { 0.002f };
-	constexpr static float max_speed { 0.02f };
+	constexpr static float max_speed { 10.f };
 };
 
 } // namespace Disarray

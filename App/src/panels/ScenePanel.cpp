@@ -13,7 +13,6 @@
 #include "graphics/Framebuffer.hpp"
 #include "graphics/ImageProperties.hpp"
 #include "graphics/Pipeline.hpp"
-#include "scene/Camera.hpp"
 #include "scene/Components.hpp"
 #include "ui/InterfaceLayer.hpp"
 #include "ui/UI.hpp"
@@ -250,18 +249,24 @@ void ScenePanel::for_all_components(Entity& entity)
 		auto& parameters = script_component.get_script().get_parameters();
 		bool any_changed = false;
 		for (auto&& [key, value] : parameters) {
-			any_changed |= switch_parameter<glm::vec2>(value, [key](glm::vec2& vector) { return UI::Input::slider(key, vector, 0.1F); });
-			any_changed |= switch_parameter<glm::vec3>(value, [key](glm::vec3& vector) { return UI::Input::slider(key, vector, 0.1F); });
-			any_changed |= switch_parameter<glm::vec4>(value, [key](glm::vec4& vector) { return UI::Input::slider(key, vector, 0.1F); });
-			any_changed |= switch_parameter<float>(value, [key](float& vector) { return UI::Input::slider<1>(key, &vector, 0.1F); });
-			any_changed |= switch_parameter<double>(value, [key](double& vector) {
+			ImGui::PushID(fmt::format("{}{}", fmt::ptr(&script_component), key).data());
+			any_changed |= switch_parameter<glm::vec2>(
+				key, value, [](std::string_view key, glm::vec2& vector) { return UI::Input::slider(key, vector, 0.1F); });
+			any_changed |= switch_parameter<glm::vec3>(
+				key, value, [](std::string_view key, glm::vec3& vector) { return UI::Input::slider(key, vector, 0.1F); });
+			any_changed |= switch_parameter<glm::vec4>(
+				key, value, [](std::string_view key, glm::vec4& vector) { return UI::Input::slider(key, vector, 0.1F); });
+			any_changed
+				|= switch_parameter<float>(key, value, [](std::string_view key, float& vector) { return UI::Input::slider<1>(key, &vector, 0.1F); });
+			any_changed |= switch_parameter<double>(key, value, [](std::string_view key, double& vector) {
 				auto as_float = static_cast<float>(vector);
-				bool changed = ImGui::DragFloat(key.data(), &as_float, 0.1f);
-				if (changed) {
+				if (ImGui::DragFloat(key.data(), &as_float, 0.1f)) {
 					vector = static_cast<double>(as_float);
+					return true;
 				}
-				return changed;
+				return false;
 			});
+			ImGui::PopID();
 		}
 
 		if (any_changed) {

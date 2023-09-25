@@ -10,19 +10,15 @@ void ExecutionStatisticsPanel::update(float time_step)
 		return;
 	}
 
-	should_update_counter += time_step;
-	if (should_update_counter > update_interval_ms) {
-		should_update_counter = 0;
-		const PipelineStatistics& pipeline_stats = executor.get_pipeline_statistics(swapchain.get_current_frame());
-		gpu_execution_time(executor.get_gpu_execution_time(swapchain.get_current_frame()));
-		input_assembly_vertices(static_cast<float>(pipeline_stats.input_assembly_vertices));
-		input_assembly_primitives(static_cast<float>(pipeline_stats.input_assembly_primitives));
-		vertex_shader_invocations(static_cast<float>(pipeline_stats.vertex_shader_invocations));
-		clipping_invocations(static_cast<float>(pipeline_stats.clipping_invocations));
-		clipping_primitives(static_cast<float>(pipeline_stats.clipping_primitives));
-		fragment_shader_invocations(static_cast<float>(pipeline_stats.fragment_shader_invocations));
-		compute_shader_invocations(static_cast<float>(pipeline_stats.compute_shader_invocations));
-	}
+	const PipelineStatistics& pipeline_stats = executor.get_pipeline_statistics(swapchain.get_current_frame());
+	gpu_execution_time(executor.get_gpu_execution_time(swapchain.get_current_frame()));
+	input_assembly_vertices(static_cast<float>(pipeline_stats.input_assembly_vertices));
+	input_assembly_primitives(static_cast<float>(pipeline_stats.input_assembly_primitives));
+	vertex_shader_invocations(static_cast<float>(pipeline_stats.vertex_shader_invocations));
+	clipping_invocations(static_cast<float>(pipeline_stats.clipping_invocations));
+	clipping_primitives(static_cast<float>(pipeline_stats.clipping_primitives));
+	fragment_shader_invocations(static_cast<float>(pipeline_stats.fragment_shader_invocations));
+	compute_shader_invocations(static_cast<float>(pipeline_stats.compute_shader_invocations));
 }
 
 struct FloatFormatter {

@@ -41,20 +41,7 @@ enum class DepthCompareOperator : std::uint8_t {
 enum class CullMode : std::uint8_t { Back, Front, None, Both };
 enum class FaceMode : std::uint8_t { Clockwise, CounterClockwise };
 
-enum class ElementType : std::uint8_t {
-	Float,
-	Double,
-	Float2,
-	Float3,
-	Float4,
-	Int2,
-	Int3,
-	Int4,
-	Uint,
-	Uint2,
-	Uint3,
-	Uint4,
-};
+enum class ElementType : std::uint8_t { Float, Double, Float2, Float3, Float4, Int2, Int3, Int4, Uint, Uint2, Uint3, Uint4, Falsy };
 
 static constexpr auto to_size(ElementType type)
 {
@@ -82,8 +69,10 @@ struct LayoutElement {
 
 		};
 
-	ElementType type;
-	std::string debug_name;
+	LayoutElement() = default;
+
+	ElementType type { ElementType::Falsy };
+	std::string debug_name { "Empty" };
 	std::uint32_t size { 0 };
 	std::uint32_t offset { 0 };
 };
@@ -101,6 +90,21 @@ struct VertexLayout {
 		: elements(elems)
 		, binding(bind)
 	{
+		calculate_layout();
+	}
+
+	VertexLayout(std::vector<LayoutElement> elems, const VertexBinding& bind = {})
+		: elements(std::move(elems))
+		, binding(bind)
+	{
+		calculate_layout();
+	}
+
+	VertexLayout() { calculate_layout(); }
+
+	[[nodiscard]] auto construct_binding() const -> const VertexBinding& { return binding; }
+	auto calculate_layout() -> void
+	{
 		for (auto& element : elements) {
 			element.offset = total_size;
 			total_size += element.size;
@@ -108,11 +112,9 @@ struct VertexLayout {
 		binding.stride = total_size;
 	}
 
-	[[nodiscard]] auto construct_binding() const -> const VertexBinding& { return binding; }
-
 	std::uint32_t total_size { 0 };
-	std::vector<LayoutElement> elements;
-	VertexBinding binding;
+	std::vector<LayoutElement> elements {};
+	VertexBinding binding {};
 };
 
 struct PipelineProperties {
