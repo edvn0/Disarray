@@ -1,7 +1,6 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include <vulkan/vulkan.h>
 
 #include <array>
 
@@ -12,6 +11,7 @@
 #include "graphics/RenderBatch.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/Swapchain.hpp"
+#include "graphics/TextRenderer.hpp"
 #include "graphics/Texture.hpp"
 #include "graphics/TextureCache.hpp"
 #include "graphics/UniformBuffer.hpp"
@@ -43,6 +43,8 @@ public:
 
 	void draw_submeshes(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&, const glm::vec4&,
 		const glm::mat4&, const std::uint32_t) override;
+
+	void draw_text(std::string_view text, const glm::uvec2& position, float size) override;
 	void draw_planar_geometry(Disarray::Geometry, const Disarray::GeometryProperties&) override;
 	void submit_batched_geometry(Disarray::CommandExecutor&) override;
 	void on_batch_full(std::function<void(Disarray::Renderer&)>&& func) override { on_batch_full_func = func; }
@@ -71,6 +73,7 @@ private:
 	const Disarray::Swapchain& swapchain;
 
 	BatchRenderer batch_renderer;
+	TextRenderer text_renderer;
 
 	Ref<Disarray::Framebuffer> geometry_framebuffer;
 	Ref<Disarray::Framebuffer> quad_framebuffer;

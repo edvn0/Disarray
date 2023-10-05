@@ -19,6 +19,7 @@ struct TextureProperties {
 	bool generate_mips { false };
 	std::optional<std::uint32_t> mips { std::nullopt };
 	std::filesystem::path path {};
+	DataBuffer data_buffer { nullptr };
 	struct SamplerModeUVW {
 		SamplerMode u = SamplerMode::Repeat;
 		SamplerMode v = SamplerMode::Repeat;

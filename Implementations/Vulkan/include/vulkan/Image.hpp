@@ -34,6 +34,8 @@ static constexpr auto to_vulkan_format(ImageFormat format)
 		return VK_FORMAT_R32G32B32_SFLOAT;
 	case ImageFormat::Uint:
 		return VK_FORMAT_R32_UINT;
+	case ImageFormat::Red:
+		return VK_FORMAT_R8_UINT;
 	case ImageFormat::Depth:
 		return VK_FORMAT_D32_SFLOAT;
 	case ImageFormat::DepthStencil:

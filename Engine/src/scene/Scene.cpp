@@ -356,7 +356,7 @@ void Scene::draw_geometry(bool is_shadow)
 	}
 
 	// TODO: Implement
-	// scene_renderer->draw_text("Hello world!", 0, 0, 12.f);
+	scene_renderer->draw_text("Hello world!", { 0, 0 }, 12.f);
 }
 
 void Scene::on_event(Event& event)

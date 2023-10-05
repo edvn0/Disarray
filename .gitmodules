@@ -46,3 +46,6 @@
 [submodule "Benchmarks/ThirdParty/benchmark"]
 	path = Benchmarks/ThirdParty/benchmark
 	url = git@github.com:google/benchmark.git
+[submodule "ThirdParty/freetype"]
+	path = ThirdParty/freetype
+	url = git@github.com:freetype/freetype.git

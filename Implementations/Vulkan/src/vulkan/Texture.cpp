@@ -17,7 +17,7 @@ Texture::Texture(const Disarray::Device& dev, Disarray::TextureProperties proper
 	: Disarray::Texture(std::move(properties))
 	, device(dev)
 {
-	auto pixels = load_pixels();
+	DataBuffer pixels = props.data_buffer.is_valid() ? props.data_buffer : load_pixels();
 
 	if (props.generate_mips) {
 		props.mips = static_cast<std::uint32_t>(std::floor(std::log2(std::max(props.extent.width, props.extent.height)))) + 1;
@@ -44,8 +44,7 @@ Texture::Texture(const CommandExecutor* command_executor, const Disarray::Device
 	: Disarray::Texture(std::move(properties))
 	, device(dev)
 {
-	auto pixels = load_pixels();
-
+	DataBuffer pixels = props.data_buffer.is_valid() ? props.data_buffer : load_pixels();
 	if (!props.mips) {
 		props.mips = static_cast<std::uint32_t>(std::floor(std::log2(std::max(props.extent.width, props.extent.height)))) + 1;
 	}

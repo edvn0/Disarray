@@ -80,6 +80,7 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 	}
 
 	batch_renderer.construct(*this, device);
+	text_renderer.construct(*this, device);
 }
 
 Renderer::~Renderer() = default;
@@ -128,12 +129,13 @@ void Renderer::begin_frame(const glm::mat4& view, const glm::mat4& proj, const g
 
 void Renderer::end_frame()
 {
-	auto [ubo, camera_ubo, lights, shadow_pass, _] = get_graphics_resource().get_editable_ubos();
+	auto [ubo, camera_ubo, lights, shadow_pass, directional] = get_graphics_resource().get_editable_ubos();
 
 	ubo.reset();
 	camera_ubo.reset();
 	lights.reset();
 	shadow_pass.reset();
+	directional.reset();
 }
 
 void Renderer::force_recreation() { on_resize(); }
@@ -146,6 +148,8 @@ void Renderer::submit_batched_geometry(Disarray::CommandExecutor& executor)
 
 	batch_renderer.reset();
 }
+
+void Renderer::draw_text(std::string_view text, const glm::uvec2& position, float size) { text_renderer.submit_text(text, position, size); }
 
 void Renderer::draw_planar_geometry(Geometry geometry, const GeometryProperties& properties)
 {
