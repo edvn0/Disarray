@@ -19,11 +19,13 @@ struct TextureProperties {
 	bool generate_mips { false };
 	std::optional<std::uint32_t> mips { std::nullopt };
 	std::filesystem::path path {};
-	std::array<SamplerMode, 3> sampler_modes {
-		SamplerMode::Repeat,
-		SamplerMode::Repeat,
-		SamplerMode::Repeat,
+	struct SamplerModeUVW {
+		SamplerMode u = SamplerMode::Repeat;
+		SamplerMode v = SamplerMode::Repeat;
+		SamplerMode w = SamplerMode::Repeat;
 	};
+	SamplerModeUVW sampler_modes {};
+	BorderColour border_colour { BorderColour::FloatOpaqueWhite };
 	bool locked_extent { false };
 
 	/**

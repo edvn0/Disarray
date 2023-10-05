@@ -38,6 +38,26 @@ static constexpr auto to_vulkan_sampler_mode(SamplerMode mode)
 	};
 }
 
+static constexpr auto to_vulkan_border_colour(BorderColour colour)
+{
+	switch (colour) {
+	case BorderColour::FloatTransparentBlack:
+		return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+	case BorderColour::IntTransparentBlack:
+		return VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
+	case BorderColour::FloatOpaqueBlack:
+		return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+	case BorderColour::IntOpaqueBlack:
+		return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	case BorderColour::FloatOpaqueWhite:
+		return VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+	case BorderColour::IntOpaqueWhite:
+		return VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+	default:
+		unreachable(fmt::format("Missing mapping for Sampler Mode {}", static_cast<std::uint8_t>(colour)));
+	};
+}
+
 using Disarray::ImageProperties;
 
 static void set_image_layout(VkCommandBuffer command_buffer, VkImage image, VkImageLayout old_image_layout, VkImageLayout new_image_layout,
@@ -230,8 +250,10 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor* c
 	sampler_create_info.magFilter = VK_FILTER_LINEAR;
 	sampler_create_info.minFilter = VK_FILTER_LINEAR;
 	sampler_create_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	sampler_create_info.compareEnable = VK_TRUE;
-	sampler_create_info.compareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+	if (!is_depth_format(props.format)) {
+		sampler_create_info.compareEnable = VK_TRUE;
+		sampler_create_info.compareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+	}
 
 	auto&& [u, v, w] = get_properties().sampler_modes;
 
@@ -241,8 +263,8 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor* c
 	sampler_create_info.mipLodBias = 0.0F;
 	sampler_create_info.maxAnisotropy = 1.0F;
 	sampler_create_info.minLod = 0.0F;
-	sampler_create_info.maxLod = static_cast<float>(get_properties().mips);
-	sampler_create_info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+	sampler_create_info.maxLod = is_depth_format(props.format) ? 1.0F : static_cast<float>(get_properties().mips);
+	sampler_create_info.borderColor = to_vulkan_border_colour(props.border_colour);
 	verify(vkCreateSampler(supply_cast<Vulkan::Device>(device), &sampler_create_info, nullptr, &info.sampler));
 
 	update_descriptor();

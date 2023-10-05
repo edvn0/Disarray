@@ -72,8 +72,6 @@ void App::run()
 
 	static float current_time = Clock::ms();
 	while (!window->should_close()) {
-		window->update();
-
 		if (!could_prepare_frame()) {
 			continue;
 		}
@@ -94,6 +92,8 @@ void App::run()
 
 		statistics.frame_time = Clock::ms() - current_time;
 		current_time = Clock::ms();
+
+		window->update();
 	}
 
 	wait_for_idle(*device);

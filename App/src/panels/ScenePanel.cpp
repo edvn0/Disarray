@@ -177,6 +177,14 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (ImGui::ColorEdit4("Specular", glm::value_ptr(directional.specular))) { }
 		if (ImGui::DragFloat3("Direction", glm::value_ptr(directional.direction), 0.1F, -glm::pi<float>(), glm::pi<float>())) { }
 		if (ImGui::DragFloat3("Position", glm::value_ptr(directional.position))) { }
+		if (ImGui::DragFloat("Left", &directional.projection_parameters.left)) { }
+		if (ImGui::DragFloat("Right", &directional.projection_parameters.right)) { }
+		if (ImGui::DragFloat("Bottom", &directional.projection_parameters.bottom)) { }
+		if (ImGui::DragFloat("Top", &directional.projection_parameters.top)) { }
+		if (ImGui::DragFloat("Near", &directional.projection_parameters.near)) { }
+		if (ImGui::DragFloat("Far", &directional.projection_parameters.far)) { }
+
+		if (ImGui::Checkbox("Direction Vector", &directional.use_direction_vector)) { }
 	});
 
 	draw_component<Components::PointLight>(entity, "Point Light", [](Components::PointLight& point) {

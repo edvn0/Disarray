@@ -30,7 +30,7 @@ layout(location = 0) in vec4 fragColor;
 layout(location = 1) in vec2 uvs;
 layout(location = 2) in vec3 normals;
 layout(location = 3) in vec3 fragment_position;
-layout(location = 4) in vec4 lightSpaceFragPos;
+layout(location = 4) in vec4 light_space_fragment_position;
 
 layout(location = 0) out vec4 colour;
 layout(location = 1) out uint id;
@@ -45,32 +45,35 @@ void main()
     DirectionalLightUBO dlu = DLU.dlu;
     PushConstant pc = PC.pc;
 
-    vec3 out_vec = vec3(0.0);
     vec3 view_direction = normalize(vec3(CBO.camera.position) - fragment_position);
-
-    float shadow = 1.0f;
+	float shadow = shadow_calculation(light_space_fragment_position, depth_texture, true);
 
     DirectionalLight light;
     light.direction = vec3(dlu.direction);
     light.ambient = vec3(dlu.ambient);
     light.diffuse = vec3(dlu.diffuse);
     light.specular = vec3(dlu.specular);
-    out_vec += calculate_directional_light(light, normals, view_direction, shadow, 32);
+    vec3 out_vec = calculate_directional_light(light, normals, view_direction, shadow, 32);
     for (uint i = 0; i < pc.max_point_lights; i++) {
         PointLight light = PLBO.lights[i];
         out_vec += calc_point_light(light, shadow, normals, fragment_position, view_direction);
     }
 
-    vec4 mean_texture_colour = vec4(0);
+    vec4 mean_texture_colour = vec4(1.0);
     for (uint bound_image_index = 0; bound_image_index < pc.bound_textures; bound_image_index++) {
         int index = pc.image_indices[bound_image_index];
-        mean_texture_colour += texture(sampler2D(textures[index], texture_sampler), uvs);
+        mean_texture_colour *= texture(sampler2D(textures[index], texture_sampler), uvs);
     }
 
     colour = pc.colour * vec4(out_vec, 1.0f);
     if (pc.bound_textures > 0) {
-        colour *= mean_texture_colour / pc.bound_textures;
+        colour *= mean_texture_colour;
     }
+
+	if(colour.a < 0.1)
+        discard;
+
+	colour = gamma_correct(colour);
 
     id = pc.current_identifier;
 }

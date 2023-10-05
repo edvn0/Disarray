@@ -8,6 +8,15 @@
 
 namespace Disarray {
 
+enum class BorderColour : std::uint8_t {
+	FloatTransparentBlack = 0,
+	IntTransparentBlack = 1,
+	FloatOpaqueBlack = 2,
+	IntOpaqueBlack = 3,
+	FloatOpaqueWhite = 4,
+	IntOpaqueWhite = 5,
+};
+
 enum class SamplerMode : std::uint8_t {
 	Repeat = 0,
 	MirroredRepeat = 1,

@@ -17,7 +17,6 @@
 #include "core/Log.hpp"
 #include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
-#include "glm/fwd.hpp"
 #include "graphics/Material.hpp"
 #include "graphics/Mesh.hpp"
 #include "graphics/Pipeline.hpp"
@@ -119,11 +118,24 @@ struct Tag {
 template <> inline constexpr std::string_view component_name<Tag> = "Tag";
 
 struct DirectionalLight {
+	struct ProjectionParameters {
+		float left { -5.F };
+		float right { 10.F };
+		float bottom { -5.F };
+		float top { 5.F };
+		float near { 0.1F };
+		float far { 50.F };
+
+		auto compute() const -> glm::mat4;
+	};
+	ProjectionParameters projection_parameters {};
 	glm::vec4 position { 0 };
 	glm::vec4 direction { 1 };
 	glm::vec4 ambient { 1 };
 	glm::vec4 diffuse { 1 };
 	glm::vec4 specular { 1 };
+
+	bool use_direction_vector { false };
 
 	DirectionalLight() = default;
 	DirectionalLight(const glm::vec4& ambience)

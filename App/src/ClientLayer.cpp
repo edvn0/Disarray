@@ -143,7 +143,7 @@ void ClientLayer::interface()
 	const auto& depth_image = scene->get_image(2);
 	UI::scope("Depth"sv, [&depth_image]() {
 		auto viewport_size = ImGui::GetContentRegionAvail();
-		UI::image(depth_image, { viewport_size.x, viewport_size.y });
+		UI::image(depth_image, { viewport_size.y, viewport_size.y });
 	});
 
 	ImGui::End();

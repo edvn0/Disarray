@@ -5,44 +5,46 @@ struct DirectionalLight {
 	vec3 specular;
 };
 
+#define SHADOWED_AMBIENT_LIGHT 0.1
+
 vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 view_direction, float shadow, uint spec_pow);
 
 vec3 calculate_point_light(
 	vec4 position, vec4 factors, vec4 ambient, vec4 diffuse, vec4 specular, vec3 normal, vec3 fragPos, float shadow, vec3 view_direction);
-float shadow_calculation(vec4 view_projection, sampler2D depth_texture, bool use_pdf);
-float shadow_calculation(vec4 view_projection, sampler2D depth_texture) { return shadow_calculation(view_projection, depth_texture, false); }
-
+float shadow_calculation(vec4 view_projection, sampler2D depth_texture, bool use_pdf, float bias);
 float shadow_calculation(vec4 view_projection, sampler2D depth_texture, bool use_pdf)
 {
-	vec3 projection_coordinates = view_projection.xyz / view_projection.w;
-	projection_coordinates = projection_coordinates * 0.5 + 0.5;
+	return shadow_calculation(view_projection, depth_texture, false, 0.005);
+}
+float shadow_calculation(vec4 view_projection, sampler2D depth_texture) { return shadow_calculation(view_projection, depth_texture, false, 0.005); }
+vec4 gamma_correct(vec4 colour);
 
-	if (projection_coordinates.z > 1.0) {
-		return 0.0f;
-	}
+float shadow_calculation(vec4 view_projection, sampler2D depth_texture, bool use_pdf, float shadow_bias)
+{
+	vec3 projection_coordinates = view_projection.xyz / view_projection.w;
 
 	const float shadow_map_closest_depth = texture(depth_texture, projection_coordinates.xy).r;
 	const float current_depth = projection_coordinates.z;
-	const float bias = 0.5;
+	const float bias = shadow_bias;
 
 	float shadow = 0.0;
 	if (use_pdf) {
 		vec2 texel_size = 1.0 / textureSize(depth_texture, 0);
-		const int pdf_size = 3;
+		const int pdf_size = 1;
 		const float pdf_size_squared = 9.0F;
 		for (int x = -pdf_size; x <= pdf_size; ++x) {
 			for (int y = -pdf_size; y <= pdf_size; ++y) {
 				const vec2 uv = projection_coordinates.xy + vec2(x, y) * texel_size;
 				const float pcf_depth = texture(depth_texture, uv).r;
-				shadow += current_depth - bias > pcf_depth ? 1.0 : 0.0;
+				shadow += pcf_depth - bias > current_depth ? 1.0 : SHADOWED_AMBIENT_LIGHT;
 			}
 		}
 		shadow /= pdf_size_squared;
 	} else {
-		shadow = current_depth - bias > shadow_map_closest_depth ? 1.0 : 0.0;
+		shadow = shadow_map_closest_depth - bias > current_depth ? 1.0 : SHADOWED_AMBIENT_LIGHT;
 	}
 
-	return shadow;
+	return current_depth;
 }
 
 vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 view_direction, float shadow, uint spec_pow)
@@ -57,7 +59,8 @@ vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 view_
 	vec3 ambient = light.ambient;
 	vec3 diffuse = light.diffuse * diff;
 	vec3 specular = light.specular * spec;
-	return (ambient + (shadow) * (diffuse + specular));
+	const float inverse_shadow_factor = 1.0 - shadow;
+	return (ambient + inverse_shadow_factor * (diffuse + specular));
 }
 
 vec3 calculate_point_light(vec4 position, vec4 input_factors, vec4 input_ambient, vec4 input_diffuse, vec4 input_specular, vec3 normal, vec3 fragPos,
@@ -71,17 +74,24 @@ vec3 calculate_point_light(vec4 position, vec4 input_factors, vec4 input_ambient
 	const vec3 reflection_direction = reflect(-light_direction, normal);
 	const float spec = pow(max(dot(view_direction, reflection_direction), 0.0), 32);
 	// attenuation
-	const float distance = length(light_to_frag_vector);
+	const float distance_to_light = length(light_to_frag_vector);
 
-	const float factors = dot(vec3(input_factors), vec3(1, distance, distance * distance));
-	const float attenuation = 1.0F / max(0.5, factors);
+	const float factors = dot(vec3(1, input_factors.yz), vec3(1, distance_to_light, distance_to_light * distance_to_light));
+	const float attenuation = 1.0F / factors;
 
 	// combine results
-	vec4 ambient = input_ambient;
-	vec4 diffuse = input_diffuse * diff;
-	vec4 specular = input_specular * spec;
+	vec3 ambient = vec3(input_ambient);
+	vec3 diffuse = vec3(input_diffuse) * diff;
+	vec3 specular = vec3(input_specular) * spec;
 	ambient *= attenuation;
 	diffuse *= attenuation;
 	specular *= attenuation;
-	return vec3(ambient + (shadow) * (diffuse + specular));
+	const float inverse_shadow_factor = 1.0 - shadow;
+	return (ambient + inverse_shadow_factor * (diffuse + specular));
+}
+
+vec4 gamma_correct(vec4 colour)
+{
+	const float gamma = 2.2;
+	return vec4(pow(colour.rgb, vec3(1.0 / gamma)), 1.0f);
 }

@@ -40,13 +40,16 @@ auto ModelLoader::construct_textures(const Disarray::Device& device) -> std::vec
 	for (auto& [key, value] : mesh_data) {
 		Collections::for_each(value.texture_properties, [&captured = cache, &texts = value.textures](const TextureProperties& props) {
 			const auto mip_count = props.generate_mips ? (props.mips.has_value() ? *props.mips : 1) : 1;
-			texts.push_back(captured.put(TextureCacheCreationProperties {
+
+			auto&& [could, inserted] = captured.try_put(TextureCacheCreationProperties {
 				.key = props.path.string(),
 				.debug_name = props.debug_name,
 				.path = props.path,
 				.mips = mip_count,
 				.format = props.format,
-			}));
+			});
+
+			texts.push_back(inserted);
 		});
 	}
 	Log::info("ModelLoader", "Loading textures took {}ms. Constructed {} textures.", texture_timer.elapsed<Granularity::Millis>(), cache.size());

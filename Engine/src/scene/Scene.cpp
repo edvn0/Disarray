@@ -139,7 +139,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 		});
 	shadow_framebuffer = Framebuffer::construct(device,
 		{
-			.extent = extent,
+			.extent = { 1024, 1024 },
 			.attachments = { { ImageFormat::Depth } },
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
@@ -163,6 +163,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 				{ ElementType::Float3, "normals" },
 			},
 			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+			.cull_mode = CullMode::Front,
 			.write_depth = true,
 			.test_depth = true,
 			.descriptor_set_layouts = desc_layout,
@@ -201,14 +202,18 @@ void Scene::begin_frame(const Camera& camera)
 
 	auto maybe_directional = get_by_components<Components::DirectionalLight, Components::Transform>();
 	if (maybe_directional.has_value()) {
-		const auto& projection = shadow_pass_camera.get();
 		// auto projection = glm::perspective(60.F, aspect_ratio, 0.1F, 1000.F);
 
 		auto&& [transform, light] = maybe_directional->get_components<Components::Transform, Components::DirectionalLight>();
-		// auto lookat_center = transform.position + shadow_pass_camera.lookat_distance * glm::vec3(light.direction);
-		auto view = glm::lookAt(transform.position, { 0, 0, 0 }, { 0.0F, 1.0F, 0.0F });
+		const auto projection = light.projection_parameters.compute();
+		glm::vec3 center { 0 };
+		if (light.use_direction_vector) {
+			auto lookat_center = transform.position + shadow_pass_camera.lookat_distance * glm::vec3(light.direction);
+			center = lookat_center;
+		}
+		const auto view = glm::lookAt(transform.position, center, { 0.0F, 1.0F, 0.0F });
 
-		auto view_projection = projection * view;
+		const auto view_projection = projection * view;
 
 		shadow_pass.view = view;
 		shadow_pass.projection = projection;
@@ -240,24 +245,6 @@ void Scene::interface()
 	for (auto&& [entity, script] : script_view.each()) {
 		script.get_script().on_interface();
 	}
-
-	UI::scope("Orthographics", [&params = shadow_pass_camera]() {
-		bool any_changed = false;
-
-		static constexpr auto value = 5.F;
-
-		any_changed |= UI::Input::slider("Left", &params.left, -value, value);
-		any_changed |= UI::Input::slider("Right", &params.right, -value, value);
-		any_changed |= UI::Input::slider("Bottom", &params.bottom, -value, value);
-		any_changed |= UI::Input::slider("Top", &params.top, -value, value);
-		any_changed |= UI::Input::slider("Near", &params.near, 0.1F, 10.F);
-		any_changed |= UI::Input::slider("Far", &params.far, 1.F, 1000.F);
-		any_changed |= UI::Input::slider("Lookat distance", &params.lookat_distance, 1.F, 30.F);
-
-		if (any_changed) {
-			params.compute();
-		}
-	});
 }
 
 void Scene::update(float time_step)
@@ -323,15 +310,22 @@ void Scene::draw_geometry(bool is_shadow)
 				});
 		}
 
-		auto directional_lights
-			= registry.view<Components::Transform, const Components::DirectionalLight, const Components::Mesh, const Components::Pipeline>();
-		for (auto&& [entity, transform, light, mesh, pipeline] : directional_lights.each()) {
+		auto directional_lights = registry.view<Components::Transform, const Components::Texture, const Components::DirectionalLight,
+			const Components::Mesh, const Components::Pipeline>();
+		for (auto&& [entity, transform, texture, light, mesh, pipeline] : directional_lights.each()) {
 			const auto identifier = static_cast<std::uint32_t>(entity);
 
 			const auto look_at = glm::lookAt(transform.position, transform.position + glm::normalize(glm::vec3(light.direction)), { 0, 1, 0 });
 			glm::quat rotation { look_at };
 			transform.rotation = rotation;
-			scene_renderer->draw_mesh(*command_executor, *mesh.mesh, *pipeline.pipeline, transform.compute(), identifier);
+			scene_renderer->draw_mesh(*command_executor, *mesh.mesh, *pipeline.pipeline, *texture.texture, transform.compute(), identifier);
+			scene_renderer->draw_planar_geometry(Geometry::Line,
+				{
+					.position = transform.position,
+					.to_position = { 0, 0, 0 },
+					.colour = { 1, 0, 0, 1 },
+					.identifier = identifier,
+				});
 		}
 	}
 
@@ -379,6 +373,7 @@ void Scene::recreate(const Extent& new_ex)
 	}
 
 	identity_framebuffer->recreate(true, extent);
+	shadow_framebuffer->recreate(true, shadow_framebuffer->get_properties().extent);
 	framebuffer->recreate(true, extent);
 	command_executor->recreate(true, extent);
 }
@@ -386,7 +381,7 @@ void Scene::recreate(const Extent& new_ex)
 void Scene::destruct()
 {
 	SceneSerialiser scene_serialiser(this);
-	for (auto scripts = registry.view<Components::Script>(); auto&& [entity, script] : scripts.each()) {
+	for (auto&& [entity, script] : registry.view<Components::Script>().each()) {
 		script.destroy();
 	}
 
@@ -433,8 +428,8 @@ void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoTyp
 
 	bool snap = Input::key_pressed(KeyCode::LeftShift);
 	float snap_value = 0.5F;
-	if (static_cast<ImGuizmo::OPERATION>(gizmo_type) == ImGuizmo::OPERATION::ROTATE) {
-		snap_value = 45.0F;
+	if (gizmo_type == GizmoType::Rotate) {
+		snap_value = 20.0F;
 	}
 
 	std::array<float, 3> snap_values = { snap_value, snap_value, snap_value };
@@ -458,7 +453,7 @@ void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoTyp
 
 		entity_transform.rotation += delta_rotation;
 
-		if (scale != glm::vec3 { 0, 0, 0 }) {
+		if (glm::l2Norm(scale) > 0) {
 			entity_transform.scale = scale;
 		}
 	}
@@ -493,7 +488,8 @@ void Scene::create_entities()
 	const auto& desc_layout = resources.get_descriptor_set_layouts();
 
 	{
-		int rects { 2 };
+		constexpr int rects { 2 };
+		static_assert(rects % 2 == 0);
 
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("cube.vert");
 		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("cube.frag");
@@ -517,7 +513,7 @@ void Scene::create_entities()
 
 		auto floor = create("Floor");
 		floor.get_transform().scale = { 30, 1, 30 };
-		floor.get_transform().position = { 0, 1.2, 0 };
+		floor.get_transform().position = { 0, 1, 0 };
 
 		floor.add_component<Components::Texture>(nullptr, glm::vec4 { .1, .1, .9, 1.0 });
 		floor.add_component<Components::Mesh>(cube_mesh);
@@ -528,7 +524,7 @@ void Scene::create_entities()
 			for (auto i = -rects / 2; i < rects / 2; i++) {
 				auto rect = create(fmt::format("Rect{}-{}", i, j));
 				parent.add_child(rect);
-				auto& transform = rect.template get_components<Components::Transform>();
+				auto& transform = rect.get_components<Components::Transform>();
 				transform.position = { 5 * static_cast<float>(i) + 2.5f, -1, 5 * static_cast<float>(j) + 2.5f };
 				transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
 				float col_x = (i + (static_cast<float>(rects) / 2)) / static_cast<float>(rects);
@@ -577,6 +573,8 @@ void Scene::create_entities()
 		}
 	}
 
+#define DISARRAY_SPONZA
+#ifdef DISARRAY_SPONZA
 	{
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("sponza.vert");
 		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("sponza.frag");
@@ -615,6 +613,7 @@ void Scene::create_entities()
 				.fragment_shader = frag,
 			}));
 	}
+#endif
 
 	{
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("main.vert");
@@ -682,10 +681,11 @@ void Scene::create_entities()
 			});
 
 		auto sun = create("Sun");
-		sun.add_component<Components::DirectionalLight>(glm::vec4 { 0.7, 0.7, 0.1, 1.0f });
+		auto& dir_light = sun.add_component<Components::DirectionalLight>(glm::vec4 { 0.7, 0.7, 0.1, 1.0f });
 		sun.add_component<Components::Mesh>(sphere);
 		sun.add_component<Components::Pipeline>(pipe);
-		sun.get_components<Components::Transform>().position = { -25, -25, 16 };
+		sun.add_component<Components::Texture>(dir_light.ambient);
+		sun.add_component<Components::Transform>().position = { -25, -25, 16 };
 
 		auto pl_system = create("PointLightSystem");
 		for (std::uint32_t i = 0; i < colours.size(); i++) {

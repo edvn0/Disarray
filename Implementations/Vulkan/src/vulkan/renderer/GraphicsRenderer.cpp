@@ -197,7 +197,10 @@ void Renderer::begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebu
 	render_pass_begin_info.framebuffer = supply_cast<Vulkan::Framebuffer>(framebuffer);
 	render_pass_begin_info.renderArea.offset = { 0, 0 };
 
-	VkExtent2D extent_2_d { .width = extent.width, .height = extent.height };
+	VkExtent2D extent_2_d {
+		.width = framebuffer.get_properties().extent.width,
+		.height = framebuffer.get_properties().extent.height,
+	};
 	render_pass_begin_info.renderArea.extent = extent_2_d;
 
 	auto clear_values = cast_to<Vulkan::Framebuffer>(framebuffer).get_clear_values();

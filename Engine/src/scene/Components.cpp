@@ -89,4 +89,6 @@ auto Script::get_script() -> CppScript& { return *instance_slot; }
 [[nodiscard]] auto Script::get_script() const -> const CppScript& { return *instance_slot; }
 [[nodiscard]] auto Script::has_been_bound() const -> bool { return bound && !instantiated; }
 
+auto DirectionalLight::ProjectionParameters::compute() const -> glm::mat4 { return glm::ortho(left, right, bottom, top, near, far); }
+
 } // namespace Disarray::Components
