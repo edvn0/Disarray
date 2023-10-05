@@ -324,8 +324,8 @@ void GraphicsResource::expose_to_shaders(std::span<const Ref<Disarray::Texture>>
 	const auto size = static_cast<std::uint32_t>(image_infos.size());
 
 	std::vector<VkWriteDescriptorSet> write_sets {};
-	static VkSampler default_sampler = cast_to<Vulkan::Image>(span[0]->get_image()).get_descriptor_info().sampler;
-	static VkDescriptorImageInfo sampler_info {
+	auto default_sampler = cast_to<Vulkan::Image>(span[0]->get_image()).get_descriptor_info().sampler;
+	auto sampler_info = VkDescriptorImageInfo {
 		.sampler = default_sampler,
 		.imageView = nullptr,
 		.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED,

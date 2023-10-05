@@ -198,18 +198,23 @@ void Scene::begin_frame(const Camera& camera)
 		directional.ambient = sun.ambient;
 		directional.diffuse = sun.diffuse;
 		directional.specular = sun.specular;
+		directional.near = 0;
+		directional.far = 0;
 	}
 
 	auto maybe_directional = get_by_components<Components::DirectionalLight, Components::Transform>();
 	if (maybe_directional.has_value()) {
-		// auto projection = glm::perspective(60.F, aspect_ratio, 0.1F, 1000.F);
 
 		auto&& [transform, light] = maybe_directional->get_components<Components::Transform, Components::DirectionalLight>();
-		const auto projection = light.projection_parameters.compute();
+		auto projection = light.projection_parameters.compute();
 		glm::vec3 center { 0 };
 		if (light.use_direction_vector) {
 			auto lookat_center = transform.position + shadow_pass_camera.lookat_distance * glm::vec3(light.direction);
 			center = lookat_center;
+			projection = glm::perspective(
+				light.projection_parameters.fov, extent.aspect_ratio(), light.projection_parameters.near, light.projection_parameters.far);
+			directional.near = light.projection_parameters.near;
+			directional.far = light.projection_parameters.far;
 		}
 		const auto view = glm::lookAt(transform.position, center, { 0.0F, 1.0F, 0.0F });
 
@@ -276,7 +281,7 @@ void Scene::render()
 	}
 	{
 		scene_renderer->begin_pass(*command_executor, *identity_framebuffer, true);
-		draw_geometry();
+		draw_geometry(false);
 		scene_renderer->end_pass(*command_executor);
 	}
 
@@ -346,7 +351,8 @@ void Scene::draw_geometry(bool is_shadow)
 			 entt::exclude<Components::Texture, Components::DirectionalLight>);
 		 auto&& [entity, mesh, pipeline, transform] : mesh_no_texture_view.each()) {
 		const auto identifier = static_cast<std::uint32_t>(entity);
-		scene_renderer->draw_mesh(*command_executor, *mesh.mesh, is_shadow ? *shadow_pipeline : *pipeline.pipeline, transform.compute(), identifier);
+		const auto& actual_pipeline = is_shadow ? *shadow_pipeline : *pipeline.pipeline;
+		scene_renderer->draw_mesh(*command_executor, *mesh.mesh, actual_pipeline, transform.compute(), identifier);
 	}
 
 	// TODO: Implement
@@ -573,7 +579,6 @@ void Scene::create_entities()
 		}
 	}
 
-#define DISARRAY_SPONZA
 #ifdef DISARRAY_SPONZA
 	{
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("sponza.vert");

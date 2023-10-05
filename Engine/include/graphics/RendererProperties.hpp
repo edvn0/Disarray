@@ -1,5 +1,6 @@
 #pragma once
 
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -7,9 +8,6 @@
 #include <array>
 #include <cstddef>
 #include <optional>
-
-#include "glm/ext/matrix_transform.hpp"
-#include "glm/fwd.hpp"
 
 namespace Disarray {
 
@@ -131,6 +129,9 @@ struct DirectionalLightUBO : Resettable<DirectionalLightUBO> {
 	glm::vec4 diffuse;
 	glm::vec4 specular;
 
+	float near { 0.F };
+	float far { 0.F };
+
 	void reset_impl()
 	{
 		position = {};
@@ -138,6 +139,8 @@ struct DirectionalLightUBO : Resettable<DirectionalLightUBO> {
 		ambient = {};
 		diffuse = {};
 		specular = {};
+		near = 0;
+		far = 0;
 	}
 };
 

@@ -151,9 +151,9 @@ void Renderer::draw_planar_geometry(Geometry geometry, const GeometryProperties&
 {
 	if (batch_renderer.would_be_full()) {
 		on_batch_full_func(*this);
-
 		add_geometry_to_batch(geometry, properties);
 	}
+	add_geometry_to_batch(geometry, properties);
 }
 
 void Renderer::add_geometry_to_batch(Disarray::Geometry geometry, const Disarray::GeometryProperties& properties)
@@ -162,6 +162,10 @@ void Renderer::add_geometry_to_batch(Disarray::Geometry geometry, const Disarray
 	batch_renderer.submitted_geometries++;
 }
 
-void Renderer::flush_batch(Disarray::CommandExecutor& executor) { batch_renderer.flush(*this, executor); }
+void Renderer::flush_batch(Disarray::CommandExecutor& executor)
+{
+	Log::info("Renderer", "Flushing batch.");
+	batch_renderer.flush(*this, executor);
+}
 
 } // namespace Disarray::Vulkan

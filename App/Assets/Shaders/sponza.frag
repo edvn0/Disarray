@@ -46,7 +46,8 @@ void main()
     PushConstant pc = PC.pc;
 
     vec3 view_direction = normalize(vec3(CBO.camera.position) - fragment_position);
-	float shadow = shadow_calculation(light_space_fragment_position, depth_texture, true);
+	float shadow_bias = max(0.05 * (1.0 - dot(normals, vec3(dlu.direction))), 0.005);
+    float shadow = shadow_calculation(light_space_fragment_position, depth_texture, true, shadow_bias);
 
     DirectionalLight light;
     light.direction = vec3(dlu.direction);

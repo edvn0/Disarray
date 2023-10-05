@@ -127,7 +127,7 @@ struct PipelineProperties {
 	float line_width { 1.0F };
 	SampleCount samples { SampleCount::One };
 	DepthCompareOperator depth_comparison_operator { DepthCompareOperator::Less };
-	CullMode cull_mode { CullMode::Front };
+	CullMode cull_mode { CullMode::Back };
 	FaceMode face_mode { FaceMode::CounterClockwise };
 	bool write_depth { true };
 	bool test_depth { true };

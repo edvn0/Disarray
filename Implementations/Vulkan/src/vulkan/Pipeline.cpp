@@ -110,9 +110,9 @@ namespace Detail {
 	static constexpr auto to_vulkan_cull_mode(CullMode cull) -> VkCullModeFlags
 	{
 		switch (cull) {
-		case CullMode::Back:
-			return VK_CULL_MODE_FRONT_BIT;
 		case CullMode::Front:
+			return VK_CULL_MODE_FRONT_BIT;
+		case CullMode::Back:
 			return VK_CULL_MODE_BACK_BIT;
 		case CullMode::Both:
 			return VK_CULL_MODE_FRONT_AND_BACK;

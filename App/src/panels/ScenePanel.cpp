@@ -194,13 +194,6 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (ImGui::ColorEdit4("Specular", glm::value_ptr(point.specular))) { }
 	});
 
-	draw_component<Components::PointLight>(entity, "Point Light", [](Components::PointLight& point) {
-		if (UI::Input::drag("Factors", point.factors, 0.1F, 0.F, 10.F)) { }
-		if (ImGui::ColorEdit4("Ambient", glm::value_ptr(point.ambient))) { }
-		if (ImGui::ColorEdit4("Diffuse", glm::value_ptr(point.diffuse))) { }
-		if (ImGui::ColorEdit4("Specular", glm::value_ptr(point.specular))) { }
-	});
-
 	draw_component<Components::Mesh>(entity, "Mesh", [](Components::Mesh& mesh_component) {
 		auto& [path, pipeline, _] = mesh_component.mesh->get_properties();
 

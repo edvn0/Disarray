@@ -54,7 +54,7 @@ void main() {
     vec3 view_direction = normalize(vec3(CBO.camera.position) - fragment_position);
 
 	float shadow_bias = max(0.05 * (1.0 - dot(normals, vec3(dlu.direction))), 0.005);
-    float shadow = shadow_calculation(light_space_fragment_position, depth_texture, true, shadow_bias);
+    float shadow = shadow_calculation(light_space_fragment_position, depth_texture, false, shadow_bias);
 
     DirectionalLight light;
     light.direction = vec3(dlu.direction);
@@ -75,7 +75,7 @@ void main() {
         vec4 point_light_ambient = current_point_light.ambient;
         vec4 point_light_diffuse = current_point_light.diffuse;
         vec4 point_light_specular = current_point_light.specular;
-        out_vec += calculate_point_light(
+        out_vec *= calculate_point_light(
 			point_light_position,
 			point_light_factors,
 			point_light_ambient,
@@ -87,6 +87,6 @@ void main() {
 			view_direction);
     }
 
-    colour = pc.colour * vec4(out_vec, 1.0f);
+    colour = pc.colour * vec4(shadow, shadow, shadow, 1.0f);
     id = pc.current_identifier;
 }

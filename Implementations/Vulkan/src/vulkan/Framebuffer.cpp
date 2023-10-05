@@ -41,7 +41,7 @@ Framebuffer::Framebuffer(const Disarray::Device& dev, FramebufferProperties prop
 				SamplerMode::ClampToBorder,
 				SamplerMode::ClampToBorder,
 			};
-			spec.border_colour = BorderColour::FloatTransparentBlack;
+			spec.border_colour = BorderColour::FloatOpaqueWhite;
 			depth_attachment = make_scope<Vulkan::Texture>(device, std::move(spec));
 		} else {
 			TextureProperties spec {};

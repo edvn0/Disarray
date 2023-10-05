@@ -125,6 +125,7 @@ struct DirectionalLight {
 		float top { 5.F };
 		float near { 0.1F };
 		float far { 50.F };
+		float fov { 45.0F };
 
 		auto compute() const -> glm::mat4;
 	};
