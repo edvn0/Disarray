@@ -52,6 +52,7 @@ public:
 	virtual void construct_using(CommandExecutor&) = 0;
 
 	static void write_to_file(std::string_view path, const Image& image, const void* data);
+	static void write_to_file(std::string_view path, const Image& image);
 };
 
 } // namespace Disarray

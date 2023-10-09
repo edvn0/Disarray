@@ -181,9 +181,11 @@ void Renderer::draw_submeshes(Disarray::CommandExecutor& executor, const Disarra
 	}
 }
 
-void Renderer::end_pass(Disarray::CommandExecutor& executor)
+void Renderer::text_rendering_pass(Disarray::CommandExecutor& executor) { text_renderer.render(*this, executor); }
+void Renderer::planar_geometry_pass(Disarray::CommandExecutor& executor) { batch_renderer.submit(*this, executor); }
+
+void Renderer::end_pass(Disarray::CommandExecutor& executor, bool should_submit)
 {
-	submit_batched_geometry(executor);
 	vkCmdEndRenderPass(supply_cast<Vulkan::CommandExecutor>(executor));
 }
 

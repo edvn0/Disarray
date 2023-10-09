@@ -146,7 +146,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 			.debug_name = "ShadowFramebuffer",
 		});
 
-	scene_renderer->get_graphics_resource().expose_to_shaders(shadow_framebuffer->get_depth_image());
+	scene_renderer->get_graphics_resource().expose_to_shaders(shadow_framebuffer->get_depth_image(), 1);
 
 	const auto& resources = scene_renderer->get_graphics_resource();
 	const auto& desc_layout = resources.get_descriptor_set_layouts();
@@ -175,6 +175,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
 			.should_blend = true,
+			.blend_mode = FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha,
 			.debug_name = "IdentityFramebuffer",
 		});
 
@@ -186,7 +187,7 @@ Scene::~Scene() = default;
 void Scene::begin_frame(const Camera& camera)
 {
 	scene_renderer->begin_frame(camera);
-	auto [ubo, camera_ubo, light_ubos, shadow_pass, directional] = scene_renderer->get_graphics_resource().get_editable_ubos();
+	auto [ubo, camera_ubo, light_ubos, shadow_pass, directional, glyph] = scene_renderer->get_graphics_resource().get_editable_ubos();
 	auto& push_constant = scene_renderer->get_graphics_resource().get_editable_push_constant();
 
 	for (auto sun_component_view = registry.view<const Components::Transform, Components::DirectionalLight>();
@@ -277,12 +278,16 @@ void Scene::render()
 	{
 		scene_renderer->begin_pass(*command_executor, *shadow_framebuffer);
 		draw_geometry(true);
+		scene_renderer->planar_geometry_pass(*command_executor);
 		scene_renderer->end_pass(*command_executor);
 	}
 	{
 		scene_renderer->begin_pass(*command_executor, *identity_framebuffer, true);
 		draw_geometry(false);
 		scene_renderer->end_pass(*command_executor);
+	}
+	{
+		scene_renderer->text_rendering_pass(*command_executor);
 	}
 
 	command_executor->submit_and_end();
@@ -356,7 +361,7 @@ void Scene::draw_geometry(bool is_shadow)
 	}
 
 	// TODO: Implement
-	scene_renderer->draw_text("Hello world!", { 0, 0 }, 12.f);
+	scene_renderer->draw_text("Hello world!", { 0, 0 });
 }
 
 void Scene::on_event(Event& event)
@@ -595,7 +600,7 @@ void Scene::create_entities()
 		auto& mesh = sponza_mesh.add_component<Components::Mesh>(viking);
 		const auto& textures = mesh.mesh->get_textures();
 		std::span texture_span { textures };
-		scene_renderer->get_graphics_resource().expose_to_shaders(texture_span);
+		scene_renderer->get_graphics_resource().expose_to_shaders(texture_span, 2);
 
 		sponza_mesh.get_components<Components::Transform>().scale = glm::vec3 { 0.1F };
 		auto sponza_pipeline = Pipeline::construct(device,

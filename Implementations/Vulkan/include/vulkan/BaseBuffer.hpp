@@ -11,11 +11,12 @@ namespace Disarray::Vulkan {
 
 #define MAKE_SUB_BUFFER(x)                                                                                                                           \
 	DISARRAY_MAKE_NONCOPYABLE(x)                                                                                                                     \
-	\
+                                                                                                                                                     \
 public:                                                                                                                                              \
-	auto supply() const -> VkBuffer override { return BaseBuffer::supply(); }                                                                        \
+	auto supply() const->VkBuffer override { return BaseBuffer::supply(); }                                                                          \
 	void set_data(const void* data, std::uint32_t size) override { BaseBuffer::set_data(data, size); }                                               \
-	auto size() const -> std::size_t override { return BaseBuffer::size(); }                                                                         \
+	void set_data(const void* data, std::size_t size) override { BaseBuffer::set_data(data, size); }                                                 \
+	auto size() const->std::size_t override { return BaseBuffer::size(); }                                                                           \
 	~x() override { BaseBuffer::destroy_buffer(); }
 
 class BaseBuffer : public PropertySupplier<VkBuffer> {
@@ -28,6 +29,7 @@ protected:
 	[[nodiscard]] virtual auto size() const -> std::size_t;
 
 	virtual void set_data(const void*, std::uint32_t);
+	virtual void set_data(const void*, std::size_t);
 	void destroy_buffer();
 
 	[[nodiscard]] auto get_properties() const -> const auto& { return props; }
@@ -45,7 +47,7 @@ private:
 
 	VmaAllocationInfo vma_allocation_info {};
 	VkBuffer buffer {};
-	VmaAllocation allocation{};
+	VmaAllocation allocation {};
 };
 
 } // namespace Disarray::Vulkan

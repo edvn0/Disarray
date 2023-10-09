@@ -37,8 +37,8 @@ struct FramebufferProperties {
 	float depth_clear_value { 1.0F };
 	bool clear_colour_on_load { true };
 	bool clear_depth_on_load { true };
-	bool should_blend { false };
-	FramebufferBlendMode blend_mode { FramebufferBlendMode::None };
+	bool should_blend { true };
+	FramebufferBlendMode blend_mode { FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha };
 	bool should_present { false };
 	SampleCount samples { SampleCount::One };
 	std::string debug_name { "UnknownFramebuffer" };

@@ -29,9 +29,10 @@ public:
 	[[nodiscard]] auto get_pipeline_cache() -> PipelineCache& override { return pipeline_cache; }
 	[[nodiscard]] auto get_texture_cache() -> TextureCache& override { return texture_cache; }
 
-	void expose_to_shaders(std::span<const Ref<Disarray::Texture>>) override;
-	void expose_to_shaders(const Disarray::Image&) override;
-	void expose_to_shaders(const Disarray::Texture& tex) override { expose_to_shaders(tex.get_image()); };
+	void expose_to_shaders(std::span<const Ref<Disarray::Texture>>, std::uint32_t) override;
+	void expose_to_shaders(std::span<const Disarray::Texture*>, std::uint32_t) override;
+	void expose_to_shaders(const Disarray::Image&, std::uint32_t) override;
+	void expose_to_shaders(const Disarray::Texture& tex, std::uint32_t binding) override { expose_to_shaders(tex.get_image(), binding); };
 	[[nodiscard]] auto get_descriptor_set(std::uint32_t frame_index, std::uint32_t set) const -> VkDescriptorSet override
 	{
 		return descriptor_sets.at(frame_index).at(set);
@@ -41,12 +42,13 @@ public:
 	[[nodiscard]] auto get_push_constant() const -> const PushConstant* override { return &pc; }
 	auto get_editable_push_constant() -> PushConstant& override { return pc; }
 
-	auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&, ShadowPassUBO&, DirectionalLightUBO&> override
+	auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&, ShadowPassUBO&, DirectionalLightUBO&, GlyphUBO&> override
 	{
-		return { uniform, camera_ubo, lights, shadow_pass_ubo, directional_light_ubo };
+		return { uniform, camera_ubo, lights, shadow_pass_ubo, directional_light_ubo, glyph_ubo };
 	}
 
 	void update_ubo() override;
+	void update_ubo(std::size_t) override;
 
 private:
 	void cleanup_graphics_resource();
@@ -67,7 +69,8 @@ private:
 	PointLights lights {};
 	ShadowPassUBO shadow_pass_ubo {};
 	DirectionalLightUBO directional_light_ubo {};
-	using UBOArray = std::array<Scope<Vulkan::UniformBuffer>, 5>;
+	GlyphUBO glyph_ubo {};
+	using UBOArray = std::array<Scope<Vulkan::UniformBuffer>, 6>;
 	std::unordered_map<std::size_t, UBOArray> frame_index_ubo_map {};
 
 	std::unordered_map<std::size_t, std::vector<VkDescriptorSet>> descriptor_sets;

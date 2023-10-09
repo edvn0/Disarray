@@ -29,9 +29,10 @@ public:
 	virtual auto get_pipeline_cache() -> PipelineCache& = 0;
 	virtual auto get_texture_cache() -> TextureCache& = 0;
 
-	virtual void expose_to_shaders(std::span<const Ref<Texture>>) = 0;
-	virtual void expose_to_shaders(const Image&) = 0;
-	virtual void expose_to_shaders(const Texture&) = 0;
+	virtual void expose_to_shaders(std::span<const Ref<Texture>>, std::uint32_t binding) = 0;
+	virtual void expose_to_shaders(std::span<const Texture*>, std::uint32_t binding) = 0;
+	virtual void expose_to_shaders(const Image&, std::uint32_t binding) = 0;
+	virtual void expose_to_shaders(const Texture&, std::uint32_t binding) = 0;
 	[[nodiscard]] virtual auto get_descriptor_set(std::uint32_t, std::uint32_t) const -> VkDescriptorSet = 0;
 	[[nodiscard]] virtual auto get_descriptor_set() const -> VkDescriptorSet = 0;
 	[[nodiscard]] virtual auto get_descriptor_set_layouts() const -> const std::vector<VkDescriptorSetLayout>& = 0;
@@ -39,9 +40,10 @@ public:
 	[[nodiscard]] virtual auto get_push_constant() const -> const PushConstant* = 0;
 	virtual auto get_editable_push_constant() -> PushConstant& = 0;
 
-	virtual auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&, ShadowPassUBO&, DirectionalLightUBO&> = 0;
+	virtual auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&, ShadowPassUBO&, DirectionalLightUBO&, GlyphUBO&> = 0;
 
 	virtual void update_ubo() = 0;
+	virtual void update_ubo(std::size_t ubo_index) = 0;
 };
 
 class Renderer : public ReferenceCountable {
@@ -49,7 +51,11 @@ public:
 	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) = 0;
 	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&) = 0;
 	virtual void begin_pass(Disarray::CommandExecutor&) = 0;
-	virtual void end_pass(Disarray::CommandExecutor&) = 0;
+	virtual void end_pass(Disarray::CommandExecutor&, bool should_submit) = 0;
+	virtual void end_pass(Disarray::CommandExecutor& executor) { return end_pass(executor, true); };
+
+	virtual void text_rendering_pass(Disarray::CommandExecutor&) = 0;
+	virtual void planar_geometry_pass(Disarray::CommandExecutor&) = 0;
 
 	virtual void on_resize() = 0;
 
@@ -76,6 +82,7 @@ public:
 		= 0;
 
 	virtual void draw_text(std::string_view text, const glm::uvec2& position, float size) = 0;
+	virtual void draw_text(std::string_view text, const glm::uvec2& position) { return draw_text(text, position, 1.0F); };
 
 	virtual void submit_batched_geometry(Disarray::CommandExecutor&) = 0;
 	virtual void on_batch_full(std::function<void(Renderer&)>&&) = 0;

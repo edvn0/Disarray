@@ -71,4 +71,25 @@ struct FloatExtent : public IExtent<float> { };
 
 enum class ImageFormat : std::uint8_t { SRGB, RGB, SBGR, BGR, SRGB32, RGB32, Depth, DepthStencil, Uint, Red };
 
+template <std::integral Out = std::uint32_t> inline constexpr auto to_component_count(ImageFormat format)
+{
+	switch (format) {
+
+	case ImageFormat::SRGB:
+	case ImageFormat::RGB:
+	case ImageFormat::SBGR:
+	case ImageFormat::BGR:
+	case ImageFormat::SRGB32:
+	case ImageFormat::RGB32:
+	case ImageFormat::Depth:
+	case ImageFormat::DepthStencil:
+	case ImageFormat::Uint:
+		return static_cast<Out>(4U);
+	case ImageFormat::Red:
+		return static_cast<Out>(1U);
+	default:
+		unreachable();
+	}
+}
+
 } // namespace Disarray

@@ -29,7 +29,10 @@ public:
 	void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) override;
 	void begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& fb) override { begin_pass(executor, fb, false); }
 	void begin_pass(Disarray::CommandExecutor& command_executor) override { begin_pass(command_executor, *geometry_framebuffer); }
-	void end_pass(Disarray::CommandExecutor&) override;
+	void end_pass(Disarray::CommandExecutor&, bool should_submit) override;
+
+	void text_rendering_pass(Disarray::CommandExecutor&) override;
+	void planar_geometry_pass(Disarray::CommandExecutor&) override;
 
 	// IGraphics
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const GeometryProperties& = {}) override;

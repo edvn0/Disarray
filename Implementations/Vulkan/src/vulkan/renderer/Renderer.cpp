@@ -80,7 +80,7 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 	}
 
 	batch_renderer.construct(*this, device);
-	text_renderer.construct(*this, device);
+	text_renderer.construct(*this, device, extent);
 }
 
 Renderer::~Renderer() = default;
@@ -104,7 +104,7 @@ void Renderer::on_resize()
 
 void Renderer::begin_frame(const Camera& camera)
 {
-	auto [ubo, camera_ubo, lights, _, __] = get_graphics_resource().get_editable_ubos();
+	auto [ubo, camera_ubo, lights, _, __, ___] = get_graphics_resource().get_editable_ubos();
 	camera_ubo.position = glm::vec4 { camera.get_position(), 1.0F };
 	camera_ubo.direction = glm::vec4 { camera.get_direction(), 1.0F };
 
@@ -116,7 +116,7 @@ void Renderer::begin_frame(const glm::mat4& view, const glm::mat4& proj, const g
 	// TODO: Move to some kind of scene scope?
 	batch_renderer.reset();
 
-	auto [ubo, camera, lights, _, __] = get_graphics_resource().get_editable_ubos();
+	auto [ubo, camera, lights, _, __, ___] = get_graphics_resource().get_editable_ubos();
 
 	ubo.view = view;
 	ubo.proj = proj;
@@ -129,13 +129,14 @@ void Renderer::begin_frame(const glm::mat4& view, const glm::mat4& proj, const g
 
 void Renderer::end_frame()
 {
-	auto [ubo, camera_ubo, lights, shadow_pass, directional] = get_graphics_resource().get_editable_ubos();
+	auto [ubo, camera_ubo, lights, shadow_pass, directional, glyph] = get_graphics_resource().get_editable_ubos();
 
 	ubo.reset();
 	camera_ubo.reset();
 	lights.reset();
 	shadow_pass.reset();
 	directional.reset();
+	glyph.reset();
 }
 
 void Renderer::force_recreation() { on_resize(); }

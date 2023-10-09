@@ -99,6 +99,8 @@ void BaseBuffer::set_data(const void* data, std::uint32_t size)
 	allocator.unmap_memory(allocation);
 }
 
+void BaseBuffer::set_data(const void* data, std::size_t size) { return set_data(data, static_cast<std::uint32_t>(size)); }
+
 void BaseBuffer::destroy_buffer()
 {
 	Allocator allocator { "Buffer[" + std::to_string(count) + "]" };

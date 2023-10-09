@@ -35,7 +35,7 @@ static constexpr auto to_vulkan_format(ImageFormat format)
 	case ImageFormat::Uint:
 		return VK_FORMAT_R32_UINT;
 	case ImageFormat::Red:
-		return VK_FORMAT_R8_UINT;
+		return VK_FORMAT_R8_UNORM;
 	case ImageFormat::Depth:
 		return VK_FORMAT_D32_SFLOAT;
 	case ImageFormat::DepthStencil:
@@ -63,6 +63,8 @@ constexpr auto to_vulkan_layout(ImageFormat format) -> VkImageLayout
 	case ImageFormat::BGR:
 		return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	case ImageFormat::Uint:
+		return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	case ImageFormat::Red:
 		return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	case ImageFormat::Depth:
 		return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;

@@ -144,4 +144,10 @@ struct DirectionalLightUBO : Resettable<DirectionalLightUBO> {
 	}
 };
 
+struct GlyphUBO : Resettable<GlyphUBO> {
+	glm::mat4 projection {};
+
+	void reset_impl() { projection = {}; }
+};
+
 } // namespace Disarray
