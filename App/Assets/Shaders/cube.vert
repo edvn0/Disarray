@@ -5,9 +5,7 @@
 layout(set = 0, binding = 0) uniform UniformBlock { Uniform ubo; }
 UBO;
 
-layout(set = 0, binding = 3) uniform ShadowPassUniformBlock {
-  ShadowPassUBO spu;
-}
+layout(set = 0, binding = 3) uniform ShadowPassUniformBlock { ShadowPassUBO spu; }
 SPU;
 
 layout(push_constant) uniform PushConstantBlock { PushConstant pc; }
@@ -27,28 +25,24 @@ layout(location = 4) out vec4 light_space_frag_pos;
 vec3 correct_normals(mat4 model_matrix, vec3 normals);
 vec3 correct_normals(mat4 model_matrix, vec4 normals);
 
-const mat4 bias_matrix = mat4(0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0,
-                              1.0, 0.0, 0.5, 0.5, 0.0, 1.0);
+const mat4 bias_matrix = mat4(0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.5, 0.5, 0.0, 1.0);
 
-void main() {
-  Uniform ubo = UBO.ubo;
-  PushConstant pc = PC.pc;
-  ShadowPassUBO spu = SPU.spu;
+void main()
+{
+	Uniform ubo = UBO.ubo;
+	PushConstant pc = PC.pc;
+	ShadowPassUBO spu = SPU.spu;
 
-  vec4 model_position = pc.object_transform * vec4(pos, 1.0);
+	vec4 model_position = pc.object_transform * vec4(pos, 1.0);
 
-  frag_pos = vec3(model_position);
-  gl_Position = ubo.view_projection * model_position;
-  light_space_frag_pos = bias_matrix * spu.view_projection * model_position;
-  fragColor = colour;
-  uvs = uv;
-  out_normals = correct_normals(pc.object_transform, normals);
+	frag_pos = vec3(model_position);
+	gl_Position = ubo.view_projection * model_position;
+	light_space_frag_pos = bias_matrix * spu.view_projection * model_position;
+	fragColor = colour;
+	uvs = uv;
+	out_normals = correct_normals(pc.object_transform, normals);
 }
 
-vec3 correct_normals(mat4 model_matrix, vec3 normals) {
-  return normalize(transpose(inverse(mat3(model_matrix))) * normals);
-}
+vec3 correct_normals(mat4 model_matrix, vec3 normals) { return normalize(transpose(inverse(mat3(model_matrix))) * normals); }
 
-vec3 correct_normals(mat4 model_matrix, vec4 normals) {
-  return correct_normals(model_matrix, vec3(normals));
-}
+vec3 correct_normals(mat4 model_matrix, vec4 normals) { return correct_normals(model_matrix, vec3(normals)); }
