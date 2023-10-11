@@ -8,7 +8,7 @@
 
 namespace Disarray {
 
-enum class CameraType { Perspective, Orthographic };
+enum class CameraType : std::uint8_t { Perspective, Orthographic };
 
 class Camera {
 public:
@@ -19,16 +19,16 @@ public:
 
 	virtual ~Camera() = default;
 
-	virtual void focus(const glm::vec3&) {};
-	virtual void on_update(float) {};
+	virtual void focus(const glm::vec3&);
+	virtual void on_update(float);
 
-	virtual glm::vec3 get_position() const = 0;
-	virtual glm::vec3 get_direction() const = 0;
+	[[nodiscard]] virtual auto get_position() const -> glm::vec3 = 0;
+	[[nodiscard]] virtual auto get_direction() const -> glm::vec3 = 0;
 
-	virtual const glm::mat4& get_projection_matrix() const { return projection_matrix; }
-	virtual const glm::mat4& get_view_matrix() const { return view_matrix; }
-	virtual const glm::mat4& get_unreversed_projection_matrix() const { return unreversed_projection_matrix; }
-	glm::mat4 get_view_projection() const { return get_projection_matrix() * get_view_matrix(); }
+	[[nodiscard]] virtual auto get_projection_matrix() const -> const glm::mat4& { return projection_matrix; }
+	[[nodiscard]] virtual auto get_view_matrix() const -> const glm::mat4& { return view_matrix; }
+	[[nodiscard]] virtual auto get_unreversed_projection_matrix() const -> const glm::mat4& { return unreversed_projection_matrix; }
+	[[nodiscard]] auto get_view_projection() const -> glm::mat4 { return get_projection_matrix() * get_view_matrix(); }
 
 	void set_projection_matrix(const glm::mat4& projection, const glm::mat4& unreversed_projection)
 	{
@@ -41,19 +41,19 @@ public:
 
 	void set_ortho_projection_matrix(const float width, const float height, const float near_plane, const float far_plane);
 
-	float get_exposure() const { return exposure; }
-	float& get_exposure() { return exposure; }
+	[[nodiscard]] auto get_exposure() const -> float { return exposure; }
+	auto get_exposure() -> float& { return exposure; }
 
 protected:
 	float exposure = 0.8f;
 
 private:
-	glm::mat4 projection_matrix { 1.0f };
-	glm::mat4 unreversed_projection_matrix { 1.0f };
-	glm::mat4 view_matrix { 1.0f };
+	glm::mat4 projection_matrix { 1.0F };
+	glm::mat4 unreversed_projection_matrix { 1.0F };
+	glm::mat4 view_matrix { 1.0F };
 };
 
-enum class CameraMode { None, Flycam, Arcball };
+enum class CameraMode : std::uint8_t { None, Flycam, Arcball };
 
 class EditorCamera : public Camera {
 public:
@@ -64,20 +64,21 @@ public:
 	void focus(const glm::vec3& focus_point) final;
 	void on_update(float time_step) final;
 
-	bool is_active() const { return this->active; }
+	[[nodiscard]] auto is_active() const -> bool { return this->active; }
 	void set_active(bool in) { this->active = in; }
 
-	CameraMode get_current_mode() const { return camera_mode; }
+	[[nodiscard]] auto get_current_mode() const -> CameraMode { return camera_mode; }
 
-	float get_distance() const { return distance; }
+	[[nodiscard]] auto get_distance() const -> float { return distance; }
 	void set_distance(float in) { distance = in; }
 
-	const glm::vec3& get_focal_point() const { return focal_point; }
+	[[nodiscard]] auto get_focal_point() const -> const glm::vec3& { return focal_point; }
 
 	void set_viewport_size(std::uint32_t width, std::uint32_t height)
 	{
-		if (viewport_width == width && viewport_height == height)
+		if (viewport_width == width && viewport_height == height) {
 			return;
+		}
 		set_perspective_projection_matrix(vertical_fov, static_cast<float>(width), static_cast<float>(height), near_clip, far_clip);
 		viewport_width = width;
 		viewport_height = height;
@@ -156,15 +157,15 @@ private:
 	static auto rotation_speed() -> float;
 	[[nodiscard]] auto zoom_speed() const -> float;
 
-	glm::mat4 view_matrix;
+	glm::mat4 view_matrix { 1.0F };
 	glm::vec3 position = { 5, 5, -5 };
-	glm::vec3 direction;
-	glm::vec3 focal_point { 0.0f };
+	glm::vec3 direction { 0.F };
+	glm::vec3 focal_point { 0.0F };
 
-	float vertical_fov;
-	float aspect_ratio;
-	float near_clip;
-	float far_clip;
+	float vertical_fov { 0 };
+	float aspect_ratio { 0 };
+	float near_clip { 0 };
+	float far_clip { 0 };
 
 	bool active = false;
 	glm::vec2 initial_mouse_position {};
@@ -172,7 +173,7 @@ private:
 	float distance;
 	float normal_speed { 0.002f };
 
-	float pitch = glm::radians(-30.0f);
+	float pitch = glm::radians(-30.0F);
 	float yaw = 0;
 	float pitch_delta {};
 	float yaw_delta {};
@@ -181,7 +182,7 @@ private:
 
 	CameraMode camera_mode { CameraMode::Arcball };
 
-	float min_focus_distance { 100.0f };
+	float min_focus_distance { 100.0F };
 
 	std::uint32_t viewport_width { 1280 };
 	std::uint32_t viewport_height { 720 };

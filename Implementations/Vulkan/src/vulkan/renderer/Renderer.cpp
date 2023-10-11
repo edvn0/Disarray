@@ -190,11 +190,7 @@ void Renderer::add_geometry_to_batch(Disarray::Geometry geometry, const Disarray
 	batch_renderer.submitted_geometries++;
 }
 
-void Renderer::flush_batch(Disarray::CommandExecutor& executor)
-{
-	Log::info("Renderer", "Flushing batch.");
-	batch_renderer.flush(*this, executor);
-}
+void Renderer::flush_batch(Disarray::CommandExecutor& executor) { batch_renderer.flush(*this, executor); }
 
 auto Renderer::get_composite_pass_image() const -> const Disarray::Image& { return fullscreen_framebuffer->get_image(); }
 

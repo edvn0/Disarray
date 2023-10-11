@@ -15,10 +15,15 @@ Camera::Camera(const float degree_fov, const float width, const float height, co
 	: projection_matrix(glm::perspectiveFov(glm::radians(degree_fov), width, height, far_plane, near_plane))
 	, unreversed_projection_matrix(glm::perspectiveFov(glm::radians(degree_fov), width, height, near_plane, far_plane)) {};
 
+void Camera::focus(const glm::vec3&) {};
+
+void Camera::on_update(float) {};
+
 void Camera::set_ortho_projection_matrix(const float width, const float height, const float near_plane, const float far_plane)
 {
-	projection_matrix = glm::ortho(-width * 0.5f, width * 0.5f, -height * 0.5f, height * 0.5f, far_plane, near_plane);
-	unreversed_projection_matrix = glm::ortho(-width * 0.5f, width * 0.5f, -height * 0.5f, height * 0.5f, near_plane, far_plane);
+	static constexpr auto half = 0.5F;
+	projection_matrix = glm::ortho(-width * half, width * half, -height * half, height * half, far_plane, near_plane);
+	unreversed_projection_matrix = glm::ortho(-width * half, width * half, -height * half, height * half, near_plane, far_plane);
 }
 
 void Camera::set_perspective_projection_matrix(
