@@ -3,7 +3,6 @@
 #include <glm/glm.hpp>
 
 #include <array>
-#include <span>
 
 #include "Forward.hpp"
 
@@ -18,7 +17,7 @@ public:
 
 	void construct(Disarray::Renderer& renderer, const Disarray::Device& device, const Extent& extent);
 
-	void submit_text(std::string_view text, const glm::uvec2& position, float size = 1.0F);
+	void submit_text(std::string_view text, const glm::uvec2& position, float scale = 1.0F);
 	void render(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor);
 
 private:

@@ -255,7 +255,9 @@
       "timestep",
       "tparam",
       "ubos",
-      "Vulkan"
+      "Vulkan",
+      "xpos",
+      "ypos"
     ]
   }
 }

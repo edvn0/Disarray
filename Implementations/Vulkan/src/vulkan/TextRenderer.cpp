@@ -79,7 +79,7 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 					});
 
 				// now store character for later use
-				FontData& current = characters.at(static_cast<std::size_t>(char_code) + index * 128UL);
+				FontData& current = characters.at(static_cast<std::size_t>(char_code) + index * characters.size());
 				current.texture = std::move(texture);
 				current.size = glm::ivec2(new_face->glyph->bitmap.width, new_face->glyph->bitmap.rows);
 				current.bearing = glm::ivec2(new_face->glyph->bitmap_left, new_face->glyph->bitmap_top);
@@ -98,9 +98,10 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 			.size = text_data.size() * sizeof(TextData),
 			.count = text_data.size(),
 		});
-	std::array<std::uint32_t, glyph_count * 6> index_buffer {};
+	static constexpr auto index_count = 6;
+	std::array<std::uint32_t, glyph_count * index_count> index_buffer {};
 	std::uint32_t offset = 0;
-	for (std::size_t i = 0; i < index_buffer.size(); i += 6) {
+	for (std::size_t i = 0; i < index_buffer.size(); i += index_count) {
 		index_buffer.at(i + 0) = 0 + offset;
 		index_buffer.at(i + 1) = 1 + offset;
 		index_buffer.at(i + 2) = 2 + offset;
@@ -127,7 +128,7 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 			.attachments = { { ImageFormat::SBGR, true } },
 			.should_blend = true,
 			.blend_mode = FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha,
-			.debug_name = "Glyph",
+			.debug_name = "GlyphFramebuffer",
 		});
 
 	auto& resources = renderer.get_graphics_resource();
@@ -163,35 +164,34 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 void TextRenderer::submit_text(std::string_view text, const glm::uvec2& position, float scale)
 {
 	ensure(text_data_index < text_data.size());
-	auto x = static_cast<float>(position.x);
-	const auto y = static_cast<float>(position.y);
+	auto x_position = static_cast<float>(position.x);
+	const auto y_position = static_cast<float>(position.y);
 	for (const auto& character : text) {
-		auto& ch = font_data.at(static_cast<std::size_t>(character));
-		float xpos = x + static_cast<float>(ch.bearing.x) * scale;
-		float ypos = y - static_cast<float>(ch.size.y - ch.bearing.y) * scale;
+		auto& character_font_data = font_data.at(static_cast<std::size_t>(character));
+		float xpos = x_position + static_cast<float>(character_font_data.bearing.x) * scale;
+		float ypos = y_position - static_cast<float>(character_font_data.size.y - character_font_data.bearing.y) * scale;
 
-		float w = static_cast<float>(ch.size.x) * scale;
-		float h = static_cast<float>(ch.size.y) * scale;
-		auto scaled_advance = static_cast<float>((ch.advance >> 6)) * scale;
-		x += scaled_advance; // bitshift by 6 to get value in pixels (2^6 = 64)
+		float width = static_cast<float>(character_font_data.size.x) * scale;
+		float height = static_cast<float>(character_font_data.size.y) * scale;
+		auto scaled_advance = static_cast<float>((character_font_data.advance >> 6)) * scale;
+		x_position += scaled_advance;
 
-		auto& character_texture_index = text_character_texture_data.at(text_data_index);
-		character_texture_index = static_cast<std::uint32_t>(character);
+		text_character_texture_data.at(text_data_index) = static_cast<std::uint32_t>(character);
 		text_data.at(vertex_data_index++) = {
-			.pos = { xpos, ypos + h },
+			.pos = { xpos, ypos },
 			.tex_coords = { 0, 0 },
 		};
 		text_data.at(vertex_data_index++) = {
-			.pos = { xpos + w, ypos + h },
+			.pos = { xpos, ypos + height },
+			.tex_coords = { 0, 1 },
+		};
+		text_data.at(vertex_data_index++) = {
+			.pos = { xpos + width, ypos + height },
 			.tex_coords = { 1, 1 },
 		};
 		text_data.at(vertex_data_index++) = {
-			.pos = { xpos + w, ypos },
+			.pos = { xpos + width, ypos },
 			.tex_coords = { 1, 0 },
-		};
-		text_data.at(vertex_data_index++) = {
-			.pos = { xpos, ypos },
-			.tex_coords = { 0, 1 },
 		};
 		text_data_index++;
 		submitted_vertices += 4;
@@ -207,11 +207,11 @@ void TextRenderer::render(Disarray::Renderer& renderer, Disarray::CommandExecuto
 	static auto ortho = glm::ortho(0.F, extent.width, 0.F, extent.height);
 	auto& glyph_ubo = std::get<GlyphUBO&>(ubos);
 	glyph_ubo.projection = ortho;
-	renderer.get_graphics_resource().update_ubo(5);
+	renderer.get_graphics_resource().update_ubo(UBOIdentifier::Glyph);
 
 	renderer_api->glyph_vb->set_data(text_data.data(), vertex_data_index * sizeof(TextData));
 	auto* cmd = supply_cast<Vulkan::CommandExecutor>(executor);
-	const auto& vb = renderer_api->glyph_vb;
+	const auto& vertex_buffer = renderer_api->glyph_vb;
 
 	const auto& vk_pipeline = cast_to<Vulkan::Pipeline>(*renderer_api->glyph_pipeline);
 	renderer.bind_pipeline(executor, *renderer_api->glyph_pipeline);
@@ -221,10 +221,10 @@ void TextRenderer::render(Disarray::Renderer& renderer, Disarray::CommandExecuto
 	vkCmdBindDescriptorSets(
 		cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
 
-	const auto& ib = renderer_api->glyph_ib;
-	vkCmdBindIndexBuffer(cmd, supply_cast<Vulkan::IndexBuffer>(*ib), 0, VK_INDEX_TYPE_UINT32);
+	const auto& index_buffer = renderer_api->glyph_ib;
+	vkCmdBindIndexBuffer(cmd, supply_cast<Vulkan::IndexBuffer>(*index_buffer), 0, VK_INDEX_TYPE_UINT32);
 
-	const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vb) };
+	const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vertex_buffer) };
 	VkDeviceSize offsets { 0 };
 	vkCmdBindVertexBuffers(cmd, 0, 1, vbs.data(), &offsets);
 

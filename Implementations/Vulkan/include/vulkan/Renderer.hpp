@@ -51,7 +51,7 @@ public:
 	void draw_text(std::string_view text, const glm::uvec2& position, float size) override;
 	void draw_planar_geometry(Disarray::Geometry, const Disarray::GeometryProperties&) override;
 	void submit_batched_geometry(Disarray::CommandExecutor& /*unused*/) override;
-	void on_batch_full(std::function<void(Disarray::Renderer&)>&& func) override { on_batch_full_func = func; }
+	void on_batch_full(std::function<void(Disarray::Renderer&)>&& func) override { on_batch_full_func = std::move(func); }
 	void flush_batch(Disarray::CommandExecutor&) override;
 	// End IGraphics
 
@@ -66,6 +66,8 @@ public:
 	void force_recreation() override;
 
 	void bind_pipeline(Disarray::CommandExecutor&, const Disarray::Pipeline&, PipelineBindPoint = PipelineBindPoint::BindPointGraphics) override;
+
+	[[nodiscard]] auto get_composite_pass_image() const -> const Disarray::Image& override;
 
 private:
 	void add_geometry_to_batch(Geometry, const GeometryProperties&);

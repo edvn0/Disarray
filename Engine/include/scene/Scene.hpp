@@ -82,6 +82,8 @@ public:
 		return shadow_framebuffer->get_depth_image();
 	}
 
+	auto get_final_image() const -> const Disarray::Image&;
+
 	auto get_command_executor() const -> const CommandExecutor& { return *command_executor; };
 
 	auto get_selected_entity() const -> const auto& { return selected_entity; }

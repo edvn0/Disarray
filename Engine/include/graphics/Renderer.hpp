@@ -7,6 +7,7 @@
 #include <tuple>
 
 #include "Forward.hpp"
+#include "fmt/core.h"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/RendererProperties.hpp"
@@ -111,6 +112,11 @@ public:
 	virtual void draw_text(std::string_view text, const glm::uvec2& position, float size) = 0;
 	virtual void draw_text(std::string_view text, const glm::uvec2& position) { return draw_text(text, position, 1.0F); };
 
+	template <typename... Args> void draw_text(const glm::uvec2& position, fmt::format_string<Args...> fmt_string, Args&&... args)
+	{
+		return draw_text(fmt::format(fmt_string, std::forward<Args>(args)...), position, 1.0F);
+	};
+
 	virtual void submit_batched_geometry(Disarray::CommandExecutor&) = 0;
 	virtual void on_batch_full(std::function<void(Renderer&)>&&) = 0;
 	virtual void flush_batch(Disarray::CommandExecutor&) = 0;
@@ -124,6 +130,7 @@ public:
 	virtual auto get_texture_cache() -> TextureCache& = 0;
 
 	auto get_graphics_resource() -> IGraphicsResource& { return *graphics_resource; }
+	[[nodiscard]] virtual auto get_composite_pass_image() const -> const Disarray::Image& = 0;
 
 	static auto construct(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&) -> Ref<Disarray::Renderer>;
 	static auto construct_unique(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&) -> Scope<Disarray::Renderer>;

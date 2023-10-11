@@ -86,25 +86,27 @@ public:
 	void set_viewport_size(const Extent& extent)
 	{
 		const auto& [width, height] = extent;
-		if (viewport_width == width && viewport_height == height)
+		if (viewport_width == width && viewport_height == height) {
 			return;
+		}
 		aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
 		set_perspective_projection_matrix(vertical_fov, static_cast<float>(width), static_cast<float>(height), near_clip, far_clip);
 		viewport_width = width;
 		viewport_height = height;
-		// update_camera_view();
+		update_camera_view();
 	}
 
 	void set_viewport_size(const FloatExtent& extent)
 	{
 		const auto& [width, height] = extent;
-		if (viewport_width == width && viewport_height == height)
+		if (viewport_width == width && viewport_height == height) {
 			return;
+		}
 		aspect_ratio = width / height;
 		set_perspective_projection_matrix(vertical_fov, width, height, near_clip, far_clip);
 		viewport_width = static_cast<std::uint32_t>(width);
 		viewport_height = static_cast<std::uint32_t>(height);
-		// update_camera_view();
+		update_camera_view();
 	}
 
 	void on_event(Event& event);
@@ -114,23 +116,24 @@ public:
 		requires(std::is_same_v<Ex, Extent> || std::is_same_v<Ex, FloatExtent>)
 	void set_viewport_size(const Ex& ex)
 	{
-		if constexpr (std::is_same_v<Ex, Extent>)
+		if constexpr (std::is_same_v<Ex, Extent>) {
 			set_viewport_size(Extent { ex.width, ex.height });
-		else if constexpr (std::is_same_v<Ex, FloatExtent>)
+		} else if constexpr (std::is_same_v<Ex, FloatExtent>) {
 			set_viewport_size(FloatExtent { ex.width, ex.height });
+		}
 	}
 
-	const glm::mat4& get_view_matrix() const override { return view_matrix; }
-	auto get_unreversed_view_projection() const { return get_unreversed_projection_matrix() * view_matrix; }
+	[[nodiscard]] auto get_view_matrix() const -> const glm::mat4& override { return view_matrix; }
+	[[nodiscard]] auto get_unreversed_view_projection() const { return get_unreversed_projection_matrix() * view_matrix; }
 
-	auto get_up_direction() const -> glm::vec3;
-	auto get_right_direction() const -> glm::vec3;
-	auto get_forward_direction() const -> glm::vec3;
+	[[nodiscard]] auto get_up_direction() const -> glm::vec3;
+	[[nodiscard]] auto get_right_direction() const -> glm::vec3;
+	[[nodiscard]] auto get_forward_direction() const -> glm::vec3;
 
-	auto get_position() const -> glm::vec3 override { return position; }
-	auto get_direction() const -> glm::vec3 override { return direction; }
+	[[nodiscard]] auto get_position() const -> glm::vec3 override { return position; }
+	[[nodiscard]] auto get_direction() const -> glm::vec3 override { return direction; }
 
-	glm::quat get_orientation() const;
+	[[nodiscard]] auto get_orientation() const -> glm::quat;
 
 	[[nodiscard]] auto get_vertical_fov() const -> float { return vertical_fov; }
 	[[nodiscard]] auto get_aspect_ratio() const -> float { return aspect_ratio; }
@@ -147,11 +150,11 @@ private:
 	void mouse_rotate(const glm::vec2& delta);
 	void mouse_zoom(float delta);
 
-	glm::vec3 calculate_position() const;
+	[[nodiscard]] auto calculate_position() const -> glm::vec3;
 
-	std::pair<float, float> pan_speed() const;
-	static float rotation_speed();
-	float zoom_speed() const;
+	[[nodiscard]] auto pan_speed() const -> std::pair<float, float>;
+	static auto rotation_speed() -> float;
+	[[nodiscard]] auto zoom_speed() const -> float;
 
 	glm::mat4 view_matrix;
 	glm::vec3 position = { 5, 5, -5 };

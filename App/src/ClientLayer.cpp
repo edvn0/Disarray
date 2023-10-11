@@ -106,11 +106,11 @@ void ClientLayer::interface()
 		viewport_panel_mouse_over = ImGui::IsWindowHovered();
 		viewport_panel_focused = ImGui::IsWindowFocused();
 
-		auto viewport_offset = ImGui::GetCursorPos(); // includes tab bar
+		auto viewport_offset = ImGui::GetCursorPos();
 		auto viewport_size = ImGui::GetContentRegionAvail();
 		// camera.set_viewport_size<FloatExtent>({ viewport_size.x, viewport_size.y });
 
-		const auto& image = scene->get_image(0);
+		const auto& image = scene->get_final_image();
 		UI::image(image, { viewport_size.x, viewport_size.y });
 
 		if (const auto& entity = scene->get_selected_entity(); entity->is_valid()) {
@@ -143,7 +143,7 @@ void ClientLayer::interface()
 	const auto& depth_image = scene->get_image(2);
 	UI::scope("Depth"sv, [&depth_image]() {
 		auto viewport_size = ImGui::GetContentRegionAvail();
-		UI::image(depth_image, { viewport_size.y, viewport_size.y });
+		UI::image(depth_image, { viewport_size.x, viewport_size.y });
 	});
 
 	ImGui::End();

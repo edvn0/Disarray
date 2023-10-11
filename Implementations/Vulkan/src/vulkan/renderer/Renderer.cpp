@@ -7,6 +7,7 @@
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
+#include "graphics/Image.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Swapchain.hpp"
@@ -194,5 +195,7 @@ void Renderer::flush_batch(Disarray::CommandExecutor& executor)
 	Log::info("Renderer", "Flushing batch.");
 	batch_renderer.flush(*this, executor);
 }
+
+auto Renderer::get_composite_pass_image() const -> const Disarray::Image& { return fullscreen_framebuffer->get_image(); }
 
 } // namespace Disarray::Vulkan

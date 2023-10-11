@@ -276,7 +276,7 @@ void Scene::render()
 	command_executor->begin();
 	auto& executor = *command_executor;
 	{
-		scene_renderer->draw_text("Hello world!", { 10, 20 });
+		scene_renderer->draw_text({ 10, 20 }, "Hello world! {}", "Edwin");
 		scene_renderer->text_rendering_pass(executor);
 	}
 	{
@@ -292,11 +292,14 @@ void Scene::render()
 		scene_renderer->end_pass(executor);
 	}
 	{
+		// This is the composite pass!
 		scene_renderer->fullscreen_quad_pass(executor, extent);
 	}
 
 	command_executor->submit_and_end();
 }
+
+auto Scene::get_final_image() const -> const Disarray::Image& { return scene_renderer->get_composite_pass_image(); }
 
 void Scene::draw_geometry(bool is_shadow)
 {
@@ -725,10 +728,10 @@ void Scene::create_entities()
 		auto sun = create("Sun");
 		auto& dir_light = sun.add_component<Components::DirectionalLight>(glm::vec4 { 0.7, 0.7, 0.1, 1.0f },
 			Components::DirectionalLight::ProjectionParameters {
-				.left = -512.F / 2,
-				.right = 512.F / 2,
-				.bottom = -512.F / 2,
-				.top = 512.F / 2,
+				.left = -5.F,
+				.right = 5.F,
+				.bottom = -5.F,
+				.top = 5.F,
 				.near = 0.1F,
 				.far = 70.F,
 				.fov = 60.F,

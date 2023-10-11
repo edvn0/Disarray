@@ -37,7 +37,7 @@ EditorCamera::EditorCamera(
 	, near_clip(near_plane)
 	, far_clip(far_plane)
 {
-	if (previous_camera) {
+	if (previous_camera != nullptr) {
 		position = previous_camera->position;
 		position_delta = previous_camera->position_delta;
 		yaw = previous_camera->yaw;
@@ -52,9 +52,10 @@ EditorCamera::EditorCamera(
 
 	position = calculate_position();
 	const glm::quat orientation = get_orientation();
-	direction = glm::eulerAngles(orientation) * (180.0F / glm::pi<float>());
+	static constexpr auto pi_to_rad = 180.0F / glm::pi<float>();
+	direction = glm::eulerAngles(orientation) * pi_to_rad;
 	view_matrix = glm::translate(glm::mat4(1.0F), position) * glm::mat4(orientation);
-	view_matrix = glm::inverse(view_matrix);
+	// view_matrix = glm::inverse(view_matrix);
 }
 
 void EditorCamera::init(EditorCamera* previous_camera)
@@ -76,7 +77,7 @@ void EditorCamera::init(EditorCamera* previous_camera)
 	const glm::quat orientation = get_orientation();
 	direction = glm::eulerAngles(orientation) * (180.0F / glm::pi<float>());
 	view_matrix = glm::translate(glm::mat4(1.0F), position) * glm::mat4(orientation);
-	view_matrix = glm::inverse(view_matrix);
+	// view_matrix = glm::inverse(view_matrix);
 }
 
 void EditorCamera::on_update(const float time_step)

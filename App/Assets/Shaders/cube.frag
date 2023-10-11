@@ -63,7 +63,7 @@ void main()
 		vec4 point_light_ambient = current_point_light.ambient;
 		vec4 point_light_diffuse = current_point_light.diffuse;
 		vec4 point_light_specular = current_point_light.specular;
-		out_vec *= calculate_point_light(point_light_position, point_light_factors, point_light_ambient, point_light_diffuse, point_light_specular,
+		out_vec += calculate_point_light(point_light_position, point_light_factors, point_light_ambient, point_light_diffuse, point_light_specular,
 			normals, fragment_position, shadow, view_direction);
 	}
 

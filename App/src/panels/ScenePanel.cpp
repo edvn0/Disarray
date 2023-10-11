@@ -183,6 +183,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (ImGui::DragFloat("Top", &directional.projection_parameters.top)) { }
 		if (ImGui::DragFloat("Near", &directional.projection_parameters.near)) { }
 		if (ImGui::DragFloat("Far", &directional.projection_parameters.far)) { }
+		if (ImGui::DragFloat("Fov", &directional.projection_parameters.fov, 2.F, 0.5F, 180.F)) { }
 
 		if (ImGui::Checkbox("Direction Vector", &directional.use_direction_vector)) { }
 	});

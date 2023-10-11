@@ -6,16 +6,17 @@
 #include <vulkan/vulkan.h>
 
 #include <magic_enum.hpp>
+#include <magic_enum_switch.hpp>
 
 #include <array>
 
 #include "core/Collections.hpp"
 #include "core/Types.hpp"
 #include "core/filesystem/AssetLocations.hpp"
+#include "graphics/Image.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
-#include "magic_enum_switch.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/IndexBuffer.hpp"
@@ -192,7 +193,7 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 		.path = FS::texture("viking_room.png"),
 		.format = ImageFormat::SBGR,
 	};
-	const auto& viking_room = texture_cache.put(texture_properties);
+	texture_cache.put(texture_properties);
 
 	auto set_zero_bindings = create_set_zero_bindings();
 	auto set_one_bindings = create_set_one_bindings();
