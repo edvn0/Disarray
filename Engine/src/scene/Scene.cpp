@@ -276,7 +276,7 @@ void Scene::render()
 	command_executor->begin();
 	auto& executor = *command_executor;
 	{
-		scene_renderer->draw_text({ 10, 20 }, "Hello world! {}", "Edwin");
+		scene_renderer->draw_text({ 0, 0 }, "Hello world! {}\nHello", "Edwin");
 		scene_renderer->text_rendering_pass(executor);
 	}
 	{

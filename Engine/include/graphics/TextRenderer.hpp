@@ -42,6 +42,8 @@ private:
 	std::uint32_t text_data_index { 0 };
 	std::uint32_t vertex_data_index { 0 };
 	std::uint32_t submitted_vertices { 0 };
+
+	std::uint32_t max_height { 0 };
 };
 
 } // namespace Disarray

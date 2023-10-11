@@ -47,7 +47,7 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 	}
 
 	FS::for_each_in_directory(std::filesystem::path { "Assets/Fonts" },
-		[&dev = device, &characters = font_data, &fonts = renderer_api->faces, &library = renderer_api->library, index = 0U](
+		[&max_h = max_height, &dev = device, &characters = font_data, &fonts = renderer_api->faces, &library = renderer_api->library, index = 0U](
 			const auto& entry) mutable {
 			auto& new_face = fonts.emplace_back();
 			FT_New_Face(library, entry.path().string().c_str(), index, &new_face);
@@ -84,8 +84,11 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 				current.size = glm::ivec2(new_face->glyph->bitmap.width, new_face->glyph->bitmap.rows);
 				current.bearing = glm::ivec2(new_face->glyph->bitmap_left, new_face->glyph->bitmap_top);
 				current.advance = new_face->glyph->advance.x;
-			}
 
+				if (const auto height = new_face->glyph->bitmap.rows; height > max_h) {
+					max_h = height;
+				}
+			}
 			FT_Done_Face(new_face);
 			index++;
 		},
@@ -165,11 +168,17 @@ void TextRenderer::submit_text(std::string_view text, const glm::uvec2& position
 {
 	ensure(text_data_index < text_data.size());
 	auto x_position = static_cast<float>(position.x);
-	const auto y_position = static_cast<float>(position.y);
+	static auto max_h = static_cast<float>(max_height);
+	auto y_position = static_cast<float>(position.y) + max_h;
 	for (const auto& character : text) {
+		if (character == '\n' || character == '\t' || character == '\r') {
+			y_position += max_h;
+			x_position = static_cast<float>(position.x);
+			continue;
+		}
 		auto& character_font_data = font_data.at(static_cast<std::size_t>(character));
 		float xpos = x_position + static_cast<float>(character_font_data.bearing.x) * scale;
-		float ypos = y_position - static_cast<float>(character_font_data.size.y - character_font_data.bearing.y) * scale;
+		float ypos = y_position - static_cast<float>(character_font_data.bearing.y) * scale;
 
 		float width = static_cast<float>(character_font_data.size.x) * scale;
 		float height = static_cast<float>(character_font_data.size.y) * scale;
