@@ -14,7 +14,8 @@ class IndexBuffer : public ReferenceCountable {
 	DISARRAY_OBJECT_PROPS(IndexBuffer, BufferProperties)
 public:
 	virtual auto size() const -> std::size_t = 0;
-	virtual void set_data(const void*, std::uint32_t) = 0;
+	virtual void set_data(const void* data, std::uint32_t size) { return set_data(data, size, 0); };
+	virtual void set_data(const void*, std::uint32_t, std::size_t) = 0;
 };
 
 } // namespace Disarray

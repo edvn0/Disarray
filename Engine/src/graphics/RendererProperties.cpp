@@ -30,4 +30,16 @@ void ImageIndicesUBO::reset_impl()
 	bound_textures = 0;
 }
 
+void GlyphUBO::reset_impl() { projection = {}; }
+void DirectionalLightUBO::reset_impl()
+{
+
+	position = {};
+	direction = {};
+	ambient = {};
+	diffuse = {};
+	specular = {};
+	near_far = {};
+}
+
 } // namespace Disarray

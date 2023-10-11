@@ -1,21 +1,24 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
 #include <array>
+#include <span>
 
 #include "Forward.hpp"
-#include "core/Concepts.hpp"
 
 namespace Disarray {
 
 class TextRenderer {
-	static constexpr auto glyph_count = 1000UL;
+	static constexpr auto glyph_count = 30UL;
+	static constexpr auto font_data_count = 128UL;
 
 public:
 	TextRenderer() = default;
 
 	void construct(Disarray::Renderer& renderer, const Disarray::Device& device, const Extent& extent);
 
-	void submit_text(std::string_view text, const glm::uvec2&, float size = 1.0F);
+	void submit_text(std::string_view text, const glm::uvec2& position, float size = 1.0F);
 	void render(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor);
 
 private:
@@ -28,23 +31,18 @@ private:
 		glm::ivec2 bearing;
 		std::uint32_t advance;
 	};
-	std::array<FontData, 128> font_data;
+	std::array<FontData, font_data_count> font_data;
 
 	struct TextData {
-		std::size_t character_texture_index;
-		unsigned char character;
-		glm::ivec2 position;
-		float glyph_width;
-		float glyph_height;
-
-		struct VertexData {
-			glm::vec2 pos;
-			glm::vec2 tex_coords;
-		};
-		std::array<VertexData, 4> vertices {};
+		glm::vec2 pos;
+		glm::vec2 tex_coords;
 	};
-	std::array<TextData, glyph_count> text_data {};
-	std::size_t text_data_index { 0 };
+	std::array<TextData, 4 * glyph_count> text_data {};
+	std::array<std::uint32_t, glyph_count> text_character_texture_data {};
+
+	std::uint32_t text_data_index { 0 };
+	std::uint32_t vertex_data_index { 0 };
+	std::uint32_t submitted_vertices { 0 };
 };
 
 } // namespace Disarray

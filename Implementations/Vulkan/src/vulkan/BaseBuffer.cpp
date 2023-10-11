@@ -86,7 +86,7 @@ void BaseBuffer::create_with_empty_data()
 	allocation = allocator.allocate_buffer(buffer, vma_allocation_info, buffer_create_info, { .usage = usage, .creation = creation });
 }
 
-void BaseBuffer::set_data(const void* data, std::uint32_t size)
+void BaseBuffer::set_data(const void* data, std::uint32_t size, std::size_t offset)
 {
 	if (props.always_mapped) {
 		std::memcpy(vma_allocation_info.pMappedData, data, size);
@@ -99,7 +99,7 @@ void BaseBuffer::set_data(const void* data, std::uint32_t size)
 	allocator.unmap_memory(allocation);
 }
 
-void BaseBuffer::set_data(const void* data, std::size_t size) { return set_data(data, static_cast<std::uint32_t>(size)); }
+void BaseBuffer::set_data(const void* data, std::size_t size, std::size_t offset) { return set_data(data, static_cast<std::uint32_t>(size), offset); }
 
 void BaseBuffer::destroy_buffer()
 {

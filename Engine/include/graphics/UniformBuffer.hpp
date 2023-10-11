@@ -10,7 +10,7 @@ class UniformBuffer : public ReferenceCountable {
 	DISARRAY_OBJECT_PROPS(UniformBuffer, BufferProperties)
 public:
 	virtual auto size() const -> std::size_t = 0;
-	virtual void set_data(const void*, std::uint32_t) = 0;
+	virtual void set_data(const void*, std::uint32_t, std::size_t offset) = 0;
 
 	template <class T>
 		requires(sizeof(T) > 0)

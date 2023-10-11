@@ -20,6 +20,19 @@ struct RendererProperties {
 	std::string debug_name { "Unknown" };
 };
 
+using DescriptorSet = std::uint32_t;
+using DescriptorBinding = std::uint32_t;
+
+enum class UBOIdentifier : std::uint8_t {
+	Default,
+	Camera,
+	PointLight,
+	ShadowPass,
+	DirectionalLight,
+	Glyph,
+	ImageIndices,
+};
+
 class IGraphicsResource {
 public:
 	virtual ~IGraphicsResource() = default;
@@ -29,11 +42,12 @@ public:
 	virtual auto get_pipeline_cache() -> PipelineCache& = 0;
 	virtual auto get_texture_cache() -> TextureCache& = 0;
 
-	virtual void expose_to_shaders(std::span<const Ref<Texture>>, std::uint32_t binding) = 0;
-	virtual void expose_to_shaders(std::span<const Texture*>, std::uint32_t binding) = 0;
-	virtual void expose_to_shaders(const Image&, std::uint32_t binding) = 0;
-	virtual void expose_to_shaders(const Texture&, std::uint32_t binding) = 0;
-	[[nodiscard]] virtual auto get_descriptor_set(std::uint32_t, std::uint32_t) const -> VkDescriptorSet = 0;
+	virtual void expose_to_shaders(std::span<const Ref<Disarray::Texture>> images, DescriptorSet set, DescriptorBinding binding) = 0;
+	virtual void expose_to_shaders(std::span<const Disarray::Texture*> images, DescriptorSet set, DescriptorBinding binding) = 0;
+	virtual void expose_to_shaders(const Disarray::Image& images, DescriptorSet set, DescriptorBinding binding) = 0;
+	virtual void expose_to_shaders(const Disarray::Texture& images, DescriptorSet set, DescriptorBinding binding) = 0;
+	[[nodiscard]] virtual auto get_descriptor_set(DescriptorSet, DescriptorBinding) const -> VkDescriptorSet = 0;
+	[[nodiscard]] virtual auto get_descriptor_set(DescriptorSet) const -> VkDescriptorSet = 0;
 	[[nodiscard]] virtual auto get_descriptor_set() const -> VkDescriptorSet = 0;
 	[[nodiscard]] virtual auto get_descriptor_set_layouts() const -> const std::vector<VkDescriptorSetLayout>& = 0;
 
@@ -44,6 +58,7 @@ public:
 
 	virtual void update_ubo() = 0;
 	virtual void update_ubo(std::size_t ubo_index) = 0;
+	virtual void update_ubo(UBOIdentifier identifier) = 0;
 };
 
 class Renderer : public ReferenceCountable {
@@ -54,8 +69,20 @@ public:
 	virtual void end_pass(Disarray::CommandExecutor&, bool should_submit) = 0;
 	virtual void end_pass(Disarray::CommandExecutor& executor) { return end_pass(executor, true); };
 
+	/**
+	 * @brief This is an external pass, i.e. requires that the underlying implementation provides a render pass.
+	 */
 	virtual void text_rendering_pass(Disarray::CommandExecutor&) = 0;
+
+	/**
+	 * @brief This is currently an intrinsic pass, i.e. requires a started render pass.
+	 */
 	virtual void planar_geometry_pass(Disarray::CommandExecutor&) = 0;
+
+	/**
+	 * @brief This is an external pass, i.e. requires that the underlying implementation provides a render pass.
+	 */
+	virtual void fullscreen_quad_pass(Disarray::CommandExecutor&, const Extent& extent) = 0;
 
 	virtual void on_resize() = 0;
 

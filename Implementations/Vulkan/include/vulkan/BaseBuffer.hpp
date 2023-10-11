@@ -14,8 +14,9 @@ namespace Disarray::Vulkan {
                                                                                                                                                      \
 public:                                                                                                                                              \
 	auto supply() const->VkBuffer override { return BaseBuffer::supply(); }                                                                          \
-	void set_data(const void* data, std::uint32_t size) override { BaseBuffer::set_data(data, size); }                                               \
-	void set_data(const void* data, std::size_t size) override { BaseBuffer::set_data(data, size); }                                                 \
+	void set_data(const void* data, std::uint32_t size, std::size_t offset = 0ULL) override { BaseBuffer::set_data(data, size, offset); }            \
+	void set_data(const void* data, std::size_t size, std::size_t offset = 0ULL) override { BaseBuffer::set_data(data, size, offset); }              \
+                                                                                                                                                     \
 	auto size() const->std::size_t override { return BaseBuffer::size(); }                                                                           \
 	~x() override { BaseBuffer::destroy_buffer(); }
 
@@ -28,8 +29,8 @@ protected:
 
 	[[nodiscard]] virtual auto size() const -> std::size_t;
 
-	virtual void set_data(const void*, std::uint32_t);
-	virtual void set_data(const void*, std::size_t);
+	virtual void set_data(const void*, std::uint32_t, std::size_t offset = 0ULL);
+	virtual void set_data(const void*, std::size_t, std::size_t offset = 0ULL);
 	void destroy_buffer();
 
 	[[nodiscard]] auto get_properties() const -> const auto& { return props; }

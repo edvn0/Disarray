@@ -13,7 +13,7 @@ namespace Disarray::Vulkan {
 
 VertexBuffer::VertexBuffer(const Disarray::Device& dev, Disarray::BufferProperties properties)
 	: Disarray::VertexBuffer(properties)
-	, BaseBuffer(dev, BufferType::Vertex, std::move(properties))
+	, BaseBuffer(dev, BufferType::Vertex, properties)
 {
 }
 

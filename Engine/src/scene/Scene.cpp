@@ -146,7 +146,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 			.debug_name = "ShadowFramebuffer",
 		});
 
-	scene_renderer->get_graphics_resource().expose_to_shaders(shadow_framebuffer->get_depth_image(), 1);
+	scene_renderer->get_graphics_resource().expose_to_shaders(shadow_framebuffer->get_depth_image(), 1, 1);
 
 	const auto& resources = scene_renderer->get_graphics_resource();
 	const auto& desc_layout = resources.get_descriptor_set_layouts();
@@ -163,7 +163,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 				{ ElementType::Float3, "normals" },
 			},
 			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-			.cull_mode = CullMode::Front,
+			.cull_mode = CullMode::Back,
 			.write_depth = true,
 			.test_depth = true,
 			.descriptor_set_layouts = desc_layout,
@@ -178,6 +178,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 			.blend_mode = FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha,
 			.debug_name = "IdentityFramebuffer",
 		});
+	scene_renderer->get_graphics_resource().expose_to_shaders(identity_framebuffer->get_image(), 1, 0);
 
 	create_entities();
 }
@@ -199,8 +200,7 @@ void Scene::begin_frame(const Camera& camera)
 		directional.ambient = sun.ambient;
 		directional.diffuse = sun.diffuse;
 		directional.specular = sun.specular;
-		directional.near = 0;
-		directional.far = 0;
+		directional.near_far = glm::vec4 { 0 };
 	}
 
 	auto maybe_directional = get_by_components<Components::DirectionalLight, Components::Transform>();
@@ -214,8 +214,7 @@ void Scene::begin_frame(const Camera& camera)
 			center = lookat_center;
 			projection = glm::perspective(
 				light.projection_parameters.fov, extent.aspect_ratio(), light.projection_parameters.near, light.projection_parameters.far);
-			directional.near = light.projection_parameters.near;
-			directional.far = light.projection_parameters.far;
+			directional.near_far = { light.projection_parameters.near, light.projection_parameters.far, 0, 0 };
 		}
 		const auto view = glm::lookAt(transform.position, center, { 0.0F, 1.0F, 0.0F });
 
@@ -275,19 +274,25 @@ void Scene::update(float time_step)
 void Scene::render()
 {
 	command_executor->begin();
+	auto& executor = *command_executor;
 	{
-		scene_renderer->begin_pass(*command_executor, *shadow_framebuffer);
+		scene_renderer->draw_text("Hello world!", { 10, 20 });
+		scene_renderer->text_rendering_pass(executor);
+	}
+	{
+		scene_renderer->begin_pass(executor, *shadow_framebuffer);
 		draw_geometry(true);
-		scene_renderer->planar_geometry_pass(*command_executor);
-		scene_renderer->end_pass(*command_executor);
+		scene_renderer->planar_geometry_pass(executor);
+		scene_renderer->end_pass(executor);
 	}
 	{
-		scene_renderer->begin_pass(*command_executor, *identity_framebuffer, true);
+		scene_renderer->begin_pass(executor, *identity_framebuffer, true);
 		draw_geometry(false);
-		scene_renderer->end_pass(*command_executor);
+		scene_renderer->planar_geometry_pass(executor);
+		scene_renderer->end_pass(executor);
 	}
 	{
-		scene_renderer->text_rendering_pass(*command_executor);
+		scene_renderer->fullscreen_quad_pass(executor, extent);
 	}
 
 	command_executor->submit_and_end();
@@ -307,9 +312,8 @@ void Scene::draw_geometry(bool is_shadow)
 				});
 		}
 
-		for (auto rect_view
-			 = registry.view<const Components::Texture, const Components::QuadGeometry, const Components::Transform, const Components::ID>();
-			 auto&& [entity, tex, geom, transform, id] : rect_view.each()) {
+		for (auto rect_view = registry.view<const Components::Texture, const Components::QuadGeometry, const Components::Transform>();
+			 auto&& [entity, tex, geom, transform] : rect_view.each()) {
 			scene_renderer->draw_planar_geometry(Geometry::Rectangle,
 				{
 					.position = transform.position,
@@ -359,9 +363,6 @@ void Scene::draw_geometry(bool is_shadow)
 		const auto& actual_pipeline = is_shadow ? *shadow_pipeline : *pipeline.pipeline;
 		scene_renderer->draw_mesh(*command_executor, *mesh.mesh, actual_pipeline, transform.compute(), identifier);
 	}
-
-	// TODO: Implement
-	scene_renderer->draw_text("Hello world!", { 0, 0 });
 }
 
 void Scene::on_event(Event& event)
@@ -584,6 +585,35 @@ void Scene::create_entities()
 		}
 	}
 
+	{
+		auto unit_squares = create("UnitSquares");
+		const glm::vec3 base_pos { 0, 0, 0 };
+		{
+			auto axis = create("SquareX");
+			auto& transform = axis.get_components<Components::Transform>();
+			transform.position = base_pos;
+			axis.add_component<Components::QuadGeometry>();
+			axis.add_component<Components::Texture>(glm::vec4 { 1, 0, 0, 1 });
+			unit_squares.add_child(axis);
+		}
+		{
+			auto axis = create("SquareY");
+			auto& transform = axis.get_components<Components::Transform>();
+			transform.position = base_pos + glm::vec3 { 0, 1, 0 };
+			axis.add_component<Components::QuadGeometry>();
+			axis.add_component<Components::Texture>(glm::vec4 { 0, 1, 0, 1 });
+			unit_squares.add_child(axis);
+		}
+		{
+			auto axis = create("SquareZ");
+			auto& transform = axis.get_components<Components::Transform>();
+			transform.position = base_pos + glm::vec3 { 0, 0, 1 };
+			axis.add_component<Components::QuadGeometry>();
+			axis.add_component<Components::Texture>(glm::vec4 { 0, 0, 1, 1 });
+			unit_squares.add_child(axis);
+		}
+	}
+
 #ifdef DISARRAY_SPONZA
 	{
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("sponza.vert");
@@ -625,6 +655,7 @@ void Scene::create_entities()
 	}
 #endif
 
+#ifdef DISARRAY_VIKING
 	{
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("main.vert");
 		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("main.frag");
@@ -666,6 +697,7 @@ void Scene::create_entities()
 		static constexpr auto val = 10.0F;
 		v_mesh.add_script<Scripts::LinearMovementScript>(-val, val);
 	}
+#endif
 
 	{
 
@@ -691,7 +723,16 @@ void Scene::create_entities()
 			});
 
 		auto sun = create("Sun");
-		auto& dir_light = sun.add_component<Components::DirectionalLight>(glm::vec4 { 0.7, 0.7, 0.1, 1.0f });
+		auto& dir_light = sun.add_component<Components::DirectionalLight>(glm::vec4 { 0.7, 0.7, 0.1, 1.0f },
+			Components::DirectionalLight::ProjectionParameters {
+				.left = -512.F / 2,
+				.right = 512.F / 2,
+				.bottom = -512.F / 2,
+				.top = 512.F / 2,
+				.near = 0.1F,
+				.far = 70.F,
+				.fov = 60.F,
+			});
 		sun.add_component<Components::Mesh>(sphere);
 		sun.add_component<Components::Pipeline>(pipe);
 		sun.add_component<Components::Texture>(dir_light.ambient);

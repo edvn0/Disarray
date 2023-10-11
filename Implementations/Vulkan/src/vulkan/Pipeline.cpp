@@ -368,7 +368,7 @@ void Pipeline::construct_layout(const Extent& extent)
 	try {
 		vkCreateGraphicsPipelines(supply_cast<Vulkan::Device>(device), cache, 1, &pipeline_create_info, nullptr, &pipeline);
 	} catch (const std::exception& exc) {
-		Log::error("Scene", "Could not construct pipeline because: {}", exc.what());
+		Log::error("Pipeline", "Could not construct pipeline because: {}", exc.what());
 	}
 }
 

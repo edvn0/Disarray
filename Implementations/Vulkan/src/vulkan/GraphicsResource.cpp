@@ -4,7 +4,8 @@
 
 #include <glm/ext/matrix_transform.hpp>
 #include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
+
+#include <magic_enum.hpp>
 
 #include <array>
 
@@ -12,7 +13,9 @@
 #include "core/Types.hpp"
 #include "core/filesystem/AssetLocations.hpp"
 #include "graphics/PipelineCache.hpp"
+#include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
+#include "magic_enum_switch.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/IndexBuffer.hpp"
@@ -118,18 +121,32 @@ static auto create_set_zero_bindings()
 
 static auto create_set_one_bindings()
 {
+	// Default framebuffer
 	auto image_binding_0 = vk_structures<VkDescriptorSetLayoutBinding> {}();
 	image_binding_0.descriptorCount = 1;
 	image_binding_0.binding = 0;
 	image_binding_0.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	image_binding_0.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
+	// Depth texture
 	auto image_binding_1 = vk_structures<VkDescriptorSetLayoutBinding> {}();
 	image_binding_1.descriptorCount = 1;
 	image_binding_1.binding = 1;
 	image_binding_1.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	image_binding_1.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	return std::array { image_binding_0, image_binding_1 };
+
+	// Font texture
+	auto image_binding_2 = vk_structures<VkDescriptorSetLayoutBinding> {}();
+	image_binding_2.descriptorCount = 1;
+	image_binding_2.binding = 2;
+	image_binding_2.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	image_binding_2.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	return std::array {
+		image_binding_0,
+		image_binding_1,
+		image_binding_2,
+	};
 }
 
 static auto create_set_two_bindings()
@@ -147,7 +164,7 @@ static auto create_set_two_bindings()
 	image_array_sampler_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	auto glyph_texture_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
-	glyph_texture_binding.descriptorCount = 127;
+	glyph_texture_binding.descriptorCount = 128;
 	glyph_texture_binding.binding = 2;
 	glyph_texture_binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 	glyph_texture_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -226,7 +243,7 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 
 	verify(vkCreateDescriptorPool(vk_device, &pool_create_info, nullptr, &pool));
 
-	std::vector<VkDescriptorSetLayout> desc_layouts(set_count);
+	std::vector<VkDescriptorSetLayout> desc_layouts(layouts.size());
 	for (std::size_t i = 0; i < desc_layouts.size(); i++) {
 		desc_layouts[i] = layouts[i];
 	}
@@ -239,7 +256,7 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 
 	for (auto i = 0U; i < swapchain_image_count; i++) {
 		std::vector<VkDescriptorSet> desc_sets {};
-		desc_sets.resize(set_count);
+		desc_sets.resize(layouts.size());
 		vkAllocateDescriptorSets(vk_device, &alloc_info, desc_sets.data());
 		descriptor_sets.try_emplace(i, std::move(desc_sets));
 	}
@@ -278,7 +295,7 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 		glyph_ubo_buffer.offset = 0;
 		glyph_ubo_buffer.range = sizeof(GlyphUBO);
 
-		auto write_sets = vk_structures<VkWriteDescriptorSet, 7> {}.multiple();
+		auto write_sets = vk_structures<VkWriteDescriptorSet, 6> {}.multiple();
 		write_sets[0].dstSet = frame_descriptor_sets.at(0);
 		write_sets[0].dstBinding = 0;
 		write_sets[0].dstArrayElement = 0;
@@ -321,38 +338,30 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 		write_sets[5].descriptorCount = 1;
 		write_sets[5].pBufferInfo = &glyph_ubo_buffer;
 
-		VkDescriptorImageInfo image_info = cast_to<Vulkan::Image>(viking_room->get_image()).get_descriptor_info();
-		write_sets[6].dstSet = frame_descriptor_sets.at(1);
-		write_sets[6].dstBinding = 0;
-		write_sets[6].dstArrayElement = 0;
-		write_sets[6].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		write_sets[6].descriptorCount = 1;
-		write_sets[6].pImageInfo = &image_info;
-
 		vkUpdateDescriptorSets(vk_device, static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
 	}
 }
 
-void GraphicsResource::expose_to_shaders(const Disarray::Image& image, std::uint32_t binding)
+void GraphicsResource::expose_to_shaders(const Disarray::Image& image, DescriptorSet descriptor_set, DescriptorBinding binding)
 {
-	auto write_sets = descriptor_write_sets_per_frame(binding);
+	auto write_sets = descriptor_write_sets_per_frame(descriptor_set);
 	const auto& info = cast_to<Vulkan::Image>(image).get_descriptor_info();
 
-	static std::uint32_t static_binding = 1;
+	Log::info("GraphicsResource", "Exposing '{}' to shader at binding {}", image.get_properties().debug_name, binding);
 	for (auto& write_set : write_sets) {
-		write_set.dstBinding = static_binding;
+		write_set.dstBinding = binding;
 		write_set.dstArrayElement = 0;
 		write_set.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		write_set.descriptorCount = 1;
 		write_set.pImageInfo = &info;
 	}
 
-	static_binding++;
 	vkUpdateDescriptorSets(supply_cast<Vulkan::Device>(device), static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
 }
 
-void GraphicsResource::expose_to_shaders(std::span<const Ref<Disarray::Texture>> span, std::uint32_t binding)
+void GraphicsResource::expose_to_shaders(std::span<const Ref<Disarray::Texture>> span, DescriptorSet set, DescriptorBinding binding)
 {
+	ensure(binding == 0, "Safety before we can generalise!");
 	auto image_infos = Collections::map(span, [](const Ref<Disarray::Texture>& texture) -> VkDescriptorImageInfo {
 		const auto& desc_info = cast_to<Vulkan::Image>(texture->get_image()).get_descriptor_info();
 		return {
@@ -362,41 +371,10 @@ void GraphicsResource::expose_to_shaders(std::span<const Ref<Disarray::Texture>>
 		};
 	});
 
-	const auto* data = image_infos.data();
-	const auto size = static_cast<std::uint32_t>(image_infos.size());
-
-	std::vector<VkWriteDescriptorSet> write_sets {};
-	auto* default_sampler = cast_to<Vulkan::Image>(span[0]->get_image()).get_descriptor_info().sampler;
-	auto sampler_info = VkDescriptorImageInfo {
-		.sampler = default_sampler,
-		.imageView = nullptr,
-		.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-	};
-
-	for (std::size_t i = 0; i < swapchain_image_count; i++) {
-		auto& write_set = write_sets.emplace_back();
-		write_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		write_set.dstSet = descriptor_sets.at(i).at(binding);
-		write_set.dstBinding = 0;
-		write_set.dstArrayElement = 0;
-		write_set.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-		write_set.descriptorCount = size;
-		write_set.pImageInfo = data;
-
-		auto& sampler = write_sets.emplace_back();
-		sampler.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		sampler.dstSet = descriptor_sets.at(i).at(binding);
-		sampler.dstBinding = 1;
-		sampler.dstArrayElement = 0;
-		sampler.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-		sampler.descriptorCount = 1;
-		sampler.pImageInfo = &sampler_info;
-	}
-
-	vkUpdateDescriptorSets(supply_cast<Vulkan::Device>(device), static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
+	internal_expose_to_shaders(cast_to<Vulkan::Image>(span[0]->get_image()).get_descriptor_info().sampler, image_infos, set, binding);
 }
 
-void GraphicsResource::expose_to_shaders(std::span<const Disarray::Texture*> span, std::uint32_t binding)
+void GraphicsResource::expose_to_shaders(std::span<const Disarray::Texture*> span, DescriptorSet set, DescriptorBinding binding)
 {
 	auto image_infos = Collections::map(span, [](const Disarray::Texture* texture) -> VkDescriptorImageInfo {
 		const auto& desc_info = cast_to<Vulkan::Image>(texture->get_image()).get_descriptor_info();
@@ -407,38 +385,7 @@ void GraphicsResource::expose_to_shaders(std::span<const Disarray::Texture*> spa
 		};
 	});
 
-	const auto* data = image_infos.data();
-	const auto size = static_cast<std::uint32_t>(image_infos.size());
-
-	std::vector<VkWriteDescriptorSet> write_sets {};
-	auto* default_sampler = cast_to<Vulkan::Image>(span[0]->get_image()).get_descriptor_info().sampler;
-	auto sampler_info = VkDescriptorImageInfo {
-		.sampler = default_sampler,
-		.imageView = nullptr,
-		.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-	};
-
-	for (std::size_t i = 0; i < swapchain_image_count; i++) {
-		auto& write_set = write_sets.emplace_back();
-		write_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		write_set.dstSet = descriptor_sets.at(i).at(binding);
-		write_set.dstBinding = 2;
-		write_set.dstArrayElement = 0;
-		write_set.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-		write_set.descriptorCount = size;
-		write_set.pImageInfo = data;
-
-		auto& sampler = write_sets.emplace_back();
-		sampler.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		sampler.dstSet = descriptor_sets.at(i).at(binding);
-		sampler.dstBinding = 3;
-		sampler.dstArrayElement = 0;
-		sampler.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-		sampler.descriptorCount = 1;
-		sampler.pImageInfo = &sampler_info;
-	}
-
-	vkUpdateDescriptorSets(supply_cast<Vulkan::Device>(device), static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
+	internal_expose_to_shaders(cast_to<Vulkan::Image>(span[0]->get_image()).get_descriptor_info().sampler, image_infos, set, binding);
 }
 
 void GraphicsResource::update_ubo()
@@ -450,6 +397,16 @@ void GraphicsResource::update_ubo()
 	current_uniform.at(3)->set_data(&shadow_pass_ubo, sizeof(ShadowPassUBO));
 	current_uniform.at(4)->set_data(&directional_light_ubo, sizeof(DirectionalLightUBO));
 	current_uniform.at(5)->set_data(&glyph_ubo, sizeof(GlyphUBO));
+}
+
+void GraphicsResource::update_ubo(UBOIdentifier identifier)
+{
+	magic_enum::enum_switch(
+		[this](auto val) {
+			constexpr UBOIdentifier identifier = val;
+			update_ubo(static_cast<std::size_t>(identifier));
+		},
+		identifier);
 }
 
 void GraphicsResource::update_ubo(std::size_t index)
@@ -502,6 +459,43 @@ auto GraphicsResource::descriptor_write_sets_per_frame(std::size_t descriptor_se
 		write_set.dstSet = descriptor_sets.at(i).at(descriptor_set);
 	}
 	return output;
+}
+
+void GraphicsResource::internal_expose_to_shaders(
+	VkSampler input_sampler, const std::vector<VkDescriptorImageInfo>& image_infos, DescriptorSet set, DescriptorBinding binding)
+{
+	const auto* data = image_infos.data();
+	const auto size = static_cast<std::uint32_t>(image_infos.size());
+
+	std::vector<VkWriteDescriptorSet> write_sets {};
+	auto* default_sampler = input_sampler;
+	auto sampler_info = VkDescriptorImageInfo {
+		.sampler = default_sampler,
+		.imageView = nullptr,
+		.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+	};
+
+	for (std::size_t i = 0; i < swapchain_image_count; i++) {
+		auto& write_set = write_sets.emplace_back();
+		write_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		write_set.dstSet = descriptor_sets.at(i).at(set);
+		write_set.dstBinding = binding;
+		write_set.dstArrayElement = 0;
+		write_set.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+		write_set.descriptorCount = size;
+		write_set.pImageInfo = data;
+
+		auto& sampler = write_sets.emplace_back();
+		sampler.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		sampler.dstSet = descriptor_sets.at(i).at(set);
+		sampler.dstBinding = binding + 1;
+		sampler.dstArrayElement = 0;
+		sampler.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+		sampler.descriptorCount = 1;
+		sampler.pImageInfo = &sampler_info;
+	}
+
+	vkUpdateDescriptorSets(supply_cast<Vulkan::Device>(device), static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
 }
 
 } // namespace Disarray::Vulkan

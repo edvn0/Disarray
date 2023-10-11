@@ -31,8 +31,9 @@ public:
 	void begin_pass(Disarray::CommandExecutor& command_executor) override { begin_pass(command_executor, *geometry_framebuffer); }
 	void end_pass(Disarray::CommandExecutor&, bool should_submit) override;
 
-	void text_rendering_pass(Disarray::CommandExecutor&) override;
-	void planar_geometry_pass(Disarray::CommandExecutor&) override;
+	void text_rendering_pass(Disarray::CommandExecutor& /*unused*/) override;
+	void planar_geometry_pass(Disarray::CommandExecutor& /*unused*/) override;
+	void fullscreen_quad_pass(Disarray::CommandExecutor& executor, const Extent& extent) override;
 
 	// IGraphics
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const GeometryProperties& = {}) override;
@@ -49,7 +50,7 @@ public:
 
 	void draw_text(std::string_view text, const glm::uvec2& position, float size) override;
 	void draw_planar_geometry(Disarray::Geometry, const Disarray::GeometryProperties&) override;
-	void submit_batched_geometry(Disarray::CommandExecutor&) override;
+	void submit_batched_geometry(Disarray::CommandExecutor& /*unused*/) override;
 	void on_batch_full(std::function<void(Disarray::Renderer&)>&& func) override { on_batch_full_func = func; }
 	void flush_batch(Disarray::CommandExecutor&) override;
 	// End IGraphics
@@ -58,7 +59,7 @@ public:
 	auto get_pipeline_cache() -> PipelineCache& override { return get_graphics_resource().get_pipeline_cache(); }
 	auto get_texture_cache() -> TextureCache& override { return get_graphics_resource().get_texture_cache(); }
 
-	void begin_frame(const Camera&) override;
+	void begin_frame(const Camera& /*camera*/) override;
 	void begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_projection) override;
 	void end_frame() override;
 
@@ -80,6 +81,9 @@ private:
 
 	Ref<Disarray::Framebuffer> geometry_framebuffer;
 	Ref<Disarray::Framebuffer> quad_framebuffer;
+
+	Ref<Disarray::Framebuffer> fullscreen_framebuffer;
+	Scope<Pipeline> fullscreen_quad_pipeline;
 
 	void bind_descriptor_sets(Disarray::CommandExecutor& executor, VkPipelineLayout pipeline_layout);
 

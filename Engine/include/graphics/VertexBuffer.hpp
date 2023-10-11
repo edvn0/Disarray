@@ -10,8 +10,11 @@ class VertexBuffer : public ReferenceCountable {
 	DISARRAY_OBJECT_PROPS(VertexBuffer, BufferProperties)
 public:
 	virtual auto size() const -> std::size_t = 0;
-	virtual void set_data(const void*, std::uint32_t) = 0;
-	virtual void set_data(const void* data, std::size_t size) { return set_data(data, static_cast<std::uint32_t>(size)); };
+	virtual void set_data(const void*, std::uint32_t, std::size_t offset) = 0;
+	virtual void set_data(const void* data, std::size_t size, std::size_t offset)
+	{
+		return set_data(data, static_cast<std::uint32_t>(size), offset);
+	};
 };
 
 } // namespace Disarray

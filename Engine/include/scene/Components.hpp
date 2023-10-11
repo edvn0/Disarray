@@ -127,7 +127,7 @@ struct DirectionalLight {
 		float far { 50.F };
 		float fov { 45.0F };
 
-		auto compute() const -> glm::mat4;
+		[[nodiscard]] auto compute() const -> glm::mat4;
 	};
 	ProjectionParameters projection_parameters {};
 	glm::vec4 position { 0 };
@@ -141,6 +141,11 @@ struct DirectionalLight {
 	DirectionalLight() = default;
 	DirectionalLight(const glm::vec4& ambience)
 		: ambient(ambience)
+	{
+	}
+	DirectionalLight(const glm::vec4& ambience, ProjectionParameters params)
+		: projection_parameters(params)
+		, ambient(ambience)
 	{
 	}
 };

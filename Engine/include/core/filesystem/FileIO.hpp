@@ -7,6 +7,7 @@
 #include <string>
 #include <string_view>
 
+#include "core/Collections.hpp"
 #include "core/Concepts.hpp"
 #include "core/Hashes.hpp"
 #include "core/Log.hpp"
@@ -91,6 +92,30 @@ auto for_each_in_directory(auto path, Func&& func, ExtensionIncludeFunc&& ext) -
 
 	for (const EntryType& entry : IteratorType { std::move(path) }) {
 		if (!should_include(entry, std::forward<ExtensionIncludeFunc>(ext))) {
+			continue;
+		}
+
+		std::forward<Func>(func)(entry);
+	}
+}
+
+template <typename Func, bool Recursive = false, bool IncludeDirectories = false>
+auto for_each_in_directory(auto path, Func&& func, const Collections::StringViewSet& to_include) -> void
+{
+	using IteratorType = std::conditional_t<Recursive, std::filesystem::directory_iterator, std::filesystem::recursive_directory_iterator>;
+	using EntryType = std::filesystem::directory_entry;
+	static constexpr auto should_include = [](const EntryType& entry, const auto& extension_set) -> bool {
+		const bool should_include = extension_set.contains(entry.path().extension());
+		if constexpr (IncludeDirectories) {
+			const auto is_directory = entry.is_directory();
+			return should_include && is_directory;
+		} else {
+			return should_include;
+		}
+	};
+
+	for (const EntryType& entry : IteratorType { std::move(path) }) {
+		if (!should_include(entry, to_include)) {
 			continue;
 		}
 

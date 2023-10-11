@@ -51,18 +51,26 @@ template <IsNumber T> struct IExtent {
 
 	auto to_string() -> std::string { return fmt::format("{}:{}", width, height); }
 
+	[[nodiscard]] auto sum() const -> float { return width + height; }
+
 	template <IsNumber Other>
 		requires(!std::is_same_v<T, Other>)
 	auto as() const -> IExtent<Other>
 	{
-		return { .width = static_cast<Other>(width), .height = static_cast<Other>(height) };
+		return {
+			.width = static_cast<Other>(width),
+			.height = static_cast<Other>(height),
+		};
 	}
 
 	template <IsNumber Other>
 		requires(!std::is_same_v<T, Other>)
 	[[nodiscard]] auto cast() const
 	{
-		return std::pair { static_cast<Other>(width), static_cast<Other>(height) };
+		return std::pair {
+			static_cast<Other>(width),
+			static_cast<Other>(height),
+		};
 	}
 };
 

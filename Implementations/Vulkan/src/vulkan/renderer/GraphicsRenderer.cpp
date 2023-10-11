@@ -182,7 +182,19 @@ void Renderer::draw_submeshes(Disarray::CommandExecutor& executor, const Disarra
 }
 
 void Renderer::text_rendering_pass(Disarray::CommandExecutor& executor) { text_renderer.render(*this, executor); }
+
 void Renderer::planar_geometry_pass(Disarray::CommandExecutor& executor) { batch_renderer.submit(*this, executor); }
+
+void Renderer::fullscreen_quad_pass(Disarray::CommandExecutor& executor, const Extent& input_extent)
+{
+	begin_pass(executor, fullscreen_quad_pipeline->get_framebuffer());
+
+	auto* cmd = supply_cast<Vulkan::CommandExecutor>(executor);
+	bind_pipeline(executor, *fullscreen_quad_pipeline);
+	vkCmdDrawIndexed(cmd, 3, 1, 0, 0, 0);
+
+	end_pass(executor, false);
+}
 
 void Renderer::end_pass(Disarray::CommandExecutor& executor, bool should_submit)
 {

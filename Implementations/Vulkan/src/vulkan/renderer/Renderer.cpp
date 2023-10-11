@@ -23,16 +23,18 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 	, props(properties)
 	, extent(swapchain.get_extent())
 {
-	FramebufferProperties geometry_props { .extent = swapchain.get_extent(),
+	FramebufferProperties geometry_props {
+		.extent = swapchain.get_extent(),
 		.attachments = { { ImageFormat::SBGR }, { ImageFormat::Depth } },
 		.clear_colour_on_load = false,
 		.clear_depth_on_load = false,
-		.debug_name = "RendererFramebuffer" };
+		.debug_name = "RendererFramebuffer",
+	};
 	geometry_framebuffer = Framebuffer::construct(device, geometry_props);
 
 	quad_framebuffer = Framebuffer::construct(device,
 			{
-				.extent = swapchain.get_extent(),
+				.extent = extent,
 				.attachments = { { ImageFormat::SBGR }, { ImageFormat::Uint, false }, { ImageFormat::Depth }, },
 				.debug_name = "QuadFramebuffer",
 			});
@@ -81,6 +83,27 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 
 	batch_renderer.construct(*this, device);
 	text_renderer.construct(*this, device, extent);
+
+	{
+		fullscreen_framebuffer = Framebuffer::construct(device,
+			{
+				.extent = extent,
+				.attachments = { { ImageFormat::SBGR } },
+				.debug_name = "FullscreenFramebuffer",
+			});
+		fullscreen_quad_pipeline = Pipeline::construct_scoped(device,
+			PipelineProperties {
+				.vertex_shader = get_graphics_resource().get_pipeline_cache().get_shader("fullscreen_quad.vert"),
+				.fragment_shader = get_graphics_resource().get_pipeline_cache().get_shader("fullscreen_quad.frag"),
+				.framebuffer = fullscreen_framebuffer,
+				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+				.extent = extent,
+				.cull_mode = CullMode::Front,
+				.write_depth = false,
+				.test_depth = false,
+				.descriptor_set_layouts = get_graphics_resource().get_descriptor_set_layouts(),
+			});
+	}
 }
 
 Renderer::~Renderer() = default;
@@ -156,7 +179,6 @@ void Renderer::draw_planar_geometry(Geometry geometry, const GeometryProperties&
 {
 	if (batch_renderer.would_be_full()) {
 		on_batch_full_func(*this);
-		add_geometry_to_batch(geometry, properties);
 	}
 	add_geometry_to_batch(geometry, properties);
 }

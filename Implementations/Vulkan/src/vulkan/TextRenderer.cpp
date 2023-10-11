@@ -4,17 +4,20 @@
 
 // clang-format off
 #include <ft2build.h>
+#include <vector>
+#include "core/DataBuffer.hpp"
+#include "graphics/Pipeline.hpp"
 #include FT_FREETYPE_H
 // clang-format on
 
 #include "core/Log.hpp"
 #include "core/filesystem/FileIO.hpp"
+#include "graphics/PipelineCache.hpp"
+#include "graphics/Renderer.hpp"
 #include "graphics/Texture.hpp"
 #include "vulkan/CommandExecutor.hpp"
-#include "vulkan/GraphicsResource.hpp"
 #include "vulkan/IndexBuffer.hpp"
 #include "vulkan/Pipeline.hpp"
-#include "vulkan/Renderer.hpp"
 #include "vulkan/VertexBuffer.hpp"
 
 namespace Disarray {
@@ -29,7 +32,11 @@ struct TextRenderer::TextRenderingAPI {
 	Ref<Disarray::Framebuffer> glyph_framebuffer;
 };
 
-template <> auto PimplDeleter<TextRenderer::TextRenderingAPI>::operator()(TextRenderer::TextRenderingAPI* ptr) noexcept -> void { delete ptr; }
+template <> auto PimplDeleter<TextRenderer::TextRenderingAPI>::operator()(TextRenderer::TextRenderingAPI* ptr) noexcept -> void
+{
+	FT_Done_FreeType(ptr->library);
+	delete ptr;
+}
 
 void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Device& device, const Extent& extent)
 {
@@ -39,8 +46,7 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 		throw;
 	}
 
-	FS::for_each_in_directory(
-		std::filesystem::path { "Assets/Fonts" },
+	FS::for_each_in_directory(std::filesystem::path { "Assets/Fonts" },
 		[&dev = device, &characters = font_data, &fonts = renderer_api->faces, &library = renderer_api->library, index = 0U](
 			const auto& entry) mutable {
 			auto& new_face = fonts.emplace_back();
@@ -55,17 +61,20 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 				}
 
 				DataBuffer bitmap_buffer { new_face->glyph->bitmap.buffer, new_face->glyph->bitmap.width * new_face->glyph->bitmap.rows };
-
 				if (!bitmap_buffer.is_valid()) {
-					Log::error("TextRenderer", "Could not load character {} bitmap data.", char_code);
-					continue;
+					Log::error("TextRenderer", "Could not load character {} bitmap data. Size was {}, {}. Buffer had pointer {}", char_code,
+						new_face->glyph->bitmap.width, new_face->glyph->bitmap.rows, fmt::ptr(new_face->glyph->bitmap.buffer));
 				}
 
-				auto texture = Texture::construct_scoped(dev,
+				static constexpr auto one_if_leq = [](const auto& value) { return value <= 0 ? 1 : value; };
+				static std::array<std::uint8_t, 1> empty_data { 0 };
+
+				Scope<Disarray::Texture> texture = nullptr;
+				texture = Texture::construct_scoped(dev,
 					{
-						.extent = { new_face->glyph->bitmap.width, new_face->glyph->bitmap.rows },
+						.extent = { one_if_leq(new_face->glyph->bitmap.width), one_if_leq(new_face->glyph->bitmap.rows) },
 						.format = ImageFormat::Red,
-						.data_buffer = std::move(bitmap_buffer),
+						.data_buffer = bitmap_buffer.is_valid() ? std::move(bitmap_buffer) : DataBuffer { empty_data.data(), empty_data.size() },
 						.debug_name = fmt::format("glyph-{}", char_code),
 					});
 
@@ -76,18 +85,20 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 				current.bearing = glm::ivec2(new_face->glyph->bitmap_left, new_face->glyph->bitmap_top);
 				current.advance = new_face->glyph->advance.x;
 			}
+
+			FT_Done_Face(new_face);
 			index++;
 		},
-		[](const std::filesystem::directory_entry& entry) { return entry.path().extension() == ".ttf"; });
+		{ ".ttf" });
 
 	Log::info("TextRenderer", "Constructed {} faces!", renderer_api->faces.size());
 
 	auto glyph_quad_vb = VertexBuffer::construct(device,
 		{
-			.size = text_data.size() * 4 * sizeof(TextData::VertexData),
+			.size = text_data.size() * sizeof(TextData),
 			.count = text_data.size(),
 		});
-	std::array<std::uint32_t, 1000 * 6> index_buffer {};
+	std::array<std::uint32_t, glyph_count * 6> index_buffer {};
 	std::uint32_t offset = 0;
 	for (std::size_t i = 0; i < index_buffer.size(); i += 6) {
 		index_buffer.at(i + 0) = 0 + offset;
@@ -106,7 +117,7 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 		});
 	renderer_api->glyph_vb = make_scope<Vulkan::VertexBuffer>(device,
 		BufferProperties {
-			.size = text_data.size() * 4 * sizeof(TextData::VertexData),
+			.size = text_data.size() * sizeof(TextData),
 			.count = text_data.size(),
 		});
 
@@ -133,60 +144,58 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 			},
 			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 			.extent = extent,
-			.cull_mode = CullMode::Front,
+			.cull_mode = CullMode::Back,
+			.face_mode = FaceMode::CounterClockwise,
 			.write_depth = false,
 			.test_depth = false,
 			.descriptor_set_layouts = desc_layout,
 		});
 
-	std::array<const Texture*, 127> textures {};
+	std::array<const Texture*, 128> textures {};
 	std::size_t i = 0;
 	for (const auto& tex : font_data) {
-		if (tex.texture == nullptr)
-			continue;
-		textures.at(i++) = tex.texture.get();
+		textures.at(i++) = tex.texture == nullptr ? nullptr : tex.texture.get();
 	}
-	resources.expose_to_shaders(textures, 2);
+	resources.expose_to_shaders(textures, 2, 2);
+	resources.expose_to_shaders(renderer_api->glyph_framebuffer->get_image(0), 1, 2);
 }
 
 void TextRenderer::submit_text(std::string_view text, const glm::uvec2& position, float scale)
 {
-	auto x = position.x;
-	const auto& y = position.y;
+	ensure(text_data_index < text_data.size());
+	auto x = static_cast<float>(position.x);
+	const auto y = static_cast<float>(position.y);
 	for (const auto& character : text) {
 		auto& ch = font_data.at(static_cast<std::size_t>(character));
-		float xpos = x + ch.bearing.x * scale;
-		float ypos = y - (ch.size.y - ch.bearing.y) * scale;
+		float xpos = x + static_cast<float>(ch.bearing.x) * scale;
+		float ypos = y - static_cast<float>(ch.size.y - ch.bearing.y) * scale;
 
-		float w = ch.size.x * scale;
-		float h = ch.size.y * scale;
-		x += (ch.advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
+		float w = static_cast<float>(ch.size.x) * scale;
+		float h = static_cast<float>(ch.size.y) * scale;
+		auto scaled_advance = static_cast<float>((ch.advance >> 6)) * scale;
+		x += scaled_advance; // bitshift by 6 to get value in pixels (2^6 = 64)
 
-		auto& defered = text_data.at(text_data_index++);
-		defered.character_texture_index = static_cast<std::size_t>(character);
-		defered.character = character;
-		defered.glyph_width = w;
-		defered.glyph_height = h;
-		defered.position = { xpos, ypos };
-		defered.vertices = {
-			TextData::VertexData {
-				.pos = { xpos, ypos + h },
-				.tex_coords = { 0, 0 },
-			},
-			{
-				.pos = { xpos, ypos },
-				.tex_coords = { 0, 1 },
-			},
-			{
-				.pos = { xpos + w, ypos },
-				.tex_coords = { 1, 1 },
-			},
-			{
-				.pos = { xpos + w, ypos + h },
-				.tex_coords = { 1, 0 },
-			},
+		auto& character_texture_index = text_character_texture_data.at(text_data_index);
+		character_texture_index = static_cast<std::uint32_t>(character);
+		text_data.at(vertex_data_index++) = {
+			.pos = { xpos, ypos + h },
+			.tex_coords = { 0, 0 },
 		};
-	}
+		text_data.at(vertex_data_index++) = {
+			.pos = { xpos + w, ypos + h },
+			.tex_coords = { 1, 1 },
+		};
+		text_data.at(vertex_data_index++) = {
+			.pos = { xpos + w, ypos },
+			.tex_coords = { 1, 0 },
+		};
+		text_data.at(vertex_data_index++) = {
+			.pos = { xpos, ypos },
+			.tex_coords = { 0, 1 },
+		};
+		text_data_index++;
+		submitted_vertices += 4;
+	};
 }
 
 void TextRenderer::render(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
@@ -195,36 +204,45 @@ void TextRenderer::render(Disarray::Renderer& renderer, Disarray::CommandExecuto
 	auto&& ubos = renderer.get_graphics_resource().get_editable_ubos();
 
 	static auto extent = renderer_api->glyph_pipeline->get_properties().extent.as<float>();
-	static auto ortho = glm::ortho(-extent.width / 2, extent.width / 2, -extent.height / 2, extent.height / 2);
-	std::get<GlyphUBO&>(ubos).projection = ortho;
+	static auto ortho = glm::ortho(0.F, extent.width, 0.F, extent.height);
+	auto& glyph_ubo = std::get<GlyphUBO&>(ubos);
+	glyph_ubo.projection = ortho;
 	renderer.get_graphics_resource().update_ubo(5);
 
-	renderer_api->glyph_vb->set_data(text_data.data(), text_data_index * sizeof(TextData::VertexData));
+	renderer_api->glyph_vb->set_data(text_data.data(), vertex_data_index * sizeof(TextData));
 	auto* cmd = supply_cast<Vulkan::CommandExecutor>(executor);
-
 	const auto& vb = renderer_api->glyph_vb;
-	const auto& ib = renderer_api->glyph_ib;
-	const auto index_count = text_data_index * 6;
+
 	const auto& vk_pipeline = cast_to<Vulkan::Pipeline>(*renderer_api->glyph_pipeline);
-
-	const std::array<VkDescriptorSet, 1> desc { renderer.get_graphics_resource().get_descriptor_set() };
-	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.get_layout(), 0, 1, desc.data(), 0, nullptr);
-
 	renderer.bind_pipeline(executor, *renderer_api->glyph_pipeline);
 
-	vkCmdPushConstants(cmd, vk_pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),
-		renderer.get_graphics_resource().get_push_constant());
+	const std::array desc { renderer.get_graphics_resource().get_descriptor_set(0), renderer.get_graphics_resource().get_descriptor_set(1),
+		renderer.get_graphics_resource().get_descriptor_set(2) };
+	vkCmdBindDescriptorSets(
+		cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
 
-	const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vb) };
-	constexpr VkDeviceSize offsets { 0 };
-	vkCmdBindVertexBuffers(cmd, 0, 1, vbs.data(), &offsets);
-
+	const auto& ib = renderer_api->glyph_ib;
 	vkCmdBindIndexBuffer(cmd, supply_cast<Vulkan::IndexBuffer>(*ib), 0, VK_INDEX_TYPE_UINT32);
 
-	const auto count = static_cast<std::uint32_t>(index_count);
-	vkCmdDrawIndexed(cmd, count, 1, 0, 0, 0);
+	const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vb) };
+	VkDeviceSize offsets { 0 };
+	vkCmdBindVertexBuffers(cmd, 0, 1, vbs.data(), &offsets);
+
+	auto& push_constant = renderer.get_graphics_resource().get_editable_push_constant();
+	for (auto i = 0U; i < text_data_index; i++) {
+		push_constant.image_indices[0] = static_cast<std::int32_t>(text_character_texture_data.at(i));
+		vkCmdPushConstants(cmd, vk_pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),
+			renderer.get_graphics_resource().get_push_constant());
+
+		vkCmdDrawIndexed(cmd, 6, 1, i * 6, 0, 0);
+	}
+
 	text_data_index = 0;
+	vertex_data_index = 0;
+	submitted_vertices = 0;
 	text_data.fill({});
+	text_character_texture_data.fill({});
+
 	renderer.end_pass(executor, false);
 }
 

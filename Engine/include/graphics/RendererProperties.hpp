@@ -125,29 +125,18 @@ struct ShadowPassUBO : Resettable<ShadowPassUBO> {
 struct DirectionalLightUBO : Resettable<DirectionalLightUBO> {
 	glm::vec4 position { 0 };
 	glm::vec4 direction { 0 };
-	glm::vec4 ambient;
-	glm::vec4 diffuse;
-	glm::vec4 specular;
+	glm::vec4 ambient { 0 };
+	glm::vec4 diffuse { 0 };
+	glm::vec4 specular { 0 };
+	glm::vec4 near_far { 0 };
 
-	float near { 0.F };
-	float far { 0.F };
-
-	void reset_impl()
-	{
-		position = {};
-		direction = {};
-		ambient = {};
-		diffuse = {};
-		specular = {};
-		near = 0;
-		far = 0;
-	}
+	void reset_impl();
 };
 
 struct GlyphUBO : Resettable<GlyphUBO> {
-	glm::mat4 projection {};
+	glm::mat4 projection {}; // 64
 
-	void reset_impl() { projection = {}; }
+	void reset_impl();
 };
 
 } // namespace Disarray

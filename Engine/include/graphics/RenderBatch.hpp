@@ -51,7 +51,7 @@ struct RenderBatchFor {
 	}
 
 protected:
-	void prepare_data() { vertex_buffer->set_data(vertices.data(), submitted_vertices * sizeof(T)); }
+	void prepare_data() { vertex_buffer->set_data(vertices.data(), submitted_vertices * sizeof(T), 0); }
 
 	void flush_vertex_buffer() { vertex_buffer->set_data(vertices.data(), static_cast<std::uint32_t>(vertex_buffer_size())); }
 
