@@ -2,6 +2,8 @@
 
 #include "scene/Components.hpp"
 
+#include <string>
+
 #include "core/Log.hpp"
 #include "graphics/Mesh.hpp"
 #include "scene/CppScript.hpp"
@@ -50,7 +52,11 @@ Pipeline::Pipeline(Ref<Disarray::Pipeline> p)
 }
 
 Texture::Texture(Device& device, std::string_view path)
-	: texture(Disarray::Texture::construct(device, TextureProperties { .path = std::string { path } }))
+	: texture(Disarray::Texture::construct(device,
+		TextureProperties {
+			.path = std::string { path },
+			.debug_name = std::string { path },
+		}))
 {
 }
 

@@ -65,8 +65,8 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 		pipeline_properties.pipeline_key = "line";
 		pipeline_properties.vertex_shader_key = "line.vert";
 		pipeline_properties.fragment_shader_key = "line.frag";
-		pipeline_properties.write_depth = false;
-		pipeline_properties.test_depth = false;
+		pipeline_properties.write_depth = true;
+		pipeline_properties.test_depth = true;
 		pipeline_properties.line_width = 3.0F;
 		pipeline_properties.polygon_mode = PolygonMode::Line;
 		pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" } };
@@ -76,6 +76,8 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 		// Line
 		pipeline_properties.framebuffer = quad_framebuffer;
 		pipeline_properties.pipeline_key = "line_id";
+		pipeline_properties.write_depth = true;
+		pipeline_properties.test_depth = true;
 		pipeline_properties.vertex_shader_key = "line_id.vert";
 		pipeline_properties.fragment_shader_key = "line_id.frag";
 		pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" }, { ElementType::Uint, "id" } };

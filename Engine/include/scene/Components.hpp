@@ -120,7 +120,7 @@ template <> inline constexpr std::string_view component_name<Tag> = "Tag";
 struct DirectionalLight {
 	struct ProjectionParameters {
 		float left { -5.F };
-		float right { 10.F };
+		float right { 5.F };
 		float bottom { -5.F };
 		float top { 5.F };
 		float near { 0.1F };
@@ -155,7 +155,7 @@ struct PointLight {
 	glm::vec4 diffuse { 0.F };
 	glm::vec4 specular { 0.F };
 	glm::vec4 ambient { 0.F };
-	glm::vec4 factors { 1, 1, 0, 0 };
+	glm::vec4 factors { 1, 0.09F, 0.032F, 0 };
 };
 template <> inline constexpr std::string_view component_name<PointLight> = "PointLight";
 

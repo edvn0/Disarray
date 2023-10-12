@@ -163,7 +163,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 				{ ElementType::Float3, "normals" },
 			},
 			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-			.cull_mode = CullMode::Back,
+			.cull_mode = CullMode::None,
 			.write_depth = true,
 			.test_depth = true,
 			.descriptor_set_layouts = desc_layout,
@@ -517,13 +517,13 @@ void Scene::create_entities()
 				.layout = layout,
 				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 				.extent = extent,
-				.cull_mode = CullMode::Back,
+				.cull_mode = CullMode::Front,
 				.descriptor_set_layouts = desc_layout,
 			});
 
 		const auto cube_mesh = Mesh::construct(device,
 			MeshProperties {
-				.path = FS::model("cube.obj"),
+				.path = FS::model("cube.fbx"),
 			});
 
 		auto floor = create("Floor");
@@ -540,7 +540,7 @@ void Scene::create_entities()
 				auto rect = create(fmt::format("Rect{}-{}", i, j));
 				parent.add_child(rect);
 				auto& transform = rect.get_components<Components::Transform>();
-				transform.position = { 5 * static_cast<float>(i) + 2.5f, -1, 5 * static_cast<float>(j) + 2.5f };
+				transform.position = { 5 * static_cast<float>(i) + 2.5f, -1.2, 5 * static_cast<float>(j) + 2.5f };
 				transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
 				float col_x = (i + (static_cast<float>(rects) / 2)) / static_cast<float>(rects);
 				float col_y = (j + (static_cast<float>(rects) / 2)) / static_cast<float>(rects);
@@ -602,7 +602,7 @@ void Scene::create_entities()
 		{
 			auto axis = create("SquareY");
 			auto& transform = axis.get_components<Components::Transform>();
-			transform.position = base_pos + glm::vec3 { 0, 1, 0 };
+			transform.position = base_pos + glm::vec3 { 0, 0, 0 };
 			axis.add_component<Components::QuadGeometry>();
 			axis.add_component<Components::Texture>(glm::vec4 { 0, 1, 0, 1 });
 			unit_squares.add_child(axis);
@@ -728,18 +728,18 @@ void Scene::create_entities()
 		auto sun = create("Sun");
 		auto& dir_light = sun.add_component<Components::DirectionalLight>(glm::vec4 { 0.7, 0.7, 0.1, 1.0f },
 			Components::DirectionalLight::ProjectionParameters {
-				.left = -5.F,
-				.right = 5.F,
-				.bottom = -5.F,
-				.top = 5.F,
-				.near = 0.1F,
-				.far = 70.F,
+				.left = -10.F,
+				.right = 20.F,
+				.bottom = -10.F,
+				.top = 10.F,
+				.near = -40.F,
+				.far = 40.F,
 				.fov = 60.F,
 			});
 		sun.add_component<Components::Mesh>(sphere);
 		sun.add_component<Components::Pipeline>(pipe);
 		sun.add_component<Components::Texture>(dir_light.ambient);
-		sun.add_component<Components::Transform>().position = { -25, -25, 16 };
+		sun.add_component<Components::Transform>().position = { -15, -15, 16 };
 
 		auto pl_system = create("PointLightSystem");
 		for (std::uint32_t i = 0; i < colours.size(); i++) {

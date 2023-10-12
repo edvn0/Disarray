@@ -24,6 +24,8 @@ namespace {
 			return VK_SHADER_STAGE_FRAGMENT_BIT;
 		case ShaderType::Compute:
 			return VK_SHADER_STAGE_COMPUTE_BIT;
+		case ShaderType::Include:
+			return VK_SHADER_STAGE_ALL;
 		default:
 			unreachable("Could not map to Vulkan stage");
 		}

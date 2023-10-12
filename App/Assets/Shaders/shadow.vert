@@ -1,6 +1,7 @@
 #include "PC.glsl"
 #include "ShadowPassUBO.glsl"
 #include "UBO.glsl"
+#include "MathHelpers.glsl"
 
 #define NAME SHADOW
 
@@ -24,14 +25,15 @@ layout(location = 2) out vec3 outNormals;
 
 void main()
 {
-	Uniform ubo = UBO.ubo;
-	PushConstant pc = PC.pc;
-	ShadowPassUBO spu = SPU.spu;
+    Uniform ubo = UBO.ubo;
+    PushConstant pc = PC.pc;
+    ShadowPassUBO spu = SPU.spu;
 
-	mat4 vp = spu.view_projection;
+    mat4 vp = spu.view_projection;
 
-	gl_Position = vp * pc.object_transform * vec4(pos, 1.0);
-	fragColor = pc.colour;
-	uvs = uv;
-	outNormals = normals;
+    vec4 model_matrix = pc.object_transform * vec4(pos, 1.0);
+    gl_Position = vp * model_matrix;
+    fragColor = pc.colour;
+    uvs = uv;
+    outNormals = correct_normals(pc.object_transform, normals);
 }

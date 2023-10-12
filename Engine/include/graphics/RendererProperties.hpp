@@ -67,7 +67,7 @@ struct PushConstant : Resettable<PushConstant> {
 
 struct PointLight {
 	glm::vec4 position;
-	glm::vec4 factors { 1, 1, 0, 0 };
+	glm::vec4 factors { 1, 0.09F, 0.032F, 0 };
 	glm::vec4 ambient;
 	glm::vec4 diffuse;
 	glm::vec4 specular;
@@ -81,8 +81,8 @@ namespace Detail {
 } // namespace Detail
 
 static constexpr auto max_point_lights = 30;
-static constexpr auto count_point_lights = 5;
-static constexpr auto point_light_radius = 3;
+static constexpr auto count_point_lights = 7;
+static constexpr auto point_light_radius = 15;
 using PointLights = Detail::PointLights<max_point_lights>;
 
 struct UBO : Resettable<UBO> {

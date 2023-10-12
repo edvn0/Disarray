@@ -35,6 +35,7 @@ struct Detail::CompilerIntrinsics {
 	static auto to_glslang_type(ShaderType type) -> EShLanguage
 	{
 		switch (type) {
+		case ShaderType::Include:
 		case ShaderType::Vertex:
 			return EShLangVertex;
 		case ShaderType::Fragment:
@@ -67,6 +68,11 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 		throw CouldNotOpenStreamException { fmt::format("Could not read shader: {}", path_to_shader) };
 	}
 	add_include_extension(output);
+	output.erase(std::remove(output.begin(), output.end(), '\0'), output.end());
+
+	if (type == ShaderType::Include) {
+		output += "void main() \n{}\n";
+	}
 
 	std::array sources = { output.c_str() };
 	shader->setStrings(sources.data(), 1);
@@ -182,8 +188,6 @@ BasicIncluder::BasicIncluder(std::filesystem::path directory)
 			}
 		},
 		[](const std::filesystem::directory_entry& entry) { return extensions.contains(entry.path().extension().string()); });
-
-	ensure(include_include_source_map.size() == 9, "We currently have 9 include files");
 }
 
 void BasicIncluder::replace_all_includes(std::string& io_string)

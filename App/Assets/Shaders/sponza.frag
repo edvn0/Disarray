@@ -44,12 +44,12 @@ vec3 calc_point_light(PointLight light, float shadow, vec3 normal, vec3 frag_pos
 void main()
 {
 	Uniform ubo = UBO.ubo;
-	DirectionalLightUBO dlu = DLU.dlu;
 	PushConstant pc = PC.pc;
+	DirectionalLightUBO dlu = DLU.dlu;
 
 	vec3 view_direction = normalize(vec3(CBO.camera.position) - fragment_position);
 	float shadow_bias = max(0.05 * (1.0 - dot(normals, vec3(dlu.direction))), 0.005);
-	float shadow = shadow_calculation(light_space_fragment_position, depth_texture, true, shadow_bias);
+	float shadow = shadow_calculation(light_space_fragment_position, depth_texture, false, shadow_bias);
 
 	DirectionalLight light;
 	light.direction = vec3(dlu.direction);

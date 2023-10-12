@@ -14,7 +14,7 @@
 namespace Disarray {
 
 PipelineCache::PipelineCache(const Disarray::Device& dev, const std::filesystem::path& base)
-	: ResourceCache(dev, base, { ".vert", ".frag" })
+	: ResourceCache(dev, base, { ".vert", ".frag", ".glsl" })
 {
 	const auto all_files = get_unique_files_recursively();
 
