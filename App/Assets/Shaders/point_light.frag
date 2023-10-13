@@ -29,22 +29,22 @@ layout(location = 1) out uint identifier;
 
 void main()
 {
-	PushConstant pc = PC.pc;
-	DirectionalLightUBO dlu = DLU.dlu;
+    PushConstant pc = PC.pc;
+    DirectionalLightUBO dlu = DLU.dlu;
 
-	vec3 view_direction = normalize(vec3(CBO.camera.position) - fragment_position);
-	float shadow_bias = max(0.05 * (1.0 - dot(normals, vec3(dlu.direction))), 0.005);
-	float shadow = shadow_calculation(light_space_fragment_position, depth_texture, false, shadow_bias);
+    vec3 view_direction = normalize(vec3(CBO.camera.position) - fragment_position);
+    float shadow_bias = max(0.05 * (1.0 - dot(normals, vec3(dlu.direction))), 0.005);
+    float shadow = shadow_calculation(light_space_fragment_position, depth_texture, false, shadow_bias);
 
-	DirectionalLight light;
-	light.direction = vec3(dlu.direction);
-	light.ambient = vec3(dlu.ambient);
-	light.diffuse = vec3(dlu.diffuse);
-	light.specular = vec3(dlu.specular);
-	vec3 out_vec = calculate_directional_light(light, normals, view_direction, shadow, 32);
+    DirectionalLight light;
+    light.direction = vec3(dlu.direction);
+    light.ambient = dlu.ambient;
+    light.diffuse = vec3(dlu.diffuse);
+    light.specular = vec3(dlu.specular);
+    vec3 out_vec = calculate_directional_light(light, normals, view_direction, shadow, 32);
 
-	colour = frag_colour * vec4(out_vec, 1.0F);
+    colour = frag_colour * vec4(out_vec, 1.0F);
 
-	colour = gamma_correct(colour);
-	identifier = pc.current_identifier;
+    colour = gamma_correct(colour);
+    identifier = pc.current_identifier;
 }

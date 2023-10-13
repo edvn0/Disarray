@@ -195,8 +195,8 @@ void Scene::begin_frame(const Camera& camera)
 	for (auto sun_component_view = registry.view<const Components::Transform, Components::DirectionalLight>();
 		 auto&& [entity, transform, sun] : sun_component_view.each()) {
 		directional.position = { transform.position, 1.0f };
-		sun.position = { transform.position, 1.0f };
-		sun.direction = glm::vec4(glm::normalize(-transform.position), 1.0f); // Lookat {0,0,0};
+		sun.position = directional.position;
+		sun.direction = glm::normalize(-sun.position); // Lookat {0,0,0};
 		directional.direction = sun.direction;
 		directional.ambient = sun.ambient;
 		directional.diffuse = sun.diffuse;
@@ -720,12 +720,12 @@ void Scene::create_entities()
 				.layout = layout,
 				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 				.extent = extent,
-				.cull_mode = CullMode::Back,
+				.cull_mode = CullMode::Front,
 				.descriptor_set_layouts = desc_layout,
 			});
 
 		auto sun = create("Sun");
-		auto& dir_light = sun.add_component<Components::DirectionalLight>(glm::vec4 { 0.7, 0.7, 0.1, 1.0f },
+		auto& dir_light = sun.add_component<Components::DirectionalLight>(glm::vec4 { 0.7, 0.7, 0.1, 0.1f },
 			Components::DirectionalLight::ProjectionParameters {
 				.left = -10.F,
 				.right = 20.F,
