@@ -28,6 +28,8 @@ public:
 		return diff / factor;
 	}
 
+	void reset() { start_nanos = nanos(); }
+
 private:
 	[[nodiscard]] auto nanos() const -> double { return static_cast<double>(Clock::ns()); };
 

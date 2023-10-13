@@ -131,13 +131,11 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 
 void Renderer::draw_submesh(Disarray::CommandExecutor& executor, const Disarray::VertexBuffer& vertex_buffer,
 	const Disarray::IndexBuffer& index_buffer, const Disarray::Pipeline& mesh_pipeline, const Disarray::Texture& texture, const glm::vec4& colour,
-	const glm::mat4& transform, const std::uint32_t identifier)
+	const glm::mat4& transform, const std::uint32_t identifier, PushConstant& push_constant)
 {
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
 	bind_pipeline(executor, mesh_pipeline);
-
-	auto& push_constant = get_graphics_resource().get_editable_push_constant();
 
 	push_constant.object_transform = transform;
 	push_constant.colour = colour;
@@ -145,16 +143,10 @@ void Renderer::draw_submesh(Disarray::CommandExecutor& executor, const Disarray:
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &push_constant);
 
-	bind_descriptor_sets(executor, pipeline.get_layout());
-
 	std::array<VkBuffer, 1> arr {};
 	arr[0] = supply_cast<Vulkan::VertexBuffer>(vertex_buffer);
 	const std::array offsets = { VkDeviceSize { 0 } };
 	vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets.data());
-
-	if (pipeline.get_properties().polygon_mode == PolygonMode::Line) {
-		vkCmdSetLineWidth(command_buffer, pipeline.get_properties().line_width);
-	}
 
 	vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(index_buffer), 0, VK_INDEX_TYPE_UINT32);
 
@@ -165,6 +157,12 @@ void Renderer::draw_submeshes(Disarray::CommandExecutor& executor, const Disarra
 	const Disarray::Texture& texture, const glm::vec4& colour, const glm::mat4& transform, const std::uint32_t identifier)
 {
 	// draw_mesh(executor, parent_mesh, mesh_pipeline, texture, transform, identifier);
+	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
+	bind_descriptor_sets(executor, pipeline.get_layout());
+
+	if (pipeline.get_properties().polygon_mode == PolygonMode::Line) {
+		vkCmdSetLineWidth(supply_cast<Vulkan::CommandExecutor>(executor), pipeline.get_properties().line_width);
+	}
 
 	auto& push_constant = get_graphics_resource().get_editable_push_constant();
 	for (const auto& sub : parent_mesh.get_submeshes()) {
@@ -175,8 +173,7 @@ void Renderer::draw_submeshes(Disarray::CommandExecutor& executor, const Disarra
 			push_constant.image_indices.at(index++) = static_cast<int>(texture_index);
 		}
 		push_constant.bound_textures = static_cast<unsigned int>(index);
-		draw_submesh(executor, *mesh->vertices, *mesh->indices, mesh_pipeline, texture, colour, transform, identifier);
-		push_constant.image_indices.fill(-1);
+		draw_submesh(executor, *mesh->vertices, *mesh->indices, mesh_pipeline, texture, colour, transform, identifier, push_constant);
 		push_constant.bound_textures = 0;
 	}
 }
@@ -217,7 +214,7 @@ void Renderer::begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebu
 	};
 	render_pass_begin_info.renderArea.extent = extent_2_d;
 
-	auto clear_values = cast_to<Vulkan::Framebuffer>(framebuffer).get_clear_values();
+	const auto& clear_values = cast_to<Vulkan::Framebuffer>(framebuffer).get_clear_values();
 
 	render_pass_begin_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
 	render_pass_begin_info.pClearValues = clear_values.data();

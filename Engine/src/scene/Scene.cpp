@@ -181,7 +181,6 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 			.debug_name = "IdentityFramebuffer",
 		});
 	scene_renderer->get_graphics_resource().expose_to_shaders(identity_framebuffer->get_image(), 1, 0);
-
 	create_entities();
 }
 
@@ -197,7 +196,7 @@ void Scene::begin_frame(const Camera& camera)
 		 auto&& [entity, transform, sun] : sun_component_view.each()) {
 		directional.position = { transform.position, 1.0f };
 		sun.position = { transform.position, 1.0f };
-		sun.direction = glm::normalize(sun.direction);
+		sun.direction = glm::vec4(glm::normalize(-transform.position), 1.0f); // Lookat {0,0,0};
 		directional.direction = sun.direction;
 		directional.ambient = sun.ambient;
 		directional.diffuse = sun.diffuse;
@@ -621,7 +620,6 @@ void Scene::create_entities()
 		}
 	}
 
-#ifdef DISARRAY_SPONZA
 	{
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("sponza.vert");
 		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("sponza.frag");
@@ -629,15 +627,15 @@ void Scene::create_entities()
 		const auto rotation = Maths::rotate_by(glm::radians(glm::vec3 { 180, 0, 0 }));
 
 		auto sponza_mesh = create("Sponza");
-		auto viking = Mesh::construct(device,
+		auto sponza_model = Mesh::construct(device,
 			{
 				.path = FS::model("sponza/sponza.obj"),
 				.initial_rotation = rotation,
 			});
-		auto& mesh = sponza_mesh.add_component<Components::Mesh>(viking);
+		auto& mesh = sponza_mesh.add_component<Components::Mesh>(sponza_model);
 		const auto& textures = mesh.mesh->get_textures();
 		std::span texture_span { textures };
-		scene_renderer->get_graphics_resource().expose_to_shaders(texture_span, 2);
+		scene_renderer->get_graphics_resource().expose_to_shaders(texture_span, 2, 0);
 
 		sponza_mesh.get_components<Components::Transform>().scale = glm::vec3 { 0.1F };
 		auto sponza_pipeline = Pipeline::construct(device,
@@ -649,7 +647,7 @@ void Scene::create_entities()
 				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 				.extent = extent,
 				.polygon_mode = PolygonMode::Fill,
-				.cull_mode = CullMode::Back,
+				.cull_mode = CullMode::Front,
 				.descriptor_set_layouts = desc_layout,
 			});
 		sponza_mesh.add_component<Components::Pipeline>(sponza_pipeline);
@@ -660,9 +658,7 @@ void Scene::create_entities()
 				.fragment_shader = frag,
 			}));
 	}
-#endif
 
-#ifdef DISARRAY_VIKING
 	{
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("main.vert");
 		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("main.frag");
@@ -704,7 +700,6 @@ void Scene::create_entities()
 		static constexpr auto val = 10.0F;
 		v_mesh.add_script<Scripts::LinearMovementScript>(-val, val);
 	}
-#endif
 
 	{
 

@@ -62,13 +62,13 @@ void main()
 		out_vec += calc_point_light(light, shadow, normals, fragment_position, view_direction);
 	}
 
-	vec4 mean_texture_colour = vec4(1.0);
+	vec4 mean_texture_colour = vec4(0.0);
 	for (uint bound_image_index = 0; bound_image_index < pc.bound_textures; bound_image_index++) {
 		int index = pc.image_indices[bound_image_index];
-		mean_texture_colour *= texture(sampler2D(textures[index], texture_sampler), uvs);
+		mean_texture_colour += texture(sampler2D(textures[index], texture_sampler), uvs);
 	}
 
-	colour = pc.colour * vec4(out_vec, 1.0f);
+	colour = pc.colour;
 	if (pc.bound_textures > 0) {
 		colour *= mean_texture_colour;
 	}
@@ -76,7 +76,7 @@ void main()
 	if (colour.a < 0.1)
 		discard;
 
+	colour *= vec4(out_vec, 1.0f);
 	colour = gamma_correct(colour);
-
 	id = pc.current_identifier;
 }

@@ -73,7 +73,7 @@ private:
 	void add_geometry_to_batch(Geometry, const GeometryProperties&);
 
 	void draw_submesh(Disarray::CommandExecutor&, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&,
-		const Disarray::Texture&, const glm::vec4&, const glm::mat4&, const std::uint32_t);
+		const Disarray::Texture&, const glm::vec4&, const glm::mat4&, const std::uint32_t, PushConstant& push_constant);
 
 	const Disarray::Device& device;
 	const Disarray::Swapchain& swapchain;
