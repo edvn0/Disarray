@@ -48,9 +48,13 @@ auto process_mesh(aiMesh* mesh, const std::filesystem::path& base_directory, con
 	std::span mesh_normals { mesh->mNormals, mesh->mNumVertices };
 	std::span mesh_uvs { mesh->mTextureCoords[0], mesh->mNumVertices };
 	std::span mesh_colours { mesh->mColors[0], mesh->mNumVertices };
+	std::span mesh_tangents { mesh->mTangents, mesh->mNumVertices };
+	std::span mesh_bitangents { mesh->mBitangents, mesh->mNumVertices };
 
-	const auto has_colours = mesh_colours.empty();
-	const auto has_normals = mesh_normals.empty();
+	const auto has_colours = !mesh_colours.empty() && mesh_colours.data() != nullptr;
+	const auto has_normals = !mesh_normals.empty() && mesh_normals.data() != nullptr;
+	const auto has_tangents = !mesh_tangents.empty() && mesh_tangents.data() != nullptr;
+	const auto has_bitangents = !mesh_bitangents.empty() && mesh_bitangents.data() != nullptr;
 
 	std::unordered_map<ModelVertex, uint32_t> unique_vertices {};
 	std::vector<ModelVertex> vertices;
@@ -68,6 +72,24 @@ auto process_mesh(aiMesh* mesh, const std::filesystem::path& base_directory, con
 				mesh_normals[i].x,
 				mesh_normals[i].y,
 				mesh_normals[i].z,
+			};
+		}
+
+		model_vertex.tangents = glm::vec3 {};
+		if (has_tangents) {
+			model_vertex.tangents = glm::vec3 {
+				mesh_tangents[i].x,
+				mesh_tangents[i].y,
+				mesh_tangents[i].z,
+			};
+		}
+
+		model_vertex.bitangents = glm::vec3 {};
+		if (has_bitangents) {
+			model_vertex.bitangents = glm::vec3 {
+				mesh_bitangents[i].x,
+				mesh_bitangents[i].y,
+				mesh_bitangents[i].z,
 			};
 		}
 

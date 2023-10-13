@@ -10,8 +10,10 @@ struct ModelVertex {
 	glm::vec2 uvs;
 	glm::vec4 color;
 	glm::vec3 normals;
+	glm::vec3 tangents;
+	glm::vec3 bitangents;
 
-	bool operator==(const ModelVertex& other) const
+	auto operator==(const ModelVertex& other) const -> bool
 	{
 		return pos == other.pos && color == other.color && uvs == other.uvs && normals == other.normals;
 	}
@@ -27,7 +29,7 @@ struct ModelVertex {
 
 namespace std {
 template <> struct hash<Disarray::ModelVertex> {
-	size_t operator()(Disarray::ModelVertex const& vertex) const
+	auto operator()(Disarray::ModelVertex const& vertex) const -> size_t
 	{
 		return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.uvs) << 1)
 			^ ((hash<glm::vec3>()(vertex.normals) << 1) >> 1);

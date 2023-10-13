@@ -161,6 +161,8 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 				{ ElementType::Float2, "uv" },
 				{ ElementType::Float4, "colour" },
 				{ ElementType::Float3, "normals" },
+				{ ElementType::Float3, "tangents" },
+				{ ElementType::Float3, "bitangents" },
 			},
 			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 			.cull_mode = CullMode::None,
@@ -498,6 +500,8 @@ void Scene::create_entities()
 		{ ElementType::Float2, "uv" },
 		{ ElementType::Float4, "colour" },
 		{ ElementType::Float3, "normals" },
+		{ ElementType::Float3, "tangents" },
+		{ ElementType::Float3, "bitangents" },
 	};
 	const auto& resources = scene_renderer->get_graphics_resource();
 	const auto& desc_layout = resources.get_descriptor_set_layouts();
@@ -523,7 +527,7 @@ void Scene::create_entities()
 
 		const auto cube_mesh = Mesh::construct(device,
 			MeshProperties {
-				.path = FS::model("cube.fbx"),
+				.path = FS::model("cube.obj"),
 			});
 
 		auto floor = create("Floor");
