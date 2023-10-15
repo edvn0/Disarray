@@ -11,10 +11,12 @@ layout(location = 0) in vec3 pos;
 layout(location = 1) in vec2 uv;
 layout(location = 2) in vec4 colour;
 layout(location = 3) in vec3 normals;
+layout(location = 4) in vec3 tangent;
+layout(location = 5) in vec3 bitangent;
 
-layout(location = 0) out vec4 fragColor;
+layout(location = 0) out vec4 fragment_colour;
 layout(location = 1) out vec2 uvs;
-layout(location = 2) out vec3 outNormals;
+layout(location = 2) out vec3 output_normals;
 
 void main()
 {
@@ -22,7 +24,7 @@ void main()
 	PushConstant pc = PC.pc;
 
 	gl_Position = ubo.view_projection * pc.object_transform * vec4(pos, 1.0);
-	fragColor = pc.colour;
+	fragment_colour = pc.colour;
 	uvs = uv;
-	outNormals = normals;
+	output_normals = correct_normals(pc.object_transform, normals);
 }

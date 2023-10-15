@@ -100,7 +100,9 @@ void Scene::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
 		Ref<Shader> shader = nullptr;
 		try {
 			shader = Shader::compile(dev, entry.path);
-		} catch (const CouldNotCompileShaderException&) {
+		} catch (const CouldNotCompileShaderException& exc) {
+			Log::info("Scene FileWatcher", "{}", exc);
+			return;
 		}
 
 		for (auto* pipe : unique_pipelines_sharing_this_files) {

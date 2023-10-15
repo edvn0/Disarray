@@ -19,13 +19,13 @@ float shadow_calculation(vec4 view_projection, sampler2D depth_texture, bool use
 }
 vec4 gamma_correct(vec4 colour);
 
-float shadow_projection(vec4 shadow_coordinates, vec2 off, sampler2D depth_texture)
+float shadow_projection(vec4 shadow_coordinates, vec2 off, sampler2D depth_texture, float bias)
 {
     const float ambient = 0.F;
     float shadow = 1.0;
     if (shadow_coordinates.z > -1.0 && shadow_coordinates.z < 1.0) {
         float dist = texture(depth_texture, shadow_coordinates.st + off).r;
-        if (dist < shadow_coordinates.z) {
+        if (dist - bias < shadow_coordinates.z) {
             shadow = ambient;
         }
     } else {
@@ -34,13 +34,14 @@ float shadow_projection(vec4 shadow_coordinates, vec2 off, sampler2D depth_textu
     return shadow;
 }
 
-float pcf(vec4 sc, sampler2D depth_texture, float scale);
-float pcf(vec4 sc, sampler2D depth_texture) { return pcf(sc, depth_texture, 1.5F); }
+float pcf(vec4 sc, sampler2D depth_texture, float scale, float shadow_bias);
+float pcf(vec4 sc, sampler2D depth_texture, float shadow_bias) { return pcf(sc, depth_texture, 1.5F, shadow_bias); }
+float pcf(vec4 sc, sampler2D depth_texture) { return pcf(sc, depth_texture, 1.5F, 0.05F); }
 
 float shadow_calculation(vec4 view_projection, sampler2D depth_texture, bool use_pdf, float shadow_bias)
 {
     vec4 projection_coordinates = view_projection / view_projection.w;
-    return use_pdf ? pcf(projection_coordinates, depth_texture) : shadow_projection(projection_coordinates, vec2(0.0, 0.0), depth_texture);
+    return use_pdf ? pcf(projection_coordinates, depth_texture, shadow_bias) : shadow_projection(projection_coordinates, vec2(0.0, 0.0), depth_texture, shadow_bias);
 }
 
 vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 view_direction, float shadow, uint spec_pow)
@@ -92,7 +93,7 @@ vec4 gamma_correct(vec4 colour)
     return vec4(pow(colour.rgb, vec3(1.0 / gamma)), 1.0f);
 }
 
-float pcf(vec4 sc, sampler2D depth_texture, float scale)
+float pcf(vec4 sc, sampler2D depth_texture, float scale, float shadow_bias)
 {
     ivec2 texture_dimensions = textureSize(depth_texture, 0);
     float dx = scale * 1.0 / float(texture_dimensions.x);
@@ -104,7 +105,7 @@ float pcf(vec4 sc, sampler2D depth_texture, float scale)
 
     for (int x = -range; x <= range; x++) {
         for (int y = -range; y <= range; y++) {
-            shadow_factor += shadow_projection(sc, vec2(dx * x, dy * y), depth_texture);
+            shadow_factor += shadow_projection(sc, vec2(dx * x, dy * y), depth_texture, shadow_bias);
         }
     }
     return shadow_factor / count;

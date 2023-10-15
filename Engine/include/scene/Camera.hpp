@@ -22,6 +22,9 @@ public:
 	virtual void focus(const glm::vec3&);
 	virtual void on_update(float);
 
+	[[nodiscard]] virtual auto get_near_clip() const -> float = 0;
+	[[nodiscard]] virtual auto get_far_clip() const -> float = 0;
+
 	[[nodiscard]] virtual auto get_position() const -> glm::vec3 = 0;
 	[[nodiscard]] virtual auto get_direction() const -> glm::vec3 = 0;
 
@@ -138,8 +141,8 @@ public:
 
 	[[nodiscard]] auto get_vertical_fov() const -> float { return vertical_fov; }
 	[[nodiscard]] auto get_aspect_ratio() const -> float { return aspect_ratio; }
-	[[nodiscard]] auto get_near_clip() const -> float { return near_clip; }
-	[[nodiscard]] auto get_far_clip() const -> float { return far_clip; }
+	[[nodiscard]] auto get_near_clip() const -> float override { return near_clip; }
+	[[nodiscard]] auto get_far_clip() const -> float override { return far_clip; }
 	[[nodiscard]] auto get_pitch() const -> float { return pitch; }
 	[[nodiscard]] auto get_yaw() const -> float { return yaw; }
 	[[nodiscard]] auto get_camera_speed() const -> float;
