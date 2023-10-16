@@ -4,6 +4,7 @@
 
 #include "core/events/Event.hpp"
 #include "core/events/MouseEvent.hpp"
+#include "glm/ext/matrix_clip_space.hpp"
 #include "graphics/ImageProperties.hpp"
 
 namespace Disarray {
@@ -24,6 +25,8 @@ public:
 
 	[[nodiscard]] virtual auto get_near_clip() const -> float = 0;
 	[[nodiscard]] virtual auto get_far_clip() const -> float = 0;
+	virtual auto set_near_clip(float set_value) -> void = 0;
+	virtual auto set_far_clip(float set_value) -> void = 0;
 
 	[[nodiscard]] virtual auto get_position() const -> glm::vec3 = 0;
 	[[nodiscard]] virtual auto get_direction() const -> glm::vec3 = 0;
@@ -93,8 +96,8 @@ public:
 		if (viewport_width == width && viewport_height == height) {
 			return;
 		}
-		aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
-		set_perspective_projection_matrix(vertical_fov, static_cast<float>(width), static_cast<float>(height), near_clip, far_clip);
+		aspect_ratio = glm::radians(static_cast<float>(width) / static_cast<float>(height));
+		set_perspective_projection_matrix(vertical_fov, static_cast<float>(width), static_cast<float>(height), far_clip, near_clip);
 		viewport_width = width;
 		viewport_height = height;
 		update_camera_view();
@@ -106,8 +109,8 @@ public:
 		if (viewport_width == width && viewport_height == height) {
 			return;
 		}
-		aspect_ratio = width / height;
-		set_perspective_projection_matrix(vertical_fov, width, height, near_clip, far_clip);
+		aspect_ratio = glm::radians(static_cast<float>(width) / static_cast<float>(height));
+		set_perspective_projection_matrix(vertical_fov, width, height, far_clip, near_clip);
 		viewport_width = static_cast<std::uint32_t>(width);
 		viewport_height = static_cast<std::uint32_t>(height);
 		update_camera_view();
@@ -143,6 +146,20 @@ public:
 	[[nodiscard]] auto get_aspect_ratio() const -> float { return aspect_ratio; }
 	[[nodiscard]] auto get_near_clip() const -> float override { return near_clip; }
 	[[nodiscard]] auto get_far_clip() const -> float override { return far_clip; }
+
+	auto set_near_clip(float set_value) -> void override
+	{
+		near_clip = set_value;
+		update_camera_view();
+		set_perspective_projection_matrix(vertical_fov, static_cast<float>(viewport_width), static_cast<float>(viewport_height), far_clip, near_clip);
+	}
+	auto set_far_clip(float set_value) -> void override
+	{
+		far_clip = set_value;
+		update_camera_view();
+		set_perspective_projection_matrix(vertical_fov, static_cast<float>(viewport_width), static_cast<float>(viewport_height), far_clip, near_clip);
+	}
+
 	[[nodiscard]] auto get_pitch() const -> float { return pitch; }
 	[[nodiscard]] auto get_yaw() const -> float { return yaw; }
 	[[nodiscard]] auto get_camera_speed() const -> float;

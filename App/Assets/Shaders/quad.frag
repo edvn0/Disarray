@@ -60,6 +60,6 @@ void main()
         out_vec += calc_point_light(light, shadow, normals, fragment_position, view_direction);
     }
 
-    colour = gamma_correct(pc.colour * vec4(out_vec, 1.0f));
+    colour = pc.colour * vec4(out_vec, 1.0f);
     id = pc.current_identifier;
 }

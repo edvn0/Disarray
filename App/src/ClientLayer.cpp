@@ -37,7 +37,7 @@ template <std::size_t Count> static consteval auto generate_angles_client() -> s
 
 ClientLayer::ClientLayer(Device& device, Window& win, Swapchain& swapchain)
 	: device(device)
-	, camera(60.F, static_cast<float>(swapchain.get_extent().width), static_cast<float>(swapchain.get_extent().height), 0.1F, 1000.F, nullptr)
+	, camera(60.F, static_cast<float>(swapchain.get_extent().width), static_cast<float>(swapchain.get_extent().height), 0.1F, 60.F, nullptr)
 {
 }
 
@@ -108,7 +108,7 @@ void ClientLayer::interface()
 
 		auto viewport_offset = ImGui::GetCursorPos();
 		auto viewport_size = ImGui::GetContentRegionAvail();
-		// camera.set_viewport_size<FloatExtent>({ viewport_size.x, viewport_size.y });
+		camera.set_viewport_size<FloatExtent>({ viewport_size.x, viewport_size.y });
 
 		const auto& image = scene->get_final_image();
 		UI::image(image, { viewport_size.x, viewport_size.y });
@@ -144,6 +144,19 @@ void ClientLayer::interface()
 	UI::scope("Depth"sv, [&depth_image]() {
 		auto viewport_size = ImGui::GetContentRegionAvail();
 		UI::image(depth_image, { viewport_size.x, viewport_size.y });
+	});
+
+	UI::scope("Camera Settings", [&cam = camera]() {
+		auto near_clip = cam.get_near_clip();
+		auto far_clip = cam.get_far_clip();
+		bool any_changed = false;
+		any_changed |= UI::Input::input("Near", &near_clip);
+		any_changed |= UI::Input::input("Far", &far_clip);
+		if (any_changed) {
+			cam.set_near_clip(near_clip);
+			cam.set_far_clip(far_clip);
+			Log::info("ClientLayer", "Changed near and far");
+		}
 	});
 
 	ImGui::End();

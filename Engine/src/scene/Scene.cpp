@@ -198,7 +198,7 @@ void Scene::begin_frame(const Camera& camera)
 		 auto&& [entity, transform, sun] : sun_component_view.each()) {
 		directional.position = { transform.position, 1.0f };
 		sun.position = directional.position;
-		sun.direction = glm::normalize(-sun.position); // Lookat {0,0,0};
+		sun.direction = -glm::normalize(sun.position); // Lookat {0,0,0};
 		directional.direction = sun.direction;
 		directional.ambient = sun.ambient;
 		directional.diffuse = sun.diffuse;
@@ -622,6 +622,7 @@ void Scene::create_entities()
 		}
 	}
 
+#ifdef DISARRAY_SPONZA
 	{
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("sponza.vert");
 		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("sponza.frag");
@@ -660,6 +661,7 @@ void Scene::create_entities()
 				.fragment_shader = frag,
 			}));
 	}
+#endif
 
 	{
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("main.vert");
@@ -730,10 +732,10 @@ void Scene::create_entities()
 		auto& dir_light = sun.add_component<Components::DirectionalLight>(glm::vec4 { 0.7, 0.7, 0.1, 0.1f },
 			Components::DirectionalLight::ProjectionParameters {
 				.left = -10.F,
-				.right = 20.F,
+				.right = 10.F,
 				.bottom = -10.F,
 				.top = 10.F,
-				.near = -40.F,
+				.near = 0.1F,
 				.far = 40.F,
 				.fov = 60.F,
 			});

@@ -21,17 +21,10 @@ vec4 gamma_correct(vec4 colour);
 
 float shadow_projection(vec4 shadow_coordinates, vec2 off, sampler2D depth_texture, float bias)
 {
-    const float ambient = 0.F;
-    float shadow = 1.0;
-    if (shadow_coordinates.z > -1.0 && shadow_coordinates.z < 1.0) {
-        float dist = texture(depth_texture, shadow_coordinates.st + off).r;
-        if (dist - bias < shadow_coordinates.z) {
-            shadow = ambient;
-        }
-    } else {
-        return 0.0F;
-    }
-    return shadow;
+    const float ambient = 0.1F;
+	if (shadow_coordinates.z > 1.0) return 0.0F;
+
+    return shadow_coordinates.z > texture(depth_texture, shadow_coordinates.xy + off).r ? 1.0 : 0.0;
 }
 
 float pcf(vec4 sc, sampler2D depth_texture, float scale, float shadow_bias);
@@ -46,7 +39,7 @@ float shadow_calculation(vec4 view_projection, sampler2D depth_texture, bool use
 
 vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 view_direction, float shadow, uint spec_pow)
 {
-    const vec3 light_direction = normalize(-light.direction);
+    const vec3 light_direction = normalize(light.direction);
     // diffuse shading
     const float diff = max(dot(normal, light_direction), 0.0);
     // specular shading
@@ -68,7 +61,7 @@ float shadow, vec3 view_direction)
     // diffuse shading
     const float diff = max(dot(normal, light_direction), 0.0);
     // specular shading
-    const vec3 reflection_direction = reflect(-light_direction, normal);
+    const vec3 reflection_direction = reflect(light_direction, normal);
     const float spec = pow(max(dot(view_direction, reflection_direction), 0.0), 32);
     // attenuation
     const float distance_to_light = length(light_to_frag_vector);

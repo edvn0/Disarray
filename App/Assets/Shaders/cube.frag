@@ -65,6 +65,6 @@ void main()
         normals, fragment_position, shadow, view_direction);
     }
 
-    colour = gamma_correct(pc.colour * vec4(out_vec, 1.0F));
+    colour = pc.colour * vec4(out_vec, 1.0F);
     id = pc.current_identifier;
 }

@@ -1,5 +1,6 @@
 #include "PC.glsl"
 #include "UBO.glsl"
+#include "MathHelpers.glsl"
 
 layout(set = 0, binding = 0) uniform UniformBlock { Uniform ubo; }
 UBO;
@@ -20,11 +21,11 @@ layout(location = 2) out vec3 output_normals;
 
 void main()
 {
-	Uniform ubo = UBO.ubo;
-	PushConstant pc = PC.pc;
+    Uniform ubo = UBO.ubo;
+    PushConstant pc = PC.pc;
 
-	gl_Position = ubo.view_projection * pc.object_transform * vec4(pos, 1.0);
-	fragment_colour = pc.colour;
-	uvs = uv;
-	output_normals = correct_normals(pc.object_transform, normals);
+    gl_Position = ubo.view_projection * pc.object_transform * vec4(pos, 1.0);
+    fragment_colour = pc.colour;
+    uvs = uv;
+    output_normals = correct_normals(pc.object_transform, normals);
 }

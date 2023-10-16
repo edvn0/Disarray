@@ -44,7 +44,5 @@ void main()
     vec3 out_vec = calculate_directional_light(light, normals, view_direction, shadow, 32);
 
     colour = frag_colour * vec4(out_vec, 1.0F);
-
-    colour = gamma_correct(colour);
     identifier = pc.current_identifier;
 }

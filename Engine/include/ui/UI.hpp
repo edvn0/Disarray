@@ -145,7 +145,7 @@ namespace Input {
 
 	auto general_input(std::string_view name, int count, float* base, float velocity, float min, float max) -> bool;
 
-	template <std::size_t N, std::floating_point T>
+	template <std::size_t N = 1, std::floating_point T = float>
 		requires(N >= 0 && N <= 4)
 	auto input(std::string_view name, T* base, T velocity = T { 1 }, T min = 0, T max = 1) -> bool
 	{
