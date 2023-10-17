@@ -28,7 +28,7 @@ void QuadVertexBatch::construct_impl(Renderer& renderer, const Device& dev)
 
 	pipeline = renderer.get_pipeline_cache().get("quad");
 	std::vector<std::uint32_t> quad_indices;
-	quad_indices.resize(batch_renderer_size * IndexCount);
+	quad_indices.resize(BatchRenderer::Objects * IndexCount);
 	std::uint32_t offset = 0;
 	for (std::size_t i = 0; i < quad_indices.size(); i += index_per_object_count<QuadVertex>) {
 		quad_indices[i + 0] = 0 + offset;
@@ -81,7 +81,7 @@ void QuadVertexBatch::create_new_impl(Geometry geometry, const GeometryPropertie
 		vertices.at(i).normals = normals;
 	}
 
-	submitted_indices += 6;
+	submitted_indices += index_per_object_count<QuadVertex>;
 	submitted_objects++;
 }
 
@@ -136,7 +136,7 @@ void LineVertexBatch::construct_impl(Disarray::Renderer& renderer, const Disarra
 	pipeline = renderer.get_pipeline_cache().get("line");
 
 	std::vector<std::uint32_t> line_indices;
-	line_indices.resize(batch_renderer_size * IndexCount);
+	line_indices.resize(BatchRenderer::Objects * IndexCount);
 	for (std::size_t i = 0; i < line_indices.size(); i++) {
 		line_indices[i] = static_cast<std::uint32_t>(i);
 	}
@@ -235,7 +235,7 @@ void LineIdVertexBatch::construct_impl(Disarray::Renderer& renderer, const Disar
 	this->pipeline = renderer.get_pipeline_cache().get("line_id");
 
 	std::vector<std::uint32_t> line_indices;
-	line_indices.resize(batch_renderer_size * IndexCount);
+	line_indices.resize(BatchRenderer::Objects * IndexCount);
 	for (std::size_t i = 0; i < line_indices.size(); i++) {
 		line_indices[i] = static_cast<std::uint32_t>(i);
 	}

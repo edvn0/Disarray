@@ -2,10 +2,6 @@
 
 #include "scene/Scene.hpp"
 
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
-
 #include <ImGuizmo.h>
 #include <entt/entt.hpp>
 
@@ -25,8 +21,10 @@
 #include "core/events/KeyEvent.hpp"
 #include "core/events/MouseEvent.hpp"
 #include "core/filesystem/AssetLocations.hpp"
+#include "glm/ext/matrix_clip_space.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
+#include "graphics/GLM.hpp"
 #include "graphics/Maths.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
@@ -34,6 +32,7 @@
 #include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "graphics/ShaderCompiler.hpp"
+#include "graphics/Swapchain.hpp"
 #include "graphics/Texture.hpp"
 #include "graphics/TextureCache.hpp"
 #include "scene/Camera.hpp"
@@ -43,6 +42,7 @@
 #include "scene/Entity.hpp"
 #include "scene/Scripts.hpp"
 #include "scene/Serialiser.hpp"
+#include "ui/UI.hpp"
 
 template <std::size_t Count> static auto generate_colours() -> std::array<glm::vec4, Count>
 {
@@ -58,7 +58,7 @@ template <std::size_t Count> static consteval auto generate_angles() -> std::arr
 	std::array<float, Count> angles {};
 	constexpr auto division = 1.F / static_cast<float>(Count);
 	for (std::size_t i = 0; i < Count; i++) {
-		angles.at(i) = glm::two_pi<float>() * division * i;
+		angles.at(i) = glm::two_pi<float>() * division * static_cast<float>(i);
 	}
 	return angles;
 }
@@ -75,15 +75,26 @@ Scene::Scene(const Device& dev, std::string_view name)
 
 void Scene::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
 {
-	file_watcher = make_scope<FileWatcher>(pool, "Assets/Shaders", Collections::StringSet { ".vert", ".frag" }, std::chrono::milliseconds(200));
-	file_watcher->on_modified([&dev = device, &reg = registry, &mutex = registry_access](const FileInformation& entry) {
+	static constexpr auto tick_time = std::chrono::milliseconds(200);
+	file_watcher = make_scope<FileWatcher>(pool, "Assets/Shaders", Collections::StringSet { ".vert", ".frag", ".glsl" }, tick_time);
+	auto& pipeline_cache = scene_renderer->get_graphics_resource().get_pipeline_cache();
+	file_watcher->on_modified([&pipeline_cache, &dev = device, &reg = registry, &mutex = registry_access](const FileInformation& entry) {
 		std::scoped_lock lock { mutex };
 		const auto view = reg.view<Components::Pipeline>();
+		const auto as_path = entry.to_path();
+
+		if (as_path.extension() == ".glsl") {
+			auto glsl_shader = Shader::compile(dev, entry.path);
+			pipeline_cache.update(as_path, std::move(glsl_shader));
+		}
+
 		std::unordered_set<Components::Pipeline*> unique_pipelines_sharing_this_files {};
 		for (auto&& [ent, pipeline] : view.each()) {
-			if (!pipeline.pipeline->has_shader_with_name(entry.to_path())) {
+			const bool pipeline_uses_this_updated_shader = pipeline.pipeline->has_shader_with_name(as_path);
+			if (!pipeline_uses_this_updated_shader) {
 				continue;
 			}
+
 			unique_pipelines_sharing_this_files.insert(&pipeline);
 		}
 
@@ -91,38 +102,19 @@ void Scene::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
 			return;
 		}
 
-		Runtime::ShaderCompiler compiler;
-		ShaderType type = to_shader_type(entry.path);
-		auto&& [could, code] = compiler.try_compile(entry.path, type);
-		if (!could) {
+		Ref<Shader> shader = nullptr;
+		try {
+			shader = Shader::compile(dev, entry.path);
+		} catch (const CouldNotCompileShaderException& exc) {
+			Log::info("Scene FileWatcher", "{}", exc);
 			return;
 		}
-
-		auto shader = Shader::construct(dev,
-			{
-				.code = std::move(code),
-				.identifier = entry.path,
-				.type = type,
-			});
 
 		for (auto* pipe : unique_pipelines_sharing_this_files) {
 			auto& [pipeline] = *pipe;
 			auto& pipe_props = pipeline->get_properties();
 
-			switch (type) {
-			case ShaderType::Vertex: {
-				pipe_props.vertex_shader = shader;
-				break;
-			}
-			case ShaderType::Fragment: {
-				pipe_props.fragment_shader = shader;
-				break;
-			}
-			case ShaderType::Compute: {
-				pipe_props.compute_shader = shader;
-				break;
-			}
-			}
+			pipe_props.set_shader_with_type(shader->get_properties().type, shader);
 		}
 
 		wait_for_idle(dev);
@@ -154,12 +146,14 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 		});
 	shadow_framebuffer = Framebuffer::construct(device,
 		{
-			.extent = extent,
-			.attachments = { { ImageFormat::Depth } },
+			.extent = { 1024, 1024 },
+			.attachments = { { ImageFormat::Depth, false } },
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
 			.debug_name = "ShadowFramebuffer",
 		});
+
+	scene_renderer->get_graphics_resource().expose_to_shaders(shadow_framebuffer->get_depth_image(), 1, 1);
 
 	const auto& resources = scene_renderer->get_graphics_resource();
 	const auto& desc_layout = resources.get_descriptor_set_layouts();
@@ -174,8 +168,11 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 				{ ElementType::Float2, "uv" },
 				{ ElementType::Float4, "colour" },
 				{ ElementType::Float3, "normals" },
+				{ ElementType::Float3, "tangents" },
+				{ ElementType::Float3, "bitangents" },
 			},
 			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+			.cull_mode = CullMode::Front,
 			.write_depth = true,
 			.test_depth = true,
 			.descriptor_set_layouts = desc_layout,
@@ -187,9 +184,10 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
 			.should_blend = true,
+			.blend_mode = FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha,
 			.debug_name = "IdentityFramebuffer",
 		});
-
+	scene_renderer->get_graphics_resource().expose_to_shaders(identity_framebuffer->get_image(), 1, 0);
 	create_entities();
 }
 
@@ -198,13 +196,41 @@ Scene::~Scene() = default;
 void Scene::begin_frame(const Camera& camera)
 {
 	scene_renderer->begin_frame(camera);
-	auto [ubo, camera_ubo, light_ubos] = scene_renderer->get_graphics_resource().get_editable_ubos();
+	auto [ubo, camera_ubo, light_ubos, shadow_pass, directional, glyph] = scene_renderer->get_graphics_resource().get_editable_ubos();
 	auto& push_constant = scene_renderer->get_graphics_resource().get_editable_push_constant();
 
-	for (auto sun_component_view = registry.view<const Components::DirectionalLight, const Components::Texture>();
-		 auto&& [entity, sun, texture] : sun_component_view.each()) {
-		ubo.sun_direction_and_intensity = sun.compute();
-		ubo.sun_colour = texture.colour;
+	for (auto sun_component_view = registry.view<const Components::Transform, Components::DirectionalLight>();
+		 auto&& [entity, transform, sun] : sun_component_view.each()) {
+		directional.position = { transform.position, 1.0f };
+		sun.position = directional.position;
+		sun.direction = glm::normalize(-sun.position); // Lookat {0,0,0};
+		directional.direction = sun.direction;
+		directional.ambient = sun.ambient;
+		directional.diffuse = sun.diffuse;
+		directional.specular = sun.specular;
+		directional.near_far = glm::vec4 { 0 };
+	}
+
+	auto maybe_directional = get_by_components<Components::DirectionalLight, Components::Transform>();
+	if (maybe_directional.has_value()) {
+
+		auto&& [transform, light] = maybe_directional->get_components<Components::Transform, Components::DirectionalLight>();
+		auto projection = light.projection_parameters.compute();
+		glm::vec3 center { 0 };
+		if (light.use_direction_vector) {
+			auto lookat_center = transform.position + glm::vec3(light.direction);
+			center = lookat_center;
+			projection = glm::perspective(
+				light.projection_parameters.fov, extent.aspect_ratio(), light.projection_parameters.near, light.projection_parameters.far);
+			directional.near_far = { light.projection_parameters.near, light.projection_parameters.far, 0, 0 };
+		}
+		const auto view = glm::lookAt(glm::vec3(light.position), center, { 0.0F, 1.0F, 0.0F });
+
+		const auto view_projection = projection * view;
+
+		shadow_pass.view = view;
+		shadow_pass.projection = projection;
+		shadow_pass.view_projection = view_projection;
 	}
 
 	std::size_t light_index { 0 };
@@ -256,75 +282,88 @@ void Scene::update(float time_step)
 void Scene::render()
 {
 	command_executor->begin();
-#ifdef SHADOWPASS_SUPPORTED
+	auto& executor = *command_executor;
 	{
-		scene_renderer->begin_pass(*command_executor, *shadow_framebuffer);
-		draw_geometry(true);
-		scene_renderer->end_pass(*command_executor);
+		scene_renderer->draw_text({ 0, 0 }, "Hello world! {}\nHello", "Edwin");
+		scene_renderer->text_rendering_pass(executor);
 	}
-#endif
 	{
-		scene_renderer->begin_pass(*command_executor, *framebuffer, true);
+		scene_renderer->begin_pass(executor, *shadow_framebuffer);
+		draw_geometry(true);
+		scene_renderer->planar_geometry_pass(executor);
+		scene_renderer->end_pass(executor);
+	}
+	{
+		scene_renderer->begin_pass(executor, *identity_framebuffer, true);
+		draw_geometry(false);
+		scene_renderer->planar_geometry_pass(executor);
+		scene_renderer->end_pass(executor);
+	}
+	{
+		// This is the composite pass!
+		scene_renderer->fullscreen_quad_pass(executor, extent);
+	}
 
-		auto line_view = registry.view<const Components::LineGeometry, const Components::Texture, const Components::Transform>();
-		for (auto&& [entity, geom, tex, transform] : line_view.each()) {
+	command_executor->submit_and_end();
+}
+
+auto Scene::get_final_image() const -> const Disarray::Image& { return scene_renderer->get_composite_pass_image(); }
+
+void Scene::draw_geometry(bool is_shadow)
+{
+	if (!is_shadow) {
+		for (auto line_view = registry.view<const Components::LineGeometry, const Components::Texture, const Components::Transform>();
+			 auto&& [entity, geom, tex, transform] : line_view.each()) {
 			scene_renderer->draw_planar_geometry(Geometry::Line,
 				{
 					.position = transform.position,
 					.to_position = geom.to_position,
 					.colour = tex.colour,
+					.identifier = static_cast<std::uint32_t>(entity),
 				});
 		}
 
-		scene_renderer->end_pass(*command_executor);
-	}
-	{
-		scene_renderer->begin_pass(*command_executor, *identity_framebuffer, true);
-		draw_geometry();
-		scene_renderer->end_pass(*command_executor);
-	}
-	command_executor->submit_and_end();
-}
+		for (auto rect_view = registry.view<const Components::Texture, const Components::QuadGeometry, const Components::Transform>();
+			 auto&& [entity, tex, geom, transform] : rect_view.each()) {
+			scene_renderer->draw_planar_geometry(Geometry::Rectangle,
+				{
+					.position = transform.position,
+					.colour = tex.colour,
+					.rotation = transform.rotation,
+					.dimensions = transform.scale,
+					.identifier = static_cast<std::uint32_t>(entity),
+				});
+		}
 
-void Scene::draw_geometry(bool is_shadow)
-{
-	for (auto script_view = registry.view<Components::Script>(); auto&& [entity, script] : script_view.each()) {
-		script.get_script().on_render(*scene_renderer);
-	}
+		auto directional_lights = registry.view<Components::Transform, const Components::Texture, const Components::DirectionalLight,
+			const Components::Mesh, const Components::Pipeline>();
+		for (auto&& [entity, transform, texture, light, mesh, pipeline] : directional_lights.each()) {
+			const auto identifier = static_cast<std::uint32_t>(entity);
 
-	for (auto line_view = registry.view<const Components::LineGeometry, const Components::Texture, const Components::Transform>();
-		 auto&& [entity, geom, tex, transform] : line_view.each()) {
-		scene_renderer->draw_planar_geometry(Geometry::Line,
-			{
-				.position = transform.position,
-				.to_position = geom.to_position,
-				.colour = tex.colour,
-				.identifier = static_cast<std::uint32_t>(entity),
-			});
-	}
-
-	for (auto rect_view
-		 = registry.view<const Components::Texture, const Components::QuadGeometry, const Components::Transform, const Components::ID>();
-		 auto&& [entity, tex, geom, transform, id] : rect_view.each()) {
-		scene_renderer->draw_planar_geometry(Geometry::Rectangle,
-			{
-				.position = transform.position,
-				.colour = tex.colour,
-				.rotation = transform.rotation,
-				.dimensions = transform.scale,
-				.identifier = static_cast<std::uint32_t>(entity),
-			});
+			const auto look_at = glm::lookAt(transform.position, transform.position + glm::normalize(glm::vec3(light.direction)), { 0, 1, 0 });
+			glm::quat rotation { look_at };
+			transform.rotation = rotation;
+			scene_renderer->draw_mesh(*command_executor, *mesh.mesh, *pipeline.pipeline, *texture.texture, transform.compute(), identifier);
+			scene_renderer->draw_planar_geometry(Geometry::Line,
+				{
+					.position = transform.position,
+					.to_position = { 0, 0, 0 },
+					.colour = { 1, 0, 0, 1 },
+					.identifier = identifier,
+				});
+		}
 	}
 
 	for (auto mesh_view = registry.view<const Components::Mesh, const Components::Pipeline, const Components::Texture, const Components::Transform>();
 		 auto&& [entity, mesh, pipeline, texture, transform] : mesh_view.each()) {
 		const auto identifier = static_cast<std::uint32_t>(entity);
+		const auto& actual_pipeline = is_shadow ? *shadow_pipeline : *pipeline.pipeline;
 		if (mesh.mesh->has_children()) {
-			scene_renderer->draw_submeshes(*command_executor, *mesh.mesh, is_shadow ? *shadow_pipeline : *pipeline.pipeline, *texture.texture,
-				texture.colour, transform.compute(), identifier);
+			scene_renderer->draw_submeshes(
+				*command_executor, *mesh.mesh, actual_pipeline, *texture.texture, texture.colour, transform.compute(), identifier);
 		} else {
-			scene_renderer->draw_mesh(*command_executor, *mesh.mesh, is_shadow ? *shadow_pipeline : *pipeline.pipeline, *texture.texture,
-				texture.colour, transform.compute(), identifier);
+			scene_renderer->draw_mesh(
+				*command_executor, *mesh.mesh, actual_pipeline, *texture.texture, texture.colour, transform.compute(), identifier);
 		}
 	}
 
@@ -332,22 +371,9 @@ void Scene::draw_geometry(bool is_shadow)
 			 entt::exclude<Components::Texture, Components::DirectionalLight>);
 		 auto&& [entity, mesh, pipeline, transform] : mesh_no_texture_view.each()) {
 		const auto identifier = static_cast<std::uint32_t>(entity);
-		scene_renderer->draw_mesh(*command_executor, *mesh.mesh, is_shadow ? *shadow_pipeline : *pipeline.pipeline, transform.compute(), identifier);
+		const auto& actual_pipeline = is_shadow ? *shadow_pipeline : *pipeline.pipeline;
+		scene_renderer->draw_mesh(*command_executor, *mesh.mesh, actual_pipeline, transform.compute(), identifier);
 	}
-
-	auto directional_lights
-		= registry.view<Components::Transform, const Components::DirectionalLight, const Components::Mesh, const Components::Pipeline>();
-	for (auto&& [entity, transform, light, mesh, pipeline] : directional_lights.each()) {
-		const auto identifier = static_cast<std::uint32_t>(entity);
-
-		const auto look_at = glm::lookAt(transform.position, transform.position + glm::normalize(light.direction), { 0, 1, 0 });
-		glm::quat rotation { look_at };
-		transform.rotation = rotation;
-		scene_renderer->draw_mesh(*command_executor, *mesh.mesh, is_shadow ? *shadow_pipeline : *pipeline.pipeline, transform.compute(), identifier);
-	}
-
-	// TODO: Implement
-	// scene_renderer->draw_text("Hello world!", 0, 0, 12.f);
 }
 
 void Scene::on_event(Event& event)
@@ -370,6 +396,7 @@ void Scene::recreate(const Extent& new_ex)
 	}
 
 	identity_framebuffer->recreate(true, extent);
+	shadow_framebuffer->recreate(true, shadow_framebuffer->get_properties().extent);
 	framebuffer->recreate(true, extent);
 	command_executor->recreate(true, extent);
 }
@@ -377,7 +404,7 @@ void Scene::recreate(const Extent& new_ex)
 void Scene::destruct()
 {
 	SceneSerialiser scene_serialiser(this);
-	for (auto scripts = registry.view<Components::Script>(); auto&& [entity, script] : scripts.each()) {
+	for (auto&& [entity, script] : registry.view<Components::Script>().each()) {
 		script.destroy();
 	}
 
@@ -423,9 +450,9 @@ void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoTyp
 	auto transform = entity_transform.compute();
 
 	bool snap = Input::key_pressed(KeyCode::LeftShift);
-	float snap_value = 0.5f;
-	if (static_cast<ImGuizmo::OPERATION>(gizmo_type) == ImGuizmo::OPERATION::ROTATE) {
-		snap_value = 45.0f;
+	float snap_value = 0.5F;
+	if (gizmo_type == GizmoType::Rotate) {
+		snap_value = 20.0F;
 	}
 
 	std::array<float, 3> snap_values = { snap_value, snap_value, snap_value };
@@ -443,9 +470,15 @@ void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoTyp
 
 		auto delta_rotation = rotation - entity_transform.rotation;
 
-		entity_transform.position = translation;
+		if (translation != glm::vec3 { 0, 0, 0 }) {
+			entity_transform.position = translation;
+		}
+
 		entity_transform.rotation += delta_rotation;
-		entity_transform.scale = scale;
+
+		if (glm::l2Norm(scale) > 0) {
+			entity_transform.scale = scale;
+		}
 	}
 }
 
@@ -473,12 +506,15 @@ void Scene::create_entities()
 		{ ElementType::Float2, "uv" },
 		{ ElementType::Float4, "colour" },
 		{ ElementType::Float3, "normals" },
+		{ ElementType::Float3, "tangents" },
+		{ ElementType::Float3, "bitangents" },
 	};
 	const auto& resources = scene_renderer->get_graphics_resource();
 	const auto& desc_layout = resources.get_descriptor_set_layouts();
 
 	{
-		int rects { 2 };
+		constexpr int rects { 2 };
+		static_assert(rects % 2 == 0);
 
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("cube.vert");
 		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("cube.frag");
@@ -491,7 +527,7 @@ void Scene::create_entities()
 				.layout = layout,
 				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 				.extent = extent,
-				.cull_mode = CullMode::Back,
+				.cull_mode = CullMode::Front,
 				.descriptor_set_layouts = desc_layout,
 			});
 
@@ -499,13 +535,22 @@ void Scene::create_entities()
 			MeshProperties {
 				.path = FS::model("cube.obj"),
 			});
+
+		auto floor = create("Floor");
+		floor.get_transform().scale = { 30, 1, 30 };
+		floor.get_transform().position = { 0, 1, 0 };
+
+		floor.add_component<Components::Texture>(nullptr, glm::vec4 { .1, .1, .9, 1.0 });
+		floor.add_component<Components::Mesh>(cube_mesh);
+		floor.add_component<Components::Pipeline>(pipe);
+
 		auto parent = create("Grid");
 		for (auto j = -rects / 2; j < rects / 2; j++) {
 			for (auto i = -rects / 2; i < rects / 2; i++) {
 				auto rect = create(fmt::format("Rect{}-{}", i, j));
 				parent.add_child(rect);
-				auto& transform = rect.template get_components<Components::Transform>();
-				transform.position = { 5 * static_cast<float>(i) + 2.5f, -1, 5 * static_cast<float>(j) + 2.5f };
+				auto& transform = rect.get_components<Components::Transform>();
+				transform.position = { 5 * static_cast<float>(i) + 2.5f, -1.2, 5 * static_cast<float>(j) + 2.5f };
 				transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
 				float col_x = (i + (static_cast<float>(rects) / 2)) / static_cast<float>(rects);
 				float col_y = (j + (static_cast<float>(rects) / 2)) / static_cast<float>(rects);
@@ -554,21 +599,51 @@ void Scene::create_entities()
 	}
 
 	{
+		auto unit_squares = create("UnitSquares");
+		const glm::vec3 base_pos { 0, 0, 0 };
+		{
+			auto axis = create("SquareX");
+			auto& transform = axis.get_components<Components::Transform>();
+			transform.position = base_pos;
+			axis.add_component<Components::QuadGeometry>();
+			axis.add_component<Components::Texture>(glm::vec4 { 1, 0, 0, 1 });
+			unit_squares.add_child(axis);
+		}
+		{
+			auto axis = create("SquareY");
+			auto& transform = axis.get_components<Components::Transform>();
+			transform.position = base_pos + glm::vec3 { 0, 0, 0 };
+			axis.add_component<Components::QuadGeometry>();
+			axis.add_component<Components::Texture>(glm::vec4 { 0, 1, 0, 1 });
+			unit_squares.add_child(axis);
+		}
+		{
+			auto axis = create("SquareZ");
+			auto& transform = axis.get_components<Components::Transform>();
+			transform.position = base_pos + glm::vec3 { 0, 0, 1 };
+			axis.add_component<Components::QuadGeometry>();
+			axis.add_component<Components::Texture>(glm::vec4 { 0, 0, 1, 1 });
+			unit_squares.add_child(axis);
+		}
+	}
+
+#ifdef DISARRAY_SPONZA
+	{
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("sponza.vert");
 		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("sponza.frag");
 
 		const auto rotation = Maths::rotate_by(glm::radians(glm::vec3 { 180, 0, 0 }));
 
 		auto sponza_mesh = create("Sponza");
-		auto viking = Mesh::construct(device,
+		auto sponza_model = Mesh::construct(device,
 			{
 				.path = FS::model("sponza/sponza.obj"),
 				.initial_rotation = rotation,
 			});
-		auto& mesh = sponza_mesh.add_component<Components::Mesh>(viking);
+		auto& mesh = sponza_mesh.add_component<Components::Mesh>(sponza_model);
 		const auto& textures = mesh.mesh->get_textures();
 		std::span texture_span { textures };
-		scene_renderer->get_graphics_resource().expose_to_shaders(texture_span);
+		scene_renderer->get_graphics_resource().expose_to_shaders(texture_span, 2, 0);
 
 		sponza_mesh.get_components<Components::Transform>().scale = glm::vec3 { 0.1F };
 		auto sponza_pipeline = Pipeline::construct(device,
@@ -580,7 +655,7 @@ void Scene::create_entities()
 				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 				.extent = extent,
 				.polygon_mode = PolygonMode::Fill,
-				.cull_mode = CullMode::Back,
+				.cull_mode = CullMode::Front,
 				.descriptor_set_layouts = desc_layout,
 			});
 		sponza_mesh.add_component<Components::Pipeline>(sponza_pipeline);
@@ -591,18 +666,20 @@ void Scene::create_entities()
 				.fragment_shader = frag,
 			}));
 	}
+#endif
 
 	{
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("main.vert");
 		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("main.frag");
 
-		auto viking_rotation = Maths::rotate_by(glm::radians(glm::vec3 { 90, 0, 0 }));
+		auto viking_rotation = Maths::rotate_by(glm::radians(glm::vec3 { 0, 0, 0 }));
 		auto v_mesh = create("Viking");
 		const auto viking = Mesh::construct(device,
 			{
 				.path = FS::model("viking.obj"),
 				.initial_rotation = viking_rotation,
 			});
+		v_mesh.get_components<Components::Transform>().position.y = -2;
 		v_mesh.add_component<Components::Mesh>(viking);
 		v_mesh.add_component<Components::Pipeline>(Pipeline::construct(device,
 			{
@@ -634,38 +711,9 @@ void Scene::create_entities()
 	}
 
 	{
-		auto sun = create("Sun");
 
-		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("main.vert");
-		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("main.frag");
-
-		sun.add_component<Components::Pipeline>(Pipeline::construct(device,
-			{
-				.vertex_shader = vert,
-				.fragment_shader = frag,
-				.framebuffer = identity_framebuffer,
-				.layout = layout,
-				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-				.extent = extent,
-				.cull_mode = CullMode::Back,
-				.descriptor_set_layouts = desc_layout,
-			}));
-		sun.add_component<Components::Texture>(nullptr, glm::vec4 { 0 });
-		sun.add_component<Components::DirectionalLight>();
-		const auto mesh = Mesh::construct(device,
-			MeshProperties {
-				.path = FS::model("arrow.obj"),
-			});
-		sun.add_component<Components::Mesh>(mesh);
-		sun.get_components<Components::Transform>().position = { 5, -5, 5 };
-	}
-
-	{
-		static constexpr auto max_radius = 8U;
-		static constexpr auto point_lights = 30U;
-
-		auto colours = generate_colours<point_lights>();
-		constexpr auto angles = generate_angles<point_lights>();
+		auto colours = generate_colours<count_point_lights>();
+		constexpr auto angles = generate_angles<count_point_lights>();
 
 		const auto sphere = Mesh::construct(device,
 			{
@@ -681,9 +729,24 @@ void Scene::create_entities()
 				.layout = layout,
 				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 				.extent = extent,
-				.cull_mode = CullMode::Back,
+				.cull_mode = CullMode::Front,
 				.descriptor_set_layouts = desc_layout,
 			});
+
+		auto sun = create("Sun");
+		sun.add_component<Components::DirectionalLight>(glm::vec4 { 0.7, 0.7, 0.1, 0.1f },
+			Components::DirectionalLight::ProjectionParameters {
+				.factor = 20.F,
+				.near = -90.F,
+				.far = 70.F,
+				.fov = 60.F,
+			});
+		sun.add_component<Components::Mesh>(sphere);
+		sun.add_component<Components::Pipeline>(pipe);
+		sun.add_component<Components::Transform>().position = { -15, -15, 16 };
+
+		sun.add_script<Scripts::MoveInCircleScript>(30, 0.F);
+
 		auto pl_system = create("PointLightSystem");
 		for (std::uint32_t i = 0; i < colours.size(); i++) {
 			auto point_light = create("PointLight-{}", i);
@@ -695,7 +758,7 @@ void Scene::create_entities()
 			auto& transform = point_light.get_components<Components::Transform>();
 			const auto divided = angles.at(i);
 			transform.position = { glm::sin(divided), 0, glm::cos(divided) };
-			transform.position *= max_radius;
+			transform.position *= point_light_radius;
 			transform.position.y = -4;
 			transform.scale *= 0.2;
 
@@ -704,21 +767,6 @@ void Scene::create_entities()
 			point_light.add_component<Components::Pipeline>(pipe);
 			pl_system.add_child(point_light);
 		}
-	}
-
-	{
-#define TEST_DESCRIPTOR_SETS
-#ifdef TEST_DESCRIPTOR_SETS
-		std::array<std::uint32_t, 1> white_tex_data = { 1 };
-		DataBuffer pixels { white_tex_data.data(), sizeof(std::uint32_t) };
-		TextureProperties white_tex_props {
-			.extent = extent,
-			.format = ImageFormat::SBGR,
-			.debug_name = "white_tex",
-		};
-		Ref<Texture> white_tex = Texture::construct(device, white_tex_props);
-		scene_renderer->get_graphics_resource().expose_to_shaders(*white_tex);
-#endif
 	}
 }
 

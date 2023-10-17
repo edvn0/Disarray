@@ -20,8 +20,6 @@ void UBO::reset_impl()
 	view = identity_matrix;
 	proj = identity_matrix;
 	view_projection = identity_matrix;
-	sun_direction_and_intensity = one_vector;
-	sun_colour = one_vector;
 }
 
 void CameraUBO::reset_impl() { }
@@ -30,6 +28,18 @@ void ImageIndicesUBO::reset_impl()
 {
 	image_indices.fill({});
 	bound_textures = 0;
+}
+
+void GlyphUBO::reset_impl() { projection = {}; }
+void DirectionalLightUBO::reset_impl()
+{
+
+	position = {};
+	direction = {};
+	ambient = {};
+	diffuse = {};
+	specular = {};
+	near_far = {};
 }
 
 } // namespace Disarray

@@ -8,6 +8,23 @@
 
 namespace Disarray {
 
+enum class BorderColour : std::uint8_t {
+	FloatTransparentBlack = 0,
+	IntTransparentBlack = 1,
+	FloatOpaqueBlack = 2,
+	IntOpaqueBlack = 3,
+	FloatOpaqueWhite = 4,
+	IntOpaqueWhite = 5,
+};
+
+enum class SamplerMode : std::uint8_t {
+	Repeat = 0,
+	MirroredRepeat = 1,
+	ClampToEdge = 2,
+	ClampToBorder = 3,
+	MirrorClampToEdge = 4,
+};
+
 enum class SampleCount {
 	One = 0x00000001,
 	Two = 0x00000002,
@@ -34,24 +51,53 @@ template <IsNumber T> struct IExtent {
 
 	auto to_string() -> std::string { return fmt::format("{}:{}", width, height); }
 
+	[[nodiscard]] auto sum() const -> float { return width + height; }
+
 	template <IsNumber Other>
 		requires(!std::is_same_v<T, Other>)
 	auto as() const -> IExtent<Other>
 	{
-		return { .width = static_cast<Other>(width), .height = static_cast<Other>(height) };
+		return {
+			.width = static_cast<Other>(width),
+			.height = static_cast<Other>(height),
+		};
 	}
 
 	template <IsNumber Other>
 		requires(!std::is_same_v<T, Other>)
 	[[nodiscard]] auto cast() const
 	{
-		return std::pair { static_cast<Other>(width), static_cast<Other>(height) };
+		return std::pair {
+			static_cast<Other>(width),
+			static_cast<Other>(height),
+		};
 	}
 };
 
 struct Extent : public IExtent<std::uint32_t> { };
 struct FloatExtent : public IExtent<float> { };
 
-enum class ImageFormat : std::uint8_t { SRGB, RGB, SBGR, BGR, SRGB32, RGB32, Depth, DepthStencil, Uint };
+enum class ImageFormat : std::uint8_t { SRGB, RGB, SBGR, BGR, SRGB32, RGB32, Depth, DepthStencil, Uint, Red };
+
+template <std::integral Out = std::uint32_t> inline constexpr auto to_component_count(ImageFormat format)
+{
+	switch (format) {
+
+	case ImageFormat::SRGB:
+	case ImageFormat::RGB:
+	case ImageFormat::SBGR:
+	case ImageFormat::BGR:
+	case ImageFormat::SRGB32:
+	case ImageFormat::RGB32:
+	case ImageFormat::Depth:
+	case ImageFormat::DepthStencil:
+	case ImageFormat::Uint:
+		return static_cast<Out>(4U);
+	case ImageFormat::Red:
+		return static_cast<Out>(1U);
+	default:
+		unreachable();
+	}
+}
 
 } // namespace Disarray

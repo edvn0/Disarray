@@ -19,12 +19,15 @@ PFN_vkCmdDebugMarkerInsertEXT vkCmdDebugMarkerInsert = VK_NULL_HANDLE; // NOLINT
 
 void DebugMarker::setup(VkDevice device, VkPhysicalDevice physical_device)
 {
-	uint32_t extension_count;
+	uint32_t extension_count = 0;
 	vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count, nullptr);
 	std::vector<VkExtensionProperties> extensions(extension_count);
 	vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count, extensions.data());
 	for (const auto& extension : extensions) {
-		if (strcmp(extension.extensionName, VK_EXT_DEBUG_MARKER_EXTENSION_NAME) == 0) {
+		std::span ext_name = extension.extensionName;
+		std::string extension_name { ext_name.data() };
+
+		if (extension_name == VK_EXT_DEBUG_MARKER_EXTENSION_NAME) {
 			extension_present = true;
 			break;
 		}
@@ -39,6 +42,10 @@ void DebugMarker::setup(VkDevice device, VkPhysicalDevice physical_device)
 		vkCmdDebugMarkerInsert = Disarray::bit_cast<PFN_vkCmdDebugMarkerInsertEXT>(vkGetDeviceProcAddr(device, "vkCmdDebugMarkerInsertEXT"));
 		// Set flag if at least one function pointer is present
 		active = (vkDebugMarkerSetObjectName != VK_NULL_HANDLE);
+
+		Log::info("DebugMarker", "Debug marker extension for Vulkan was present.");
+	} else {
+		Log::error("DebugMarker", "Debug marker extension for Vulkan was not present.");
 	}
 }
 
@@ -74,7 +81,8 @@ void DebugMarker::begin_region(VkCommandBuffer cmdbuffer, const char* marker_nam
 	if (active) {
 		VkDebugMarkerMarkerInfoEXT marker_info {};
 		marker_info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
-		std::memcpy(marker_info.color, glm::value_ptr(color), sizeof(float) * 4);
+		std::span colour_span = marker_info.color;
+		std::memcpy(colour_span.data(), glm::value_ptr(color), sizeof(float) * 4);
 		marker_info.pMarkerName = marker_name;
 		vkCmdDebugMarkerBegin(cmdbuffer, &marker_info);
 	}
@@ -85,7 +93,8 @@ void DebugMarker::insert(VkCommandBuffer cmdbuffer, std::string marker_name, glm
 	if (active) {
 		VkDebugMarkerMarkerInfoEXT marker_info {};
 		marker_info.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
-		memcpy(marker_info.color, &color[0], sizeof(float) * 4);
+		std::span colour_span = marker_info.color;
+		std::memcpy(colour_span.data(), glm::value_ptr(color), sizeof(float) * 4);
 		marker_info.pMarkerName = marker_name.c_str();
 		vkCmdDebugMarkerInsert(cmdbuffer, &marker_info);
 	}

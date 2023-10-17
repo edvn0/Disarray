@@ -4,6 +4,7 @@
 
 #include <optional>
 
+#include "scene/Components.hpp"
 #include "scene/CppScript.hpp"
 #include "scene/SerialisationTypeConversions.hpp"
 
@@ -127,6 +128,44 @@ void TransformSerialiser::serialise_impl(const Components::Transform& transform,
 	object["rotation"] = transform.rotation;
 	object["position"] = transform.position;
 	object["scale"] = transform.scale;
+}
+
+void DirectionalLightSerialiser::serialise_impl(const Components::DirectionalLight& light, nlohmann::json& object)
+{
+	const auto& params = light.projection_parameters;
+	object["projection_parameters"] = {
+		{
+			"factor",
+			params.factor,
+		},
+		{
+			"near",
+			params.near,
+		},
+		{
+			"far",
+			params.far,
+		},
+		{
+			"fov",
+			params.fov,
+		},
+	};
+	object["position"] = light.position;
+	object["direction"] = light.direction;
+	object["ambient"] = light.ambient;
+	object["diffuse"] = light.diffuse;
+	object["specular"] = light.specular;
+
+	object["use_direction_vector"] = light.use_direction_vector;
+}
+
+void PointLightSerialiser::serialise_impl(const Components::PointLight& light, nlohmann::json& object)
+{
+	object["factors"] = light.factors;
+	object["ambient"] = light.ambient;
+	object["diffuse"] = light.diffuse;
+	object["specular"] = light.specular;
 }
 
 void LineGeometrySerialiser::serialise_impl(const Components::LineGeometry& geom, nlohmann::json& object)

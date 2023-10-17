@@ -11,4 +11,9 @@ auto Texture::construct(const Disarray::Device& device, Disarray::TexturePropert
 	return make_ref<Vulkan::Texture>(device, std::move(properties));
 }
 
+auto Texture::construct_scoped(const Disarray::Device& device, Disarray::TextureProperties properties) -> Scope<Disarray::Texture>
+{
+	return make_scope<Vulkan::Texture>(device, std::move(properties));
+}
+
 } // namespace Disarray

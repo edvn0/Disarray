@@ -44,8 +44,8 @@
     "files.associations": {
       "*.module": "php",
       "*.sass": "css",
-      "*.frag": "hlsl",
-      "*.vert": "hlsl",
+      "*.frag": "glsl",
+      "*.vert": "glsl",
       "*wmc": "xml",
       "*kml": "xml",
       "typeinfo": "cpp",
@@ -241,6 +241,7 @@
       "Serialisers",
       "spdlog",
       "spirv",
+      "sponza",
       "SSBO",
       "stbi",
       "Stringlike",
@@ -254,7 +255,9 @@
       "timestep",
       "tparam",
       "ubos",
-      "Vulkan"
+      "Vulkan",
+      "xpos",
+      "ypos"
     ]
   }
 }

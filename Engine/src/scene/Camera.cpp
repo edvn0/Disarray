@@ -3,6 +3,8 @@
 #include "scene/Camera.hpp"
 
 #include "core/Input.hpp"
+#include "core/Log.hpp"
+#include "graphics/Maths.hpp"
 
 namespace Disarray {
 
@@ -14,10 +16,15 @@ Camera::Camera(const float degree_fov, const float width, const float height, co
 	: projection_matrix(glm::perspectiveFov(glm::radians(degree_fov), width, height, far_plane, near_plane))
 	, unreversed_projection_matrix(glm::perspectiveFov(glm::radians(degree_fov), width, height, near_plane, far_plane)) {};
 
+void Camera::focus(const glm::vec3&) {};
+
+void Camera::on_update(float) {};
+
 void Camera::set_ortho_projection_matrix(const float width, const float height, const float near_plane, const float far_plane)
 {
-	projection_matrix = glm::ortho(-width * 0.5f, width * 0.5f, -height * 0.5f, height * 0.5f, far_plane, near_plane);
-	unreversed_projection_matrix = glm::ortho(-width * 0.5f, width * 0.5f, -height * 0.5f, height * 0.5f, near_plane, far_plane);
+	static constexpr auto half = 0.5F;
+	projection_matrix = Maths::ortho(-width * half, width * half, -height * half, height * half, far_plane, near_plane);
+	unreversed_projection_matrix = Maths::ortho(-width * half, width * half, -height * half, height * half, near_plane, far_plane);
 }
 
 void Camera::set_perspective_projection_matrix(
@@ -36,7 +43,7 @@ EditorCamera::EditorCamera(
 	, near_clip(near_plane)
 	, far_clip(far_plane)
 {
-	if (previous_camera) {
+	if (previous_camera != nullptr) {
 		position = previous_camera->position;
 		position_delta = previous_camera->position_delta;
 		yaw = previous_camera->yaw;
@@ -51,14 +58,15 @@ EditorCamera::EditorCamera(
 
 	position = calculate_position();
 	const glm::quat orientation = get_orientation();
-	direction = glm::eulerAngles(orientation) * (180.0f / glm::pi<float>());
+	static constexpr auto pi_to_rad = 180.0F / glm::pi<float>();
+	direction = glm::eulerAngles(orientation) * pi_to_rad;
 	view_matrix = glm::translate(glm::mat4(1.0F), position) * glm::mat4(orientation);
-	view_matrix = glm::inverse(view_matrix);
+	// view_matrix = glm::inverse(view_matrix);
 }
 
 void EditorCamera::init(EditorCamera* previous_camera)
 {
-	if (previous_camera) {
+	if (previous_camera != nullptr) {
 		position = previous_camera->position;
 		position_delta = previous_camera->position_delta;
 		yaw = previous_camera->yaw;
@@ -73,9 +81,9 @@ void EditorCamera::init(EditorCamera* previous_camera)
 
 	position = calculate_position();
 	const glm::quat orientation = get_orientation();
-	direction = glm::eulerAngles(orientation) * (180.0f / glm::pi<float>());
+	direction = glm::eulerAngles(orientation) * (180.0F / glm::pi<float>());
 	view_matrix = glm::translate(glm::mat4(1.0F), position) * glm::mat4(orientation);
-	view_matrix = glm::inverse(view_matrix);
+	// view_matrix = glm::inverse(view_matrix);
 }
 
 void EditorCamera::on_update(const float time_step)
@@ -140,30 +148,34 @@ void EditorCamera::on_update(const float time_step)
 	yaw += yaw_delta;
 	pitch += pitch_delta;
 
-	if (camera_mode == CameraMode::Arcball)
+	if (camera_mode == CameraMode::Arcball) {
 		position = calculate_position();
+	}
 
 	update_camera_view();
 }
 
-float EditorCamera::get_camera_speed() const
+auto EditorCamera::get_camera_speed() const -> float
 {
 	float speed = normal_speed;
-	if (Input::key_pressed(KeyCode::LeftControl))
+	if (Input::key_pressed(KeyCode::LeftControl)) {
 		speed /= 2 - glm::log(normal_speed);
-	if (Input::key_pressed(KeyCode::LeftShift))
+	}
+	if (Input::key_pressed(KeyCode::LeftShift)) {
 		speed *= 2 - glm::log(normal_speed);
+	}
 
 	return glm::clamp(speed, min_speed, max_speed);
 }
 
 void EditorCamera::update_camera_view()
 {
-	const float yaw_sign = get_up_direction().y < 0 ? -1.0f : 1.0F;
+	const float yaw_sign = get_up_direction().y < 0 ? -1.0F : 1.0F;
 
 	const float cos_angle = glm::dot(get_forward_direction(), get_up_direction());
-	if (cos_angle * yaw_sign > 0.99F)
+	if (cos_angle * yaw_sign > 0.99F) {
 		pitch_delta = 0.F;
+	}
 
 	const glm::vec3 look_at = position + get_forward_direction();
 	direction = glm::normalize(look_at - position);
@@ -187,18 +199,18 @@ void EditorCamera::focus(const glm::vec3& focus_point)
 	update_camera_view();
 }
 
-std::pair<float, float> EditorCamera::pan_speed() const
+auto EditorCamera::pan_speed() const -> std::pair<float, float>
 {
-	const float x = glm::min(float(viewport_width) / 1000.0f, 2.4F); // max = 2.4f
+	const float x = glm::min(float(viewport_width) / 1000.0F, 2.4F); // max = 2.4f
 	const float x_factor = 0.0366f * (x * x) - 0.1778f * x + 0.3021F;
 
-	const float y = glm::min(float(viewport_height) / 1000.0f, 2.4F); // max = 2.4f
+	const float y = glm::min(float(viewport_height) / 1000.0F, 2.4F); // max = 2.4f
 	const float y_factor = 0.0366f * (y * y) - 0.1778f * y + 0.3021F;
 
 	return { x_factor, y_factor };
 }
 
-float EditorCamera::rotation_speed() { return 0.3F; }
+auto EditorCamera::rotation_speed() -> float { return 0.3F; }
 
 auto EditorCamera::zoom_speed() const -> float
 {
@@ -215,7 +227,7 @@ void EditorCamera::on_event(Event& event)
 	dispatcher.dispatch<MouseScrolledEvent>([this](MouseScrolledEvent& e) { return on_mouse_scroll(e); });
 }
 
-bool EditorCamera::on_mouse_scroll(MouseScrolledEvent& e)
+auto EditorCamera::on_mouse_scroll(MouseScrolledEvent& e) -> bool
 {
 	if (Input::button_pressed(MouseCode::Right)) {
 		normal_speed += e.get_y_offset() * 0.3f * normal_speed;
@@ -237,7 +249,7 @@ void EditorCamera::mouse_pan(const glm::vec2& delta)
 
 void EditorCamera::mouse_rotate(const glm::vec2& delta)
 {
-	const float yaw_sign = get_up_direction().y < 0.0f ? -1.0f : 1.0F;
+	const float yaw_sign = get_up_direction().y < 0.0F ? -1.0F : 1.0F;
 	yaw_delta += yaw_sign * delta.x * rotation_speed();
 	pitch_delta += delta.y * rotation_speed();
 }
@@ -254,14 +266,14 @@ void EditorCamera::mouse_zoom(float delta)
 	position_delta += delta * zoom_speed() * forward_dir;
 }
 
-glm::vec3 EditorCamera::get_up_direction() const { return glm::rotate(get_orientation(), glm::vec3(0.0f, 1.0f, 0.0F)); }
+auto EditorCamera::get_up_direction() const -> glm::vec3 { return glm::rotate(get_orientation(), glm::vec3(0.0F, 1.0F, 0.0F)); }
 
-glm::vec3 EditorCamera::get_right_direction() const { return glm::rotate(get_orientation(), glm::vec3(1.F, 0.F, 0.F)); }
+auto EditorCamera::get_right_direction() const -> glm::vec3 { return glm::rotate(get_orientation(), glm::vec3(1.F, 0.F, 0.F)); }
 
-glm::vec3 EditorCamera::get_forward_direction() const { return glm::rotate(get_orientation(), glm::vec3(0.0f, 0.0f, -1.0F)); }
+auto EditorCamera::get_forward_direction() const -> glm::vec3 { return glm::rotate(get_orientation(), glm::vec3(0.0F, 0.0F, -1.0F)); }
 
-glm::vec3 EditorCamera::calculate_position() const { return focal_point - get_forward_direction() * distance + position_delta; }
+auto EditorCamera::calculate_position() const -> glm::vec3 { return focal_point - get_forward_direction() * distance + position_delta; }
 
-glm::quat EditorCamera::get_orientation() const { return glm::quat(glm::vec3(-pitch - pitch_delta, -yaw - yaw_delta, 0.0F)); }
+auto EditorCamera::get_orientation() const -> glm::quat { return glm::vec3(-pitch - pitch_delta, -yaw - yaw_delta, 0.0F); }
 
 } // namespace Disarray

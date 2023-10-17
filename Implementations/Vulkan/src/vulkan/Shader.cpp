@@ -5,6 +5,7 @@
 #include <fstream>
 
 #include "core/Ensure.hpp"
+#include "core/Formatters.hpp"
 #include "graphics/ShaderCompiler.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Shader.hpp"
@@ -23,6 +24,8 @@ namespace {
 			return VK_SHADER_STAGE_FRAGMENT_BIT;
 		case ShaderType::Compute:
 			return VK_SHADER_STAGE_COMPUTE_BIT;
+		case ShaderType::Include:
+			return VK_SHADER_STAGE_ALL;
 		default:
 			unreachable("Could not map to Vulkan stage");
 		}
@@ -73,11 +76,17 @@ Shader::Shader(const Disarray::Device& dev, ShaderProperties properties)
 Shader::Shader(const Disarray::Device& dev, const std::filesystem::path& path)
 	: device(dev)
 {
+	static Runtime::ShaderCompiler compiler {};
 	props.type = to_shader_type(path);
 	props.path = path;
 	auto type = to_stage(props.type);
 	props.identifier = path;
-	props.code = Runtime::ShaderCompiler {}.compile(path, props.type);
+	props.code = compiler.compile(path, props.type);
+	if (props.code.has_value() && props.code->empty()) {
+		Log::info("Shader", "Could not compile {}", path);
+		throw CouldNotCompileShaderException { fmt::format("Path: {}", path) };
+	}
+
 	create_module(cast_to<Vulkan::Device>(device), *props.code, shader_module);
 
 	stage = {};

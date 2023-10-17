@@ -2,7 +2,13 @@
 
 #include "scene/Components.hpp"
 
+#include <graphics/Maths.hpp>
+
+#include <string>
+#include <utility>
+
 #include "core/Log.hpp"
+#include "glm/ext/matrix_clip_space.hpp"
 #include "graphics/Mesh.hpp"
 #include "scene/CppScript.hpp"
 #include "scene/Entity.hpp"
@@ -13,12 +19,15 @@ namespace Disarray::Components {
 void Inheritance::add_child(Entity& entity) { children.insert(entity.get_components<Components::ID>().identifier); }
 
 Mesh::Mesh(Device& device, std::string_view path)
-	: mesh(Disarray::Mesh::construct(device, MeshProperties { .path = std::string { path } }))
+	: mesh(Disarray::Mesh::construct(device,
+		MeshProperties {
+			.path = std::string { path },
+		}))
 {
 }
 
-Mesh::Mesh(Ref<Disarray::Mesh> m)
-	: mesh(m)
+Mesh::Mesh(Ref<Disarray::Mesh> input_mesh)
+	: mesh(std::move(input_mesh))
 {
 }
 
@@ -40,22 +49,26 @@ Material::Material(Device& device, std::string_view vertex, std::string_view fra
 }
 
 Material::Material(Ref<Disarray::Material> m)
-	: material(m)
+	: material(std::move(m))
 {
 }
 
 Pipeline::Pipeline(Ref<Disarray::Pipeline> p)
-	: pipeline(p)
+	: pipeline(std::move(p))
 {
 }
 
 Texture::Texture(Device& device, std::string_view path)
-	: texture(Disarray::Texture::construct(device, TextureProperties { .path = std::string { path } }))
+	: texture(Disarray::Texture::construct(device,
+		TextureProperties {
+			.path = std::string { path },
+			.debug_name = std::string { path },
+		}))
 {
 }
 
 Texture::Texture(Ref<Disarray::Texture> m, const glm::vec4& colour)
-	: texture(m)
+	: texture(std::move(m))
 	, colour(colour)
 {
 }
@@ -87,6 +100,16 @@ void Script::instantiate()
 auto Script::get_script() -> CppScript& { return *instance_slot; }
 
 [[nodiscard]] auto Script::get_script() const -> const CppScript& { return *instance_slot; }
+
 [[nodiscard]] auto Script::has_been_bound() const -> bool { return bound && !instantiated; }
+
+auto DirectionalLight::ProjectionParameters::compute() const -> glm::mat4
+{
+	const auto left = factor * -1;
+	const auto right = factor;
+	const auto bottom = left;
+	const auto top = right;
+	return Maths::ortho(left, right, bottom, top, near, far);
+}
 
 } // namespace Disarray::Components

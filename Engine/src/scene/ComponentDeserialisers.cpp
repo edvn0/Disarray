@@ -1,4 +1,6 @@
 #include "core/Collections.hpp"
+#include "graphics/Pipeline.hpp"
+#include "graphics/PushConstantLayout.hpp"
 #include "scene/ComponentSerialisers.hpp"
 #include "scene/Scripts.hpp"
 #include "scene/SerialisationTypeConversions.hpp"
@@ -25,14 +27,26 @@ void PipelineDeserialiser::deserialise_impl(const nlohmann::json& object, Compon
 			}),
 		// framebuffer,
 		// layout {,
-		// push_constant_layout {,
+		.push_constant_layout = [](const json& push_constant_layout) -> PushConstantLayout {
+			std::vector<PushConstantRange> layout {};
+			layout.reserve(push_constant_layout["size"]);
+
+			for (const auto& flag_size_offset_object : push_constant_layout["ranges"]) {
+				PushConstantRange& added = layout.emplace_back();
+				added.size = flag_size_offset_object["size"];
+				added.offset = flag_size_offset_object["offset"];
+				added.flags = flag_size_offset_object["flags"];
+			}
+			return PushConstantLayout { std::move(layout) };
+		}(props["push_constant_layout"]),
 		.extent = props["extent"],
 		.polygon_mode = to_enum_value<PolygonMode>(props, "polygon_mode").value_or(PolygonMode::Fill),
 		.line_width = props["line_width"],
 		.samples = to_enum_value<SampleCount>(props, "samples").value_or(SampleCount::One),
 		.depth_comparison_operator
-		= to_enum_value<DepthCompareOperator>(props, "depth_comparison_operator").value_or(DepthCompareOperator::GreaterOrEqual),
+		= to_enum_value<DepthCompareOperator>(props, "depth_comparison_operator").value_or(DepthCompareOperator::LessOrEqual),
 		.cull_mode = to_enum_value<CullMode>(props, "cull_mode").value_or(CullMode::Back),
+		.face_mode = to_enum_value<FaceMode>(props, "face_mode").value_or(FaceMode::CounterClockwise),
 		.write_depth = props["write_depth"],
 		.test_depth = props["test_depth"],
 		// descriptor_set_layout { nullptr ,
@@ -49,11 +63,25 @@ void ScriptDeserialiser::deserialise_impl(const nlohmann::json& object, Componen
 	static Collections::StringMap<Scope<CppScript>> scripts {};
 	const auto& s = scripts[identifier];
 
-	const json& json_parameters = object["parameters"];
 	Collections::StringViewMap<Parameter> parameters {};
+
+	auto json_parameters = std::optional<json> {};
+	if (object.contains("parameters")) {
+		json_parameters = object["parameters"];
+	}
+
+	if (json_parameters.has_value()) {
+		for (const auto& [k, v] : json_parameters->items()) {
+			parameters[k] = v;
+			Log::info("ComponentDeserialiser", "parameters[{}] = {}", k, v.dump());
+		}
+	}
 
 	if (identifier == "MoveInCircle") {
 		script.bind<Scripts::MoveInCircleScript>(parameters);
+	}
+	if (identifier == "LinearMovement") {
+		script.bind<Scripts::LinearMovementScript>(parameters);
 	}
 }
 
@@ -132,4 +160,36 @@ void QuadGeometryDeserialiser::deserialise_impl(const nlohmann::json& object, Co
 	geom.geometry = enum_val.value_or(Geometry::Rectangle);
 }
 
+auto DirectionalLightDeserialiser::should_add_component_impl(const nlohmann::json& object_for_the_component) -> bool { return true; }
+void DirectionalLightDeserialiser::deserialise_impl(const nlohmann::json& object, Components::DirectionalLight& light, const Device&)
+{
+	const auto& params = object["projection_parameters"];
+	light.projection_parameters.factor = params["left"];
+	light.projection_parameters.near = params["near"];
+	light.projection_parameters.far = params["far"];
+	light.projection_parameters.fov = params["fov"];
+
+	light.position = object["position"];
+	light.direction = object["direction"];
+	light.ambient = object["ambient"];
+	light.diffuse = object["diffuse"];
+	light.specular = object["specular"];
+
+	light.use_direction_vector = object["use_direction_vector"];
+}
+
+auto PointLightDeserialiser::should_add_component_impl(const nlohmann::json& object_for_the_component) -> bool { return true; }
+void PointLightDeserialiser::deserialise_impl(const nlohmann::json& object, Components::PointLight& light, const Device&)
+{
+	light.ambient = object["ambient"];
+	light.diffuse = object["diffuse"];
+	light.specular = object["specular"];
+	light.factors = object["factors"];
+}
+
 } // namespace Disarray
+
+NLOHMANN_JSON_NAMESPACE_BEGIN
+void adl_serializer<Disarray::Parameter>::to_json(json& object, const Disarray::Parameter& param) { }
+void adl_serializer<Disarray::Parameter>::from_json(const json& object, Disarray::Parameter& param) { }
+NLOHMANN_JSON_NAMESPACE_END

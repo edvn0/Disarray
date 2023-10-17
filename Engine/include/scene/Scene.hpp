@@ -11,6 +11,7 @@
 #include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
 #include "core/events/Event.hpp"
+#include "glm/ext/matrix_clip_space.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Mesh.hpp"
@@ -74,11 +75,14 @@ public:
 	{
 		if (index == 0) {
 			return identity_framebuffer->get_image(0);
-		} else if (index == 1)
+		}
+		if (index == 1) {
 			return identity_framebuffer->get_image(1);
-		else
-			return identity_framebuffer->get_depth_image();
+		}
+		return shadow_framebuffer->get_depth_image();
 	}
+
+	auto get_final_image() const -> const Disarray::Image&;
 
 	auto get_command_executor() const -> const CommandExecutor& { return *command_executor; };
 
@@ -102,6 +106,15 @@ public:
 
 	auto get_by_identifier(Identifier) -> std::optional<Entity>;
 
+	template <ValidComponent... Ts> auto get_by_components() -> std::optional<Entity>
+	{
+		std::vector<Entity> found = entities_with<Ts...>();
+		if (found.size() != 1) {
+			return std::nullopt;
+		}
+		return std::optional { found.at(0) };
+	}
+
 	void update_picked_entity(std::uint32_t handle);
 	static void manipulate_entity_transform(Entity&, Camera&, GizmoType);
 
@@ -112,8 +125,6 @@ public:
 			std::forward<Func>(func)(entity);
 		}
 	}
-
-	auto get_framebuffers() -> std::array<Ref<Disarray::Framebuffer>, 2> { return { framebuffer, identity_framebuffer }; }
 
 	static auto deserialise(const Device&, std::string_view, const std::filesystem::path&) -> Scope<Scene>;
 	static auto deserialise_into(Scene&, const Device&, const std::filesystem::path&) -> void;

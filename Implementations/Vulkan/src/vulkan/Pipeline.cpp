@@ -110,9 +110,9 @@ namespace Detail {
 	static constexpr auto to_vulkan_cull_mode(CullMode cull) -> VkCullModeFlags
 	{
 		switch (cull) {
-		case CullMode::Back:
-			return VK_CULL_MODE_FRONT_BIT;
 		case CullMode::Front:
+			return VK_CULL_MODE_FRONT_BIT;
+		case CullMode::Back:
 			return VK_CULL_MODE_BACK_BIT;
 		case CullMode::Both:
 			return VK_CULL_MODE_FRONT_AND_BACK;
@@ -368,7 +368,7 @@ void Pipeline::construct_layout(const Extent& extent)
 	try {
 		vkCreateGraphicsPipelines(supply_cast<Vulkan::Device>(device), cache, 1, &pipeline_create_info, nullptr, &pipeline);
 	} catch (const std::exception& exc) {
-		Log::error("Scene", "Could not construct pipeline because: {}", exc.what());
+		Log::error("Pipeline", "Could not construct pipeline because: {}", exc.what());
 	}
 }
 
@@ -421,8 +421,10 @@ auto Pipeline::get_render_pass() -> Disarray::RenderPass& { return props.framebu
 
 void Pipeline::try_find_or_recreate_cache()
 {
-	const auto hash = props.hash();
-	const auto name = fmt::format("Assets/Pipelines/PipelineCache-{}.pipe-bin", hash);
+	const auto pipeline_name = fmt::format(
+		"Pipeline-{}-{}", props.vertex_shader->get_properties().identifier.filename(), props.fragment_shader->get_properties().identifier.filename());
+
+	const auto name = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", pipeline_name, props.hash());
 
 	std::ifstream input_stream { name, std::fstream::ate | std::fstream::binary };
 	if (!input_stream) {
@@ -440,6 +442,8 @@ void Pipeline::try_find_or_recreate_cache()
 	cache_create_info.pInitialData = buffer.data();
 	cache_create_info.initialDataSize = buffer.size() * sizeof(unsigned char);
 	vkCreatePipelineCache(supply_cast<Vulkan::Device>(device), &cache_create_info, nullptr, &cache);
+
+	Log::info("Pipeline", "Loading cache with id {} took {}s", name, timer.elapsed());
 }
 
 } // namespace Disarray::Vulkan

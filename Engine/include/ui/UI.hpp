@@ -117,7 +117,7 @@ namespace Popup {
 namespace Input {
 	auto general_slider(std::string_view name, int count, float* base, float min, float max) -> bool;
 
-	template <std::size_t N, std::floating_point T>
+	template <std::size_t N = 1, std::floating_point T = float>
 		requires(N > 0 && N <= 4)
 	auto slider(std::string_view name, T* base, T min = 0, T max = 1) -> bool
 	{
@@ -145,7 +145,7 @@ namespace Input {
 
 	auto general_input(std::string_view name, int count, float* base, float velocity, float min, float max) -> bool;
 
-	template <std::size_t N, std::floating_point T>
+	template <std::size_t N = 1, std::floating_point T = float>
 		requires(N >= 0 && N <= 4)
 	auto input(std::string_view name, T* base, T velocity = T { 1 }, T min = 0, T max = 1) -> bool
 	{
@@ -163,6 +163,9 @@ void scope(std::string_view name, UIFunction&& func = default_function);
 
 void begin(std::string_view);
 void end();
+
+void shift_cursor_y(float by);
+void shift_cursor_y(std::floating_point auto by) { shift_cursor_y(static_cast<float>(by)); }
 
 auto begin_combo(std::string_view name, std::string_view data) -> bool;
 void end_combo();
@@ -246,6 +249,8 @@ auto checkbox(const std::string&, bool&) -> bool;
 
 auto shader_drop_button(Device&, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader) -> bool;
 auto texture_drop_button(Device&, const Texture& texture) -> Ref<Disarray::Texture>;
+auto shader_drop_button(const Device&, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader) -> bool;
+auto texture_drop_button(const Device&, const Texture& texture) -> Ref<Disarray::Texture>;
 
 auto is_maximised(Window& window) -> bool;
 void remove_image(const Texture& texture);

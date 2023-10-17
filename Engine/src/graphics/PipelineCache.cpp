@@ -14,7 +14,7 @@
 namespace Disarray {
 
 PipelineCache::PipelineCache(const Disarray::Device& dev, const std::filesystem::path& base)
-	: ResourceCache(dev, base, { ".vert", ".frag" })
+	: ResourceCache(dev, base, { ".vert", ".frag", ".glsl" })
 {
 	const auto all_files = get_unique_files_recursively();
 
@@ -23,7 +23,6 @@ PipelineCache::PipelineCache(const Disarray::Device& dev, const std::filesystem:
 	std::sort(as_vector.begin(), as_vector.end());
 
 	Runtime::ShaderCompiler::initialize();
-	Runtime::ShaderCompiler compiler {};
 
 	for (const auto& shader_path : as_vector) {
 		if (auto name = shader_path.filename(); shader_cache.contains(name.string())) {
@@ -31,8 +30,6 @@ PipelineCache::PipelineCache(const Disarray::Device& dev, const std::filesystem:
 		}
 
 		const auto relative_path = std::filesystem::relative(shader_path);
-		ShaderType type = to_shader_type(relative_path);
-		auto code = compiler.compile(relative_path, type);
 
 		auto shader = Shader::compile(get_device(), relative_path);
 		if (!shader) {

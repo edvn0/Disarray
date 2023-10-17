@@ -15,9 +15,6 @@
 
 namespace Disarray::Vulkan {
 
-// TODO: Make this dynamic
-static constexpr auto set_count = 3;
-
 class GraphicsResource : public IGraphicsResource {
 	DISARRAY_MAKE_NONCOPYABLE(GraphicsResource)
 public:
@@ -29,24 +26,38 @@ public:
 	[[nodiscard]] auto get_pipeline_cache() -> PipelineCache& override { return pipeline_cache; }
 	[[nodiscard]] auto get_texture_cache() -> TextureCache& override { return texture_cache; }
 
-	void expose_to_shaders(std::span<const Ref<Disarray::Texture>>) override;
-	void expose_to_shaders(const Disarray::Image&) override;
-	void expose_to_shaders(const Disarray::Texture& tex) override { expose_to_shaders(tex.get_image()); };
+	void expose_to_shaders(std::span<const Ref<Disarray::Texture>> textures, DescriptorSet set, DescriptorBinding binding) override;
+	void expose_to_shaders(std::span<const Disarray::Texture*> textures, DescriptorSet set, DescriptorBinding binding) override;
+	void expose_to_shaders(const Disarray::Image& image, DescriptorSet set, DescriptorBinding binding) override;
+	void expose_to_shaders(const Disarray::Texture& image, DescriptorSet set, DescriptorBinding binding) override
+	{
+		return expose_to_shaders(image.get_image(), set, binding);
+	}
 	[[nodiscard]] auto get_descriptor_set(std::uint32_t frame_index, std::uint32_t set) const -> VkDescriptorSet override
 	{
 		return descriptor_sets.at(frame_index).at(set);
+	}
+	[[nodiscard]] auto get_descriptor_set(std::uint32_t set) const -> VkDescriptorSet override
+	{
+		return descriptor_sets.at(swapchain.get_current_frame()).at(set);
 	}
 	[[nodiscard]] auto get_descriptor_set() const -> VkDescriptorSet override { return get_descriptor_set(swapchain.get_current_frame(), 0); };
 	[[nodiscard]] auto get_descriptor_set_layouts() const -> const std::vector<VkDescriptorSetLayout>& override { return layouts; }
 	[[nodiscard]] auto get_push_constant() const -> const PushConstant* override { return &pc; }
 	auto get_editable_push_constant() -> PushConstant& override { return pc; }
 
-	auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&> override { return { uniform, camera_ubo, lights }; }
+	auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&, ShadowPassUBO&, DirectionalLightUBO&, GlyphUBO&> override
+	{
+		return { uniform, camera_ubo, lights, shadow_pass_ubo, directional_light_ubo, glyph_ubo };
+	}
 
 	void update_ubo() override;
+	void update_ubo(std::size_t) override;
+	void update_ubo(UBOIdentifier identifier) override;
 
 private:
 	void cleanup_graphics_resource();
+	auto descriptor_write_sets_per_frame(std::size_t descriptor_set) -> std::vector<VkWriteDescriptorSet>;
 
 	const Disarray::Device& device;
 	const Disarray::Swapchain& swapchain;
@@ -61,12 +72,18 @@ private:
 	UBO uniform {};
 	CameraUBO camera_ubo {};
 	PointLights lights {};
-	using UBOArray = std::array<Scope<Vulkan::UniformBuffer>, 3>;
+	ShadowPassUBO shadow_pass_ubo {};
+	DirectionalLightUBO directional_light_ubo {};
+	GlyphUBO glyph_ubo {};
+	using UBOArray = std::array<Scope<Vulkan::UniformBuffer>, 6>;
 	std::unordered_map<std::size_t, UBOArray> frame_index_ubo_map {};
 
 	std::unordered_map<std::size_t, std::vector<VkDescriptorSet>> descriptor_sets;
 	std::vector<VkDescriptorSetLayout> layouts;
 	void initialise_descriptors(bool should_clean = false);
+
+	void internal_expose_to_shaders(
+		VkSampler sampler, const std::vector<VkDescriptorImageInfo>& image_infos, DescriptorSet set, DescriptorBinding binding);
 };
 
 } // namespace Disarray::Vulkan

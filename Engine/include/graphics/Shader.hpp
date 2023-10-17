@@ -13,7 +13,7 @@
 
 namespace Disarray {
 
-enum class ShaderType : std::uint8_t { Vertex, Fragment, Compute };
+enum class ShaderType : std::uint8_t { Vertex, Fragment, Compute, Include };
 
 static constexpr auto shader_type_extension(ShaderType shader_type)
 {
@@ -24,6 +24,8 @@ static constexpr auto shader_type_extension(ShaderType shader_type)
 		return ".frag";
 	case ShaderType::Compute:
 		return ".comp";
+	case ShaderType::Include:
+		return ".glsl";
 	default:
 		unreachable();
 	}
@@ -44,6 +46,9 @@ inline auto to_shader_type(const std::filesystem::path& path_like)
 	}
 	if (copy.extension() == ".comp") {
 		return ShaderType::Compute;
+	}
+	if (copy.extension() == ".glsl") {
+		return ShaderType::Include;
 	}
 
 	unreachable();

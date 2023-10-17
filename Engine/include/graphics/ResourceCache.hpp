@@ -40,9 +40,25 @@ public:
 	auto put(const Props& props) -> const Resource&
 	{
 		const auto key = create_key(props);
+		if (contains(key)) {
+			return get(key);
+		}
+
 		auto resource = create_from(props);
 		const auto& [pair, could] = storage.try_emplace(std::move(key), std::move(resource));
 		return pair->second;
+	}
+
+	auto try_put(const Props& props) -> std::tuple<bool, const Resource&>
+	{
+		const auto key = create_key(props);
+		if (contains(key)) {
+			return { false, get(key) };
+		}
+
+		auto resource = create_from(props);
+		const auto& [pair, could] = storage.try_emplace(std::move(key), std::move(resource));
+		return { could, pair->second };
 	}
 
 	template <class Func> void for_each_in_storage(Func&& func) { Collections::for_each(storage, std::forward<Func>(func)); }

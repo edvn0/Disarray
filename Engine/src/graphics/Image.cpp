@@ -20,4 +20,12 @@ void Image::write_to_file(std::string_view path, const Image& image, const void*
 	stbi_write_bmp(path.data(), static_cast<int>(w), static_cast<int>(h), 4, data);
 }
 
+void Image::write_to_file(std::string_view path, const Image& image)
+{
+	const auto& props = image.get_properties();
+	const auto& [w, h] = props.extent;
+	auto comp = to_component_count<std::int32_t>(image.get_properties().format);
+	stbi_write_bmp(path.data(), static_cast<int>(w), static_cast<int>(h), comp, image.get_properties().data.get_data());
+}
+
 } // namespace Disarray

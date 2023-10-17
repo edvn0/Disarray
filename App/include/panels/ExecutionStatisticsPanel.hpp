@@ -32,7 +32,6 @@ private:
 	const CommandExecutor& executor;
 	Swapchain& swapchain;
 	bool has_stats { true };
-	double should_update_counter { 0.0 };
 
 	static constexpr std::size_t keep_frames = 144;
 

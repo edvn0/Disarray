@@ -32,9 +32,9 @@ struct PipelineCacheCreationProperties {
 	PolygonMode polygon_mode { PolygonMode::Fill };
 	float line_width { 1.0f };
 	SampleCount samples { SampleCount::One };
-	DepthCompareOperator depth_comparison_operator { DepthCompareOperator::GreaterOrEqual };
+	DepthCompareOperator depth_comparison_operator { DepthCompareOperator::LessOrEqual };
 	CullMode cull_mode { CullMode::Front };
-	FaceMode face_mode { FaceMode::Clockwise };
+	FaceMode face_mode { FaceMode::CounterClockwise };
 	bool write_depth { true };
 	bool test_depth { true };
 	std::vector<VkDescriptorSetLayout> descriptor_set_layouts;
@@ -82,6 +82,13 @@ public:
 		ensure(shader_cache.contains(std::forward<Key>(key)), "Shader with key '{}' was not compiled", key);
 
 		return shader_cache.at(std::forward<Key>(key));
+	}
+
+	auto update(const std::filesystem::path& key, Ref<Shader> new_shader) -> const Ref<Shader>&
+	{
+		shader_cache.at(key.string()) = std::move(new_shader);
+
+		return shader_cache.at(key.string());
 	}
 
 private:

@@ -13,7 +13,7 @@ namespace {
 	concept IsInAllowedComponents = AnyOf<T, Components::Tag, Components::Transform, Components::ID, Components::Inheritance,
 		Components::LineGeometry, Components::QuadGeometry, Components::Mesh, Components::Material, Components::Pipeline, Components::Texture,
 		Components::DirectionalLight, Components::PointLight, Components::Script>;
-}
+} // namespace
 
 template <class T>
 concept ValidComponent = (IsInAllowedComponents<T> && std::is_default_constructible_v<T>)

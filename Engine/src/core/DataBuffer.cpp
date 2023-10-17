@@ -10,15 +10,15 @@
 namespace Disarray {
 
 DataBuffer::DataBuffer(std::size_t s)
-	: size(s)
+	: data(std::make_unique<std::byte[]>(s))
+	, size(s)
 {
-	data = make_unique<std::byte*>(new std::byte[size]);
 }
 
 DataBuffer::DataBuffer(const void* new_data, std::size_t s)
 	: DataBuffer(s)
 {
-	std::memcpy(*data, new_data, s);
+	std::memcpy(data.get(), new_data, s);
 }
 
 DataBuffer::DataBuffer(std::nullptr_t) { }
@@ -39,15 +39,15 @@ void DataBuffer::copy_from(const DataBuffer& buffer)
 
 	reset();
 	size = buffer.size;
-	data = make_unique<std::byte*>(new std::byte[size]);
-	std::memcpy(*data, *buffer.data, size);
+	data = std::make_unique<std::byte[]>(size);
+	std::memcpy(data.get(), buffer.data.get(), size);
 }
 
 void DataBuffer::allocate(std::size_t s)
 {
 	reset();
 	size = s;
-	data = make_unique<std::byte*>(new std::byte[size]);
+	data = std::make_unique<std::byte[]>(size);
 }
 
 DataBuffer::DataBuffer(const DataBuffer& other) { copy_from(other); }

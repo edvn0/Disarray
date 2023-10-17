@@ -19,7 +19,19 @@ public:
 	}
 };
 
-enum class SerialiserType : std::uint8_t { Faulty, Pipeline, Script, Texture, Mesh, Transform, LineGeometry, QuadGeometry, Inheritance };
+enum class SerialiserType : std::uint8_t {
+	Faulty,
+	Pipeline,
+	Script,
+	Texture,
+	Mesh,
+	Transform,
+	LineGeometry,
+	QuadGeometry,
+	Inheritance,
+	DirectionalLight,
+	PointLight,
+};
 template <class T> inline constexpr SerialiserType serialiser_type_for = SerialiserType::Faulty;
 
 template <ValidComponent T, class Child> struct ComponentSerialiser {
@@ -70,6 +82,8 @@ MAKE_SERIALISER(TextureSerialiser, Texture)
 MAKE_SERIALISER(TransformSerialiser, Transform)
 MAKE_SERIALISER(LineGeometrySerialiser, LineGeometry)
 MAKE_SERIALISER(QuadGeometrySerialiser, QuadGeometry)
+MAKE_SERIALISER(DirectionalLightSerialiser, DirectionalLight)
+MAKE_SERIALISER(PointLightSerialiser, PointLight)
 MAKE_SERIALISER(InheritanceSerialiser, Inheritance)
 
 MAKE_DESERIALISER(PipelineDeserialiser, Pipeline)
@@ -79,6 +93,8 @@ MAKE_DESERIALISER(TextureDeserialiser, Texture)
 MAKE_DESERIALISER(TransformDeserialiser, Transform)
 MAKE_DESERIALISER(LineGeometryDeserialiser, LineGeometry)
 MAKE_DESERIALISER(QuadGeometryDeserialiser, QuadGeometry)
+MAKE_DESERIALISER(DirectionalLightDeserialiser, DirectionalLight)
+MAKE_DESERIALISER(PointLightDeserialiser, PointLight)
 MAKE_DESERIALISER(InheritanceDeserialiser, Inheritance)
 
 } // namespace Disarray

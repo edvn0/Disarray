@@ -220,7 +220,7 @@ void InterfaceLayer::end()
 		const auto& command_buffer = imgui_buffer.supply();
 		VkViewport viewport {};
 		viewport.x = 0.0F;
-		viewport.y = static_cast<float>(height);
+		viewport.y = 0.0F;
 		viewport.height = static_cast<float>(height);
 		viewport.width = static_cast<float>(width);
 		viewport.minDepth = 0.0F;

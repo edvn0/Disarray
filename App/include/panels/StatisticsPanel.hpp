@@ -20,7 +20,6 @@ public:
 	void interface() override;
 
 private:
-	double should_update_counter { 0.0 };
 	const ApplicationStatistics& statistics;
 
 	static constexpr auto frame_keep = (144 * 6) / 30;

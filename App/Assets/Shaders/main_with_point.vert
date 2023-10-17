@@ -1,14 +1,11 @@
 #include "PC.glsl"
 #include "UBO.glsl"
+#include "MathHelpers.glsl"
 
-layout(set = 0, binding = 0) uniform UniformBlock {
-	Uniform ubo;
-} UBO;
+layout(set = 0, binding = 0) uniform UniformBlock { Uniform ubo; }
+UBO;
 
-layout(push_constant) uniform PushConstantBlock
-{
-	PushConstant pc;
-}
+layout(push_constant) uniform PushConstantBlock { PushConstant pc; }
 PC;
 
 layout(location = 0) in vec3 pos;
@@ -20,13 +17,15 @@ layout(location = 0) out vec4 fragColor;
 layout(location = 1) out vec2 uvs;
 layout(location = 2) out vec3 outNormals;
 
-void main() {
-	PushConstant pc = PC.pc;
-	Uniform ubo = UBO.ubo;
+void main()
+{
+    PushConstant pc = PC.pc;
+    Uniform ubo = UBO.ubo;
 
-	gl_Position = ubo.view_projection * pc.object_transform * vec4(pos, 1.0);
-	gl_PointSize = 1.0f;
-	fragColor = pc.colour;
-	uvs = uv;
-	outNormals = normals;
+    vec4 model_matrix = pc.object_transform * vec4(pos, 1.0);
+    gl_Position = ubo.view_projection * model_matrix;
+    gl_PointSize = 1.0f;
+    fragColor = pc.colour;
+    uvs = uv;
+    outNormals = correct_normals(pc.object_transform, normals);
 }

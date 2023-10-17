@@ -83,9 +83,21 @@ void Mesh::load_and_initialise_model()
 	}
 }
 
-auto Mesh::get_indices() const -> Disarray::IndexBuffer& { return *submeshes.at(mesh_name)->indices; }
+auto Mesh::get_indices() const -> Disarray::IndexBuffer&
+{
+	if (submeshes.contains(mesh_name))
+		return *submeshes.at(mesh_name)->indices;
+	else
+		return *submeshes.begin()->second->indices;
+}
 
-auto Mesh::get_vertices() const -> Disarray::VertexBuffer& { return *submeshes.at(mesh_name)->vertices; }
+auto Mesh::get_vertices() const -> Disarray::VertexBuffer&
+{
+	if (submeshes.contains(mesh_name))
+		return *submeshes.at(mesh_name)->vertices;
+	else
+		return *submeshes.begin()->second->vertices;
+}
 
 void Mesh::force_recreation() { load_and_initialise_model(); }
 

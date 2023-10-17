@@ -36,6 +36,12 @@ Framebuffer::Framebuffer(const Disarray::Device& dev, FramebufferProperties prop
 			spec.format = attachment_spec.format;
 			spec.extent = props.extent;
 			spec.debug_name = fmt::format("{0}-depth{1}", props.debug_name, attachment_index);
+			spec.sampler_modes = {
+				SamplerMode::ClampToBorder,
+				SamplerMode::ClampToBorder,
+				SamplerMode::ClampToBorder,
+			};
+			spec.border_colour = BorderColour::FloatOpaqueWhite;
 			depth_attachment = make_scope<Vulkan::Texture>(device, std::move(spec));
 		} else {
 			TextureProperties spec {};
@@ -181,8 +187,8 @@ void Framebuffer::recreate_framebuffer(bool should_clean)
 	render_pass_info.pAttachments = attachment_descriptions.data();
 	render_pass_info.subpassCount = 1;
 	render_pass_info.pSubpasses = &subpass_description;
-	render_pass_info.dependencyCount = static_cast<uint32_t>(dependencies.size());
-	render_pass_info.pDependencies = dependencies.data();
+	// render_pass_info.dependencyCount = static_cast<uint32_t>(dependencies.size());
+	// render_pass_info.pDependencies = dependencies.data();
 
 	render_pass = RenderPass::construct(device,
 		{

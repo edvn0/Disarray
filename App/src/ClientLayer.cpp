@@ -16,6 +16,7 @@
 #include "core/Collections.hpp"
 #include "core/Log.hpp"
 #include "graphics/Renderer.hpp"
+#include "graphics/RendererProperties.hpp"
 #include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
 #include "panels/ScenePanel.hpp"
@@ -63,8 +64,7 @@ void ClientLayer::construct(App& app, Threading::ThreadPool& pool)
 	std::size_t index { 0 };
 	ensure(angles.size() == point_lights.size());
 	for (auto&& point_light : point_lights) {
-		constexpr std::uint32_t radius = 25;
-		point_light.add_script<Scripts::MoveInCircleScript>(radius, angles.at(index++));
+		point_light.add_script<Scripts::MoveInCircleScript>(static_cast<std::uint32_t>(point_light_radius), angles.at(index++));
 	}
 };
 
@@ -106,11 +106,11 @@ void ClientLayer::interface()
 		viewport_panel_mouse_over = ImGui::IsWindowHovered();
 		viewport_panel_focused = ImGui::IsWindowFocused();
 
-		auto viewport_offset = ImGui::GetCursorPos(); // includes tab bar
+		auto viewport_offset = ImGui::GetCursorPos();
 		auto viewport_size = ImGui::GetContentRegionAvail();
-		// camera.set_viewport_size<FloatExtent>({ viewport_size.x, viewport_size.y });
+		camera.set_viewport_size<FloatExtent>({ viewport_size.x, viewport_size.y });
 
-		auto& image = scene->get_image(0);
+		const auto& image = scene->get_final_image();
 		UI::image(image, { viewport_size.x, viewport_size.y });
 
 		if (const auto& entity = scene->get_selected_entity(); entity->is_valid()) {
@@ -144,6 +144,18 @@ void ClientLayer::interface()
 	UI::scope("Depth"sv, [&depth_image]() {
 		auto viewport_size = ImGui::GetContentRegionAvail();
 		UI::image(depth_image, { viewport_size.x, viewport_size.y });
+	});
+
+	UI::scope("Camera Settings", [&cam = camera]() {
+		auto near_clip = cam.get_near_clip();
+		auto far_clip = cam.get_far_clip();
+		bool any_changed = false;
+		any_changed |= UI::Input::input("Near", &near_clip);
+		any_changed |= UI::Input::input("Far", &far_clip);
+		if (any_changed) {
+			cam.set_near_clip(near_clip);
+			cam.set_far_clip(far_clip);
+		}
 	});
 
 	ImGui::End();
@@ -281,13 +293,9 @@ public:
 private:
 	void handle_impl()
 	{
-		try {
-			auto& current_scene = *get_scene();
-			current_scene.clear();
-			Scene::deserialise_into(current_scene, get_device(), get_path());
-		} catch (const std::exception& exc) {
-			Log::error("SceneHandler", "Exception: {}", exc.what());
-		}
+		auto& current_scene = *get_scene();
+		current_scene.clear();
+		Scene::deserialise_into(current_scene, get_device(), get_path());
 	}
 
 	friend class FileHandlerBase<SceneHandler>;

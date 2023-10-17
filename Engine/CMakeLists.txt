@@ -111,6 +111,7 @@ set(ENGINE_SOURCES
         src/graphics/IndexBuffer.cpp
         src/graphics/Texture.cpp
         src/graphics/Image.cpp
+        src/graphics/Maths.cpp
         src/graphics/model_loaders/TinyObjModelLoader.cpp
         src/graphics/model_loaders/AssimpModelLoader.cpp
         src/glfw/GLFWInput.cpp
@@ -138,13 +139,13 @@ set(ENGINE_SOURCES
         src/core/Log.cpp
         src/imgui/InterfaceLayer.cpp)
 
-if(DISARRAY_OS STREQUAL "Windows")
-        list(APPEND ENGINE_SOURCES src/windows/UI.cpp)
-elseif(DISARRAY_OS STREQUAL "MacOS")
-        list(APPEND ENGINE_SOURCES src/linux/UI.cpp)
-elseif(DISARRAY_OS STREQUAL "Linux")
-        list(APPEND ENGINE_SOURCES src/linux/UI.cpp)
-endif()
+if (DISARRAY_OS STREQUAL "Windows")
+    list(APPEND ENGINE_SOURCES src/windows/UI.cpp)
+elseif (DISARRAY_OS STREQUAL "MacOS")
+    list(APPEND ENGINE_SOURCES src/linux/UI.cpp)
+elseif (DISARRAY_OS STREQUAL "Linux")
+    list(APPEND ENGINE_SOURCES src/linux/UI.cpp)
+endif ()
 
 add_library(
         ${PROJECT_NAME} STATIC
@@ -171,12 +172,14 @@ target_link_libraries(
         libtinyfiledialogs
         imguizmo
         magic_enum::magic_enum
-        EnTT::EnTT)
+        EnTT::EnTT
+        freetype
+)
 target_precompile_headers(${PROJECT_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include/DisarrayPCH.hpp)
 
 default_compile_flags()
 
-if(DISARRAY_BUILD_TESTS)
-        add_subdirectory(tests)
-endif()
+if (DISARRAY_BUILD_TESTS)
+    add_subdirectory(tests)
+endif ()

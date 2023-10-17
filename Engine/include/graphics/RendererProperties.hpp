@@ -1,5 +1,6 @@
 #pragma once
 
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -7,9 +8,6 @@
 #include <array>
 #include <cstddef>
 #include <optional>
-
-#include "glm/ext/matrix_transform.hpp"
-#include "glm/fwd.hpp"
 
 namespace Disarray {
 
@@ -69,7 +67,7 @@ struct PushConstant : Resettable<PushConstant> {
 
 struct PointLight {
 	glm::vec4 position;
-	glm::vec4 factors { 1, 1, 0, 0 };
+	glm::vec4 factors { 1, 0.09F, 0.032F, 0 };
 	glm::vec4 ambient;
 	glm::vec4 diffuse;
 	glm::vec4 specular;
@@ -82,15 +80,15 @@ namespace Detail {
 	};
 } // namespace Detail
 
-static constexpr auto count_point_lights = 30;
-using PointLights = Detail::PointLights<count_point_lights>;
+static constexpr auto max_point_lights = 30;
+static constexpr auto count_point_lights = 7;
+static constexpr auto point_light_radius = 15;
+using PointLights = Detail::PointLights<max_point_lights>;
 
 struct UBO : Resettable<UBO> {
 	glm::mat4 view;
 	glm::mat4 proj;
 	glm::mat4 view_projection;
-	glm::vec4 sun_direction_and_intensity { 1.0 };
-	glm::vec4 sun_colour { 1.0F };
 
 	void reset_impl();
 };
@@ -107,6 +105,36 @@ static constexpr auto max_allowed_texture_indices = 46ULL;
 struct ImageIndicesUBO : Resettable<ImageIndicesUBO> {
 	alignas(default_alignment) std::uint32_t bound_textures { 0 };
 	alignas(default_alignment) std::array<glm::uvec4, max_allowed_texture_indices> image_indices { glm::uvec4 { 0, 0, 0, 0 } };
+
+	void reset_impl();
+};
+
+struct ShadowPassUBO : Resettable<ShadowPassUBO> {
+	glm::mat4 view {};
+	glm::mat4 projection {};
+	glm::mat4 view_projection {};
+
+	void reset_impl()
+	{
+		view = {};
+		projection = {};
+		view_projection = {};
+	}
+};
+
+struct DirectionalLightUBO : Resettable<DirectionalLightUBO> {
+	glm::vec4 position { 0 };
+	glm::vec4 direction { 0 };
+	glm::vec4 ambient { 0 };
+	glm::vec4 diffuse { 0 };
+	glm::vec4 specular { 0 };
+	glm::vec4 near_far { 0 };
+
+	void reset_impl();
+};
+
+struct GlyphUBO : Resettable<GlyphUBO> {
+	glm::mat4 projection {}; // 64
 
 	void reset_impl();
 };
