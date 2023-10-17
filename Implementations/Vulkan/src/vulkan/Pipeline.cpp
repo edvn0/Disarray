@@ -421,7 +421,6 @@ auto Pipeline::get_render_pass() -> Disarray::RenderPass& { return props.framebu
 
 void Pipeline::try_find_or_recreate_cache()
 {
-	const auto hash = props.hash();
 	const auto pipeline_name = fmt::format(
 		"Pipeline-{}-{}", props.vertex_shader->get_properties().identifier.filename(), props.fragment_shader->get_properties().identifier.filename());
 

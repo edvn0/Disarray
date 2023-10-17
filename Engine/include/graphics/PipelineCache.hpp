@@ -84,6 +84,13 @@ public:
 		return shader_cache.at(std::forward<Key>(key));
 	}
 
+	auto update(const std::filesystem::path& key, Ref<Shader> new_shader) -> const Ref<Shader>&
+	{
+		shader_cache.at(key.string()) = std::move(new_shader);
+
+		return shader_cache.at(key.string());
+	}
+
 private:
 	std::unordered_map<std::string, Ref<Shader>> shader_cache {};
 };

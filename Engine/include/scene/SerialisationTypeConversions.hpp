@@ -9,6 +9,7 @@
 
 #include "core/Concepts.hpp"
 #include "scene/ComponentSerialisers.hpp"
+#include "scene/CppScript.hpp"
 
 namespace Disarray {
 
@@ -110,5 +111,10 @@ template <> struct adl_serializer<std::filesystem::path> {
 		object.get_to(filename);
 		opt = std::filesystem::path(filename);
 	}
+};
+
+template <> struct adl_serializer<Disarray::Parameter> {
+	static void to_json(json& object, const Disarray::Parameter& param);
+	static void from_json(const json& object, Disarray::Parameter& param);
 };
 NLOHMANN_JSON_NAMESPACE_END

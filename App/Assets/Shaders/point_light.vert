@@ -27,7 +27,7 @@ void main()
     vec4 frag_pos = pc.object_transform * vec4(pos, 1.0);
     gl_Position = ubo.view_projection * frag_pos;
 
-    light_space_fragment_position = bias_matrix() * SPU.spu.view_projection * frag_pos;
+    light_space_fragment_position = bias_matrix() * SPU.spu.view_projection * pc.object_transform * vec4(pos, 1.0);
     fragment_position = vec3(frag_pos);
 
     fragColor = pc.colour;

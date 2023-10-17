@@ -171,7 +171,7 @@ void TextRenderer::submit_text(std::string_view text, const glm::uvec2& position
 	static auto max_h = static_cast<float>(max_height);
 	auto y_position = static_cast<float>(position.y) + max_h;
 	for (const auto& character : text) {
-		if (character == '\n' || character == '\t' || character == '\r') {
+		if (character == '\n' || character == '\r') {
 			y_position += max_h;
 			x_position = static_cast<float>(position.x);
 			continue;

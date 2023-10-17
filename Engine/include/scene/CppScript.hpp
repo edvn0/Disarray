@@ -57,6 +57,14 @@ public:
 
 	void update_entity(Scene*, entt::entity);
 	auto get_parameters() -> Collections::StringViewMap<Parameter>& { return parameters; }
+	auto get_parameter_or(std::string_view key, const Parameter& default_value = std::monostate {}) -> const Parameter&
+	{
+		if (parameters.contains(key)) {
+			return parameters.at(key);
+		}
+
+		return default_value;
+	}
 
 protected:
 	explicit CppScript(const Collections::StringViewMap<Parameter>& params);

@@ -12,6 +12,7 @@
 #include "core/exceptions/BaseException.hpp"
 #include "scene/Component.hpp"
 #include "scene/ComponentSerialisers.hpp"
+#include "scene/Components.hpp"
 #include "scene/Entity.hpp"
 
 namespace Disarray {
@@ -55,15 +56,7 @@ namespace {
 			parsed = json::parse(input_stream);
 
 			bool could_serialise { true };
-			try {
-				could_serialise = try_deserialise(parsed);
-			} catch (const CouldNotDeserialiseException& exc) {
-				Log::error("Deserialiser", "Error: {}", exc.what());
-				return;
-			} catch (const std::exception& exc) {
-				Log::error("Deserialiser", "Error: {}", exc.what());
-				return;
-			}
+			could_serialise = try_deserialise(parsed);
 
 			if (!could_serialise) {
 				return;
@@ -74,9 +67,6 @@ namespace {
 
 		auto try_deserialise(const json& root) -> bool
 		{
-			auto& registry = scene.get_registry();
-
-			auto&& scene_name = root["name"];
 			auto&& entities = root["entities"];
 
 			for (const auto& json_entity : entities.items()) {
@@ -85,12 +75,7 @@ namespace {
 				auto&& components = json_entity.value()["components"];
 				auto&& [id, tag] = parse_key(key);
 				Entity entity;
-				try {
-					entity = Entity::deserialise(scene, id, tag);
-				} catch (const std::exception& exc) {
-					Log::error("SceneDeserialiser", "{}", exc.what());
-					continue;
-				}
+				entity = Entity::deserialise(scene, id, tag);
 				deserialise_component<Components::QuadGeometry>(components, entity);
 				deserialise_component<Components::LineGeometry>(components, entity);
 				deserialise_component<Components::Script>(components, entity);
@@ -98,6 +83,8 @@ namespace {
 				deserialise_component<Components::Pipeline>(components, entity);
 				deserialise_component<Components::Texture>(components, entity);
 				deserialise_component<Components::Mesh>(components, entity);
+				deserialise_component<Components::DirectionalLight>(components, entity);
+				deserialise_component<Components::PointLight>(components, entity);
 				deserialise_component<Components::Inheritance>(components, entity);
 			}
 

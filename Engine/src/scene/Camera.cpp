@@ -4,6 +4,7 @@
 
 #include "core/Input.hpp"
 #include "core/Log.hpp"
+#include "graphics/Maths.hpp"
 
 namespace Disarray {
 
@@ -22,8 +23,8 @@ void Camera::on_update(float) {};
 void Camera::set_ortho_projection_matrix(const float width, const float height, const float near_plane, const float far_plane)
 {
 	static constexpr auto half = 0.5F;
-	projection_matrix = glm::ortho(-width * half, width * half, -height * half, height * half, far_plane, near_plane);
-	unreversed_projection_matrix = glm::ortho(-width * half, width * half, -height * half, height * half, near_plane, far_plane);
+	projection_matrix = Maths::ortho(-width * half, width * half, -height * half, height * half, far_plane, near_plane);
+	unreversed_projection_matrix = Maths::ortho(-width * half, width * half, -height * half, height * half, near_plane, far_plane);
 }
 
 void Camera::set_perspective_projection_matrix(

@@ -14,7 +14,7 @@ PC;
 
 #include "DefaultInput.glsl"
 
-layout(location = 0) flat out vec4 fragColor;
+layout(location = 0) flat out vec4 fragment_colour;
 layout(location = 1) out vec2 uvs;
 layout(location = 2) flat out vec3 out_normals;
 layout(location = 3) out vec3 frag_pos;
@@ -30,8 +30,8 @@ void main()
 
 	frag_pos = vec3(model_position);
 	gl_Position = ubo.view_projection * model_position;
-	light_space_frag_pos = bias_matrix() * spu.view_projection * model_position;
-	fragColor = colour;
+	light_space_frag_pos = bias_matrix() * spu.view_projection * pc.object_transform * vec4(pos, 1.0);
+	fragment_colour = colour;
 	uvs = uv;
 	out_normals = correct_normals(pc.object_transform, normals);
 }

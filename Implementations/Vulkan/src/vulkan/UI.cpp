@@ -154,6 +154,52 @@ auto shader_drop_button(Device& device, const std::string& button_name, ShaderTy
 	return false;
 }
 
+auto texture_drop_button(Device& device, const Texture& out_texture) -> Ref<Disarray::Texture>
+{
+	UI::image_button(out_texture.get_image());
+	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".png", ".jpg", ".jpeg" })) {
+		const auto& texture_path = *dropped;
+		return Texture::construct(device,
+			{
+				.path = std::filesystem::path(texture_path),
+				.debug_name = texture_path.string(),
+			});
+	}
+
+	return nullptr;
+}
+
+auto shader_drop_button(const Device& device, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader) -> bool
+{
+	UI::text_wrapped("Current shader: {}", out_shader->get_properties().identifier);
+	ImGui::Button(button_name.c_str());
+	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".vert", ".frag" })) {
+		const auto& shader_path = *dropped;
+		if (shader_path.extension() == shader_type_extension(shader_type)) {
+			auto shader = Shader::compile(device, shader_path);
+			out_shader = shader;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+auto texture_drop_button(const Device& device, const Texture& out_texture) -> Ref<Disarray::Texture>
+{
+	UI::image_button(out_texture.get_image());
+	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".png", ".jpg", ".jpeg" })) {
+		const auto& texture_path = *dropped;
+		return Texture::construct(device,
+			{
+				.path = std::filesystem::path(texture_path),
+				.debug_name = texture_path.string(),
+			});
+	}
+
+	return nullptr;
+}
+
 namespace Tabular {
 
 	auto table(std::string_view name, const Collections::StringViewMap<std::string>& map) -> bool
@@ -220,21 +266,6 @@ namespace Input {
 	}
 
 } // namespace Input
-
-auto texture_drop_button(Device& device, const Texture& out_texture) -> Ref<Disarray::Texture>
-{
-	UI::image_button(out_texture.get_image());
-	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".png", ".jpg", ".jpeg" })) {
-		const auto& texture_path = *dropped;
-		return Texture::construct(device,
-			{
-				.path = std::filesystem::path(texture_path),
-				.debug_name = texture_path.string(),
-			});
-	}
-
-	return nullptr;
-}
 
 void remove_image(const Texture& tex)
 {

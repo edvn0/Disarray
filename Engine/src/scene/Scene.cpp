@@ -2,10 +2,6 @@
 
 #include "scene/Scene.hpp"
 
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
-
 #include <ImGuizmo.h>
 #include <entt/entt.hpp>
 
@@ -28,6 +24,7 @@
 #include "glm/ext/matrix_clip_space.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
+#include "graphics/GLM.hpp"
 #include "graphics/Maths.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
@@ -78,14 +75,22 @@ Scene::Scene(const Device& dev, std::string_view name)
 
 void Scene::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
 {
-	file_watcher
-		= make_scope<FileWatcher>(pool, "Assets/Shaders", Collections::StringSet { ".vert", ".frag", ".glsl" }, std::chrono::milliseconds(200));
-	file_watcher->on_modified([&dev = device, &reg = registry, &mutex = registry_access](const FileInformation& entry) {
+	static constexpr auto tick_time = std::chrono::milliseconds(200);
+	file_watcher = make_scope<FileWatcher>(pool, "Assets/Shaders", Collections::StringSet { ".vert", ".frag", ".glsl" }, tick_time);
+	auto& pipeline_cache = scene_renderer->get_graphics_resource().get_pipeline_cache();
+	file_watcher->on_modified([&pipeline_cache, &dev = device, &reg = registry, &mutex = registry_access](const FileInformation& entry) {
 		std::scoped_lock lock { mutex };
 		const auto view = reg.view<Components::Pipeline>();
+		const auto as_path = entry.to_path();
+
+		if (as_path.extension() == ".glsl") {
+			auto glsl_shader = Shader::compile(dev, entry.path);
+			pipeline_cache.update(as_path, std::move(glsl_shader));
+		}
+
 		std::unordered_set<Components::Pipeline*> unique_pipelines_sharing_this_files {};
 		for (auto&& [ent, pipeline] : view.each()) {
-			const bool pipeline_uses_this_updated_shader = pipeline.pipeline->has_shader_with_name(entry.to_path());
+			const bool pipeline_uses_this_updated_shader = pipeline.pipeline->has_shader_with_name(as_path);
 			if (!pipeline_uses_this_updated_shader) {
 				continue;
 			}
@@ -142,7 +147,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 	shadow_framebuffer = Framebuffer::construct(device,
 		{
 			.extent = { 1024, 1024 },
-			.attachments = { { ImageFormat::Depth } },
+			.attachments = { { ImageFormat::Depth, false } },
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
 			.debug_name = "ShadowFramebuffer",
@@ -167,7 +172,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 				{ ElementType::Float3, "bitangents" },
 			},
 			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-			.cull_mode = CullMode::None,
+			.cull_mode = CullMode::Front,
 			.write_depth = true,
 			.test_depth = true,
 			.descriptor_set_layouts = desc_layout,
@@ -198,7 +203,7 @@ void Scene::begin_frame(const Camera& camera)
 		 auto&& [entity, transform, sun] : sun_component_view.each()) {
 		directional.position = { transform.position, 1.0f };
 		sun.position = directional.position;
-		sun.direction = -glm::normalize(sun.position); // Lookat {0,0,0};
+		sun.direction = glm::normalize(-sun.position); // Lookat {0,0,0};
 		directional.direction = sun.direction;
 		directional.ambient = sun.ambient;
 		directional.diffuse = sun.diffuse;
@@ -213,13 +218,13 @@ void Scene::begin_frame(const Camera& camera)
 		auto projection = light.projection_parameters.compute();
 		glm::vec3 center { 0 };
 		if (light.use_direction_vector) {
-			auto lookat_center = transform.position + shadow_pass_camera.lookat_distance * glm::vec3(light.direction);
+			auto lookat_center = transform.position + glm::vec3(light.direction);
 			center = lookat_center;
 			projection = glm::perspective(
 				light.projection_parameters.fov, extent.aspect_ratio(), light.projection_parameters.near, light.projection_parameters.far);
 			directional.near_far = { light.projection_parameters.near, light.projection_parameters.far, 0, 0 };
 		}
-		const auto view = glm::lookAt(transform.position, center, { 0.0F, 1.0F, 0.0F });
+		const auto view = glm::lookAt(glm::vec3(light.position), center, { 0.0F, 1.0F, 0.0F });
 
 		const auto view_projection = projection * view;
 
@@ -729,20 +734,18 @@ void Scene::create_entities()
 			});
 
 		auto sun = create("Sun");
-		auto& dir_light = sun.add_component<Components::DirectionalLight>(glm::vec4 { 0.7, 0.7, 0.1, 0.1f },
+		sun.add_component<Components::DirectionalLight>(glm::vec4 { 0.7, 0.7, 0.1, 0.1f },
 			Components::DirectionalLight::ProjectionParameters {
-				.left = -10.F,
-				.right = 10.F,
-				.bottom = -10.F,
-				.top = 10.F,
-				.near = 0.1F,
-				.far = 40.F,
+				.factor = 20.F,
+				.near = -90.F,
+				.far = 70.F,
 				.fov = 60.F,
 			});
 		sun.add_component<Components::Mesh>(sphere);
 		sun.add_component<Components::Pipeline>(pipe);
-		sun.add_component<Components::Texture>(dir_light.ambient);
 		sun.add_component<Components::Transform>().position = { -15, -15, 16 };
+
+		sun.add_script<Scripts::MoveInCircleScript>(30, 0.F);
 
 		auto pl_system = create("PointLightSystem");
 		for (std::uint32_t i = 0; i < colours.size(); i++) {

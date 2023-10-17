@@ -14,6 +14,7 @@
 #include "core/Log.hpp"
 #include "core/Tuple.hpp"
 #include "scene/ComponentSerialisers.hpp"
+#include "scene/Components.hpp"
 #include "scene/Scene.hpp"
 #include "util/Timer.hpp"
 
@@ -90,14 +91,14 @@ namespace {
 				serialise_component<Components::LineGeometry>(entity, components);
 				serialise_component<Components::QuadGeometry>(entity, components);
 				serialise_component<Components::Inheritance>(entity, components);
+				serialise_component<Components::DirectionalLight>(entity, components);
+				serialise_component<Components::PointLight>(entity, components);
 				entity_object["components"] = components;
 				output.push_back({ key, entity_object });
 			});
 
 			json entities;
 			Collections::for_each(output, [&e = entities](EntityAndKey k) { e[k.key] = k.data; });
-
-			const double elapsed = timer.elapsed<Granularity::Seconds>();
 
 			root["entities"] = entities;
 
@@ -134,6 +135,6 @@ namespace {
 } // namespace
 
 using SceneSerialiser = Serialiser<PipelineSerialiser, ScriptSerialiser, TextureSerialiser, MeshSerialiser, TransformSerialiser,
-	InheritanceSerialiser, LineGeometrySerialiser, QuadGeometrySerialiser>;
+	InheritanceSerialiser, LineGeometrySerialiser, QuadGeometrySerialiser, DirectionalLightSerialiser, PointLightSerialiser>;
 
 } // namespace Disarray

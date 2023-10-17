@@ -24,8 +24,8 @@ MoveInCircleScript::MoveInCircleScript(std::uint32_t local_radius, float initial
 MoveInCircleScript::MoveInCircleScript(const Collections::StringViewMap<Parameter>& params)
 	: CppScript(params)
 {
-	const auto& local_radius = get_parameters().at("local_radius"sv);
-	const auto& stored_angle = get_parameters().at("angle"sv);
+	const auto& local_radius = get_parameter_or("local_radius"sv, std::uint32_t { 10 });
+	const auto& stored_angle = get_parameter_or("angle"sv, glm::radians(45.0F));
 
 	radius = std::get<std::uint32_t>(local_radius);
 	angle = glm::degrees(std::get<float>(stored_angle));
@@ -33,8 +33,8 @@ MoveInCircleScript::MoveInCircleScript(const Collections::StringViewMap<Paramete
 
 void MoveInCircleScript::reload()
 {
-	const auto& local_radius = get_parameters().at("local_radius"sv);
-	const auto& stored_angle = get_parameters().at("angle"sv);
+	const auto& local_radius = get_parameter_or("local_radius"sv, std::uint32_t { 10 });
+	const auto& stored_angle = get_parameter_or("angle"sv, glm::radians(45.0F));
 
 	radius = std::get<std::uint32_t>(local_radius);
 	angle = glm::degrees(std::get<float>(stored_angle));
@@ -59,9 +59,9 @@ LinearMovementScript::~LinearMovementScript() = default;
 LinearMovementScript::LinearMovementScript(const Collections::StringViewMap<Parameter>& params)
 	: CppScript(params)
 {
-	const auto& axis_as_uint8 = get_parameters().at("axis"sv);
-	const auto& min_input = get_parameters().at("min"sv);
-	const auto& max_input = get_parameters().at("max"sv);
+	const auto& axis_as_uint8 = get_parameter_or("axis"sv, std::uint8_t { 0 });
+	const auto& min_input = get_parameter_or("min"sv, -100.0F);
+	const auto& max_input = get_parameter_or("max"sv, 100.0F);
 
 	min = std::get<float>(min_input);
 	max = std::get<float>(max_input);
@@ -70,9 +70,9 @@ LinearMovementScript::LinearMovementScript(const Collections::StringViewMap<Para
 
 void LinearMovementScript::reload()
 {
-	const auto& axis_as_uint8 = get_parameters().at("axis"sv);
-	const auto& min_input = get_parameters().at("min"sv);
-	const auto& max_input = get_parameters().at("max"sv);
+	const auto& axis_as_uint8 = get_parameter_or("axis"sv, std::uint8_t { 0 });
+	const auto& min_input = get_parameter_or("min"sv, -100.0F);
+	const auto& max_input = get_parameter_or("max"sv, 100.0F);
 
 	min = std::get<float>(min_input);
 	max = std::get<float>(max_input);

@@ -151,25 +151,6 @@ private:
 	Ref<Disarray::Framebuffer> identity_framebuffer {};
 	Ref<Disarray::CommandExecutor> command_executor {};
 
-	struct OrthographicCameraParameters {
-		float left { -5 };
-		float right { 5 };
-		float bottom { -5.F };
-		float top { 5.F };
-		float near { 0.1F };
-		float far { 65.F };
-
-		float lookat_distance { 5.F };
-		glm::mat4 projection { glm::ortho(left, right, bottom, top, near, far) };
-
-		auto get() -> const auto&
-		{
-			compute();
-			return projection;
-		}
-		void compute() { projection = glm::ortho(left, right, bottom, top, near, far); }
-	} shadow_pass_camera;
-
 	std::mutex registry_access;
 	entt::registry registry;
 	void create_entities();

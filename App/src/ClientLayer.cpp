@@ -37,7 +37,7 @@ template <std::size_t Count> static consteval auto generate_angles_client() -> s
 
 ClientLayer::ClientLayer(Device& device, Window& win, Swapchain& swapchain)
 	: device(device)
-	, camera(60.F, static_cast<float>(swapchain.get_extent().width), static_cast<float>(swapchain.get_extent().height), 0.1F, 60.F, nullptr)
+	, camera(60.F, static_cast<float>(swapchain.get_extent().width), static_cast<float>(swapchain.get_extent().height), 0.1F, 1000.F, nullptr)
 {
 }
 
@@ -155,7 +155,6 @@ void ClientLayer::interface()
 		if (any_changed) {
 			cam.set_near_clip(near_clip);
 			cam.set_far_clip(far_clip);
-			Log::info("ClientLayer", "Changed near and far");
 		}
 	});
 
@@ -294,13 +293,9 @@ public:
 private:
 	void handle_impl()
 	{
-		try {
-			auto& current_scene = *get_scene();
-			current_scene.clear();
-			Scene::deserialise_into(current_scene, get_device(), get_path());
-		} catch (const std::exception& exc) {
-			Log::error("SceneHandler", "Exception: {}", exc.what());
-		}
+		auto& current_scene = *get_scene();
+		current_scene.clear();
+		Scene::deserialise_into(current_scene, get_device(), get_path());
 	}
 
 	friend class FileHandlerBase<SceneHandler>;

@@ -164,6 +164,8 @@ struct PipelineProperties {
 			compute_shader = shader;
 			break;
 		}
+		case ShaderType::Include:
+			break;
 		}
 	}
 };

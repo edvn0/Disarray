@@ -40,6 +40,7 @@ struct PushConstantRange {
 
 struct PushConstantLayout {
 	PushConstantLayout(const std::initializer_list<PushConstantRange>& ranges_in);
+	PushConstantLayout(std::vector<PushConstantRange>&& ranges_in);
 	[[nodiscard]] auto get_input_ranges() const -> const std::vector<PushConstantRange>&;
 	[[nodiscard]] auto size() const -> std::size_t;
 

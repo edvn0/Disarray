@@ -119,10 +119,7 @@ template <> inline constexpr std::string_view component_name<Tag> = "Tag";
 
 struct DirectionalLight {
 	struct ProjectionParameters {
-		float left { -30.F };
-		float right { 30.F };
-		float bottom { -30.F };
-		float top { 30.F };
+		float factor { 10.0F };
 		float near { 0.1F };
 		float far { 50.F };
 		float fov { 45.0F };

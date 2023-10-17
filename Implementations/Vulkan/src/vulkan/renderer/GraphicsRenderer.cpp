@@ -257,8 +257,8 @@ void Renderer::begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebu
 	VkViewport viewport {};
 	viewport.x = 0.0F;
 	viewport.y = 0.0F;
-	viewport.width = static_cast<float>(extent.width);
-	viewport.height = static_cast<float>(extent.height);
+	viewport.width = static_cast<float>(extent_2_d.width);
+	viewport.height = static_cast<float>(extent_2_d.height);
 	viewport.minDepth = 0.0F;
 	viewport.maxDepth = 1.0F;
 	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
