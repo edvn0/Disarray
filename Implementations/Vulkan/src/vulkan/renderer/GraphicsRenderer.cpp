@@ -11,6 +11,7 @@
 
 #include <array>
 
+#include "core/Instrumentation.hpp"
 #include "core/Types.hpp"
 #include "graphics/Pipeline.hpp"
 #include "util/BitCast.hpp"
@@ -135,7 +136,6 @@ void Renderer::draw_submesh(Disarray::CommandExecutor& executor, const Disarray:
 {
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
-	bind_pipeline(executor, mesh_pipeline);
 
 	push_constant.object_transform = transform;
 	push_constant.colour = colour;
@@ -159,13 +159,15 @@ void Renderer::draw_submeshes(Disarray::CommandExecutor& executor, const Disarra
 	// draw_mesh(executor, parent_mesh, mesh_pipeline, texture, transform, identifier);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
 	bind_descriptor_sets(executor, pipeline.get_layout());
+	bind_pipeline(executor, mesh_pipeline);
 
 	if (pipeline.get_properties().polygon_mode == PolygonMode::Line) {
 		vkCmdSetLineWidth(supply_cast<Vulkan::CommandExecutor>(executor), pipeline.get_properties().line_width);
 	}
 
 	auto& push_constant = get_graphics_resource().get_editable_push_constant();
-	for (const auto& sub : parent_mesh.get_submeshes()) {
+
+	Collections::for_each(parent_mesh.get_submeshes(), [&](const auto& sub) {
 		auto&& [key, mesh] = sub;
 
 		std::size_t index = 0;
@@ -175,7 +177,20 @@ void Renderer::draw_submeshes(Disarray::CommandExecutor& executor, const Disarra
 		push_constant.bound_textures = static_cast<unsigned int>(index);
 		draw_submesh(executor, *mesh->vertices, *mesh->indices, mesh_pipeline, texture, colour, transform, identifier, push_constant);
 		push_constant.bound_textures = 0;
-	}
+	});
+}
+
+void Renderer::draw_aabb(Disarray::CommandExecutor& executor, const Disarray::AABB& aabb, const glm::vec4& colour, const glm::mat4& transform)
+{
+	const auto scale_matrix = aabb.calculate_scale_matrix();
+	// Calculate the center of the AABB
+	glm::vec3 aabb_center = aabb.middle_point();
+	glm::vec3 translation = -aabb_center;
+
+	glm::mat4 transformation_matrix = glm::mat4(1.0f);
+	transformation_matrix = glm::translate(transformation_matrix, translation);
+	transformation_matrix = transform * scale_matrix * transformation_matrix;
+	draw_mesh(executor, *aabb_model, *aabb_pipeline, transformation_matrix);
 }
 
 void Renderer::text_rendering_pass(Disarray::CommandExecutor& executor) { text_renderer.render(*this, executor); }
@@ -190,13 +205,10 @@ void Renderer::fullscreen_quad_pass(Disarray::CommandExecutor& executor, const E
 	bind_pipeline(executor, *fullscreen_quad_pipeline);
 	vkCmdDrawIndexed(cmd, 3, 1, 0, 0, 0);
 
-	end_pass(executor, false);
+	end_pass(executor);
 }
 
-void Renderer::end_pass(Disarray::CommandExecutor& executor, bool should_submit)
-{
-	vkCmdEndRenderPass(supply_cast<Vulkan::CommandExecutor>(executor));
-}
+void Renderer::end_pass(Disarray::CommandExecutor& executor) { vkCmdEndRenderPass(supply_cast<Vulkan::CommandExecutor>(executor)); }
 
 void Renderer::begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& framebuffer, bool explicit_clear)
 {

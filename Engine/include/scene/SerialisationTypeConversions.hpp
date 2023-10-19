@@ -20,7 +20,7 @@ template <class Enum> inline auto to_enum_value(const auto& object, std::string_
 {
 	std::string value;
 	if (!object.contains(key)) {
-		throw ComponentDeserialiseException { "ToEnumValue", fmt::format("Key {} was missing from object", key) };
+		return std::optional<Enum>(std::nullopt);
 	}
 	object[key].get_to(value);
 	return magic_enum::enum_cast<Enum>(value);

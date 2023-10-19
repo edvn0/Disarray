@@ -131,7 +131,7 @@ struct PipelineProperties {
 	FaceMode face_mode { FaceMode::CounterClockwise };
 	bool write_depth { true };
 	bool test_depth { true };
-	std::vector<VkDescriptorSetLayout> descriptor_set_layouts;
+	std::vector<VkDescriptorSetLayout> descriptor_set_layouts {};
 
 	auto hash() const -> std::size_t
 	{
@@ -168,6 +168,8 @@ struct PipelineProperties {
 			break;
 		}
 	}
+
+	auto is_valid() const -> bool { return !descriptor_set_layouts.empty() && framebuffer != nullptr; }
 };
 
 class Pipeline : public ReferenceCountable {
@@ -175,6 +177,8 @@ class Pipeline : public ReferenceCountable {
 public:
 	virtual auto get_render_pass() -> Disarray::RenderPass& = 0;
 	virtual auto get_framebuffer() -> Disarray::Framebuffer& = 0;
+
+	[[nodiscard]] auto is_valid() const -> bool { return props.is_valid(); };
 
 	[[nodiscard]] auto has_shader_with_name(std::string_view name) const -> bool
 	{

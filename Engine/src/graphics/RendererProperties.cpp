@@ -30,7 +30,12 @@ void ImageIndicesUBO::reset_impl()
 	bound_textures = 0;
 }
 
-void GlyphUBO::reset_impl() { projection = {}; }
+void GlyphUBO::reset_impl()
+{
+	projection = {};
+	view = {};
+}
+
 void DirectionalLightUBO::reset_impl()
 {
 

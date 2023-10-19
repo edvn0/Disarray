@@ -52,6 +52,7 @@ void Mesh::load_and_initialise_model()
 	try {
 		ModelLoader loader { make_scope<AssimpModelLoader>(props.initial_rotation), props.path };
 		mesh_textures = loader.construct_textures(device);
+		aabb = loader.get_aabb();
 		for (const auto& mesh_data = loader.get_mesh_data(); const auto& [key, submesh] : mesh_data) {
 			auto vertex_buffer = VertexBuffer::construct_scoped(device,
 				{
@@ -85,18 +86,18 @@ void Mesh::load_and_initialise_model()
 
 auto Mesh::get_indices() const -> Disarray::IndexBuffer&
 {
-	if (submeshes.contains(mesh_name))
+	if (submeshes.contains(mesh_name)) {
 		return *submeshes.at(mesh_name)->indices;
-	else
-		return *submeshes.begin()->second->indices;
+	}
+	return *submeshes.begin()->second->indices;
 }
 
 auto Mesh::get_vertices() const -> Disarray::VertexBuffer&
 {
-	if (submeshes.contains(mesh_name))
+	if (submeshes.contains(mesh_name)) {
 		return *submeshes.at(mesh_name)->vertices;
-	else
-		return *submeshes.begin()->second->vertices;
+	}
+	return *submeshes.begin()->second->vertices;
 }
 
 void Mesh::force_recreation() { load_and_initialise_model(); }
@@ -115,5 +116,7 @@ auto Mesh::construct_deferred(const Disarray::Device& device, MeshProperties pro
 {
 	return std::async(std::launch::async, MeshConstructor {}, std::cref(device), std::move(properties));
 }
+
+auto Mesh::get_aabb() const -> const AABB& { return aabb; }
 
 } // namespace Disarray::Vulkan

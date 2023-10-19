@@ -66,7 +66,7 @@ class Shader : public ReferenceCountable {
 	DISARRAY_OBJECT_PROPS(Shader, ShaderProperties)
 public:
 	virtual void destroy_module() = 0;
-
+	[[nodiscard]] virtual auto attachment_count() const -> std::uint32_t = 0;
 	static auto compile(const Device& device, const std::filesystem::path&) -> Ref<Shader>;
 };
 

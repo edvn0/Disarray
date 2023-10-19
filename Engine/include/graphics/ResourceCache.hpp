@@ -63,7 +63,7 @@ public:
 
 	template <class Func> void for_each_in_storage(Func&& func) { Collections::for_each(storage, std::forward<Func>(func)); }
 
-	void force_recreate(const Extent& extent) { return get_child().force_recreate_impl(extent); };
+	void force_recreation(const Extent& extent) { return get_child().force_recreation_impl(extent); };
 	auto create_from(const Props& props) -> Resource { return get_child().create_from_impl(props); }
 	auto create_key(const Props& props) -> Key
 	{

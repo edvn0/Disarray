@@ -15,6 +15,7 @@ class IndexBuffer;
 class Instance;
 class Mesh;
 struct Submesh;
+class AABB;
 class PhysicalDevice;
 class Pipeline;
 class QueueFamilyIndex;

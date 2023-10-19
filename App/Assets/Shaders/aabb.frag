@@ -42,27 +42,5 @@ void main()
 	PushConstant pc = PC.pc;
 	ShadowPassUBO spu = SPU.spu;
 
-	vec3 view_direction = normalize(vec3(CBO.camera.position) - fragment_position);
-	float shadow_bias = max(0.01 * (1.0 - dot(normals, vec3(dlu.direction))), 0.005);
-	float shadow = shadow_calculation(light_space_fragment_position, depth_texture, true, shadow_bias);
-
-	DirectionalLight light;
-	light.direction = vec3(dlu.direction);
-	light.ambient = dlu.ambient;
-	light.diffuse = vec3(dlu.diffuse);
-	light.specular = vec3(dlu.specular);
-	vec3 out_vec = calculate_directional_light(light, normals, view_direction, shadow, 32);
-
-	for (uint i = 0; i < pc.max_point_lights; i++) {
-		PointLight current_point_light = PLBO.lights[i];
-		vec4 point_light_position = current_point_light.position;
-		vec4 point_light_factors = current_point_light.factors;
-		vec4 point_light_ambient = current_point_light.ambient;
-		vec4 point_light_diffuse = current_point_light.diffuse;
-		vec4 point_light_specular = current_point_light.specular;
-		out_vec += calculate_point_light(point_light_position, point_light_factors, point_light_ambient, point_light_diffuse, point_light_specular,
-			normals, fragment_position, shadow, view_direction);
-	}
-
-	colour = pc.colour * vec4(out_vec, 1.0F);
+	colour = pc.colour;
 }

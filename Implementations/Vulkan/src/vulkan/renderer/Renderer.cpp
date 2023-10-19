@@ -14,6 +14,7 @@
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Image.hpp"
+#include "graphics/Mesh.hpp"
 #include "graphics/PhysicalDevice.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
@@ -33,39 +34,30 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 	, props(properties)
 	, extent(swapchain.get_extent())
 {
-	FramebufferProperties geometry_props {
-		.extent = swapchain.get_extent(),
-		.attachments = { { ImageFormat::SBGR }, { ImageFormat::Depth } },
-		.clear_colour_on_load = false,
-		.clear_depth_on_load = false,
-		.debug_name = "RendererFramebuffer",
-	};
-	geometry_framebuffer = Framebuffer::construct(device, geometry_props);
-
-	quad_framebuffer = Framebuffer::construct(device,
-			{
-				.extent = extent,
-				.attachments = { { ImageFormat::SBGR }, { ImageFormat::Uint, false }, { ImageFormat::Depth }, },
-				.debug_name = "QuadFramebuffer",
-			});
+	geometry_framebuffer = Framebuffer::construct(device,
+		{
+			.extent = extent,
+			.attachments = { { ImageFormat::SBGR }, { ImageFormat::Depth } },
+			.clear_colour_on_load = false,
+			.clear_depth_on_load = false,
+			.debug_name = "RendererFramebuffer",
+		});
+	auto& resource = get_graphics_resource();
 
 	PipelineCacheCreationProperties pipeline_properties = {
+
 		.pipeline_key = "quad",
 		.vertex_shader_key = "quad.vert",
 		.fragment_shader_key = "quad.frag",
 		.framebuffer = geometry_framebuffer,
 		.layout = { { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float3, "normals" },
-			{ ElementType::Float4, "colour" }, { ElementType::Uint, "identifier" }, },
+			{ ElementType::Float4, "colour" }, },
 		.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, sizeof(PushConstant) } },
 		.extent = swapchain.get_extent(),
-		.descriptor_set_layouts = get_graphics_resource().get_descriptor_set_layouts(),
+		.descriptor_set_layouts = resource.get_descriptor_set_layouts(),
 	};
 
-	auto& resource = get_graphics_resource();
 	{
-		// Quad
-		pipeline_properties.framebuffer = quad_framebuffer;
-
 		resource.get_pipeline_cache().put(pipeline_properties);
 	}
 	{
@@ -79,17 +71,6 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 		pipeline_properties.line_width = 3.0F;
 		pipeline_properties.polygon_mode = PolygonMode::Line;
 		pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" } };
-		resource.get_pipeline_cache().put(pipeline_properties);
-	}
-	{
-		// Line
-		pipeline_properties.framebuffer = quad_framebuffer;
-		pipeline_properties.pipeline_key = "line_id";
-		pipeline_properties.write_depth = true;
-		pipeline_properties.test_depth = true;
-		pipeline_properties.vertex_shader_key = "line_id.vert";
-		pipeline_properties.fragment_shader_key = "line_id.frag";
-		pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" }, { ElementType::Uint, "id" } };
 		resource.get_pipeline_cache().put(pipeline_properties);
 	}
 
@@ -116,6 +97,28 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 				.descriptor_set_layouts = get_graphics_resource().get_descriptor_set_layouts(),
 			});
 	}
+
+	aabb_model = Mesh::construct_scoped(device,
+		MeshProperties {
+			.path = FS::model("cube.obj"),
+		});
+
+	aabb_pipeline = Pipeline::construct_scoped(device,
+		PipelineProperties {
+			.vertex_shader = get_graphics_resource().get_pipeline_cache().get_shader("aabb.vert"),
+			.fragment_shader = get_graphics_resource().get_pipeline_cache().get_shader("aabb.frag"),
+			.framebuffer = geometry_framebuffer,
+			.layout = { { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float4, "colour" },
+				{ ElementType::Float3, "normals" }, { ElementType::Float3, "tangents" }, { ElementType::Float3, "bitangents" } },
+			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+			.extent = extent,
+			.polygon_mode = PolygonMode::Line,
+			.line_width = 3.0F,
+			.cull_mode = CullMode::Front,
+			.write_depth = true,
+			.test_depth = true,
+			.descriptor_set_layouts = get_graphics_resource().get_descriptor_set_layouts(),
+		});
 }
 
 Renderer::~Renderer() = default;
@@ -125,16 +128,15 @@ void Renderer::on_resize()
 	extent = swapchain.get_extent();
 	get_graphics_resource().recreate(true, extent);
 
-	get_texture_cache().force_recreate(extent);
+	get_texture_cache().force_recreation(extent);
 
 	get_pipeline_cache().for_each_in_storage([new_descs = get_graphics_resource().get_descriptor_set_layouts()](auto&& key_value_pair) {
-		auto& [key, pipeline] = key_value_pair;
+		auto&& [key, pipeline] = key_value_pair;
 		pipeline->get_properties().descriptor_set_layouts = new_descs;
 	});
-	get_pipeline_cache().force_recreate(extent);
+	get_pipeline_cache().force_recreation(extent);
 
 	geometry_framebuffer->recreate(true, extent);
-	quad_framebuffer->recreate(true, extent);
 }
 
 void Renderer::begin_frame(const Camera& camera)
@@ -186,6 +188,7 @@ void Renderer::submit_batched_geometry(Disarray::CommandExecutor& executor)
 }
 
 void Renderer::draw_text(std::string_view text, const glm::uvec2& position, float size) { text_renderer.submit_text(text, position, size); }
+void Renderer::draw_text(std::string_view text, const glm::vec3& position, float size) { text_renderer.submit_text(text, position, size); }
 
 void Renderer::draw_planar_geometry(Geometry geometry, const GeometryProperties& properties)
 {

@@ -21,7 +21,7 @@ struct TextureCacheCreationProperties {
 	std::string debug_name;
 	std::filesystem::path path;
 	std::uint32_t mips { 1 };
-	ImageFormat format;
+	ImageFormat format { ImageFormat::SRGB };
 };
 
 class TextureCache : public ResourceCache<Ref<Disarray::Texture>, TextureCacheCreationProperties, TextureCache, std::string, StringHash> {
@@ -30,16 +30,16 @@ public:
 		: ResourceCache(device, std::move(path), { ".png", ".jpg" })
 	{
 		auto files = get_unique_files_recursively();
-		for (const auto& p : files) {
+		for (const auto& file_path : files) {
 			put(TextureCacheCreationProperties {
-				.key = p.stem().string(),
-				.debug_name = fmt::format("TextureCache-{}", p.string()),
-				.path = p.string(),
+				.key = file_path.stem().string(),
+				.debug_name = fmt::format("TextureCache-{}", file_path.string()),
+				.path = file_path.string(),
 			});
 		}
 	}
 
-	void force_recreate_impl(const Extent& extent)
+	void force_recreation_impl(const Extent& extent)
 	{
 		for_each_in_storage([&extent](auto& resource) {
 			auto& [k, v] = resource;

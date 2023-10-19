@@ -262,39 +262,12 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 		descriptor_sets.try_emplace(i, std::move(desc_sets));
 	}
 
+	static constexpr auto get_buffer_info
+		= [](const Scope<Vulkan::UniformBuffer>& buffer) { return &cast_to<Vulkan::UniformBuffer>(*buffer).get_buffer_info(); };
+
 	for (std::size_t i = 0; i < swapchain_image_count; i++) {
 		const auto& ubos = frame_index_ubo_map.at(i);
 		auto& frame_descriptor_sets = descriptor_sets.at(i);
-
-		VkDescriptorBufferInfo renderer_buffer {};
-		renderer_buffer.buffer = supply_cast<Vulkan::UniformBuffer>(*ubos.at(0));
-		renderer_buffer.offset = 0;
-		renderer_buffer.range = sizeof(UBO);
-
-		VkDescriptorBufferInfo camera_buffer {};
-		camera_buffer.buffer = supply_cast<Vulkan::UniformBuffer>(*ubos.at(1));
-		camera_buffer.offset = 0;
-		camera_buffer.range = sizeof(CameraUBO);
-
-		VkDescriptorBufferInfo point_light_buffer {};
-		point_light_buffer.buffer = supply_cast<Vulkan::UniformBuffer>(*ubos.at(2));
-		point_light_buffer.offset = 0;
-		point_light_buffer.range = sizeof(PointLights);
-
-		VkDescriptorBufferInfo shadow_pass_buffer {};
-		shadow_pass_buffer.buffer = supply_cast<Vulkan::UniformBuffer>(*ubos.at(3));
-		shadow_pass_buffer.offset = 0;
-		shadow_pass_buffer.range = sizeof(ShadowPassUBO);
-
-		VkDescriptorBufferInfo directional_light_buffer {};
-		directional_light_buffer.buffer = supply_cast<Vulkan::UniformBuffer>(*ubos.at(4));
-		directional_light_buffer.offset = 0;
-		directional_light_buffer.range = sizeof(DirectionalLightUBO);
-
-		VkDescriptorBufferInfo glyph_ubo_buffer {};
-		glyph_ubo_buffer.buffer = supply_cast<Vulkan::UniformBuffer>(*ubos.at(5));
-		glyph_ubo_buffer.offset = 0;
-		glyph_ubo_buffer.range = sizeof(GlyphUBO);
 
 		auto write_sets = vk_structures<VkWriteDescriptorSet, 6> {}.multiple();
 		write_sets[0].dstSet = frame_descriptor_sets.at(0);
@@ -302,42 +275,42 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 		write_sets[0].dstArrayElement = 0;
 		write_sets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		write_sets[0].descriptorCount = 1;
-		write_sets[0].pBufferInfo = &renderer_buffer;
+		write_sets[0].pBufferInfo = get_buffer_info(ubos.at(0));
 
 		write_sets[1].dstSet = frame_descriptor_sets.at(0);
 		write_sets[1].dstBinding = 1;
 		write_sets[1].dstArrayElement = 0;
 		write_sets[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		write_sets[1].descriptorCount = 1;
-		write_sets[1].pBufferInfo = &camera_buffer;
+		write_sets[1].pBufferInfo = get_buffer_info(ubos.at(1));
 
 		write_sets[2].dstSet = frame_descriptor_sets.at(0);
 		write_sets[2].dstBinding = 2;
 		write_sets[2].dstArrayElement = 0;
 		write_sets[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		write_sets[2].descriptorCount = 1;
-		write_sets[2].pBufferInfo = &point_light_buffer;
+		write_sets[2].pBufferInfo = get_buffer_info(ubos.at(2));
 
 		write_sets[3].dstSet = frame_descriptor_sets.at(0);
 		write_sets[3].dstBinding = 3;
 		write_sets[3].dstArrayElement = 0;
 		write_sets[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		write_sets[3].descriptorCount = 1;
-		write_sets[3].pBufferInfo = &shadow_pass_buffer;
+		write_sets[3].pBufferInfo = get_buffer_info(ubos.at(3));
 
 		write_sets[4].dstSet = frame_descriptor_sets.at(0);
 		write_sets[4].dstBinding = 4;
 		write_sets[4].dstArrayElement = 0;
 		write_sets[4].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		write_sets[4].descriptorCount = 1;
-		write_sets[4].pBufferInfo = &directional_light_buffer;
+		write_sets[4].pBufferInfo = get_buffer_info(ubos.at(4));
 
 		write_sets[5].dstSet = frame_descriptor_sets.at(0);
 		write_sets[5].dstBinding = 5;
 		write_sets[5].dstArrayElement = 0;
 		write_sets[5].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		write_sets[5].descriptorCount = 1;
-		write_sets[5].pBufferInfo = &glyph_ubo_buffer;
+		write_sets[5].pBufferInfo = get_buffer_info(ubos.at(5));
 
 		vkUpdateDescriptorSets(vk_device, static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
 	}

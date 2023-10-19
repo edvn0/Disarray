@@ -71,6 +71,7 @@ void PipelineSerialiser::serialise_impl(const Components::Pipeline& pipeline, nl
 		properties["samples"] = magic_enum::enum_name(props.samples);
 		properties["depth_comparison_operator"] = magic_enum::enum_name(props.depth_comparison_operator);
 		properties["cull_mode"] = magic_enum::enum_name(props.cull_mode);
+		properties["face_mode"] = magic_enum::enum_name(props.face_mode);
 		properties["write_depth"] = props.write_depth;
 		properties["test_depth"] = props.test_depth;
 		object["properties"] = properties;

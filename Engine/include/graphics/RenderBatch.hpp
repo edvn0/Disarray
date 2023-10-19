@@ -18,7 +18,7 @@ namespace Disarray {
 #ifdef DISARRAY_BATCH_RENDERER_SIZE
 static constexpr std::size_t batch_renderer_size = DISARRAY_BATCH_RENDERER_SIZE;
 #else
-static constexpr std::size_t batch_renderer_size = 500;
+static constexpr std::size_t batch_renderer_size = 1000;
 #endif
 
 template <IsValidVertexType T, typename Child = std::enable_if<vertex_per_object_count<T> != 0 && index_per_object_count<T> != 0>>
@@ -97,23 +97,13 @@ struct QuadVertexBatch final : public RenderBatchFor<QuadVertex, QuadVertexBatch
 	void flush_impl(Disarray::Renderer&, Disarray::CommandExecutor&);
 };
 
-struct LineIdVertexBatch final : public RenderBatchFor<LineIdVertex, LineIdVertexBatch> {
-	MAKE_BATCH_RENDERER(LineIdVertex, LineIdVertexBatch)
-
-	void construct_impl(Disarray::Renderer&, const Disarray::Device&);
-	void submit_impl(Disarray::Renderer&, Disarray::CommandExecutor&);
-	void create_new_impl(Geometry, const GeometryProperties&);
-	void flush_impl(Disarray::Renderer&, Disarray::CommandExecutor&);
-};
-
 struct BatchRenderer {
 	static constexpr auto Objects = batch_renderer_size;
 
 	using Quads = QuadVertexBatch;
 	using Lines = LineVertexBatch;
-	using LinesWithIdentifiers = LineIdVertexBatch;
 
-	std::tuple<Quads, Lines, LinesWithIdentifiers> objects {};
+	std::tuple<Quads, Lines> objects {};
 
 	// How many times have we submitted geometries?
 	// Used by shaders to determine scale of picking count

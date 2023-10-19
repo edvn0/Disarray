@@ -45,6 +45,8 @@ public:
 
 	auto supply() const -> VkSwapchainKHR override { return swapchain; }
 
+	auto get_image_format() const { return format.format; }
+
 private:
 	void create_synchronisation_objects();
 	void recreate_swapchain(Disarray::Swapchain* old = nullptr, bool should_clean = true);

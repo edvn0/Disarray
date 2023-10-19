@@ -15,18 +15,28 @@ void PipelineDeserialiser::deserialise_impl(const nlohmann::json& object, Compon
 {
 	auto props = object["properties"];
 	PipelineProperties properties {
-		.vertex_shader = Shader::construct(device,
-			ShaderProperties {
-				.path = props["vertex_shader"].get<std::filesystem::path>(),
-				.identifier = props["vertex_identifier"].get<std::filesystem::path>(),
-			}),
-		.fragment_shader = Shader::construct(device,
-			ShaderProperties {
-				.path = props["fragment_shader"].get<std::filesystem::path>(),
-				.identifier = props["fragment_identifier"].get<std::filesystem::path>(),
-			}),
+		.vertex_shader = Shader::compile(device, props["vertex_shader"].get<std::filesystem::path>()),
+		.fragment_shader = Shader::compile(device, props["fragment_shader"].get<std::filesystem::path>()),
 		// framebuffer,
-		// layout {,
+		.layout = [](const json& vertex_layout) -> VertexLayout {
+			VertexLayout layout {};
+			const auto& binding = vertex_layout["binding"];
+			layout.binding = {
+				.binding = binding["binding"],
+				.stride = binding["stride"],
+				.input_rate = to_enum_value<InputRate>(binding, "input_rate").value_or(InputRate::Vertex),
+			};
+			layout.total_size = vertex_layout["total_size"];
+
+			const auto& array = vertex_layout["elements"];
+			ensure(array.is_array());
+			for (const auto& json_layout : array) {
+				auto& element = layout.elements.emplace_back(*to_enum_value<ElementType>(json_layout, "type"), json_layout["debug_name"]);
+				element.offset = json_layout["offset"];
+				element.size = json_layout["size"];
+			}
+			return layout;
+		}(props["vertex_layout"]),
 		.push_constant_layout = [](const json& push_constant_layout) -> PushConstantLayout {
 			std::vector<PushConstantRange> layout {};
 			layout.reserve(push_constant_layout["size"]);
@@ -49,8 +59,7 @@ void PipelineDeserialiser::deserialise_impl(const nlohmann::json& object, Compon
 		.face_mode = to_enum_value<FaceMode>(props, "face_mode").value_or(FaceMode::CounterClockwise),
 		.write_depth = props["write_depth"],
 		.test_depth = props["test_depth"],
-		// descriptor_set_layout { nullptr ,
-		// descriptor_set_layout_count { 0 ,
+		.descriptor_set_layouts = {},
 	};
 
 	pipeline.pipeline = Pipeline::construct(device, properties);
@@ -60,9 +69,6 @@ auto ScriptDeserialiser::should_add_component_impl(const nlohmann::json& object)
 void ScriptDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Script& script, const Device& device)
 {
 	const auto& identifier = object["identifier"];
-	static Collections::StringMap<Scope<CppScript>> scripts {};
-	const auto& s = scripts[identifier];
-
 	Collections::StringViewMap<Parameter> parameters {};
 
 	auto json_parameters = std::optional<json> {};
@@ -118,7 +124,7 @@ auto InheritanceDeserialiser::should_add_component_impl(const nlohmann::json& ob
 {
 	return object.contains("children") || object.contains("parent");
 }
-void InheritanceDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Inheritance& inheritance, const Device&)
+void InheritanceDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Inheritance& inheritance, const Device& /*unused*/)
 {
 	if (object.contains("children")) {
 		std::unordered_set<Identifier> children;
@@ -132,7 +138,7 @@ void InheritanceDeserialiser::deserialise_impl(const nlohmann::json& object, Com
 }
 
 auto TransformDeserialiser::should_add_component_impl(const nlohmann::json& object_for_the_component) -> bool { return true; }
-void TransformDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Transform& transform, const Device&)
+void TransformDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Transform& transform, const Device& /*unused*/)
 {
 	transform.rotation = object["rotation"];
 	transform.position = object["position"];
@@ -143,7 +149,7 @@ auto LineGeometryDeserialiser::should_add_component_impl(const nlohmann::json& o
 {
 	return object_for_the_component.contains("to_position") && object_for_the_component.contains("geometry");
 }
-void LineGeometryDeserialiser::deserialise_impl(const nlohmann::json& object, Components::LineGeometry& geom, const Device&)
+void LineGeometryDeserialiser::deserialise_impl(const nlohmann::json& object, Components::LineGeometry& geom, const Device& /*unused*/)
 {
 	auto enum_val = to_enum_value<Geometry>(object, "geometry"sv);
 	geom.geometry = enum_val.value_or(Geometry::Line);
@@ -154,17 +160,20 @@ auto QuadGeometryDeserialiser::should_add_component_impl(const nlohmann::json& o
 {
 	return object_for_the_component.contains("geometry");
 }
-void QuadGeometryDeserialiser::deserialise_impl(const nlohmann::json& object, Components::QuadGeometry& geom, const Device&)
+void QuadGeometryDeserialiser::deserialise_impl(const nlohmann::json& object, Components::QuadGeometry& geom, const Device& /*unused*/)
 {
 	auto enum_val = to_enum_value<Geometry>(object, "geometry"sv);
 	geom.geometry = enum_val.value_or(Geometry::Rectangle);
 }
 
-auto DirectionalLightDeserialiser::should_add_component_impl(const nlohmann::json& object_for_the_component) -> bool { return true; }
-void DirectionalLightDeserialiser::deserialise_impl(const nlohmann::json& object, Components::DirectionalLight& light, const Device&)
+auto DirectionalLightDeserialiser::should_add_component_impl(const nlohmann::json& object_for_the_component) -> bool
+{
+	return object_for_the_component.contains("factor");
+}
+void DirectionalLightDeserialiser::deserialise_impl(const nlohmann::json& object, Components::DirectionalLight& light, const Device& /*unused*/)
 {
 	const auto& params = object["projection_parameters"];
-	light.projection_parameters.factor = params["left"];
+	light.projection_parameters.factor = params["factor"];
 	light.projection_parameters.near = params["near"];
 	light.projection_parameters.far = params["far"];
 	light.projection_parameters.fov = params["fov"];
@@ -179,7 +188,7 @@ void DirectionalLightDeserialiser::deserialise_impl(const nlohmann::json& object
 }
 
 auto PointLightDeserialiser::should_add_component_impl(const nlohmann::json& object_for_the_component) -> bool { return true; }
-void PointLightDeserialiser::deserialise_impl(const nlohmann::json& object, Components::PointLight& light, const Device&)
+void PointLightDeserialiser::deserialise_impl(const nlohmann::json& object, Components::PointLight& light, const Device& /*unused*/)
 {
 	light.ambient = object["ambient"];
 	light.diffuse = object["diffuse"];

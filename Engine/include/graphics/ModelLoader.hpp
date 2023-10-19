@@ -6,6 +6,7 @@
 
 #include "core/Collections.hpp"
 #include "core/PointerDefinition.hpp"
+#include "graphics/AABB.hpp"
 #include "graphics/ModelVertex.hpp"
 #include "graphics/Texture.hpp"
 
@@ -69,6 +70,7 @@ public:
 	[[nodiscard]] auto construct_textures(const Device&) -> std::vector<Ref<Disarray::Texture>>;
 
 	[[nodiscard]] auto get_mesh_data() -> const ImportedMesh& { return mesh_data; }
+	[[nodiscard]] auto get_aabb() const -> AABB;
 
 private:
 	Scope<IModelImporter> importer { nullptr };

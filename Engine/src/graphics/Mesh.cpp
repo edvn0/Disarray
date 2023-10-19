@@ -11,6 +11,11 @@ auto Mesh::construct(const Disarray::Device& device, Disarray::MeshProperties pr
 	return make_ref<Vulkan::Mesh>(device, std::move(properties));
 }
 
+auto Mesh::construct_scoped(const Disarray::Device& device, Disarray::MeshProperties properties) -> Scope<Disarray::Mesh>
+{
+	return make_scope<Vulkan::Mesh>(device, std::move(properties));
+}
+
 auto Mesh::construct_deferred(const Device& device, MeshProperties properties) -> std::future<Ref<Mesh>>
 {
 	return Vulkan::Mesh::construct_deferred(device, std::move(properties));

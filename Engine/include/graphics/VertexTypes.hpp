@@ -14,7 +14,6 @@ struct QuadVertex {
 	glm::vec2 uvs { 1.0F };
 	glm::vec3 normals { 1.0F };
 	glm::vec4 colour { 1.0F };
-	std::uint32_t identifier { 0 };
 };
 template <> inline constexpr auto vertex_per_object_count<QuadVertex> = 4;
 template <> inline constexpr auto index_per_object_count<QuadVertex> = 6;
@@ -26,15 +25,7 @@ struct LineVertex {
 template <> inline constexpr auto vertex_per_object_count<LineVertex> = 2;
 template <> inline constexpr auto index_per_object_count<LineVertex> = 2;
 
-struct LineIdVertex {
-	glm::vec3 pos { 1.0F };
-	glm::vec4 colour { 1.0F };
-	std::uint32_t identifier { 0 };
-};
-template <> inline constexpr auto vertex_per_object_count<LineIdVertex> = 2;
-template <> inline constexpr auto index_per_object_count<LineIdVertex> = 2;
-
 template <class T>
-concept IsValidVertexType = AnyOf<T, QuadVertex, LineVertex, LineIdVertex> && vertex_per_object_count<T> != 0 && index_per_object_count<T> != 0;
+concept IsValidVertexType = AnyOf<T, QuadVertex, LineVertex> && vertex_per_object_count<T> != 0 && index_per_object_count<T> != 0;
 
 } // namespace Disarray

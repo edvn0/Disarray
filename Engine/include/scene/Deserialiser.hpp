@@ -127,6 +127,6 @@ namespace {
 } // namespace
 
 using SceneDeserialiser = Deserialiser<TextureDeserialiser, ScriptDeserialiser, MeshDeserialiser, TransformDeserialiser, InheritanceDeserialiser,
-	LineGeometryDeserialiser, QuadGeometryDeserialiser>;
+	LineGeometryDeserialiser, QuadGeometryDeserialiser, PipelineDeserialiser, DirectionalLightDeserialiser, PointLightDeserialiser>;
 
 } // namespace Disarray

@@ -91,6 +91,7 @@ target_link_libraries(
 	magic_enum::magic_enum
 	spirv-cross-core
 	spirv-cross-glsl
+	spirv-cross-reflect
 	glslang
 	glslang-default-resource-limits
 	SPIRV

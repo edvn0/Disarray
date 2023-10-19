@@ -74,10 +74,10 @@ public:
 	auto get_image(std::uint32_t index) const -> const Disarray::Image&
 	{
 		if (index == 0) {
-			return identity_framebuffer->get_image(0);
+			return geometry_framebuffer->get_image(0);
 		}
 		if (index == 1) {
-			return identity_framebuffer->get_image(1);
+			return identity_framebuffer->get_image(0);
 		}
 		return shadow_framebuffer->get_depth_image();
 	}
@@ -144,17 +144,23 @@ private:
 	glm::vec2 vp_max { 1 };
 	glm::vec2 vp_min { 1 };
 
+	Ref<Disarray::CommandExecutor> command_executor {};
+
 	Ref<Disarray::Framebuffer> shadow_framebuffer {};
 	Ref<Disarray::Pipeline> shadow_pipeline {};
 
-	Ref<Disarray::Framebuffer> framebuffer {};
 	Ref<Disarray::Framebuffer> identity_framebuffer {};
-	Ref<Disarray::CommandExecutor> command_executor {};
+	Ref<Disarray::Pipeline> identity_pipeline {};
+
+	Ref<Disarray::Framebuffer> geometry_framebuffer {};
 
 	std::mutex registry_access;
 	entt::registry registry;
 	void create_entities();
-	void draw_geometry(bool is_shadow = false);
+
+	void draw_shadows();
+	void draw_identifiers();
+	void draw_geometry();
 
 	void setup_filewatcher_and_threadpool(Threading::ThreadPool&);
 

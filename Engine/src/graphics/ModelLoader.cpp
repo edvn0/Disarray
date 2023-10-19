@@ -61,4 +61,39 @@ auto ModelLoader::construct_textures(const Disarray::Device& device) -> std::vec
 	return cache.flatten();
 }
 
+auto ModelLoader::get_aabb() const -> AABB
+{
+	AABBRange x_aabb {};
+	AABBRange y_aabb {};
+	AABBRange z_aabb {};
+
+	for (const auto& [key, value] : mesh_data) {
+		const auto& vertices = value.vertices;
+		for (const auto& vertex : vertices) {
+			if (vertex.pos.x > x_aabb.max) {
+				x_aabb.max = vertex.pos.x;
+			}
+			if (vertex.pos.x < x_aabb.min) {
+				x_aabb.min = vertex.pos.x;
+			}
+
+			if (vertex.pos.y > y_aabb.max) {
+				y_aabb.max = vertex.pos.y;
+			}
+			if (vertex.pos.y < y_aabb.min) {
+				y_aabb.min = vertex.pos.y;
+			}
+
+			if (vertex.pos.z > z_aabb.max) {
+				z_aabb.max = vertex.pos.z;
+			}
+			if (vertex.pos.z < z_aabb.min) {
+				z_aabb.min = vertex.pos.z;
+			}
+		}
+	}
+
+	return { x_aabb, y_aabb, z_aabb };
+}
+
 } // namespace Disarray

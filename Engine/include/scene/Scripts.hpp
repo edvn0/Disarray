@@ -10,14 +10,16 @@
 namespace Disarray::Scripts {
 
 class MoveInCircleScript final : public CppScript {
+	static constexpr auto default_velocity = 0.03F;
+
 public:
 	~MoveInCircleScript() override;
-	MoveInCircleScript(std::integral auto local_radius, std::floating_point auto initial_angle)
-		: MoveInCircleScript(static_cast<std::uint32_t>(local_radius), static_cast<float>(initial_angle))
+	MoveInCircleScript(std::integral auto local_radius, std::floating_point auto initial_angle, float velocity = default_velocity)
+		: MoveInCircleScript(static_cast<std::uint32_t>(local_radius), static_cast<float>(initial_angle), velocity)
 	{
 	}
 
-	MoveInCircleScript(std::uint32_t local_radius, float initial_angle);
+	MoveInCircleScript(std::uint32_t local_radius, float initial_angle, float velocity);
 	MoveInCircleScript(const Collections::StringViewMap<Parameter>& parameters);
 
 	void on_create() override;
@@ -29,7 +31,7 @@ private:
 	[[nodiscard]] auto script_name() const -> std::string_view override { return "MoveInCircle"; }
 	std::uint32_t radius {};
 	float angle {};
-	float vel { 0.03F };
+	float vel { default_velocity };
 	float rad { glm::radians(1.5F) };
 };
 

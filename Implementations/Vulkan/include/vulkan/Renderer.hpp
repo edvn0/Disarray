@@ -6,6 +6,7 @@
 
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/IndexBuffer.hpp"
+#include "graphics/Mesh.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/RenderBatch.hpp"
@@ -18,6 +19,8 @@
 #include "graphics/VertexBuffer.hpp"
 #include "graphics/VertexTypes.hpp"
 
+using VkPipelineLayout = struct VkPipelineLayout_T*;
+
 namespace Disarray::Vulkan {
 
 class Renderer : public Disarray::Renderer {
@@ -29,7 +32,7 @@ public:
 	void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) override;
 	void begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& fb) override { begin_pass(executor, fb, false); }
 	void begin_pass(Disarray::CommandExecutor& command_executor) override { begin_pass(command_executor, *geometry_framebuffer); }
-	void end_pass(Disarray::CommandExecutor&, bool should_submit) override;
+	void end_pass(Disarray::CommandExecutor&) override;
 
 	void text_rendering_pass(Disarray::CommandExecutor& /*unused*/) override;
 	void planar_geometry_pass(Disarray::CommandExecutor& /*unused*/) override;
@@ -48,11 +51,14 @@ public:
 	void draw_submeshes(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&, const glm::vec4&,
 		const glm::mat4&, const std::uint32_t) override;
 
+	void draw_aabb(Disarray::CommandExecutor&, const Disarray::AABB&, const glm::vec4&, const glm::mat4& transform) override;
+
 	void draw_text(std::string_view text, const glm::uvec2& position, float size) override;
-	void draw_planar_geometry(Disarray::Geometry, const Disarray::GeometryProperties&) override;
+	void draw_text(std::string_view text, const glm::vec3& position, float size) override;
+	void draw_planar_geometry(Disarray::Geometry /*unused*/, const Disarray::GeometryProperties& /*unused*/) override;
 	void submit_batched_geometry(Disarray::CommandExecutor& /*unused*/) override;
 	void on_batch_full(std::function<void(Disarray::Renderer&)>&& func) override { on_batch_full_func = std::move(func); }
-	void flush_batch(Disarray::CommandExecutor&) override;
+	void flush_batch(Disarray::CommandExecutor& /*unused*/) override;
 	// End IGraphics
 
 	void on_resize() override;
@@ -82,7 +88,6 @@ private:
 	TextRenderer text_renderer;
 
 	Ref<Disarray::Framebuffer> geometry_framebuffer;
-	Ref<Disarray::Framebuffer> quad_framebuffer;
 
 	Ref<Disarray::Framebuffer> fullscreen_framebuffer;
 	Scope<Pipeline> fullscreen_quad_pipeline;
@@ -90,8 +95,9 @@ private:
 	void bind_descriptor_sets(Disarray::CommandExecutor& executor, VkPipelineLayout pipeline_layout);
 
 	mutable const Disarray::Pipeline* bound_pipeline { nullptr };
-
 	std::function<void(Disarray::Renderer&)> on_batch_full_func = [](auto&) {};
+	Scope<Mesh> aabb_model {};
+	Scope<Pipeline> aabb_pipeline;
 
 	RendererProperties props;
 	Extent extent;

@@ -14,10 +14,11 @@ using namespace std::string_view_literals;
 
 MoveInCircleScript::~MoveInCircleScript() = default;
 
-MoveInCircleScript::MoveInCircleScript(std::uint32_t local_radius, float initial_angle)
-	: CppScript({ { "local_radius", local_radius }, { "angle", initial_angle } })
+MoveInCircleScript::MoveInCircleScript(std::uint32_t local_radius, float initial_angle, float velocity)
+	: CppScript({ { "local_radius", local_radius }, { "angle", initial_angle }, { "velocity", velocity } })
 	, radius(local_radius)
 	, angle(glm::degrees(initial_angle))
+	, vel(velocity)
 {
 }
 
@@ -26,18 +27,22 @@ MoveInCircleScript::MoveInCircleScript(const Collections::StringViewMap<Paramete
 {
 	const auto& local_radius = get_parameter_or("local_radius"sv, std::uint32_t { 10 });
 	const auto& stored_angle = get_parameter_or("angle"sv, glm::radians(45.0F));
+	const auto& stored_velocity = get_parameter_or("velocity"sv, 0.3F);
 
 	radius = std::get<std::uint32_t>(local_radius);
 	angle = glm::degrees(std::get<float>(stored_angle));
+	vel = std::get<float>(stored_velocity);
 }
 
 void MoveInCircleScript::reload()
 {
 	const auto& local_radius = get_parameter_or("local_radius"sv, std::uint32_t { 10 });
 	const auto& stored_angle = get_parameter_or("angle"sv, glm::radians(45.0F));
+	const auto& stored_velocity = get_parameter_or("velocity"sv, 0.3F);
 
 	radius = std::get<std::uint32_t>(local_radius);
 	angle = glm::degrees(std::get<float>(stored_angle));
+	vel = std::get<float>(stored_velocity);
 }
 
 void MoveInCircleScript::on_create() { }

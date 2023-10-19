@@ -88,7 +88,7 @@ void DebugMarker::begin_region(VkCommandBuffer cmdbuffer, const char* marker_nam
 	}
 }
 
-void DebugMarker::insert(VkCommandBuffer cmdbuffer, std::string marker_name, glm::vec4 color)
+void DebugMarker::insert(VkCommandBuffer cmdbuffer, const std::string& marker_name, glm::vec4 color)
 {
 	if (active) {
 		VkDebugMarkerMarkerInfoEXT marker_info {};

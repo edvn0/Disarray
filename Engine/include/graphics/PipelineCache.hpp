@@ -44,7 +44,7 @@ class PipelineCache : public ResourceCache<Ref<Disarray::Pipeline>, PipelineCach
 public:
 	PipelineCache(const Disarray::Device& device, const std::filesystem::path&);
 
-	void force_recreate_impl(const Extent& extent)
+	void force_recreation_impl(const Extent& extent)
 	{
 		for_each_in_storage([&extent](auto& resource) {
 			auto& [k, v] = resource;

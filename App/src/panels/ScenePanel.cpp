@@ -201,6 +201,7 @@ void ScenePanel::for_all_components(Entity& entity)
 			selected = UI::Popup::select_file({ "*.mesh" });
 			any_changed |= selected.has_value();
 		}
+		if (ImGui::Checkbox("Draw AABB", &mesh_component.draw_aabb)) { };
 
 		if (any_changed) {
 			if (selected.has_value()) {

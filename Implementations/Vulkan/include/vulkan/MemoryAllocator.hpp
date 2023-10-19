@@ -1,8 +1,12 @@
 #pragma once
 
 namespace Disarray::Log {
-std::string format(const char* const format, ...);
+auto format(const char* const format, ...) -> std::string;
 }
+
+#ifndef IS_RELEASE
+#define IS_DEBUG
+#endif
 
 #if defined(IS_DEBUG) && defined(DEBUG_ALLOCATIONS)
 #define VMA_DEBUG_LOG_FORMAT(fmt, ...)                                                                                                               \

@@ -6,4 +6,4 @@ struct PointLight {
 	vec4 specular;
 };
 
-#define MAX_POINT_LIGHTS 30
+#define MAX_POINT_LIGHTS 1000

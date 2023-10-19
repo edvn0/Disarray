@@ -60,6 +60,7 @@ struct Mesh {
 	explicit Mesh(Ref<Disarray::Mesh>);
 
 	Ref<Disarray::Mesh> mesh { nullptr };
+	bool draw_aabb { false };
 };
 template <> inline constexpr std::string_view component_name<Mesh> = "Mesh";
 

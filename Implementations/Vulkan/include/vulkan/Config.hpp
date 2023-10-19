@@ -20,6 +20,7 @@ static constexpr auto is_windows = false;
 #endif
 
 static constexpr auto use_validation_layers = is_debug && is_windows;
+static constexpr inline auto use_debug_markers = is_debug;
 
 static constexpr std::array<std::string_view, 2> device_extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME };
 

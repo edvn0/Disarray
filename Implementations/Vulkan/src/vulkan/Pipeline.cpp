@@ -141,8 +141,10 @@ Pipeline::Pipeline(const Disarray::Device& dev, Disarray::PipelineProperties pro
 	: Disarray::Pipeline(std::move(properties))
 	, device(dev)
 {
-	props.framebuffer->register_on_framebuffer_change(
-		[this](Disarray::Framebuffer& frame_buffer) { recreate_pipeline(true, frame_buffer.get_properties().extent); });
+	if (props.framebuffer) {
+		props.framebuffer->register_on_framebuffer_change(
+			[this](Disarray::Framebuffer& frame_buffer) { recreate_pipeline(true, frame_buffer.get_properties().extent); });
+	}
 
 	recreate_pipeline(false, {});
 }
@@ -412,7 +414,9 @@ void Pipeline::recreate_pipeline(bool should_clean, const Extent& extent)
 		vkDestroyPipeline(supply_cast<Vulkan::Device>(device), pipeline, nullptr);
 	}
 
-	construct_layout(extent);
+	if (is_valid()) {
+		construct_layout(extent);
+	}
 }
 
 auto Pipeline::get_framebuffer() -> Disarray::Framebuffer& { return *props.framebuffer; }

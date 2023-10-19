@@ -2,12 +2,13 @@
 
 #include <glm/glm.hpp>
 
+#include <fmt/core.h>
+
 #include <functional>
 #include <span>
 #include <tuple>
 
 #include "Forward.hpp"
-#include "fmt/core.h"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/RendererProperties.hpp"
@@ -67,8 +68,7 @@ public:
 	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) = 0;
 	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&) = 0;
 	virtual void begin_pass(Disarray::CommandExecutor&) = 0;
-	virtual void end_pass(Disarray::CommandExecutor&, bool should_submit) = 0;
-	virtual void end_pass(Disarray::CommandExecutor& executor) { return end_pass(executor, true); };
+	virtual void end_pass(Disarray::CommandExecutor&) = 0;
 
 	/**
 	 * @brief This is an external pass, i.e. requires that the underlying implementation provides a render pass.
@@ -109,10 +109,17 @@ public:
 		const glm::vec4& colour, const glm::mat4& transform = glm::identity<glm::mat4>(), const std::uint32_t identifier = 0)
 		= 0;
 
+	virtual void draw_aabb(Disarray::CommandExecutor&, const Disarray::AABB&, const glm::vec4&, const glm::mat4& transform) = 0;
+
 	virtual void draw_text(std::string_view text, const glm::uvec2& position, float size) = 0;
 	virtual void draw_text(std::string_view text, const glm::uvec2& position) { return draw_text(text, position, 1.0F); };
+	virtual void draw_text(std::string_view text, const glm::vec3& position, float size) = 0;
 
 	template <typename... Args> void draw_text(const glm::uvec2& position, fmt::format_string<Args...> fmt_string, Args&&... args)
+	{
+		return draw_text(fmt::format(fmt_string, std::forward<Args>(args)...), position, 1.0F);
+	};
+	template <typename... Args> void draw_text(const glm::vec3& position, fmt::format_string<Args...> fmt_string, Args&&... args)
 	{
 		return draw_text(fmt::format(fmt_string, std::forward<Args>(args)...), position, 1.0F);
 	};

@@ -43,7 +43,7 @@ public:
 	static void begin_region(VkCommandBuffer cmdbuffer, const char* marker_name, glm::vec4 color);
 
 	// Insert a new debug marker into the command buffer
-	static void insert(VkCommandBuffer cmdbuffer, std::string marker_name, glm::vec4 color);
+	static void insert(VkCommandBuffer cmdbuffer, const std::string& marker_name, glm::vec4 color);
 
 	// End the current debug marker region
 	static void end_region(VkCommandBuffer buffer);
