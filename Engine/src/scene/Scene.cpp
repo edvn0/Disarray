@@ -22,6 +22,7 @@
 #include "core/events/KeyEvent.hpp"
 #include "core/events/MouseEvent.hpp"
 #include "core/filesystem/AssetLocations.hpp"
+#include "entt/entity/fwd.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
@@ -33,6 +34,7 @@
 #include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "graphics/ShaderCompiler.hpp"
+#include "graphics/StorageBuffer.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/Texture.hpp"
 #include "graphics/TextureCache.hpp"
@@ -171,6 +173,26 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 			.descriptor_set_layouts = desc_layout,
 		});
 
+	shadow_instances_pipeline = Pipeline::construct(device,
+		{
+			.vertex_shader = scene_renderer->get_pipeline_cache().get_shader("shadow_instances.vert"),
+			.fragment_shader = scene_renderer->get_pipeline_cache().get_shader("shadow.frag"),
+			.framebuffer = shadow_framebuffer,
+			.layout = {
+				{ ElementType::Float3, "position" },
+				{ ElementType::Float2, "uv" },
+				{ ElementType::Float4, "colour" },
+				{ ElementType::Float3, "normals" },
+				{ ElementType::Float3, "tangents" },
+				{ ElementType::Float3, "bitangents" },
+			},
+			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+			.cull_mode = CullMode::Front,
+			.write_depth = true,
+			.test_depth = true,
+			.descriptor_set_layouts = desc_layout,
+		});
+
 	identity_framebuffer = Framebuffer::construct(device,
 		{
 			.extent = extent,
@@ -255,15 +277,21 @@ void Scene::begin_frame(const Camera& camera)
 
 	std::size_t light_index { 0 };
 	auto& lights = light_ubos.lights;
+	auto point_light_ssbo = point_light_transforms->get_mutable<glm::mat4>();
+	auto point_light_ssbo_colour = point_light_colours->get_mutable<glm::vec4>();
 	for (auto&& [entity, point_light, pos, texture] :
 		registry.view<const Components::PointLight, const Components::Transform, Components::Texture>().each()) {
-		auto& light = lights.at(light_index++);
+		auto& light = lights.at(light_index);
 		light.position = glm::vec4 { pos.position, 0.F };
 		light.ambient = point_light.ambient;
 		light.diffuse = point_light.diffuse;
 		light.specular = point_light.specular;
 		light.factors = point_light.factors;
 		texture.colour = light.ambient;
+
+		point_light_ssbo[light_index] = pos.compute();
+		point_light_ssbo_colour[light_index] = texture.colour;
+		light_index++;
 	}
 	push_constant.max_point_lights = static_cast<std::uint32_t>(light_index);
 
@@ -363,7 +391,7 @@ void Scene::draw_identifiers()
 	scene_renderer->bind_pipeline(*command_executor, *identity_pipeline);
 	scene_renderer->bind_descriptor_sets(*command_executor, *identity_pipeline);
 	for (auto&& [entity, transform, tag] : registry.view<const Components::Transform, const Components::Tag>().each()) {
-		if (tag.name == "Floor") {
+		if (tag.name == "Floor") [[unlikely]] {
 			continue;
 		}
 		scene_renderer->draw_identifier(*command_executor, *identity_pipeline, static_cast<std::uint32_t>(entity), transform.compute());
@@ -374,6 +402,24 @@ auto Scene::get_final_image() const -> const Disarray::Image& { return scene_ren
 
 void Scene::draw_geometry()
 {
+	{
+		auto point_light_view = registry.view<const Components::PointLight, const Components::Mesh, const Components::Pipeline>();
+		static const Disarray::VertexBuffer* vertex_buffer = nullptr;
+		static const Disarray::IndexBuffer* index_buffer = nullptr;
+		static const Disarray::Pipeline* point_light_pipeline = nullptr;
+
+		for (auto&& [entity, point_light, mesh, pipeline] : point_light_view.each()) {
+			if (vertex_buffer == nullptr || index_buffer == nullptr || point_light_pipeline == nullptr) {
+				vertex_buffer = &mesh.mesh->get_vertices();
+				index_buffer = &mesh.mesh->get_indices();
+				point_light_pipeline = pipeline.pipeline.get();
+				break;
+			}
+		}
+
+		scene_renderer->draw_mesh_instanced(*command_executor, count_point_lights, *vertex_buffer, *index_buffer, *point_light_pipeline);
+	}
+
 	for (auto line_view = registry.view<const Components::LineGeometry, const Components::Texture, const Components::Transform>();
 		 auto&& [entity, geom, tex, transform] : line_view.each()) {
 		scene_renderer->draw_planar_geometry(Geometry::Line,
@@ -397,9 +443,11 @@ void Scene::draw_geometry()
 			});
 	}
 
-	auto directional_lights = registry.view<Components::Transform, const Components::Texture, const Components::DirectionalLight,
-		const Components::Mesh, const Components::Pipeline>();
-	for (auto&& [entity, transform, texture, light, mesh, pipeline] : directional_lights.each()) {
+	for (auto&& [entity, transform, texture, light, mesh, pipeline] :
+		registry
+			.view<Components::Transform, const Components::Texture, const Components::DirectionalLight, const Components::Mesh,
+				const Components::Pipeline>()
+			.each()) {
 		const auto identifier = static_cast<std::uint32_t>(entity);
 
 		const auto look_at = glm::lookAt(transform.position, transform.position + glm::normalize(glm::vec3(light.direction)), { 0, 1, 0 });
@@ -415,7 +463,8 @@ void Scene::draw_geometry()
 			});
 	}
 
-	for (auto mesh_view = registry.view<const Components::Mesh, const Components::Pipeline, const Components::Texture, const Components::Transform>();
+	for (auto mesh_view = registry.view<const Components::Mesh, const Components::Pipeline, const Components::Texture, const Components::Transform>(
+			 entt::exclude<Components::PointLight>);
 		 auto&& [entity, mesh, pipeline, texture, transform] : mesh_view.each()) {
 		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *pipeline.pipeline;
@@ -431,9 +480,11 @@ void Scene::draw_geometry()
 		}
 	}
 
-	auto mesh_no_texture_view = registry.view<const Components::Mesh, const Components::Pipeline, const Components::Transform>(
-		entt::exclude<Components::Texture, Components::DirectionalLight>);
-	for (auto&& [entity, mesh, pipeline, transform] : mesh_no_texture_view.each()) {
+	for (auto&& [entity, mesh, pipeline, transform] :
+		registry
+			.view<const Components::Mesh, const Components::Pipeline, const Components::Transform>(
+				entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight>)
+			.each()) {
 		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *pipeline.pipeline;
 		const auto transform_computed = transform.compute();
@@ -446,8 +497,27 @@ void Scene::draw_geometry()
 
 void Scene::draw_shadows()
 {
-	for (auto mesh_view = registry.view<const Components::Mesh, const Components::Pipeline, const Components::Texture, const Components::Transform>();
-		 auto&& [entity, mesh, pipeline, texture, transform] : mesh_view.each()) {
+	{
+		auto point_light_view = registry.view<const Components::PointLight, const Components::Mesh, const Components::Pipeline>();
+		static const Disarray::VertexBuffer* vertex_buffer = nullptr;
+		static const Disarray::IndexBuffer* index_buffer = nullptr;
+
+		for (auto&& [entity, point_light, mesh, pipeline] : point_light_view.each()) {
+			if (vertex_buffer == nullptr || index_buffer == nullptr) {
+				vertex_buffer = &mesh.mesh->get_vertices();
+				index_buffer = &mesh.mesh->get_indices();
+				break;
+			}
+		}
+
+		scene_renderer->draw_mesh_instanced(*command_executor, count_point_lights, *vertex_buffer, *index_buffer, *shadow_instances_pipeline);
+	}
+
+	for (auto&& [entity, mesh, pipeline, texture, transform] :
+		registry
+			.view<const Components::Mesh, const Components::Pipeline, const Components::Texture, const Components::Transform>(
+				entt::exclude<Components::PointLight>)
+			.each()) {
 		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *shadow_pipeline;
 		if (mesh.mesh->has_children()) {
@@ -459,9 +529,11 @@ void Scene::draw_shadows()
 		}
 	}
 
-	auto mesh_no_texture_view = registry.view<const Components::Mesh, const Components::Pipeline, const Components::Transform>(
-		entt::exclude<Components::Texture, Components::DirectionalLight>);
-	for (auto&& [entity, mesh, pipeline, transform] : mesh_no_texture_view.each()) {
+	for (auto&& [entity, mesh, pipeline, transform] :
+		registry
+			.view<const Components::Mesh, const Components::Pipeline, const Components::Transform>(
+				entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight>)
+			.each()) {
 		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *shadow_pipeline;
 		const auto transform_computed = transform.compute();
@@ -595,6 +667,21 @@ void Scene::clear()
 
 void Scene::create_entities()
 {
+	point_light_transforms = StorageBuffer::construct_scoped(device,
+		{
+			.size = count_point_lights * sizeof(glm::mat4),
+			.count = count_point_lights,
+			.always_mapped = true,
+		});
+	point_light_colours = StorageBuffer::construct_scoped(device,
+		{
+			.size = count_point_lights * sizeof(glm::vec4),
+			.count = count_point_lights,
+			.always_mapped = true,
+		});
+	scene_renderer->get_graphics_resource().expose_to_shaders(*point_light_transforms, 3, 0);
+	scene_renderer->get_graphics_resource().expose_to_shaders(*point_light_colours, 3, 1);
+
 	VertexLayout layout {
 		{ ElementType::Float3, "position" },
 		{ ElementType::Float2, "uv" },

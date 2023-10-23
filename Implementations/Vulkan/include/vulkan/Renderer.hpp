@@ -41,6 +41,9 @@ public:
 	void fullscreen_quad_pass(Disarray::CommandExecutor& executor, const Extent& extent) override;
 
 	// IGraphics
+	void draw_mesh_instanced(Disarray::CommandExecutor&, std::size_t count, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&,
+		const Disarray::Pipeline&) override;
+
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const GeometryProperties& = {}) override;
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const glm::mat4&) override;
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4&) override;

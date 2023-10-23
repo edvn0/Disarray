@@ -44,7 +44,8 @@ void Renderer::bind_descriptor_sets(Disarray::CommandExecutor& executor, const D
 	auto* pipeline_layout = cast_to<Vulkan::Pipeline>(pipeline).get_layout();
 	const std::array desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0),
 		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1),
-		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 2) };
+		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 2),
+		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 3) };
 	vkCmdBindDescriptorSets(supply_cast<Vulkan::CommandExecutor>(executor), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0,
 		static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
 }
@@ -94,6 +95,28 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 	vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(mesh.get_indices()), 0, VK_INDEX_TYPE_UINT32);
 
 	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(mesh.get_indices().size()), 1, 0, 0, 0);
+}
+
+void Renderer::draw_mesh_instanced(Disarray::CommandExecutor& executor, std::size_t instance_count, const Disarray::VertexBuffer& vertex_buffer,
+	const Disarray::IndexBuffer& index_buffer, const Disarray::Pipeline& mesh_pipeline)
+{
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
+	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
+	bind_pipeline(executor, mesh_pipeline);
+	bind_descriptor_sets(executor, pipeline);
+
+	std::array<VkBuffer, 1> arr {};
+	arr[0] = supply_cast<Vulkan::VertexBuffer>(vertex_buffer);
+	std::array<VkDeviceSize, 1> offsets = { 0 };
+	vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets.data());
+
+	if (pipeline.get_properties().polygon_mode == PolygonMode::Line) {
+		vkCmdSetLineWidth(command_buffer, pipeline.get_properties().line_width);
+	}
+
+	vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(index_buffer), 0, VK_INDEX_TYPE_UINT32);
+
+	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(index_buffer.size()), static_cast<std::uint32_t>(instance_count), 0, 0, 0);
 }
 
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,

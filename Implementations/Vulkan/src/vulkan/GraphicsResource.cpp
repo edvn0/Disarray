@@ -4,6 +4,7 @@
 
 #include <glm/ext/matrix_transform.hpp>
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 #include <magic_enum.hpp>
 #include <magic_enum_switch.hpp>
@@ -24,6 +25,7 @@
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Renderer.hpp"
+#include "vulkan/StorageBuffer.hpp"
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/UniformBuffer.hpp"
 #include "vulkan/VertexBuffer.hpp"
@@ -179,6 +181,21 @@ static auto create_set_two_bindings()
 	return std::array { image_array_binding, image_array_sampler_binding, glyph_texture_binding, glyph_array_sampler_binding };
 }
 
+template <std::size_t Count> static auto create_set_three_bindings()
+{
+	std::array<VkDescriptorSetLayoutBinding, Count> transform_data_ssbo_bindings {};
+	std::uint32_t i = 0;
+	for (auto& binding : transform_data_ssbo_bindings) {
+		binding.descriptorCount = 1;
+		binding.binding = i++;
+		binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		binding.pImmutableSamplers = nullptr;
+	}
+
+	return transform_data_ssbo_bindings;
+}
+
 void GraphicsResource::initialise_descriptors(bool should_clean)
 {
 	if (should_clean) {
@@ -198,6 +215,7 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 	auto set_zero_bindings = create_set_zero_bindings();
 	auto set_one_bindings = create_set_one_bindings();
 	auto set_two_bindings = create_set_two_bindings();
+	auto set_three_bindings = create_set_three_bindings<2>();
 
 	auto layout_create_info = vk_structures<VkDescriptorSetLayoutCreateInfo> {}();
 	layout_create_info.bindingCount = static_cast<std::uint32_t>(set_zero_bindings.size());
@@ -216,7 +234,12 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 	VkDescriptorSetLayout set_two_image_array_layout = nullptr;
 	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &set_two_image_array_layout));
 
-	layouts = { set_zero_ubos_layout, set_one_images_layout, set_two_image_array_layout };
+	VkDescriptorSetLayout set_three_ssbo_layout = nullptr;
+	layout_create_info.bindingCount = static_cast<std::uint32_t>(set_three_bindings.size());
+	layout_create_info.pBindings = set_three_bindings.data();
+	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &set_three_ssbo_layout));
+
+	layouts = { set_zero_ubos_layout, set_one_images_layout, set_two_image_array_layout, set_three_ssbo_layout };
 	static constexpr auto descriptor_pool_max_size = 1000;
 
 	const std::array<VkDescriptorPoolSize, 12> sizes = [](auto size) {
@@ -321,7 +344,7 @@ void GraphicsResource::expose_to_shaders(const Disarray::Image& image, Descripto
 	auto write_sets = descriptor_write_sets_per_frame(descriptor_set);
 	const auto& info = cast_to<Vulkan::Image>(image).get_descriptor_info();
 
-	Log::info("GraphicsResource", "Exposing '{}' to shader at binding {}", image.get_properties().debug_name, binding);
+	Log::info("GraphicsResource", "Exposing '{}' to shader at set {} - binding {}", image.get_properties().debug_name, descriptor_set, binding);
 	for (auto& write_set : write_sets) {
 		write_set.dstBinding = binding;
 		write_set.dstArrayElement = 0;
@@ -346,6 +369,22 @@ void GraphicsResource::expose_to_shaders(std::span<const Ref<Disarray::Texture>>
 	});
 
 	internal_expose_to_shaders(cast_to<Vulkan::Image>(span[0]->get_image()).get_descriptor_info().sampler, image_infos, set, binding);
+}
+
+void GraphicsResource::expose_to_shaders(const Disarray::StorageBuffer& buffer, DescriptorSet set, DescriptorBinding binding)
+{
+	auto write_sets = descriptor_write_sets_per_frame(set);
+	const auto& vk_buffer = cast_to<Vulkan::StorageBuffer>(buffer);
+
+	for (auto& write_set : write_sets) {
+		write_set.dstBinding = binding;
+		write_set.dstArrayElement = 0;
+		write_set.descriptorType = Vulkan::StorageBuffer::get_descriptor_type();
+		write_set.descriptorCount = 1;
+		write_set.pBufferInfo = &vk_buffer.get_descriptor_info();
+	}
+
+	vkUpdateDescriptorSets(supply_cast<Vulkan::Device>(device), static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
 }
 
 void GraphicsResource::expose_to_shaders(std::span<const Disarray::Texture*> span, DescriptorSet set, DescriptorBinding binding)

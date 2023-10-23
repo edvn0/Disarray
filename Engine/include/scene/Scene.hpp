@@ -15,6 +15,7 @@
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Mesh.hpp"
+#include "graphics/StorageBuffer.hpp"
 #include "graphics/Texture.hpp"
 #include "scene/Component.hpp"
 #include "scene/Entity.hpp"
@@ -148,11 +149,15 @@ private:
 
 	Ref<Disarray::Framebuffer> shadow_framebuffer {};
 	Ref<Disarray::Pipeline> shadow_pipeline {};
+	Ref<Disarray::Pipeline> shadow_instances_pipeline {};
 
 	Ref<Disarray::Framebuffer> identity_framebuffer {};
 	Ref<Disarray::Pipeline> identity_pipeline {};
 
 	Ref<Disarray::Framebuffer> geometry_framebuffer {};
+
+	Scope<Disarray::StorageBuffer> point_light_transforms {};
+	Scope<Disarray::StorageBuffer> point_light_colours {};
 
 	std::mutex registry_access;
 	entt::registry registry;

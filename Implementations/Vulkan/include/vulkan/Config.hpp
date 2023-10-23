@@ -16,7 +16,7 @@ static constexpr bool is_debug = true;
 #ifdef USE_VALIDATION_LAYERS
 static constexpr auto use_validation_layers = true;
 #else
-static constexpr auto use_validation_layers = false;
+static constexpr auto use_validation_layers = true;
 #endif
 
 static constexpr inline auto use_debug_markers = is_debug;

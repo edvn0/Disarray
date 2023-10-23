@@ -1,5 +1,8 @@
 #include "vulkan/BaseBuffer.hpp"
 
+#include <magic_enum.hpp>
+
+#include "core/Ensure.hpp"
 #include "vulkan/Allocator.hpp"
 #include "vulkan/CommandExecutor.hpp"
 
@@ -14,6 +17,8 @@ static auto to_vulkan_usage(BufferType buffer_type) -> VkBufferUsageFlags
 		return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 	case BufferType::Uniform:
 		return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	case BufferType::Storage:
+		return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 	default:
 		unreachable();
 	}
@@ -23,7 +28,7 @@ BaseBuffer::BaseBuffer(const Disarray::Device& dev, BufferType buffer_type, Disa
 	: device(dev)
 	, type(buffer_type)
 	, props(properties)
-	, count(properties.count)
+	, buffer_count(properties.count)
 {
 	if (props.data != nullptr) {
 		create_with_valid_data();
@@ -34,7 +39,7 @@ BaseBuffer::BaseBuffer(const Disarray::Device& dev, BufferType buffer_type, Disa
 
 void BaseBuffer::create_with_valid_data()
 {
-	Allocator allocator { "VertexBuffer" };
+	Allocator allocator { fmt::format("{}Buffer", magic_enum::enum_name(type)) };
 	// create staging buffer
 	auto buffer_create_info = vk_structures<VkBufferCreateInfo> {}();
 	buffer_create_info.size = props.size;
@@ -55,8 +60,16 @@ void BaseBuffer::create_with_valid_data()
 	if (!props.always_mapped) {
 		usage = Usage::AUTO_PREFER_DEVICE;
 	}
+	auto creation = Creation::MAPPED_BIT;
+	if (const auto is_uniform = type == BufferType::Uniform) {
+		creation |= Creation::HOST_ACCESS_RANDOM_BIT;
+	}
 
-	allocation = allocator.allocate_buffer(buffer, typed_create_info, { .usage = usage });
+	allocation = allocator.allocate_buffer(buffer, typed_create_info,
+		{
+			.usage = usage,
+			.creation = creation,
+		});
 
 	{
 		auto executor = construct_immediate(device);
@@ -69,7 +82,7 @@ void BaseBuffer::create_with_valid_data()
 
 void BaseBuffer::create_with_empty_data()
 {
-	Allocator allocator("BaseBuffer");
+	Allocator allocator { fmt::format("{}Buffer", magic_enum::enum_name(type)) };
 
 	auto buffer_create_info = vk_structures<VkBufferCreateInfo> {}();
 	buffer_create_info.size = props.size;
@@ -83,7 +96,11 @@ void BaseBuffer::create_with_empty_data()
 		creation |= Creation::HOST_ACCESS_RANDOM_BIT;
 	}
 
-	allocation = allocator.allocate_buffer(buffer, vma_allocation_info, buffer_create_info, { .usage = usage, .creation = creation });
+	allocation = allocator.allocate_buffer(buffer, vma_allocation_info, buffer_create_info,
+		{
+			.usage = usage,
+			.creation = creation,
+		});
 }
 
 void BaseBuffer::set_data(const void* data, std::uint32_t size, std::size_t offset)
@@ -93,7 +110,7 @@ void BaseBuffer::set_data(const void* data, std::uint32_t size, std::size_t offs
 		return;
 	}
 
-	Allocator allocator { "mapper" };
+	Allocator allocator { fmt::format("{}Buffer", magic_enum::enum_name(type)) };
 	auto* output = allocator.map_memory<std::byte>(allocation);
 	std::memcpy(output, data, size);
 	allocator.unmap_memory(allocation);
@@ -103,7 +120,7 @@ void BaseBuffer::set_data(const void* data, std::size_t size, std::size_t offset
 
 void BaseBuffer::destroy_buffer()
 {
-	Allocator allocator { "Buffer[" + std::to_string(count) + "]" };
+	Allocator allocator { fmt::format("{}Buffer", magic_enum::enum_name(type)) };
 	allocator.deallocate_buffer(allocation, buffer);
 }
 
@@ -113,6 +130,19 @@ auto BaseBuffer::size() const -> std::size_t
 		return props.size;
 	}
 
-	return count;
+	return props.count;
 }
+
+auto BaseBuffer::count() const -> std::size_t { return props.count; }
+
+auto BaseBuffer::get_raw() -> void*
+{
+	if (props.always_mapped) {
+		return vma_allocation_info.pMappedData;
+	}
+
+	ensure(false, "Never here");
+	return nullptr;
+}
+
 } // namespace Disarray::Vulkan

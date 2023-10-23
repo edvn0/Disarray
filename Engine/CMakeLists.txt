@@ -110,6 +110,7 @@ set(ENGINE_SOURCES
 	src/graphics/Material.cpp
 	src/graphics/ImageLoader.cpp
 	src/graphics/IndexBuffer.cpp
+	src/graphics/StorageBuffer.cpp
 	src/graphics/Texture.cpp
 	src/graphics/Image.cpp
 	src/graphics/Maths.cpp

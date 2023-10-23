@@ -18,6 +18,8 @@ public:                                                                         
 	void set_data(const void* data, std::size_t size, std::size_t offset = 0ULL) override { BaseBuffer::set_data(data, size, offset); }              \
                                                                                                                                                      \
 	auto size() const->std::size_t override { return BaseBuffer::size(); }                                                                           \
+	auto count() const->std::size_t override { return BaseBuffer::count(); }                                                                         \
+	auto get_raw()->void* override { return BaseBuffer::get_raw(); }                                                                                 \
 	~x() override { BaseBuffer::destroy_buffer(); }
 
 class BaseBuffer : public PropertySupplier<VkBuffer> {
@@ -28,6 +30,9 @@ protected:
 	BaseBuffer(const Disarray::Device&, BufferType type, Disarray::BufferProperties);
 
 	[[nodiscard]] virtual auto size() const -> std::size_t;
+	[[nodiscard]] virtual auto count() const -> std::size_t;
+
+	virtual auto get_raw() -> void*;
 
 	virtual void set_data(const void*, std::uint32_t, std::size_t offset = 0ULL);
 	virtual void set_data(const void*, std::size_t, std::size_t offset = 0ULL);
@@ -40,11 +45,12 @@ protected:
 private:
 	void create_with_valid_data();
 	void create_with_empty_data();
+
 	const Disarray::Device& device;
 
 	BufferType type;
 	BufferProperties props;
-	std::size_t count { 0 };
+	std::size_t buffer_count { 0 };
 
 	VmaAllocationInfo vma_allocation_info {};
 	VkBuffer buffer {};

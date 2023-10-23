@@ -4,7 +4,7 @@
 
 namespace Disarray {
 
-enum class BufferType : std::uint8_t { Vertex, Index, Uniform };
+enum class BufferType : std::uint8_t { Vertex, Index, Uniform, Storage };
 
 struct BufferProperties {
 	const void* data {};

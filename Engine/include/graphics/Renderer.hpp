@@ -10,8 +10,10 @@
 
 #include "Forward.hpp"
 #include "graphics/CommandExecutor.hpp"
+#include "graphics/IndexBuffer.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/RendererProperties.hpp"
+#include "graphics/VertexBuffer.hpp"
 
 using VkDescriptorSet = struct VkDescriptorSet_T*;
 using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;
@@ -47,6 +49,7 @@ public:
 	[[nodiscard]] virtual auto get_texture_cache() const -> const TextureCache& = 0;
 
 	virtual void expose_to_shaders(std::span<const Ref<Disarray::Texture>> images, DescriptorSet set, DescriptorBinding binding) = 0;
+	virtual void expose_to_shaders(const Disarray::StorageBuffer& buffer, DescriptorSet set, DescriptorBinding binding) = 0;
 	virtual void expose_to_shaders(std::span<const Disarray::Texture*> images, DescriptorSet set, DescriptorBinding binding) = 0;
 	virtual void expose_to_shaders(const Disarray::Image& images, DescriptorSet set, DescriptorBinding binding) = 0;
 	virtual void expose_to_shaders(const Disarray::Texture& images, DescriptorSet set, DescriptorBinding binding) = 0;
@@ -111,6 +114,10 @@ public:
 
 	virtual void draw_submeshes(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&,
 		const glm::vec4& colour, const glm::mat4& transform = glm::identity<glm::mat4>(), const std::uint32_t identifier = 0)
+		= 0;
+
+	virtual void draw_mesh_instanced(
+		Disarray::CommandExecutor&, std::size_t count, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&)
 		= 0;
 
 	virtual void draw_aabb(Disarray::CommandExecutor&, const Disarray::AABB&, const glm::vec4&, const glm::mat4& transform) = 0;

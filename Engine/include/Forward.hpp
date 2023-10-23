@@ -12,6 +12,7 @@ class Entity;
 class Framebuffer;
 class Image;
 class IndexBuffer;
+class StorageBuffer;
 class Instance;
 class Mesh;
 struct Submesh;
