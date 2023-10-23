@@ -27,7 +27,7 @@ template <CacheableResource Resource, class Props, class Child, class Key = std:
 public:
 	~ResourceCache() { storage.clear(); };
 
-	auto get(const Key& key) -> Resource&
+	auto get(const Key& key) -> const Resource&
 	{
 		ensure(storage.contains(key), "Key missing from the resource cache.");
 		return storage[key];

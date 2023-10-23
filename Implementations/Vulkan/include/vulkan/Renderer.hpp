@@ -29,6 +29,8 @@ public:
 	Renderer(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&);
 	~Renderer() override;
 
+	void begin_pass(
+		Disarray::CommandExecutor& executor, Disarray::Framebuffer& framebuffer, bool explicit_clear, const glm::vec2& mouse_position) override;
 	void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) override;
 	void begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& fb) override { begin_pass(executor, fb, false); }
 	void begin_pass(Disarray::CommandExecutor& command_executor) override { begin_pass(command_executor, *geometry_framebuffer); }
@@ -52,6 +54,8 @@ public:
 		const glm::mat4&, const std::uint32_t) override;
 
 	void draw_aabb(Disarray::CommandExecutor&, const Disarray::AABB&, const glm::vec4&, const glm::mat4& transform) override;
+	void draw_identifier(
+		Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, std::uint32_t identifier, const glm::mat4& transform) override;
 
 	void draw_text(std::string_view text, const glm::uvec2& position, float size) override;
 	void draw_text(std::string_view text, const glm::vec3& position, float size) override;
@@ -72,6 +76,7 @@ public:
 	void force_recreation() override;
 
 	void bind_pipeline(Disarray::CommandExecutor&, const Disarray::Pipeline&, PipelineBindPoint = PipelineBindPoint::BindPointGraphics) override;
+	void bind_descriptor_sets(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline) override;
 
 	[[nodiscard]] auto get_composite_pass_image() const -> const Disarray::Image& override;
 
@@ -80,6 +85,7 @@ private:
 
 	void draw_submesh(Disarray::CommandExecutor&, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&,
 		const Disarray::Texture&, const glm::vec4&, const glm::mat4&, const std::uint32_t, PushConstant& push_constant);
+	void draw_billboard_quad(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline);
 
 	const Disarray::Device& device;
 	const Disarray::Swapchain& swapchain;
@@ -92,12 +98,13 @@ private:
 	Ref<Disarray::Framebuffer> fullscreen_framebuffer;
 	Scope<Pipeline> fullscreen_quad_pipeline;
 
-	void bind_descriptor_sets(Disarray::CommandExecutor& executor, VkPipelineLayout pipeline_layout);
-
 	mutable const Disarray::Pipeline* bound_pipeline { nullptr };
 	std::function<void(Disarray::Renderer&)> on_batch_full_func = [](auto&) {};
 	Scope<Mesh> aabb_model {};
 	Scope<Pipeline> aabb_pipeline;
+
+	Scope<IndexBuffer> quad_ib;
+	Scope<VertexBuffer> quad_vb;
 
 	RendererProperties props;
 	Extent extent;

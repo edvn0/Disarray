@@ -72,16 +72,16 @@ void App::run()
 
 	static float current_time = Clock::ms();
 	while (!window->should_close()) {
-		if (!could_prepare_frame()) {
+		if (!could_prepare_frame()) [[unlikely]] {
 			continue;
 		}
 
-		float time_step = Clock::ms() - current_time;
+		const auto step = Clock::ms() - current_time;
 
-		window->handle_input(time_step);
-		update_layers(time_step);
+		window->handle_input(step);
+		update_layers(step);
 		render_layers();
-		statistics.cpu_time = time_step;
+		statistics.cpu_time = step;
 		render_ui(ui_layer);
 
 		swapchain->reset_recreation_status();
@@ -90,10 +90,9 @@ void App::run()
 		swapchain->present();
 		statistics.presentation_time = Clock::ns() - begin_present_time;
 
+		window->update();
 		statistics.frame_time = Clock::ms() - current_time;
 		current_time = Clock::ms();
-
-		window->update();
 	}
 
 	wait_for_idle(*device);

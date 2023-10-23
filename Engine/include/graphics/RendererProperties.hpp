@@ -81,7 +81,7 @@ namespace Detail {
 } // namespace Detail
 
 static constexpr auto max_point_lights = 1000;
-static constexpr auto count_point_lights = 7;
+static constexpr auto count_point_lights = 1000;
 static constexpr auto point_light_radius = 15;
 using PointLights = Detail::PointLights<max_point_lights>;
 

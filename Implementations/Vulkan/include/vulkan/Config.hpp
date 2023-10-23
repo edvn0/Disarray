@@ -13,13 +13,12 @@ static constexpr bool is_debug = false;
 static constexpr bool is_debug = true;
 #endif
 
-#ifdef DISARRAY_WINDOWS
-static constexpr auto is_windows = true;
+#ifdef USE_VALIDATION_LAYERS
+static constexpr auto use_validation_layers = true;
 #else
-static constexpr auto is_windows = false;
+static constexpr auto use_validation_layers = false;
 #endif
 
-static constexpr auto use_validation_layers = is_debug && is_windows;
 static constexpr inline auto use_debug_markers = is_debug;
 
 static constexpr std::array<std::string_view, 2> device_extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME };

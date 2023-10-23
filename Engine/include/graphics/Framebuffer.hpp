@@ -30,6 +30,13 @@ struct FramebufferAttachmentSpecification {
 	std::vector<FramebufferTextureSpecification> texture_attachments {};
 };
 
+struct Scissor {
+	Extent extent {};
+	Extent offset {};
+
+	[[nodiscard]] auto is_valid() const { return extent != Extent { 0, 0 } && offset != Extent { 0, 0 }; }
+};
+
 struct FramebufferProperties {
 	Extent extent { 0, 0 };
 	FramebufferAttachmentSpecification attachments {};
@@ -41,6 +48,7 @@ struct FramebufferProperties {
 	FramebufferBlendMode blend_mode { FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha };
 	bool should_present { false };
 	SampleCount samples { SampleCount::One };
+	Scissor scissors {};
 	std::string debug_name { "UnknownFramebuffer" };
 };
 

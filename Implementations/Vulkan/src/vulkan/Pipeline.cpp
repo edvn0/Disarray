@@ -173,6 +173,7 @@ auto Pipeline::initialise_blend_states() -> std::vector<VkPipelineColorBlendAtta
 		blend_attachment_states[i].colorWriteMask = blend_all_factors;
 
 		if (!fb_props.should_blend) {
+			blend_attachment_states[i].blendEnable = VK_FALSE;
 			break;
 		}
 

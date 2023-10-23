@@ -25,6 +25,8 @@ public:
 
 	[[nodiscard]] auto get_pipeline_cache() -> PipelineCache& override { return pipeline_cache; }
 	[[nodiscard]] auto get_texture_cache() -> TextureCache& override { return texture_cache; }
+	[[nodiscard]] auto get_pipeline_cache() const -> const PipelineCache& override { return pipeline_cache; }
+	[[nodiscard]] auto get_texture_cache() const -> const TextureCache& override { return texture_cache; }
 
 	void expose_to_shaders(std::span<const Ref<Disarray::Texture>> textures, DescriptorSet set, DescriptorBinding binding) override;
 	void expose_to_shaders(std::span<const Disarray::Texture*> textures, DescriptorSet set, DescriptorBinding binding) override;

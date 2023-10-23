@@ -43,6 +43,8 @@ public:
 
 	virtual auto get_pipeline_cache() -> PipelineCache& = 0;
 	virtual auto get_texture_cache() -> TextureCache& = 0;
+	[[nodiscard]] virtual auto get_pipeline_cache() const -> const PipelineCache& = 0;
+	[[nodiscard]] virtual auto get_texture_cache() const -> const TextureCache& = 0;
 
 	virtual void expose_to_shaders(std::span<const Ref<Disarray::Texture>> images, DescriptorSet set, DescriptorBinding binding) = 0;
 	virtual void expose_to_shaders(std::span<const Disarray::Texture*> images, DescriptorSet set, DescriptorBinding binding) = 0;
@@ -66,6 +68,7 @@ public:
 class Renderer : public ReferenceCountable {
 public:
 	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) = 0;
+	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear, const glm::vec2& mouse_position) = 0;
 	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&) = 0;
 	virtual void begin_pass(Disarray::CommandExecutor&) = 0;
 	virtual void end_pass(Disarray::CommandExecutor&) = 0;
@@ -88,6 +91,7 @@ public:
 	virtual void on_resize() = 0;
 
 	virtual void bind_pipeline(Disarray::CommandExecutor&, const Disarray::Pipeline&, PipelineBindPoint = PipelineBindPoint::BindPointGraphics) = 0;
+	virtual void bind_descriptor_sets(Disarray::CommandExecutor&, const Disarray::Pipeline&) = 0;
 
 	virtual void draw_planar_geometry(Geometry, const GeometryProperties&) = 0;
 	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const GeometryProperties&) = 0;
@@ -110,6 +114,8 @@ public:
 		= 0;
 
 	virtual void draw_aabb(Disarray::CommandExecutor&, const Disarray::AABB&, const glm::vec4&, const glm::mat4& transform) = 0;
+
+	virtual void draw_identifier(Disarray::CommandExecutor&, const Disarray::Pipeline&, std::uint32_t identifier, const glm::mat4& transform) = 0;
 
 	virtual void draw_text(std::string_view text, const glm::uvec2& position, float size) = 0;
 	virtual void draw_text(std::string_view text, const glm::uvec2& position) { return draw_text(text, position, 1.0F); };

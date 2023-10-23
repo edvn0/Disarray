@@ -108,7 +108,7 @@ void LinearMovementScript::on_create() { }
 void LinearMovementScript::on_update(float time_step)
 {
 	auto& [rot, pos, scale] = transform();
-	pos = pos + vel * direction;
+	pos = pos + time_step * vel * direction;
 	switch (axis) {
 	case Axis::X:
 		if (pos.x <= min) {

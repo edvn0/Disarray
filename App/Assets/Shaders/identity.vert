@@ -1,3 +1,4 @@
+#include "MathHelpers.glsl"
 #include "PC.glsl"
 #include "UBO.glsl"
 
@@ -7,17 +8,13 @@ UBO;
 layout(push_constant) uniform PushConstantBlock { PushConstant pc; }
 PC;
 
-layout(location = 0) in vec3 position;
-layout(location = 1) in uint identifier;
-
-layout(location = 0) flat out uint out_identifier;
+#include "DefaultInput.glsl"
 
 void main()
 {
-    Uniform ubo = UBO.ubo;
-    PushConstant pc = PC.pc;
+	Uniform ubo = UBO.ubo;
+	PushConstant pc = PC.pc;
 
-    vec4 model_matrix = pc.object_transform * vec4(position, 1.0);
-    gl_Position = ubo.view_projection * model_matrix;
-    out_identifier = identifier;
+	vec4 model_position = pc.object_transform * vec4(pos, 1.0);
+	gl_Position = ubo.view_projection * model_position;
 }

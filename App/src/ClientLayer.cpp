@@ -15,6 +15,7 @@
 
 #include "core/Collections.hpp"
 #include "core/Log.hpp"
+#include "core/Random.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "panels/DirectoryContentPanel.hpp"
@@ -64,7 +65,9 @@ void ClientLayer::construct(App& app, Threading::ThreadPool& pool)
 	std::size_t index { 0 };
 	ensure(angles.size() == point_lights.size());
 	for (auto&& point_light : point_lights) {
-		point_light.add_script<Scripts::MoveInCircleScript>(static_cast<std::uint32_t>(point_light_radius), angles.at(index++));
+		const auto radius = point_light_radius * Random::as_double(-5.F, 5.F);
+
+		point_light.add_script<Scripts::MoveInCircleScript>(static_cast<std::uint32_t>(radius), angles.at(index++));
 	}
 };
 

@@ -52,6 +52,10 @@ function(default_compile_flags)
 		target_compile_definitions(${PROJECT_NAME} PRIVATE IS_RELEASE)
 	endif()
 
+	if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" AND DISARRAY_OS STREQUAL "Windows")
+		target_compile_definitions(${PROJECT_NAME} PRIVATE USE_VALIDATION_LAYERS)
+	endif()
+
 	if(DISARRAY_USE_VULKAN)
 		target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_VULKAN)
 	endif()

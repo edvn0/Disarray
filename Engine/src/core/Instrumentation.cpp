@@ -13,8 +13,8 @@ Profiler::Profiler(std::string_view scope_name)
 
 Profiler::~Profiler()
 {
-	start_time = Clock::nanos<double>() - start_time;
-	Log::info("Profile", "Scope {} took {}ms.", name, 1000.0 * start_time);
+	const auto end_time = Clock::nanos<double>() - start_time;
+	Log::to_file("Profile", "Scope {} took {}ms.", name, 1000.0 * end_time);
 }
 
 } // namespace Disarray::Instrumentation

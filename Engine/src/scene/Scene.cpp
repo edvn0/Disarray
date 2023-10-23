@@ -139,7 +139,7 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 
 	shadow_framebuffer = Framebuffer::construct(device,
 		{
-			.extent = { 1024, 1024 },
+			.extent = { 4096, 4096 },
 			.attachments = { { ImageFormat::Depth, false } },
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
@@ -170,29 +170,32 @@ void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
 			.test_depth = true,
 			.descriptor_set_layouts = desc_layout,
 		});
-	identity_pipeline = Pipeline::construct(device,
-		{
-			.vertex_shader = scene_renderer->get_pipeline_cache().get_shader("identity.vert"),
-			.fragment_shader = scene_renderer->get_pipeline_cache().get_shader("identity.frag"),
-			.framebuffer = identity_framebuffer,
-			.layout = {
-				{ ElementType::Float3, "position" },
-			},
-			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-			.cull_mode = CullMode::Front,
-			.write_depth = true,
-			.test_depth = true,
-			.descriptor_set_layouts = desc_layout,
-		});
+
 	identity_framebuffer = Framebuffer::construct(device,
 		{
 			.extent = extent,
-			.attachments = { { ImageFormat::Uint }, { ImageFormat::Depth } },
+			.attachments = { { ImageFormat::Uint, false } },
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
 			.should_blend = false,
 			.blend_mode = FramebufferBlendMode::None,
 			.debug_name = "IdentityFramebuffer",
+		});
+	identity_pipeline = Pipeline::construct(device,
+		PipelineProperties {
+			.vertex_shader = scene_renderer->get_pipeline_cache().get_shader("identity.vert"),
+			.fragment_shader = scene_renderer->get_pipeline_cache().get_shader("identity.frag"),
+			.framebuffer = identity_framebuffer,
+			.layout = { { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float4, "colour" },
+				{ ElementType::Float3, "normals" }, { ElementType::Float3, "tangents" }, { ElementType::Float3, "bitangents" } },
+			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+			.extent = extent,
+			.polygon_mode = PolygonMode::Fill,
+			.cull_mode = CullMode::Back,
+			.face_mode = FaceMode::Clockwise,
+			.write_depth = true,
+			.test_depth = true,
+			.descriptor_set_layouts = resources.get_descriptor_set_layouts(),
 		});
 	geometry_framebuffer = Framebuffer::construct(device,
 		{
@@ -218,7 +221,7 @@ void Scene::begin_frame(const Camera& camera)
 
 	for (auto sun_component_view = registry.view<const Components::Transform, Components::DirectionalLight>();
 		 auto&& [entity, transform, sun] : sun_component_view.each()) {
-		directional.position = { transform.position, 1.0f };
+		directional.position = { transform.position, 1.0F };
 		sun.position = directional.position;
 		sun.direction = glm::normalize(-sun.position); // Lookat {0,0,0};
 		directional.direction = sun.direction;
@@ -303,17 +306,19 @@ void Scene::update(float time_step)
 
 		pipeline.pipeline->force_recreation();
 	}
+	{
+		DISARRAY_PROFILE_SCOPE("Script Update");
+		auto script_view = registry.view<Components::Script>();
+		script_view.each([scene = this, step = time_step](const auto entity, Components::Script& script) {
+			if (script.has_been_bound()) {
+				script.instantiate();
+			}
 
-	auto script_view = registry.view<Components::Script>();
-	script_view.each([scene = this, step = time_step](const auto entity, Components::Script& script) {
-		if (script.has_been_bound()) {
-			script.instantiate();
-		}
-
-		auto& instantiated = script.get_script();
-		instantiated.update_entity(scene, entity);
-		instantiated.on_update(step);
-	});
+			auto& instantiated = script.get_script();
+			instantiated.update_entity(scene, entity);
+			instantiated.on_update(step);
+		});
+	}
 }
 
 void Scene::render()
@@ -329,7 +334,7 @@ void Scene::render()
 		// Shadow pass
 		scene_renderer->begin_pass(executor, *shadow_framebuffer);
 		draw_shadows();
-		// scene_renderer->planar_geometry_pass(executor);
+		scene_renderer->planar_geometry_pass(executor);
 		scene_renderer->end_pass(executor);
 	}
 	{
@@ -355,9 +360,14 @@ void Scene::render()
 
 void Scene::draw_identifiers()
 {
-	// for (auto&& [entity, transform]: registry.view<const Components::Transform>().each()) {
-	//	scene_renderer->draw_identifier(entity, transform, *identity_pipeline);
-	// }
+	scene_renderer->bind_pipeline(*command_executor, *identity_pipeline);
+	scene_renderer->bind_descriptor_sets(*command_executor, *identity_pipeline);
+	for (auto&& [entity, transform, tag] : registry.view<const Components::Transform, const Components::Tag>().each()) {
+		if (tag.name == "Floor") {
+			continue;
+		}
+		scene_renderer->draw_identifier(*command_executor, *identity_pipeline, static_cast<std::uint32_t>(entity), transform.compute());
+	}
 }
 
 auto Scene::get_final_image() const -> const Disarray::Image& { return scene_renderer->get_composite_pass_image(); }
@@ -622,7 +632,7 @@ void Scene::create_entities()
 
 		auto floor = create("Floor");
 		floor.get_transform().scale = { 30, 1, 30 };
-		floor.get_transform().position = { 0, 1, 0 };
+		floor.get_transform().position = { 0, 7, 0 };
 
 		floor.add_component<Components::Texture>(nullptr, glm::vec4 { .1, .1, .9, 1.0 });
 		floor.add_component<Components::Mesh>(cube_mesh);
@@ -636,18 +646,8 @@ void Scene::create_entities()
 				auto& transform = rect.get_components<Components::Transform>();
 				transform.position = { 5 * static_cast<float>(i) + 2.5f, -1.2, 5 * static_cast<float>(j) + 2.5f };
 				transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
-				float col_x = (i + (static_cast<float>(rects) / 2)) / static_cast<float>(rects);
-				float col_y = (j + (static_cast<float>(rects) / 2)) / static_cast<float>(rects);
-				if (col_x == 0) {
-					col_x += 0.2f;
-				}
-
-				if (col_y == 0) {
-					col_y += 0.2f;
-				}
-				glm::vec4 colour { col_x, 0, col_y, 1 };
 				rect.add_component<Components::Mesh>(cube_mesh);
-				rect.add_component<Components::Texture>(colour);
+				rect.add_component<Components::Texture>(Random::strong_colour());
 				rect.add_component<Components::Pipeline>(pipe);
 			}
 		}
@@ -684,13 +684,20 @@ void Scene::create_entities()
 
 	{
 		auto unit_squares = create("UnitSquares");
-		for (auto i = 0ULL; i < 100; i++) {
-			auto axis = create("Square - {}", i);
-			auto& transform = axis.add_component<Components::Transform>();
-			transform.position = glm::vec3 { i, 30.0 * static_cast<double>(i) / 100.0, i };
-			axis.add_component<Components::QuadGeometry>();
-			axis.add_component<Components::Texture>(glm::vec4 { 0, 0, 1, 1 });
-			unit_squares.add_child(axis);
+
+		static constexpr auto offset = glm::vec3(3, 3, 1);
+		static constexpr auto squares = 10;
+		for (auto i = -squares / 2; i < (squares / 2) - 1; i++) {
+			for (auto j = -squares / 2; j < (squares / 2) - 1; j++) {
+				auto axis = create("Square - {}", i);
+				auto& transform = axis.add_component<Components::Transform>();
+				transform.position = glm::vec3 { i, 7, j };
+				transform.scale /= offset;
+				transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
+				axis.add_component<Components::QuadGeometry>();
+				axis.add_component<Components::Texture>(glm::vec4 { 0, 0, 1, 1 });
+				unit_squares.add_child(axis);
+			}
 		}
 	}
 
@@ -782,9 +789,9 @@ void Scene::create_entities()
 		auto colours = generate_colours<count_point_lights>();
 		constexpr auto angles = generate_angles<count_point_lights>();
 
-		const auto sphere = Mesh::construct(device,
+		const auto cube = Mesh::construct(device,
 			{
-				.path = FS::model("sphere.obj"),
+				.path = FS::model("cube.obj"),
 			});
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("point_light.vert");
 		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("point_light.frag");
@@ -808,7 +815,7 @@ void Scene::create_entities()
 				.far = 70.F,
 				.fov = 60.F,
 			});
-		sun.add_component<Components::Mesh>(sphere);
+		sun.add_component<Components::Mesh>(cube);
 		sun.add_component<Components::Pipeline>(pipe);
 		sun.add_component<Components::Transform>().position = { -15, -15, 16 };
 
@@ -822,14 +829,14 @@ void Scene::create_entities()
 			light_component.diffuse = colours.at(i);
 			light_component.specular = colours.at(i);
 
+			const auto radius = point_light_radius * Random::as_double(-5.F, 5.F);
 			auto& transform = point_light.get_components<Components::Transform>();
 			const auto divided = angles.at(i);
-			transform.position = { glm::sin(divided), 0, glm::cos(divided) };
-			transform.position *= point_light_radius;
-			transform.position.y = -4;
+			transform.position = { glm::sin(divided), -1, glm::cos(divided) };
+			transform.position *= radius;
 			transform.scale *= 0.2;
 
-			point_light.add_component<Components::Mesh>(sphere);
+			point_light.add_component<Components::Mesh>(cube);
 			point_light.add_component<Components::Texture>(colours.at(i));
 			point_light.add_component<Components::Pipeline>(pipe);
 			pl_system.add_child(point_light);
