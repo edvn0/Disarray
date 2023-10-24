@@ -50,6 +50,8 @@ struct RenderBatchFor {
 		submitted_objects = 0;
 	}
 
+	auto get_pipeline() -> Disarray::Pipeline* { return pipeline.get(); }
+
 protected:
 	void prepare_data() { vertex_buffer->set_data(vertices.data(), submitted_vertices * sizeof(T), 0); }
 
@@ -61,26 +63,23 @@ protected:
 	auto emplace() -> T& { return vertices[submitted_vertices++]; }
 };
 
-#define MAKE_BATCH_RENDERER(Type, Child)                                                                                                             \
-	using Current = RenderBatchFor<Type, Child>;                                                                                                     \
-	using Current::emplace;                                                                                                                          \
-	using Current::index_buffer;                                                                                                                     \
-	using Current::index_buffer_size;                                                                                                                \
-	using Current::IndexCount;                                                                                                                       \
-	using Current::pipeline;                                                                                                                         \
-	using Current::prepare_data;                                                                                                                     \
-	using Current::reset;                                                                                                                            \
-	using Current::submitted_indices;                                                                                                                \
-	using Current::submitted_objects;                                                                                                                \
-	using Current::submitted_vertices;                                                                                                               \
-	using Current::vertex_buffer;                                                                                                                    \
-	using Current::vertex_buffer_size;                                                                                                               \
-	using Current::VertexCount;                                                                                                                      \
-	using Current::vertices;                                                                                                                         \
-	using Current::flush_vertex_buffer;
-
 struct LineVertexBatch final : public RenderBatchFor<LineVertex, LineVertexBatch> {
-	MAKE_BATCH_RENDERER(LineVertex, LineVertexBatch)
+	using Current = RenderBatchFor<LineVertex, LineVertexBatch>;
+	using Current::emplace;
+	using Current::flush_vertex_buffer;
+	using Current::index_buffer;
+	using Current::index_buffer_size;
+	using Current::IndexCount;
+	using Current::pipeline;
+	using Current::prepare_data;
+	using Current::reset;
+	using Current::submitted_indices;
+	using Current::submitted_objects;
+	using Current::submitted_vertices;
+	using Current::vertex_buffer;
+	using Current::vertex_buffer_size;
+	using Current::VertexCount;
+	using Current::vertices;
 
 	void construct_impl(Disarray::Renderer&, const Disarray::Device&);
 	void submit_impl(Disarray::Renderer&, Disarray::CommandExecutor&);
@@ -89,7 +88,22 @@ struct LineVertexBatch final : public RenderBatchFor<LineVertex, LineVertexBatch
 };
 
 struct QuadVertexBatch final : public RenderBatchFor<QuadVertex, QuadVertexBatch> {
-	MAKE_BATCH_RENDERER(QuadVertex, QuadVertexBatch)
+	using Current = RenderBatchFor<QuadVertex, QuadVertexBatch>;
+	using Current::emplace;
+	using Current::flush_vertex_buffer;
+	using Current::index_buffer;
+	using Current::index_buffer_size;
+	using Current::IndexCount;
+	using Current::pipeline;
+	using Current::prepare_data;
+	using Current::reset;
+	using Current::submitted_indices;
+	using Current::submitted_objects;
+	using Current::submitted_vertices;
+	using Current::vertex_buffer;
+	using Current::vertex_buffer_size;
+	using Current::VertexCount;
+	using Current::vertices;
 
 	void construct_impl(Disarray::Renderer&, const Disarray::Device&);
 	void submit_impl(Disarray::Renderer&, Disarray::CommandExecutor&);
@@ -103,7 +117,9 @@ struct BatchRenderer {
 	using Quads = QuadVertexBatch;
 	using Lines = LineVertexBatch;
 
-	std::tuple<Quads, Lines> objects {};
+	using BatchTuple = std::tuple<Quads, Lines>;
+
+	BatchTuple objects {};
 
 	// How many times have we submitted geometries?
 	// Used by shaders to determine scale of picking count
@@ -118,6 +134,13 @@ struct BatchRenderer {
 	constexpr void construct(Disarray::Renderer& renderer, const Disarray::Device& device)
 	{
 		Tuple::static_for(objects, [&renderer, &device](std::size_t index, auto& batch) { batch.construct(renderer, device); });
+	}
+
+	auto get_pipelines()
+	{
+		std::array<Disarray::Pipeline*, std::tuple_size<BatchTuple> {}> pipelines {};
+		Tuple::static_for(objects, [&pipelines](auto index, auto& batch) { pipelines.at(index) = batch.get_pipeline(); });
+		return pipelines;
 	}
 
 	auto would_be_full() -> bool

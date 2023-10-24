@@ -72,6 +72,9 @@ public:
 	auto get_pipeline_cache() -> PipelineCache& override { return get_graphics_resource().get_pipeline_cache(); }
 	auto get_texture_cache() -> TextureCache& override { return get_graphics_resource().get_texture_cache(); }
 
+	auto get_batch_renderer() -> BatchRenderer& override { return batch_renderer; }
+	auto get_text_renderer() -> TextRenderer& override { return text_renderer; }
+
 	void begin_frame(const Camera& /*camera*/) override;
 	void begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_projection) override;
 	void end_frame() override;

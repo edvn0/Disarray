@@ -171,7 +171,7 @@ void DirectoryContentPanel::interface()
 void DirectoryContentPanel::construct(App&, Threading::ThreadPool& pool)
 {
 	using namespace std::chrono_literals;
-	file_watcher = make_scope<FileWatcher>(pool, "Assets", 300ms);
+	file_watcher = make_scope<FileWatcher>(pool, "Assets", 3000ms);
 	path_and_content_cache[current] = get_files_in_directory(current);
 	current_directory_content = path_and_content_cache[current];
 	directory_icon = Texture::construct(device,

@@ -49,6 +49,14 @@ template <IsNumber T> struct IExtent {
 	auto operator==(const IExtent<T>& other) const -> bool { return width == other.width && height == other.height; }
 	auto operator!=(const IExtent<T>& other) const -> bool { return width != other.width || height != other.height; }
 
+	template <IsNumber Other> auto operator*=(const IExtent<Other>& other) -> IExtent<T>& { return operator*=(other.template as<T>()); }
+	auto operator*=(const IExtent<T>& other) -> IExtent<T>&
+	{
+		width *= other.width;
+		height *= other.height;
+		return *this;
+	}
+
 	auto to_string() -> std::string { return fmt::format("{}:{}", width, height); }
 
 	[[nodiscard]] auto sum() const -> float { return width + height; }

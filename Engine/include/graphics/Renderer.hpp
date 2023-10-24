@@ -13,6 +13,7 @@
 #include "graphics/IndexBuffer.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/RendererProperties.hpp"
+#include "graphics/TextRenderer.hpp"
 #include "graphics/VertexBuffer.hpp"
 
 using VkDescriptorSet = struct VkDescriptorSet_T*;
@@ -148,6 +149,9 @@ public:
 	virtual void force_recreation() = 0;
 	virtual auto get_pipeline_cache() -> PipelineCache& = 0;
 	virtual auto get_texture_cache() -> TextureCache& = 0;
+
+	virtual auto get_text_renderer() -> TextRenderer& = 0;
+	virtual auto get_batch_renderer() -> BatchRenderer& = 0;
 
 	auto get_graphics_resource() -> IGraphicsResource& { return *graphics_resource; }
 	[[nodiscard]] virtual auto get_composite_pass_image() const -> const Disarray::Image& = 0;

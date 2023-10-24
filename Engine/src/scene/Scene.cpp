@@ -31,6 +31,7 @@
 #include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/PushConstantLayout.hpp"
+#include "graphics/RenderBatch.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "graphics/ShaderCompiler.hpp"
@@ -78,55 +79,72 @@ Scene::Scene(const Device& dev, std::string_view name)
 
 void Scene::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
 {
-	static constexpr auto tick_time = std::chrono::milliseconds(200);
+	static constexpr auto tick_time = std::chrono::milliseconds(3000);
 	file_watcher = make_scope<FileWatcher>(pool, "Assets/Shaders", Collections::StringSet { ".vert", ".frag", ".glsl" }, tick_time);
 	auto& pipeline_cache = scene_renderer->get_graphics_resource().get_pipeline_cache();
-	file_watcher->on_modified([&pipeline_cache, &dev = device, &reg = registry, &mutex = registry_access](const FileInformation& entry) {
-		std::scoped_lock lock { mutex };
-		Log::info("Scene FileWatcher", "Recompiling entry: {}", entry.to_path());
-		const auto view = reg.view<Components::Pipeline>();
-		const auto as_path = entry.to_path();
+	file_watcher->on_modified(
+		[&renderer = scene_renderer, &pipeline_cache, &dev = device, &reg = registry, &mutex = registry_access](const FileInformation& entry) {
+			std::scoped_lock lock { mutex };
+			Log::info("Scene FileWatcher", "Recompiling entry: {}", entry.to_path());
+			const auto view = reg.view<Components::Pipeline>();
+			const auto as_path = entry.to_path();
 
-		if (as_path.extension() == ".glsl") {
-			auto glsl_shader = Shader::compile(dev, entry.path);
-			pipeline_cache.update(as_path, std::move(glsl_shader));
-		}
-
-		std::unordered_set<Components::Pipeline*> unique_pipelines_sharing_this_files {};
-		for (auto&& [ent, pipeline] : view.each()) {
-			const bool pipeline_uses_this_updated_shader = pipeline.pipeline->has_shader_with_name(as_path);
-			if (!pipeline_uses_this_updated_shader) {
-				continue;
+			if (as_path.extension() == ".glsl") {
+				auto glsl_shader = Shader::compile(dev, entry.path);
+				pipeline_cache.update(as_path, std::move(glsl_shader));
 			}
 
-			unique_pipelines_sharing_this_files.insert(&pipeline);
-		}
+			std::unordered_set<Disarray::Pipeline*> pipelines_sharing_changed_shader {};
+			for (auto&& [ent, pipeline] : view.each()) {
+				const bool pipeline_uses_this_updated_shader = pipeline.pipeline->has_shader_with_name(as_path);
+				if (!pipeline_uses_this_updated_shader) {
+					continue;
+				}
 
-		if (unique_pipelines_sharing_this_files.empty()) {
-			return;
-		}
+				pipelines_sharing_changed_shader.insert(pipeline.pipeline.get());
+			}
 
-		Ref<Shader> shader = nullptr;
-		try {
-			shader = Shader::compile(dev, entry.path);
-		} catch (const CouldNotCompileShaderException& exc) {
-			Log::info("Scene FileWatcher", "{}", exc);
-			return;
-		}
+			for (auto* pipeline : renderer->get_text_renderer().get_pipelines()) {
+				const bool pipeline_uses_this_updated_shader = pipeline->has_shader_with_name(as_path);
+				if (!pipeline_uses_this_updated_shader) {
+					continue;
+				}
 
-		for (auto* pipe : unique_pipelines_sharing_this_files) {
-			auto& [pipeline] = *pipe;
-			auto& pipe_props = pipeline->get_properties();
+				pipelines_sharing_changed_shader.insert(pipeline);
+			}
 
-			pipe_props.set_shader_with_type(shader->get_properties().type, shader);
-		}
+			for (auto* pipeline : renderer->get_batch_renderer().get_pipelines()) {
+				const bool pipeline_uses_this_updated_shader = pipeline->has_shader_with_name(as_path);
+				if (!pipeline_uses_this_updated_shader) {
+					continue;
+				}
 
-		wait_for_idle(dev);
-		for (auto* comp : unique_pipelines_sharing_this_files) {
-			comp->pipeline->force_recreation();
-		}
-		wait_for_idle(dev);
-	});
+				pipelines_sharing_changed_shader.insert(pipeline);
+			}
+
+			if (pipelines_sharing_changed_shader.empty()) {
+				return;
+			}
+
+			Ref<Shader> shader = nullptr;
+			try {
+				shader = Shader::compile(dev, entry.path);
+			} catch (const CouldNotCompileShaderException& exc) {
+				Log::info("Scene FileWatcher", "{}", exc);
+				return;
+			}
+
+			for (auto* pipe : pipelines_sharing_changed_shader) {
+				pipe->get_properties().set_shader_with_type(shader->get_properties().type, shader);
+			}
+
+			wait_for_idle(dev);
+			for (auto* pipe : pipelines_sharing_changed_shader) {
+				pipe->force_recreation();
+			}
+			wait_for_idle(dev);
+			Log::info("Scene FileWatcher", "Finished compilation and {} pipelines reconstructed.", pipelines_sharing_changed_shader.size());
+		});
 }
 
 void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
@@ -372,12 +390,14 @@ void Scene::render()
 		scene_renderer->planar_geometry_pass(executor);
 		scene_renderer->end_pass(executor);
 	}
+#ifdef DISARRAY_DRAW_IDENTIFIERS
 	{
 		// Identifier pass
 		scene_renderer->begin_pass(executor, *identity_framebuffer);
 		draw_identifiers();
 		scene_renderer->end_pass(executor);
 	}
+#endif
 	{
 		// This is the composite pass!
 		scene_renderer->fullscreen_quad_pass(executor, extent);
@@ -874,11 +894,9 @@ void Scene::create_entities()
 	{
 
 		auto colours = generate_colours<count_point_lights>();
-		constexpr auto angles = generate_angles<count_point_lights>();
-
-		const auto cube = Mesh::construct(device,
+		const auto sphere = Mesh::construct(device,
 			{
-				.path = FS::model("cube.obj"),
+				.path = FS::model("sphere.obj"),
 			});
 		const auto& vert = scene_renderer->get_pipeline_cache().get_shader("point_light.vert");
 		const auto& frag = scene_renderer->get_pipeline_cache().get_shader("point_light.frag");
@@ -902,7 +920,7 @@ void Scene::create_entities()
 				.far = 70.F,
 				.fov = 60.F,
 			});
-		sun.add_component<Components::Mesh>(cube);
+		sun.add_component<Components::Mesh>(sphere);
 		sun.add_component<Components::Pipeline>(pipe);
 		sun.add_component<Components::Transform>().position = { -15, -15, 16 };
 
@@ -916,14 +934,12 @@ void Scene::create_entities()
 			light_component.diffuse = colours.at(i);
 			light_component.specular = colours.at(i);
 
-			const auto radius = point_light_radius * Random::as_double(-5.F, 5.F);
+			const auto point_in_sphere = Random::in_sphere(static_cast<float>(point_light_radius));
 			auto& transform = point_light.get_components<Components::Transform>();
-			const auto divided = angles.at(i);
-			transform.position = { glm::sin(divided), -1, glm::cos(divided) };
-			transform.position *= radius;
-			transform.scale *= 0.2;
+			transform.position = point_in_sphere;
+			// transform.scale *= 2;
 
-			point_light.add_component<Components::Mesh>(cube);
+			point_light.add_component<Components::Mesh>(sphere);
 			point_light.add_component<Components::Texture>(colours.at(i));
 			point_light.add_component<Components::Pipeline>(pipe);
 			pl_system.add_child(point_light);

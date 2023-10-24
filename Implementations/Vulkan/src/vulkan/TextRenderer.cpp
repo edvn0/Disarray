@@ -184,6 +184,11 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 	resources.expose_to_shaders(renderer_api->glyph_framebuffer->get_image(0), 1, 2);
 }
 
+auto TextRenderer::get_pipelines() -> std::array<Disarray::Pipeline*, 2>
+{
+	return { renderer_api->world_space_glyph_pipeline.get(), renderer_api->screen_space_glyph_pipeline.get() };
+}
+
 void TextRenderer::submit_text(std::string_view text, const glm::uvec2& position, float scale)
 {
 	ensure(screen_space_text_data_index < screen_space_text_data.size());

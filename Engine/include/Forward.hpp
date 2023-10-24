@@ -32,6 +32,8 @@ class VertexBuffer;
 class Window;
 class PipelineCache;
 class TextureCache;
+class TextRenderer;
+struct BatchRenderer;
 
 class CppScript;
 class Camera;

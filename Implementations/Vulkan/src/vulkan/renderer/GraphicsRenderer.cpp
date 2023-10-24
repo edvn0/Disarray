@@ -102,12 +102,11 @@ void Renderer::draw_mesh_instanced(Disarray::CommandExecutor& executor, std::siz
 {
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
-	bind_pipeline(executor, mesh_pipeline);
+	bind_pipeline(executor, pipeline);
 	bind_descriptor_sets(executor, pipeline);
 
-	std::array<VkBuffer, 1> arr {};
-	arr[0] = supply_cast<Vulkan::VertexBuffer>(vertex_buffer);
-	std::array<VkDeviceSize, 1> offsets = { 0 };
+	std::array arr { supply_cast<Vulkan::VertexBuffer>(vertex_buffer) };
+	std::array offsets = { VkDeviceSize { 0 } };
 	vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets.data());
 
 	if (pipeline.get_properties().polygon_mode == PolygonMode::Line) {
@@ -130,7 +129,7 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 {
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
-	bind_pipeline(executor, mesh_pipeline);
+	bind_pipeline(executor, pipeline);
 
 	(void)texture;
 	auto& push_constant = get_graphics_resource().get_editable_push_constant();
@@ -143,8 +142,7 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 
 	bind_descriptor_sets(executor, pipeline);
 
-	std::array<VkBuffer, 1> arr {};
-	arr[0] = supply_cast<Vulkan::VertexBuffer>(mesh.get_vertices());
+	const std::array arr { supply_cast<Vulkan::VertexBuffer>(mesh.get_vertices()) };
 	const std::array offsets = { VkDeviceSize { 0 } };
 	vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets.data());
 
@@ -186,7 +184,7 @@ void Renderer::draw_submeshes(Disarray::CommandExecutor& executor, const Disarra
 	// draw_mesh(executor, parent_mesh, mesh_pipeline, texture, transform, identifier);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
 	bind_descriptor_sets(executor, pipeline);
-	bind_pipeline(executor, mesh_pipeline);
+	bind_pipeline(executor, pipeline);
 
 	if (pipeline.get_properties().polygon_mode == PolygonMode::Line) {
 		vkCmdSetLineWidth(supply_cast<Vulkan::CommandExecutor>(executor), pipeline.get_properties().line_width);

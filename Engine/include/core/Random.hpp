@@ -4,6 +4,11 @@
 
 #include <concepts>
 #include <random>
+#include <type_traits>
+
+#include "glm/detail/qualifier.hpp"
+#include "glm/geometric.hpp"
+#include "glm/gtx/norm.hpp"
 
 #define GLM_CONSTRUCTOR_ONE_TO_FOUR(x, FloatType)                                                                                                    \
 	if constexpr (T == 1) {                                                                                                                          \
@@ -30,7 +35,8 @@ namespace Detail {
 
 	template <glm::length_t T, Distribution D> auto random_vector_with_size(float min = 0, float max = 1) -> glm::vec<T, float, glm::packed_highp>
 	{
-		std::uniform_real_distribution<float> dist(min, max);
+		using distribution = std::conditional_t<D == Distribution::Uniform, std::uniform_real_distribution<float>, std::normal_distribution<float>>;
+		distribution dist(min, max);
 
 		GLM_CONSTRUCTOR_ONE_TO_FOUR(dist(mersenne_twister), float);
 	}
@@ -38,15 +44,18 @@ namespace Detail {
 	template <glm::length_t T, Distribution D>
 	auto random_double_vector_with_size(double min = 0, double max = 1) -> glm::vec<T, double, glm::packed_highp>
 	{
-		std::uniform_real_distribution<double> dist(min, max);
+		using distribution = std::conditional_t<D == Distribution::Uniform, std::uniform_real_distribution<float>, std::normal_distribution<float>>;
+		distribution dist(min, max);
 
 		GLM_CONSTRUCTOR_ONE_TO_FOUR(dist(mersenne_twister), double);
 	}
 
 	template <std::floating_point Floating = float, Distribution D = Distribution::Uniform>
-	auto random_floating_point(Floating min, Floating max) -> Floating
+	auto random_floating_point(Floating min_or_mean = 0.0, Floating max_or_stdev = 1.0) -> Floating
 	{
-		std::uniform_real_distribution<Floating> dist(min, max);
+		using distribution = std::conditional_t<D == Distribution::Uniform, std::uniform_real_distribution<float>, std::normal_distribution<float>>;
+		distribution dist(min_or_mean, max_or_stdev);
+
 		return dist(mersenne_twister);
 	}
 } // namespace Detail
@@ -70,6 +79,30 @@ template <std::floating_point Floating = float, Distribution D = Distribution::U
 auto as_double(std::floating_point auto min = 0.0, std::floating_point auto max = 1.0) -> Floating
 {
 	return Detail::random_floating_point<Floating, D>(min, max);
+}
+
+template <std::floating_point Floating = float, Distribution D = Distribution::Uniform>
+auto in_sphere(std::floating_point auto radius = 1.0F) -> glm::vec<3, Floating, glm::defaultp>
+{
+	const auto u = Detail::random_floating_point<Floating, D>(0.F, 1.F);
+	const auto v = Detail::random_floating_point<Floating, D>(0.F, 1.F);
+	const auto theta = u * 2.0 * glm::pi<Floating>();
+	const auto phi = glm::acos(2.0 * v - 1.0);
+	const auto r = glm::pow(radius, 1.0F / 3.0F);
+	const auto sinTheta = glm::sin(theta);
+	const auto cosTheta = glm::cos(theta);
+	const auto sinPhi = glm::sin(phi);
+	const auto cosPhi = glm::cos(phi);
+	const auto x = r * sinPhi * cosTheta;
+	const auto y = r * sinPhi * sinTheta;
+	const auto z = r * cosPhi;
+	return { x, z, y };
+}
+
+template <std::floating_point Floating = float> auto on_sphere(std::floating_point auto radius = 1.0F) -> glm::vec<3, Floating, glm::defaultp>
+{
+	const auto vector = glm::normalize(Detail::random_vector_with_size<3, Distribution::Normal>());
+	return vector * radius;
 }
 
 template <Distribution D = Distribution::Uniform> auto colour() -> glm::vec<4, float, glm::packed_highp>

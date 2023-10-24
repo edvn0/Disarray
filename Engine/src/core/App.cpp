@@ -72,14 +72,15 @@ void App::run()
 
 	static float current_time = Clock::ms();
 	while (!window->should_close()) {
-		if (!could_prepare_frame()) [[unlikely]] {
+		const auto could_prepare = could_prepare_frame();
+		if (!could_prepare) [[unlikely]] {
 			continue;
 		}
 
 		const auto step = Clock::ms() - current_time;
 
 		window->handle_input(step);
-		update_layers(step);
+		update_layers(step, could_prepare);
 		render_layers();
 		statistics.cpu_time = step;
 		render_ui(ui_layer);
@@ -106,11 +107,10 @@ void App::run()
 	on_detach();
 }
 
-void App::update_layers(float time_step)
+void App::update_layers(float time_step, bool could_prepare)
 {
-	const auto needs_recreation = swapchain->needs_recreation();
 	for (auto& layer : layers) {
-		if (needs_recreation) {
+		if (!could_prepare) {
 			layer->handle_swapchain_recreation(*swapchain);
 		}
 		layer->update(time_step);

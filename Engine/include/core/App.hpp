@@ -45,7 +45,7 @@ public:
 	explicit App(const ApplicationProperties&);
 	void run();
 
-	void update_layers(float time_step);
+	void update_layers(float time_step, bool could_prepare);
 	void render_layers();
 	void render_ui(const std::shared_ptr<Disarray::UI::InterfaceLayer>& ui_layer);
 
@@ -67,7 +67,9 @@ public:
 				Args&&... args) { T(dev, win, swap, std::forward<Args>(args)...); })
 	auto add_panel(Args&&... args) -> auto&
 	{
-		std::shared_ptr<Layer> interface { nullptr };
+		std::shared_ptr<Layer> interface {
+			nullptr
+		};
 		for (const auto& layer : layers) {
 			if (layer->is_interface_layer()) {
 				interface = layer;

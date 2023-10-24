@@ -5,6 +5,7 @@
 #include <array>
 
 #include "Forward.hpp"
+#include "graphics/Pipeline.hpp"
 
 namespace Disarray {
 
@@ -20,6 +21,8 @@ public:
 	void submit_text(std::string_view text, const glm::uvec2& position, float scale = 1.0F);
 	void submit_text(std::string_view text, const glm::vec3& position, float scale = 1.0F);
 	void render(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor);
+
+	auto get_pipelines() -> std::array<Disarray::Pipeline*, 2>;
 
 private:
 	struct TextRenderingAPI;

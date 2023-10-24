@@ -12,9 +12,10 @@ auto CommandExecutor::construct(const Disarray::Device& device, const Disarray::
 	return make_ref<Vulkan::CommandExecutor>(device, swapchain, props);
 }
 
-auto CommandExecutor::construct_scoped(const Disarray::Device& device, Disarray::CommandExecutorProperties props) -> Scope<Disarray::CommandExecutor>
+auto CommandExecutor::construct_scoped(const Disarray::Device& device, Disarray::CommandExecutorProperties properties)
+	-> Scope<Disarray::CommandExecutor>
 {
-	return make_scope<Vulkan::CommandExecutor>(device, nullptr, props);
+	return make_scope<Vulkan::CommandExecutor>(device, nullptr, properties);
 }
 
 } // namespace Disarray

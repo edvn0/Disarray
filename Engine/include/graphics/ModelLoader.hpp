@@ -64,6 +64,7 @@ struct IModelImporter {
 
 class ModelLoader {
 public:
+	explicit ModelLoader() = default;
 	explicit ModelLoader(Scope<IModelImporter>);
 	explicit ModelLoader(Scope<IModelImporter>, const std::filesystem::path&);
 	void import_model(const std::filesystem::path&);

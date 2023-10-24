@@ -191,6 +191,10 @@ void ClientLayer::on_event(Event& event)
 			return true;
 		}
 
+#ifndef DISARRAY_DRAW_IDENTIFIERS
+		return false;
+#endif
+
 		const auto vp_is_focused = viewport_panel_focused && viewport_panel_mouse_over;
 		if (pressed.get_mouse_button() == MouseCode::Left && vp_is_focused) {
 			const auto& image = scene->get_image(1);
