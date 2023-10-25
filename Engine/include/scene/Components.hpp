@@ -244,4 +244,15 @@ struct Camera {
 };
 template <> inline constexpr std::string_view component_name<Camera> = "Camera";
 
+struct BoxCollider { };
+template <> inline constexpr std::string_view component_name<BoxCollider> = "BoxCollider";
+
+struct SphereCollider {
+	float radius { 1.0F };
+};
+template <> inline constexpr std::string_view component_name<SphereCollider> = "SphereCollider";
+
+struct PillCollider { };
+template <> inline constexpr std::string_view component_name<PillCollider> = "PillCollider";
+
 } // namespace Disarray::Components

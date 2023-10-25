@@ -13,16 +13,30 @@
 #include <type_traits>
 #include <utility>
 
-#include "core/Collections.hpp"
-#include "core/Log.hpp"
-#include "core/Random.hpp"
-#include "graphics/Renderer.hpp"
-#include "graphics/RendererProperties.hpp"
 #include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
 #include "panels/ScenePanel.hpp"
 #include "panels/StatisticsPanel.hpp"
-#include "ui/UI.hpp"
+#include "scene/Scene.hpp"
+
+template <std::size_t Count> static auto generate_colours() -> std::array<glm::vec4, Count>
+{
+	std::array<glm::vec4, Count> colours {};
+	for (std::size_t i = 0; i < Count; i++) {
+		colours.at(i) = Disarray::Random::colour();
+	}
+	return colours;
+}
+
+template <std::size_t Count> static consteval auto generate_angles() -> std::array<float, Count>
+{
+	std::array<float, Count> angles {};
+	constexpr auto division = 1.F / static_cast<float>(Count - 1);
+	for (std::size_t i = 0; i < Count; i++) {
+		angles.at(i) = glm::two_pi<float>() * division * static_cast<float>(i);
+	}
+	return angles;
+}
 
 namespace Disarray::Client {
 
@@ -48,6 +62,9 @@ void ClientLayer::construct(App& app)
 {
 	scene = make_scope<Scene>(device, "Default scene");
 	scene->construct(app);
+	create_entities();
+
+	extent = app.get_swapchain().get_extent();
 
 	auto stats_panel = app.add_panel<StatisticsPanel>(app.get_statistics());
 	auto content_panel = app.add_panel<DirectoryContentPanel>("Assets");
@@ -59,6 +76,219 @@ void ClientLayer::construct(App& app)
 	scene_panel->construct(app);
 	execution_stats_panel->construct(app);
 };
+
+void ClientLayer::create_entities()
+{
+	auto& renderer = scene->get_renderer();
+	auto& graphics_resource = renderer.get_graphics_resource();
+
+	VertexLayout layout {
+		{ ElementType::Float3, "position" },
+		{ ElementType::Float2, "uv" },
+		{ ElementType::Float4, "colour" },
+		{ ElementType::Float3, "normals" },
+		{ ElementType::Float3, "tangents" },
+		{ ElementType::Float3, "bitangents" },
+	};
+	const auto& resources = graphics_resource;
+	const auto& desc_layout = resources.get_descriptor_set_layouts();
+
+	{
+		constexpr int rects { 2 };
+		static_assert(rects % 2 == 0);
+
+		const auto& vert = renderer.get_pipeline_cache().get_shader("cube.vert");
+		const auto& frag = renderer.get_pipeline_cache().get_shader("cube.frag");
+
+		auto pipe = Pipeline::construct(device,
+			{
+				.vertex_shader = vert,
+				.fragment_shader = frag,
+				.framebuffer = scene->get_framebuffer<SceneFramebuffer::Geometry>(),
+				.layout = layout,
+				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+				.extent = extent,
+				.cull_mode = CullMode::Front,
+				.descriptor_set_layouts = desc_layout,
+			});
+
+		const auto cube_mesh = Mesh::construct(device,
+			MeshProperties {
+				.path = FS::model("cube.obj"),
+			});
+
+		auto floor = scene->create("Floor");
+		floor.get_transform().scale = { 30, 1, 30 };
+		floor.get_transform().position = { 0, 7, 0 };
+
+		floor.add_component<Components::Texture>(nullptr, glm::vec4 { .1, .1, .9, 1.0 });
+		floor.add_component<Components::Mesh>(cube_mesh);
+		floor.add_component<Components::Pipeline>(pipe);
+
+		auto parent = scene->create("Grid");
+		for (auto j = -rects / 2; j < rects / 2; j++) {
+			for (auto i = -rects / 2; i < rects / 2; i++) {
+				auto rect = scene->create(fmt::format("Rect{}-{}", i, j));
+				parent.add_child(rect);
+				auto& transform = rect.get_components<Components::Transform>();
+				transform.position = { 5 * static_cast<float>(i) + 2.5f, -1.2, 5 * static_cast<float>(j) + 2.5f };
+				transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
+				rect.add_component<Components::Mesh>(cube_mesh);
+				rect.add_component<Components::Texture>(Random::strong_colour());
+				rect.add_component<Components::Pipeline>(pipe);
+			}
+		}
+	}
+
+	{
+		auto unit_vectors = scene->create("UnitVectors");
+		const glm::vec3 base_pos { 0, 0, 0 };
+		{
+			auto axis = scene->create("XAxis");
+			auto& transform = axis.get_components<Components::Transform>();
+			transform.position = base_pos;
+			axis.add_component<Components::LineGeometry>(base_pos + glm::vec3 { 10.0, 0, 0 });
+			axis.add_component<Components::Texture>(glm::vec4 { 1, 0, 0, 1 });
+			unit_vectors.add_child(axis);
+		}
+		{
+			auto axis = scene->create("YAxis");
+			auto& transform = axis.get_components<Components::Transform>();
+			transform.position = base_pos;
+			axis.add_component<Components::LineGeometry>(base_pos + glm::vec3 { 0, -10.0, 0 });
+			axis.add_component<Components::Texture>(glm::vec4 { 0, 1, 0, 1 });
+			unit_vectors.add_child(axis);
+		}
+		{
+			auto axis = scene->create("ZAxis");
+			auto& transform = axis.get_components<Components::Transform>();
+			transform.position = base_pos;
+			axis.add_component<Components::LineGeometry>(base_pos + glm::vec3 { 0, 0, -10.0 });
+			axis.add_component<Components::Texture>(glm::vec4 { 0, 0, 1, 1 });
+			unit_vectors.add_child(axis);
+		}
+	}
+
+	{
+		auto unit_squares = scene->create("UnitSquares");
+
+		static constexpr auto offset = glm::vec3(3, 3, 1);
+		static constexpr auto squares = 10;
+		for (auto i = -squares / 2; i < (squares / 2) - 1; i++) {
+			for (auto j = -squares / 2; j < (squares / 2) - 1; j++) {
+				auto axis = scene->create("Square - {}", i);
+				auto& transform = axis.add_component<Components::Transform>();
+				transform.position = glm::vec3 { i, 7, j };
+				transform.scale /= offset;
+				transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
+				axis.add_component<Components::QuadGeometry>();
+				axis.add_component<Components::Texture>(glm::vec4 { 0, 0, 1, 1 });
+				unit_squares.add_child(axis);
+			}
+		}
+	}
+
+	{
+		const auto& vert = renderer.get_pipeline_cache().get_shader("main.vert");
+		const auto& frag = renderer.get_pipeline_cache().get_shader("main.frag");
+
+		auto viking_rotation = Maths::rotate_by(glm::radians(glm::vec3 { 0, 0, 0 }));
+		auto v_mesh = scene->create("Viking");
+		const auto viking = Mesh::construct(device,
+			{
+				.path = FS::model("viking.obj"),
+				.initial_rotation = viking_rotation,
+			});
+		v_mesh.get_components<Components::Transform>().position.y = -2;
+		v_mesh.add_component<Components::Mesh>(viking);
+		v_mesh.add_component<Components::Pipeline>(Pipeline::construct(device,
+			{
+				.vertex_shader = vert,
+				.fragment_shader = frag,
+				.framebuffer = scene->get_framebuffer<SceneFramebuffer::Geometry>(),
+				.layout = layout,
+				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+				.extent = extent,
+				.cull_mode = CullMode::Back,
+				.descriptor_set_layouts = desc_layout,
+			}));
+		v_mesh.add_component<Components::Texture>(renderer.get_texture_cache().get("viking_room"));
+		v_mesh.add_component<Components::Material>(Material::construct(device,
+			{
+				.vertex_shader = vert,
+				.fragment_shader = frag,
+			}));
+
+		TextureProperties texture_properties {
+			.extent = extent,
+			.format = ImageFormat::SBGR,
+			.debug_name = "viking",
+		};
+		texture_properties.path = FS::texture("viking_room.png");
+		v_mesh.add_component<Components::Texture>(Texture::construct(device, texture_properties));
+		static constexpr auto val = 10.0F;
+		v_mesh.add_script<Scripts::LinearMovementScript>(-val, val);
+	}
+
+	{
+
+		auto colours = generate_colours<count_point_lights>();
+		const auto sphere = Mesh::construct(device,
+			{
+				.path = FS::model("sphere.obj"),
+			});
+		const auto& vert = renderer.get_pipeline_cache().get_shader("point_light.vert");
+		const auto& frag = renderer.get_pipeline_cache().get_shader("point_light.frag");
+		auto pipe = Pipeline::construct(device,
+			{
+				.vertex_shader = vert,
+				.fragment_shader = frag,
+				.framebuffer = scene->get_framebuffer<SceneFramebuffer::Geometry>(),
+				.layout = layout,
+				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+				.extent = extent,
+				.cull_mode = CullMode::Front,
+				.descriptor_set_layouts = desc_layout,
+			});
+
+		auto sun = scene->create("Sun");
+		sun.add_component<Components::DirectionalLight>(glm::vec4 { 0.7, 0.7, 0.1, 0.1f },
+			Components::DirectionalLight::ProjectionParameters {
+				.factor = 20.F,
+				.near = -90.F,
+				.far = 70.F,
+				.fov = 60.F,
+			});
+		sun.add_component<Components::Mesh>(sphere);
+		sun.add_component<Components::Pipeline>(pipe);
+		sun.add_component<Components::Transform>().position = { -15, -15, 16 };
+		sun.add_component<Components::Controller>();
+
+		auto pl_system = scene->create("PointLightSystem");
+		for (std::uint32_t i = 0; i < colours.size(); i++) {
+			auto point_light = scene->create("PointLight-{}", i);
+			auto& light_component = point_light.add_component<Components::PointLight>();
+			light_component.ambient = colours.at(i);
+			light_component.diffuse = colours.at(i);
+			light_component.specular = colours.at(i);
+
+			constexpr auto float_radius = static_cast<float>(point_light_radius);
+			const auto point_in_sphere = Random::in_sphere(float_radius, { -2, 5, 6 });
+			auto& transform = point_light.get_components<Components::Transform>();
+			transform.position = point_in_sphere;
+			// transform.scale *= 2;
+
+			point_light.add_component<Components::Mesh>(sphere);
+			point_light.add_component<Components::Texture>(colours.at(i));
+			point_light.add_component<Components::Pipeline>(pipe);
+			pl_system.add_child(point_light);
+		}
+	}
+
+	auto scene_camera = scene->create("Scene Camera");
+	scene_camera.add_component<Components::Camera>();
+	scene_camera.get_components<Components::Transform>().position = { 15, -16, 16 };
+}
 
 void ClientLayer::interface()
 {
@@ -155,7 +385,11 @@ void ClientLayer::interface()
 	scene->interface();
 }
 
-void ClientLayer::handle_swapchain_recreation(Swapchain& swapchain) { scene->recreate(swapchain.get_extent()); }
+void ClientLayer::handle_swapchain_recreation(Swapchain& swapchain)
+{
+	extent = swapchain.get_extent();
+	scene->recreate(swapchain.get_extent());
+}
 
 void ClientLayer::on_event(Event& event)
 {

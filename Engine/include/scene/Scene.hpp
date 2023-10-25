@@ -7,6 +7,7 @@
 #include <queue>
 #include <type_traits>
 
+#include "core/Collections.hpp"
 #include "core/FileWatcher.hpp"
 #include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
@@ -37,6 +38,12 @@ enum class GizmoType : std::uint16_t {
 	Translate = TranslateX | Translate_Y | TranslateZ,
 	Rotate = RotateX | RotateY | RotateZ | RotateScreen,
 	Scale = ScaleX | ScaleY | ScaleZ
+};
+
+enum class SceneFramebuffer : std::uint8_t {
+	Geometry,
+	Identity,
+	Shadow,
 };
 
 class Scene {
@@ -75,12 +82,12 @@ public:
 	auto get_image(std::uint32_t index) const -> const Disarray::Image&
 	{
 		if (index == 0) {
-			return geometry_framebuffer->get_image(0);
+			return framebuffers.at(SceneFramebuffer::Geometry)->get_image(0);
 		}
 		if (index == 1) {
-			return identity_framebuffer->get_image(0);
+			return framebuffers.at(SceneFramebuffer::Identity)->get_image(0);
 		}
-		return shadow_framebuffer->get_depth_image();
+		return framebuffers.at(SceneFramebuffer::Shadow)->get_depth_image();
 	}
 
 	auto get_final_image() const -> const Disarray::Image&;
@@ -132,6 +139,9 @@ public:
 
 	void clear();
 
+	template <SceneFramebuffer Framebuffer> auto get_framebuffer() const { return framebuffers.at(Framebuffer); }
+	auto get_renderer() -> auto& { return *scene_renderer; }
+
 private:
 	const Disarray::Device& device;
 	std::string scene_name;
@@ -147,21 +157,17 @@ private:
 
 	Ref<Disarray::CommandExecutor> command_executor {};
 
-	Ref<Disarray::Framebuffer> shadow_framebuffer {};
+	std::unordered_map<SceneFramebuffer, Ref<Disarray::Framebuffer>> framebuffers {};
+
 	Ref<Disarray::Pipeline> shadow_pipeline {};
 	Ref<Disarray::Pipeline> shadow_instances_pipeline {};
-
-	Ref<Disarray::Framebuffer> identity_framebuffer {};
 	Ref<Disarray::Pipeline> identity_pipeline {};
-
-	Ref<Disarray::Framebuffer> geometry_framebuffer {};
 
 	Scope<Disarray::StorageBuffer> point_light_transforms {};
 	Scope<Disarray::StorageBuffer> point_light_colours {};
 
 	std::mutex registry_access;
 	entt::registry registry;
-	void create_entities();
 
 	void draw_shadows();
 	void draw_identifiers();

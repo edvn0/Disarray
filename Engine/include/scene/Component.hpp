@@ -12,7 +12,8 @@ namespace {
 	template <class T>
 	concept IsInAllowedComponents = AnyOf<T, Components::Tag, Components::Transform, Components::ID, Components::Inheritance,
 		Components::LineGeometry, Components::QuadGeometry, Components::Mesh, Components::Material, Components::Pipeline, Components::Texture,
-		Components::DirectionalLight, Components::PointLight, Components::Script, Components::Controller, Components::Camera>;
+		Components::DirectionalLight, Components::PointLight, Components::Script, Components::Controller, Components::Camera, Components::BoxCollider,
+		Components::SphereCollider, Components::PillCollider>;
 } // namespace
 
 template <class T>

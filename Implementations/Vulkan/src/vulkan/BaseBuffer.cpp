@@ -60,9 +60,9 @@ void BaseBuffer::create_with_valid_data()
 	if (!props.always_mapped) {
 		usage = Usage::AUTO_PREFER_DEVICE;
 	}
-	auto creation = Creation::MAPPED_BIT;
+	auto creation = Creation::HOST_ACCESS_RANDOM_BIT;
 	if (const auto is_uniform = type == BufferType::Uniform) {
-		creation |= Creation::HOST_ACCESS_RANDOM_BIT;
+		creation |= Creation::MAPPED_BIT;
 	}
 
 	allocation = allocator.allocate_buffer(buffer, typed_create_info,
