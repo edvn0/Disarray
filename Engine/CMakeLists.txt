@@ -177,6 +177,7 @@ target_link_libraries(
 	magic_enum::magic_enum
 	EnTT::EnTT
 	freetype
+	reactphysics3d
 )
 target_precompile_headers(${PROJECT_NAME} PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/include/DisarrayPCH.hpp)

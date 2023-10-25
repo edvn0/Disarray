@@ -94,11 +94,8 @@ void Script::setup_entity_destruction()
 void Script::setup_entity_creation() { get_script().on_create(); }
 
 void Script::destroy() { destroy_script_functor(*this); }
-void Script::instantiate()
-{
-	// create_script_functor(*this);
-	instantiated = true;
-}
+
+void Script::instantiate() { instantiated = true; }
 
 auto Script::get_script() -> CppScript& { return *instance_slot; }
 

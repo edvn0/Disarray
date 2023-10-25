@@ -27,6 +27,7 @@ private:
 	void handle_file_drop(const std::filesystem::path&);
 
 	Scope<Scene> scene;
+	Scope<Scene> running_scene;
 	Device& device;
 
 	EditorCamera camera;

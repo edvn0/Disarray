@@ -116,6 +116,10 @@ function(add_freetype)
 	add_subdirectory(freetype)
 endfunction(add_freetype)
 
+function(add_reactphysics3d)
+	add_subdirectory(reactphysics3d)
+endfunction(add_reactphysics3d)
+
 add_glfw()
 add_glm()
 add_vma()
@@ -134,6 +138,7 @@ add_spdlog()
 add_tiny_file_dialogs()
 add_assimp()
 add_freetype()
+add_reactphysics3d()
 
 if(DISARRAY_BUILD_TESTS)
 	add_googletest()
