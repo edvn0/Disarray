@@ -53,6 +53,13 @@ Framebuffer::Framebuffer(const Disarray::Device& dev, FramebufferProperties prop
 		attachment_index++;
 	}
 
+	if (!props.scissors.is_valid()) {
+		props.scissors = {
+			.extent = props.extent,
+			.offset = { 0, 0 },
+		};
+	}
+
 	colour_count = static_cast<std::uint32_t>(attachments.size());
 	recreate_framebuffer(false);
 }

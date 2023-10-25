@@ -4,7 +4,7 @@
 
 namespace Disarray {
 
-auto Clock::ms() -> float { return static_cast<float>(glfwGetTime()) * 1000.0F; }
-auto Clock::ns() -> float { return static_cast<float>(glfwGetTime()) * 1E6F; }
+auto Clock::ms() -> double { return glfwGetTime() * 1000.0F; }
+auto Clock::ns() -> double { return glfwGetTime() * 1E6F; }
 
 } // namespace Disarray

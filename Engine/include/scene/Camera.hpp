@@ -4,7 +4,6 @@
 
 #include "core/events/Event.hpp"
 #include "core/events/MouseEvent.hpp"
-#include "glm/ext/matrix_clip_space.hpp"
 #include "graphics/ImageProperties.hpp"
 
 namespace Disarray {
@@ -42,8 +41,11 @@ public:
 		unreversed_projection_matrix = unreversed_projection;
 	}
 
-	void set_perspective_projection_matrix(
-		const float radians_fov, const float width, const float height, const float near_plane, const float far_plane);
+	void set_perspective_projection_matrix(float radians_fov, float width, float height, float near_plane, float far_plane);
+	void set_perspective_projection_matrix(float radians_fov, std::integral auto width, std::integral auto height, float near_plane, float far_plane)
+	{
+		return set_perspective_projection_matrix(radians_fov, static_cast<float>(width), static_cast<float>(height), near_plane, far_plane);
+	}
 
 	void set_ortho_projection_matrix(const float width, const float height, const float near_plane, const float far_plane);
 
@@ -80,39 +82,26 @@ public:
 
 	[[nodiscard]] auto get_focal_point() const -> const glm::vec3& { return focal_point; }
 
-	void set_viewport_size(std::uint32_t width, std::uint32_t height)
-	{
-		if (viewport_width == width && viewport_height == height) {
-			return;
-		}
-		set_perspective_projection_matrix(vertical_fov, static_cast<float>(width), static_cast<float>(height), near_clip, far_clip);
-		viewport_width = width;
-		viewport_height = height;
-	}
-
 	void set_viewport_size(const Extent& extent)
 	{
-		const auto& [width, height] = extent;
-		if (viewport_width == width && viewport_height == height) {
+		if (viewport == extent) {
 			return;
 		}
-		aspect_ratio = glm::radians(static_cast<float>(width) / static_cast<float>(height));
-		set_perspective_projection_matrix(vertical_fov, static_cast<float>(width), static_cast<float>(height), far_clip, near_clip);
-		viewport_width = width;
-		viewport_height = height;
+		viewport = extent;
+		aspect_ratio = glm::radians(static_cast<float>(viewport.width) / static_cast<float>(viewport.height));
+		set_perspective_projection_matrix(vertical_fov, static_cast<float>(viewport.width), static_cast<float>(viewport.height), far_clip, near_clip);
 		update_camera_view();
 	}
 
 	void set_viewport_size(const FloatExtent& extent)
 	{
-		const auto& [width, height] = extent;
-		if (viewport_width == width && viewport_height == height) {
+		if (viewport == extent) {
 			return;
 		}
-		aspect_ratio = glm::radians(static_cast<float>(width) / static_cast<float>(height));
-		set_perspective_projection_matrix(vertical_fov, width, height, far_clip, near_clip);
-		viewport_width = static_cast<std::uint32_t>(width);
-		viewport_height = static_cast<std::uint32_t>(height);
+		viewport.width = extent.as<std::uint32_t>().width;
+		viewport.height = extent.as<std::uint32_t>().height;
+		aspect_ratio = glm::radians(static_cast<float>(viewport.width) / static_cast<float>(viewport.height));
+		set_perspective_projection_matrix(vertical_fov, viewport.width, viewport.height, far_clip, near_clip);
 		update_camera_view();
 	}
 
@@ -151,13 +140,13 @@ public:
 	{
 		near_clip = set_value;
 		update_camera_view();
-		set_perspective_projection_matrix(vertical_fov, static_cast<float>(viewport_width), static_cast<float>(viewport_height), far_clip, near_clip);
+		set_perspective_projection_matrix(vertical_fov, viewport.width, viewport.height, far_clip, near_clip);
 	}
 	auto set_far_clip(float set_value) -> void override
 	{
 		far_clip = set_value;
 		update_camera_view();
-		set_perspective_projection_matrix(vertical_fov, static_cast<float>(viewport_width), static_cast<float>(viewport_height), far_clip, near_clip);
+		set_perspective_projection_matrix(vertical_fov, viewport.width, viewport.height, far_clip, near_clip);
 	}
 
 	[[nodiscard]] auto get_pitch() const -> float { return pitch; }
@@ -204,8 +193,7 @@ private:
 
 	float min_focus_distance { 100.0F };
 
-	std::uint32_t viewport_width { 1280 };
-	std::uint32_t viewport_height { 720 };
+	Extent viewport { 1600, 900 };
 
 	constexpr static float min_speed { 0.002f };
 	constexpr static float max_speed { 0.02f };

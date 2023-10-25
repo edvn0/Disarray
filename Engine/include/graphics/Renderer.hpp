@@ -2,15 +2,19 @@
 
 #include <glm/glm.hpp>
 
+#include <fmt/core.h>
+
 #include <functional>
 #include <span>
 #include <tuple>
 
 #include "Forward.hpp"
-#include "fmt/core.h"
 #include "graphics/CommandExecutor.hpp"
+#include "graphics/IndexBuffer.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/RendererProperties.hpp"
+#include "graphics/TextRenderer.hpp"
+#include "graphics/VertexBuffer.hpp"
 
 using VkDescriptorSet = struct VkDescriptorSet_T*;
 using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;
@@ -42,8 +46,11 @@ public:
 
 	virtual auto get_pipeline_cache() -> PipelineCache& = 0;
 	virtual auto get_texture_cache() -> TextureCache& = 0;
+	[[nodiscard]] virtual auto get_pipeline_cache() const -> const PipelineCache& = 0;
+	[[nodiscard]] virtual auto get_texture_cache() const -> const TextureCache& = 0;
 
 	virtual void expose_to_shaders(std::span<const Ref<Disarray::Texture>> images, DescriptorSet set, DescriptorBinding binding) = 0;
+	virtual void expose_to_shaders(const Disarray::StorageBuffer& buffer, DescriptorSet set, DescriptorBinding binding) = 0;
 	virtual void expose_to_shaders(std::span<const Disarray::Texture*> images, DescriptorSet set, DescriptorBinding binding) = 0;
 	virtual void expose_to_shaders(const Disarray::Image& images, DescriptorSet set, DescriptorBinding binding) = 0;
 	virtual void expose_to_shaders(const Disarray::Texture& images, DescriptorSet set, DescriptorBinding binding) = 0;
@@ -65,10 +72,10 @@ public:
 class Renderer : public ReferenceCountable {
 public:
 	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) = 0;
+	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear, const glm::vec2& mouse_position) = 0;
 	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&) = 0;
 	virtual void begin_pass(Disarray::CommandExecutor&) = 0;
-	virtual void end_pass(Disarray::CommandExecutor&, bool should_submit) = 0;
-	virtual void end_pass(Disarray::CommandExecutor& executor) { return end_pass(executor, true); };
+	virtual void end_pass(Disarray::CommandExecutor&) = 0;
 
 	/**
 	 * @brief This is an external pass, i.e. requires that the underlying implementation provides a render pass.
@@ -88,6 +95,7 @@ public:
 	virtual void on_resize() = 0;
 
 	virtual void bind_pipeline(Disarray::CommandExecutor&, const Disarray::Pipeline&, PipelineBindPoint = PipelineBindPoint::BindPointGraphics) = 0;
+	virtual void bind_descriptor_sets(Disarray::CommandExecutor&, const Disarray::Pipeline&) = 0;
 
 	virtual void draw_planar_geometry(Geometry, const GeometryProperties&) = 0;
 	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const GeometryProperties&) = 0;
@@ -109,10 +117,23 @@ public:
 		const glm::vec4& colour, const glm::mat4& transform = glm::identity<glm::mat4>(), const std::uint32_t identifier = 0)
 		= 0;
 
+	virtual void draw_mesh_instanced(
+		Disarray::CommandExecutor&, std::size_t count, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&)
+		= 0;
+
+	virtual void draw_aabb(Disarray::CommandExecutor&, const Disarray::AABB&, const glm::vec4&, const glm::mat4& transform) = 0;
+
+	virtual void draw_identifier(Disarray::CommandExecutor&, const Disarray::Pipeline&, std::uint32_t identifier, const glm::mat4& transform) = 0;
+
 	virtual void draw_text(std::string_view text, const glm::uvec2& position, float size) = 0;
 	virtual void draw_text(std::string_view text, const glm::uvec2& position) { return draw_text(text, position, 1.0F); };
+	virtual void draw_text(std::string_view text, const glm::vec3& position, float size) = 0;
 
 	template <typename... Args> void draw_text(const glm::uvec2& position, fmt::format_string<Args...> fmt_string, Args&&... args)
+	{
+		return draw_text(fmt::format(fmt_string, std::forward<Args>(args)...), position, 1.0F);
+	};
+	template <typename... Args> void draw_text(const glm::vec3& position, fmt::format_string<Args...> fmt_string, Args&&... args)
 	{
 		return draw_text(fmt::format(fmt_string, std::forward<Args>(args)...), position, 1.0F);
 	};
@@ -128,6 +149,9 @@ public:
 	virtual void force_recreation() = 0;
 	virtual auto get_pipeline_cache() -> PipelineCache& = 0;
 	virtual auto get_texture_cache() -> TextureCache& = 0;
+
+	virtual auto get_text_renderer() -> TextRenderer& = 0;
+	virtual auto get_batch_renderer() -> BatchRenderer& = 0;
 
 	auto get_graphics_resource() -> IGraphicsResource& { return *graphics_resource; }
 	[[nodiscard]] virtual auto get_composite_pass_image() const -> const Disarray::Image& = 0;

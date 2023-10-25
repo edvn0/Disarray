@@ -15,6 +15,7 @@
 
 #include "core/Collections.hpp"
 #include "core/Log.hpp"
+#include "core/Random.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "panels/DirectoryContentPanel.hpp"
@@ -43,29 +44,20 @@ ClientLayer::ClientLayer(Device& device, Window& win, Swapchain& swapchain)
 
 ClientLayer::~ClientLayer() = default;
 
-void ClientLayer::construct(App& app, Threading::ThreadPool& pool)
+void ClientLayer::construct(App& app)
 {
 	scene = make_scope<Scene>(device, "Default scene");
-	scene->construct(app, pool);
+	scene->construct(app);
 
 	auto stats_panel = app.add_panel<StatisticsPanel>(app.get_statistics());
 	auto content_panel = app.add_panel<DirectoryContentPanel>("Assets");
 	auto scene_panel = app.add_panel<ScenePanel>(scene.get());
 	auto execution_stats_panel = app.add_panel<ExecutionStatisticsPanel>(scene->get_command_executor());
 
-	stats_panel->construct(app, pool);
-	content_panel->construct(app, pool);
-	scene_panel->construct(app, pool);
-	execution_stats_panel->construct(app, pool);
-
-	constexpr auto angles = generate_angles_client<count_point_lights>();
-
-	auto point_lights = scene->entities_with<Components::PointLight>();
-	std::size_t index { 0 };
-	ensure(angles.size() == point_lights.size());
-	for (auto&& point_light : point_lights) {
-		point_light.add_script<Scripts::MoveInCircleScript>(static_cast<std::uint32_t>(point_light_radius), angles.at(index++));
-	}
+	stats_panel->construct(app);
+	content_panel->construct(app);
+	scene_panel->construct(app);
+	execution_stats_panel->construct(app);
 };
 
 void ClientLayer::interface()
@@ -187,6 +179,10 @@ void ClientLayer::on_event(Event& event)
 		if (ImGuizmo::IsUsing()) {
 			return true;
 		}
+
+#ifndef DISARRAY_DRAW_IDENTIFIERS
+		return false;
+#endif
 
 		const auto vp_is_focused = viewport_panel_focused && viewport_panel_mouse_over;
 		if (pressed.get_mouse_button() == MouseCode::Left && vp_is_focused) {

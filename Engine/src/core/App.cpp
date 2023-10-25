@@ -60,28 +60,27 @@ void App::run()
 {
 	on_attach();
 
-	Threading::ThreadPool pool { {}, 2 };
-
 	auto ui_layer = add_layer<UI::InterfaceLayer>();
 
 	UI::InterfaceCaches::initialise();
 
 	for (auto& layer : layers) {
-		layer->construct(*this, pool);
+		layer->construct(*this);
 	}
 
-	static float current_time = Clock::ms();
+	static auto current_time = Clock::ms();
 	while (!window->should_close()) {
-		if (!could_prepare_frame()) {
+		const auto could_prepare = could_prepare_frame();
+		if (!could_prepare) [[unlikely]] {
 			continue;
 		}
 
-		float time_step = Clock::ms() - current_time;
+		const auto step = Clock::ms() - current_time;
 
-		window->handle_input(time_step);
-		update_layers(time_step);
+		window->handle_input(step);
+		update_layers(step, could_prepare);
 		render_layers();
-		statistics.cpu_time = time_step;
+		statistics.cpu_time = step;
 		render_ui(ui_layer);
 
 		swapchain->reset_recreation_status();
@@ -90,10 +89,9 @@ void App::run()
 		swapchain->present();
 		statistics.presentation_time = Clock::ns() - begin_present_time;
 
+		window->update();
 		statistics.frame_time = Clock::ms() - current_time;
 		current_time = Clock::ms();
-
-		window->update();
 	}
 
 	wait_for_idle(*device);
@@ -107,11 +105,10 @@ void App::run()
 	on_detach();
 }
 
-void App::update_layers(float time_step)
+void App::update_layers(float time_step, bool could_prepare)
 {
-	const auto needs_recreation = swapchain->needs_recreation();
 	for (auto& layer : layers) {
-		if (needs_recreation) {
+		if (!could_prepare) {
 			layer->handle_swapchain_recreation(*swapchain);
 		}
 		layer->update(time_step);

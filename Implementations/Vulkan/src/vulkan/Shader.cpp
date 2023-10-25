@@ -2,6 +2,8 @@
 
 #include "graphics/Shader.hpp"
 
+#include <spirv_reflect.hpp>
+
 #include <fstream>
 
 #include "core/Ensure.hpp"
@@ -31,23 +33,47 @@ namespace {
 		}
 	}
 
-	void create_module(const Vulkan::Device& device, const std::string& code, VkShaderModule& shader)
+	void create_module(const Vulkan::Device& device, const std::string& spirv_code, VkShaderModule& shader)
 	{
 		auto create_info = vk_structures<VkShaderModuleCreateInfo> {}();
-		create_info.codeSize = code.size() * sizeof(std::uint32_t);
-		create_info.pCode = Disarray::bit_cast<const uint32_t*>(code.data());
+		create_info.codeSize = spirv_code.size() * sizeof(std::uint32_t);
+		create_info.pCode = Disarray::bit_cast<const uint32_t*>(spirv_code.data());
 
 		verify(vkCreateShaderModule(*device, &create_info, nullptr, &shader));
 	}
 
-	void create_module(const Vulkan::Device& device, const std::vector<std::uint32_t>& code, VkShaderModule& shader)
+	void create_module(const Vulkan::Device& device, const std::vector<std::uint32_t>& spirv_code, VkShaderModule& shader)
 	{
 		auto create_info = vk_structures<VkShaderModuleCreateInfo> {}();
-		create_info.codeSize = code.size() * sizeof(std::uint32_t);
-		create_info.pCode = code.data();
+		create_info.codeSize = spirv_code.size() * sizeof(std::uint32_t);
+		create_info.pCode = spirv_code.data();
 
 		verify(vkCreateShaderModule(*device, &create_info, nullptr, &shader));
 	}
+
+	auto reflect_code(const std::vector<std::uint32_t>& spirv, ReflectionData& output)
+	{
+		spirv_cross::CompilerReflection reflection_compiler { spirv };
+		spirv_cross::ShaderResources shader_resources = reflection_compiler.get_shader_resources();
+		// Count the number of output attachments
+
+		const auto& model = reflection_compiler.get_execution_model();
+
+		for (const auto& resource : shader_resources.stage_outputs) {
+			// Check if the resource is an output attachment
+			if (reflection_compiler.get_decoration(resource.id, spv::Decoration::DecorationLocation) >= 0) {
+				output.attachment_count++;
+			}
+		}
+
+		// Technically, we only care about how many fragment outputs there are.
+		// FIXME: Will need to generalise if / when we care about vertex outputs.
+		if (model != spv::ExecutionModelFragment) {
+			output.attachment_count = 0;
+		}
+		Log::info("SPIRV Reflection", "Attachment count: {}", output.attachment_count);
+	}
+
 } // namespace
 
 Shader::Shader(const Disarray::Device& dev, ShaderProperties properties)
@@ -58,6 +84,7 @@ Shader::Shader(const Disarray::Device& dev, ShaderProperties properties)
 
 	if (props.code) {
 		ensure(!props.identifier.empty(), "Must supply an identifier");
+		reflect_code(*props.code, reflection_data);
 		create_module(cast_to<Vulkan::Device>(device), *props.code, shader_module);
 	} else {
 		ensure(props.path.has_value(), "No code, but no path provided.");
@@ -86,6 +113,8 @@ Shader::Shader(const Disarray::Device& dev, const std::filesystem::path& path)
 		Log::info("Shader", "Could not compile {}", path);
 		throw CouldNotCompileShaderException { fmt::format("Path: {}", path) };
 	}
+
+	reflect_code(*props.code, reflection_data);
 
 	create_module(cast_to<Vulkan::Device>(device), *props.code, shader_module);
 
@@ -124,6 +153,14 @@ void Shader::destroy_module()
 {
 	vkDestroyShaderModule(supply_cast<Vulkan::Device>(device), shader_module, nullptr);
 	was_destroyed_explicitly = true;
+}
+
+auto Shader::attachment_count() const -> std::uint32_t
+{
+	if (props.type == ShaderType::Fragment) {
+		return reflection_data.attachment_count;
+	}
+	return 0;
 }
 
 } // namespace Disarray::Vulkan

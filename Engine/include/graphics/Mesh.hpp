@@ -9,6 +9,7 @@
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "core/Types.hpp"
+#include "graphics/AABB.hpp"
 #include "graphics/Device.hpp"
 #include "graphics/IndexBuffer.hpp"
 #include "graphics/ModelLoader.hpp"
@@ -38,6 +39,9 @@ public:
 
 	[[nodiscard]] virtual auto get_submeshes() const -> const Collections::ScopedStringMap<Disarray::MeshSubstructure>& = 0;
 	[[nodiscard]] virtual auto get_textures() const -> const RefVector<Disarray::Texture>& = 0;
+
+	virtual auto get_aabb() const -> const AABB& = 0;
+
 	virtual auto has_children() const -> bool = 0;
 
 	static auto construct_deferred(const Device&, MeshProperties) -> std::future<Ref<Mesh>>;

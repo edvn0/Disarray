@@ -4,6 +4,9 @@
 #include <array>
 #include <vector>
 
+#include "core/ThreadPool.hpp"
+#include "core/UsageBadge.hpp"
+
 namespace Disarray::Client {
 
 class ClientLayer : public Layer {
@@ -13,7 +16,7 @@ public:
 
 	void interface() override;
 
-	void construct(App& /*unused*/, Threading::ThreadPool& /*unused*/) override;
+	void construct(App& /*unused*/) override;
 	void handle_swapchain_recreation(Swapchain& /*unused*/) override;
 	void on_event(Event& /*unused*/) override;
 	void update(float /*time_step*/) override;

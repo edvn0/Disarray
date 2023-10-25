@@ -14,6 +14,7 @@
 
 #include "core/PointerDefinition.hpp"
 #include "core/exceptions/GeneralExceptions.hpp"
+#include "spdlog/common.h"
 
 namespace Disarray {
 
@@ -33,14 +34,18 @@ namespace Logging {
 	{
 		auto engine_logger = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 		auto err_file_logger = std::make_shared<spdlog::sinks::basic_file_sink_mt>("Assets/Logs/disarray_errors.log", true);
+		auto trace_file_logger = std::make_shared<spdlog::sinks::basic_file_sink_mt>("Assets/Logs/disarray_trace.log", true);
 		err_file_logger->set_level(spdlog::level::trace);
-		spdlog::logger logger { "Disarray", { engine_logger, err_file_logger } };
+		trace_file_logger->set_level(spdlog::level::trace);
+		spdlog::logger logger { "Disarray", { engine_logger, err_file_logger, trace_file_logger } };
 		logger_data = make_scope<LoggerDataPimpl, PimplDeleter<LoggerDataPimpl>>(std::move(logger));
 
 		logger_data->logger.critical("Logging engine level set to: {}", spdlog::level::to_string_view(spdlog::get_level()));
 	}
 
 	auto Logger::Logger::debug(const std::string& message) -> void { logger_data->logger.debug(message); }
+
+	auto Logger::Logger::to_file(const std::string& message) -> void { logger_data->logger.trace(message); }
 
 	auto Logger::Logger::info(const std::string& message) -> void { logger_data->logger.info(message); }
 
@@ -70,7 +75,8 @@ namespace Log {
 	auto format(const char* const format, ...) -> std::string
 	{
 		auto temp = std::vector<char> {};
-		auto length = std::size_t { 63 };
+		static constexpr auto try_format_size = 63;
+		auto length = std::size_t { try_format_size };
 		std::va_list args;
 		while (temp.size() <= length) {
 			temp.resize(length + 1);

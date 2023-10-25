@@ -51,19 +51,12 @@ constexpr auto to_vulkan_layout(ImageFormat format) -> VkImageLayout
 {
 	switch (format) {
 	case ImageFormat::SRGB:
-		return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	case ImageFormat::RGB:
-		return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	case ImageFormat::SRGB32:
-		return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	case ImageFormat::RGB32:
-		return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	case ImageFormat::SBGR:
-		return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	case ImageFormat::BGR:
-		return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	case ImageFormat::Uint:
-		return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	case ImageFormat::Red:
 		return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	case ImageFormat::Depth:

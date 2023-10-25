@@ -208,6 +208,7 @@
       "**/node_modules/*/**": true
     },
     "cSpell.words": [
+      "AABB",
       "Assimp",
       "backface",
       "bitangent",

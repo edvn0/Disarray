@@ -34,7 +34,6 @@ layout(location = 3) in vec3 fragment_position;
 layout(location = 4) in vec4 light_space_fragment_position;
 
 layout(location = 0) out vec4 colour;
-layout(location = 1) out uint id;
 
 void main()
 {
@@ -66,5 +65,4 @@ void main()
 	}
 
 	colour = pc.colour * vec4(out_vec, 1.0F);
-	id = pc.current_identifier;
 }

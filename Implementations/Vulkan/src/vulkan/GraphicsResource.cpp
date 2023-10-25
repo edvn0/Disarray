@@ -4,6 +4,7 @@
 
 #include <glm/ext/matrix_transform.hpp>
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 #include <magic_enum.hpp>
 #include <magic_enum_switch.hpp>
@@ -24,6 +25,7 @@
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Renderer.hpp"
+#include "vulkan/StorageBuffer.hpp"
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/UniformBuffer.hpp"
 #include "vulkan/VertexBuffer.hpp"
@@ -179,6 +181,21 @@ static auto create_set_two_bindings()
 	return std::array { image_array_binding, image_array_sampler_binding, glyph_texture_binding, glyph_array_sampler_binding };
 }
 
+template <std::size_t Count> static auto create_set_three_bindings()
+{
+	std::array<VkDescriptorSetLayoutBinding, Count> transform_data_ssbo_bindings {};
+	std::uint32_t i = 0;
+	for (auto& binding : transform_data_ssbo_bindings) {
+		binding.descriptorCount = 1;
+		binding.binding = i++;
+		binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		binding.pImmutableSamplers = nullptr;
+	}
+
+	return transform_data_ssbo_bindings;
+}
+
 void GraphicsResource::initialise_descriptors(bool should_clean)
 {
 	if (should_clean) {
@@ -198,6 +215,7 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 	auto set_zero_bindings = create_set_zero_bindings();
 	auto set_one_bindings = create_set_one_bindings();
 	auto set_two_bindings = create_set_two_bindings();
+	auto set_three_bindings = create_set_three_bindings<2>();
 
 	auto layout_create_info = vk_structures<VkDescriptorSetLayoutCreateInfo> {}();
 	layout_create_info.bindingCount = static_cast<std::uint32_t>(set_zero_bindings.size());
@@ -216,7 +234,12 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 	VkDescriptorSetLayout set_two_image_array_layout = nullptr;
 	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &set_two_image_array_layout));
 
-	layouts = { set_zero_ubos_layout, set_one_images_layout, set_two_image_array_layout };
+	VkDescriptorSetLayout set_three_ssbo_layout = nullptr;
+	layout_create_info.bindingCount = static_cast<std::uint32_t>(set_three_bindings.size());
+	layout_create_info.pBindings = set_three_bindings.data();
+	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &set_three_ssbo_layout));
+
+	layouts = { set_zero_ubos_layout, set_one_images_layout, set_two_image_array_layout, set_three_ssbo_layout };
 	static constexpr auto descriptor_pool_max_size = 1000;
 
 	const std::array<VkDescriptorPoolSize, 12> sizes = [](auto size) {
@@ -262,39 +285,12 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 		descriptor_sets.try_emplace(i, std::move(desc_sets));
 	}
 
+	static constexpr auto get_buffer_info
+		= [](const Scope<Vulkan::UniformBuffer>& buffer) { return &cast_to<Vulkan::UniformBuffer>(*buffer).get_buffer_info(); };
+
 	for (std::size_t i = 0; i < swapchain_image_count; i++) {
 		const auto& ubos = frame_index_ubo_map.at(i);
 		auto& frame_descriptor_sets = descriptor_sets.at(i);
-
-		VkDescriptorBufferInfo renderer_buffer {};
-		renderer_buffer.buffer = supply_cast<Vulkan::UniformBuffer>(*ubos.at(0));
-		renderer_buffer.offset = 0;
-		renderer_buffer.range = sizeof(UBO);
-
-		VkDescriptorBufferInfo camera_buffer {};
-		camera_buffer.buffer = supply_cast<Vulkan::UniformBuffer>(*ubos.at(1));
-		camera_buffer.offset = 0;
-		camera_buffer.range = sizeof(CameraUBO);
-
-		VkDescriptorBufferInfo point_light_buffer {};
-		point_light_buffer.buffer = supply_cast<Vulkan::UniformBuffer>(*ubos.at(2));
-		point_light_buffer.offset = 0;
-		point_light_buffer.range = sizeof(PointLights);
-
-		VkDescriptorBufferInfo shadow_pass_buffer {};
-		shadow_pass_buffer.buffer = supply_cast<Vulkan::UniformBuffer>(*ubos.at(3));
-		shadow_pass_buffer.offset = 0;
-		shadow_pass_buffer.range = sizeof(ShadowPassUBO);
-
-		VkDescriptorBufferInfo directional_light_buffer {};
-		directional_light_buffer.buffer = supply_cast<Vulkan::UniformBuffer>(*ubos.at(4));
-		directional_light_buffer.offset = 0;
-		directional_light_buffer.range = sizeof(DirectionalLightUBO);
-
-		VkDescriptorBufferInfo glyph_ubo_buffer {};
-		glyph_ubo_buffer.buffer = supply_cast<Vulkan::UniformBuffer>(*ubos.at(5));
-		glyph_ubo_buffer.offset = 0;
-		glyph_ubo_buffer.range = sizeof(GlyphUBO);
 
 		auto write_sets = vk_structures<VkWriteDescriptorSet, 6> {}.multiple();
 		write_sets[0].dstSet = frame_descriptor_sets.at(0);
@@ -302,42 +298,42 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 		write_sets[0].dstArrayElement = 0;
 		write_sets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		write_sets[0].descriptorCount = 1;
-		write_sets[0].pBufferInfo = &renderer_buffer;
+		write_sets[0].pBufferInfo = get_buffer_info(ubos.at(0));
 
 		write_sets[1].dstSet = frame_descriptor_sets.at(0);
 		write_sets[1].dstBinding = 1;
 		write_sets[1].dstArrayElement = 0;
 		write_sets[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		write_sets[1].descriptorCount = 1;
-		write_sets[1].pBufferInfo = &camera_buffer;
+		write_sets[1].pBufferInfo = get_buffer_info(ubos.at(1));
 
 		write_sets[2].dstSet = frame_descriptor_sets.at(0);
 		write_sets[2].dstBinding = 2;
 		write_sets[2].dstArrayElement = 0;
 		write_sets[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		write_sets[2].descriptorCount = 1;
-		write_sets[2].pBufferInfo = &point_light_buffer;
+		write_sets[2].pBufferInfo = get_buffer_info(ubos.at(2));
 
 		write_sets[3].dstSet = frame_descriptor_sets.at(0);
 		write_sets[3].dstBinding = 3;
 		write_sets[3].dstArrayElement = 0;
 		write_sets[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		write_sets[3].descriptorCount = 1;
-		write_sets[3].pBufferInfo = &shadow_pass_buffer;
+		write_sets[3].pBufferInfo = get_buffer_info(ubos.at(3));
 
 		write_sets[4].dstSet = frame_descriptor_sets.at(0);
 		write_sets[4].dstBinding = 4;
 		write_sets[4].dstArrayElement = 0;
 		write_sets[4].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		write_sets[4].descriptorCount = 1;
-		write_sets[4].pBufferInfo = &directional_light_buffer;
+		write_sets[4].pBufferInfo = get_buffer_info(ubos.at(4));
 
 		write_sets[5].dstSet = frame_descriptor_sets.at(0);
 		write_sets[5].dstBinding = 5;
 		write_sets[5].dstArrayElement = 0;
 		write_sets[5].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		write_sets[5].descriptorCount = 1;
-		write_sets[5].pBufferInfo = &glyph_ubo_buffer;
+		write_sets[5].pBufferInfo = get_buffer_info(ubos.at(5));
 
 		vkUpdateDescriptorSets(vk_device, static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
 	}
@@ -348,7 +344,7 @@ void GraphicsResource::expose_to_shaders(const Disarray::Image& image, Descripto
 	auto write_sets = descriptor_write_sets_per_frame(descriptor_set);
 	const auto& info = cast_to<Vulkan::Image>(image).get_descriptor_info();
 
-	Log::info("GraphicsResource", "Exposing '{}' to shader at binding {}", image.get_properties().debug_name, binding);
+	Log::info("GraphicsResource", "Exposing '{}' to shader at set {} - binding {}", image.get_properties().debug_name, descriptor_set, binding);
 	for (auto& write_set : write_sets) {
 		write_set.dstBinding = binding;
 		write_set.dstArrayElement = 0;
@@ -373,6 +369,22 @@ void GraphicsResource::expose_to_shaders(std::span<const Ref<Disarray::Texture>>
 	});
 
 	internal_expose_to_shaders(cast_to<Vulkan::Image>(span[0]->get_image()).get_descriptor_info().sampler, image_infos, set, binding);
+}
+
+void GraphicsResource::expose_to_shaders(const Disarray::StorageBuffer& buffer, DescriptorSet set, DescriptorBinding binding)
+{
+	auto write_sets = descriptor_write_sets_per_frame(set);
+	const auto& vk_buffer = cast_to<Vulkan::StorageBuffer>(buffer);
+
+	for (auto& write_set : write_sets) {
+		write_set.dstBinding = binding;
+		write_set.dstArrayElement = 0;
+		write_set.descriptorType = Vulkan::StorageBuffer::get_descriptor_type();
+		write_set.descriptorCount = 1;
+		write_set.pBufferInfo = &vk_buffer.get_descriptor_info();
+	}
+
+	vkUpdateDescriptorSets(supply_cast<Vulkan::Device>(device), static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
 }
 
 void GraphicsResource::expose_to_shaders(std::span<const Disarray::Texture*> span, DescriptorSet set, DescriptorBinding binding)

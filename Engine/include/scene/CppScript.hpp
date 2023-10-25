@@ -23,10 +23,11 @@ namespace Disarray {
 
 // KV-Pair with general parameters for a script: "Velocity, glm::vec3 {0,-1,0}" e.g.
 using Parameter
-	= std::variant<std::monostate, glm::vec2, glm::vec3, glm::vec4, float, double, int, std::uint8_t, std::uint32_t, std::size_t, std::string>;
+	= std::variant<std::monostate, glm::vec2, glm::vec3, glm::vec4, float, double, int, std::uint8_t, std::uint32_t, std::size_t, std::string, bool>;
 
 template <class T>
-	requires((AnyOf<T, std::monostate, glm::vec2, glm::vec3, glm::vec4, float, double, int, std::uint8_t, std::uint32_t, std::size_t, std::string>))
+	requires((AnyOf<T, std::monostate, glm::vec2, glm::vec3, glm::vec4, float, double, int, std::uint8_t, std::uint32_t, std::size_t, std::string,
+				bool>))
 static constexpr auto switch_parameter = [](Parameter& parameter, auto&& func) -> bool {
 	DISARRAY_FOR_TYPE(std::monostate);
 	DISARRAY_FOR_TYPE(glm::vec2);
@@ -39,6 +40,7 @@ static constexpr auto switch_parameter = [](Parameter& parameter, auto&& func) -
 	DISARRAY_FOR_TYPE(std::uint32_t);
 	DISARRAY_FOR_TYPE(std::size_t);
 	DISARRAY_FOR_TYPE(std::string);
+	DISARRAY_FOR_TYPE(bool);
 
 	return false;
 };

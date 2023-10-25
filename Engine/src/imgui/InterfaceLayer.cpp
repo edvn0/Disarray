@@ -45,7 +45,7 @@ InterfaceLayer::InterfaceLayer(Device& dev, Window& win, Swapchain& swap)
 
 InterfaceLayer::~InterfaceLayer() { }
 
-void InterfaceLayer::construct(App&, Threading::ThreadPool&)
+void InterfaceLayer::construct(App&)
 {
 	command_executor = CommandExecutor::construct(device, nullptr,
 		{
@@ -95,15 +95,17 @@ void InterfaceLayer::construct(App&, Threading::ThreadPool&)
 
 	ImGui_ImplGlfw_InitForVulkan(static_cast<GLFWwindow*>(window.native()), true);
 
+	auto& vk_swapchain = cast_to<Vulkan::Swapchain>(swapchain);
 	ImGui_ImplVulkan_InitInfo init_info = {};
 	init_info.Instance = supply_cast<Vulkan::Instance>(window.get_instance());
 	init_info.PhysicalDevice = supply_cast<Vulkan::PhysicalDevice>(device.get_physical_device());
 	init_info.Device = *vk_device;
 	init_info.Queue = vk_device.get_graphics_queue();
+	init_info.ColorAttachmentFormat = vk_swapchain.get_image_format();
 	init_info.DescriptorPool = pimpl->pool;
 	init_info.MinImageCount = 2;
 	init_info.ImageCount = 3;
-	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+	init_info.MSAASamples = Vulkan::to_vulkan_samples(vk_swapchain.get_samples());
 
 	ImGui_ImplVulkan_Init(&init_info, supply_cast<Vulkan::RenderPass>(swapchain.get_render_pass()));
 
@@ -125,7 +127,7 @@ void InterfaceLayer::construct(App&, Threading::ThreadPool&)
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
-void InterfaceLayer::handle_swapchain_recreation(Swapchain&) { command_executor->recreate(true, {}); }
+void InterfaceLayer::handle_swapchain_recreation(Swapchain& /*unused*/) { command_executor->recreate(true, {}); }
 
 void InterfaceLayer::on_event(Event& event)
 {

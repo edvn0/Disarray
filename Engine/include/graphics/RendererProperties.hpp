@@ -80,8 +80,8 @@ namespace Detail {
 	};
 } // namespace Detail
 
-static constexpr auto max_point_lights = 30;
-static constexpr auto count_point_lights = 7;
+static constexpr auto max_point_lights = 1000;
+static constexpr auto count_point_lights = 1000;
 static constexpr auto point_light_radius = 15;
 using PointLights = Detail::PointLights<max_point_lights>;
 
@@ -135,6 +135,7 @@ struct DirectionalLightUBO : Resettable<DirectionalLightUBO> {
 
 struct GlyphUBO : Resettable<GlyphUBO> {
 	glm::mat4 projection {}; // 64
+	glm::mat4 view {}; // 64
 
 	void reset_impl();
 };

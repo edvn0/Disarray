@@ -39,7 +39,13 @@ Device::Device(Disarray::Window& window)
 	features.independentBlend = VK_TRUE;
 #endif
 
+	VkPhysicalDeviceShaderDrawParametersFeatures shader_draw_parameters_features = {};
+	shader_draw_parameters_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
+	shader_draw_parameters_features.pNext = nullptr;
+	shader_draw_parameters_features.shaderDrawParameters = VK_TRUE;
+
 	VkDeviceCreateInfo device_create_info {};
+	device_create_info.pNext = &shader_draw_parameters_features;
 	device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	device_create_info.queueCreateInfoCount = static_cast<std::uint32_t>(queue_create_infos.size());
 	device_create_info.pQueueCreateInfos = queue_create_infos.data();

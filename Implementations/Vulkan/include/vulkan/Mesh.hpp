@@ -3,6 +3,7 @@
 #include "core/Collections.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/Types.hpp"
+#include "graphics/AABB.hpp"
 #include "graphics/IndexBuffer.hpp"
 #include "graphics/Mesh.hpp"
 #include "graphics/ModelLoader.hpp"
@@ -21,6 +22,7 @@ public:
 
 	auto get_indices() const -> Disarray::IndexBuffer& override;
 	auto get_vertices() const -> Disarray::VertexBuffer& override;
+	auto get_aabb() const -> const AABB& override;
 
 	auto get_submeshes() const -> const Collections::ScopedStringMap<Disarray::MeshSubstructure>& override;
 	auto get_textures() const -> const RefVector<Disarray::Texture>& override;
@@ -37,6 +39,7 @@ private:
 
 	std::vector<Ref<Disarray::Texture>> mesh_textures;
 	Collections::ScopedStringMap<Disarray::MeshSubstructure> submeshes {};
+	AABB aabb {};
 	std::string mesh_name {};
 };
 

@@ -27,7 +27,7 @@ template <CacheableResource Resource, class Props, class Child, class Key = std:
 public:
 	~ResourceCache() { storage.clear(); };
 
-	auto get(const Key& key) -> Resource&
+	auto get(const Key& key) -> const Resource&
 	{
 		ensure(storage.contains(key), "Key missing from the resource cache.");
 		return storage[key];
@@ -63,7 +63,7 @@ public:
 
 	template <class Func> void for_each_in_storage(Func&& func) { Collections::for_each(storage, std::forward<Func>(func)); }
 
-	void force_recreate(const Extent& extent) { return get_child().force_recreate_impl(extent); };
+	void force_recreation(const Extent& extent) { return get_child().force_recreation_impl(extent); };
 	auto create_from(const Props& props) -> Resource { return get_child().create_from_impl(props); }
 	auto create_key(const Props& props) -> Key
 	{

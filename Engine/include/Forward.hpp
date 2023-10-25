@@ -12,9 +12,11 @@ class Entity;
 class Framebuffer;
 class Image;
 class IndexBuffer;
+class StorageBuffer;
 class Instance;
 class Mesh;
 struct Submesh;
+class AABB;
 class PhysicalDevice;
 class Pipeline;
 class QueueFamilyIndex;
@@ -30,6 +32,8 @@ class VertexBuffer;
 class Window;
 class PipelineCache;
 class TextureCache;
+class TextRenderer;
+struct BatchRenderer;
 
 class CppScript;
 class Camera;
@@ -51,6 +55,7 @@ namespace Components {
 	struct DirectionalLight;
 	struct PointLight;
 	struct Script;
+	struct Controller;
 } // namespace Components
 
 } // namespace Disarray

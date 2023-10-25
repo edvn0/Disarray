@@ -23,6 +23,7 @@
 #include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "graphics/Texture.hpp"
+#include "scene/Camera.hpp"
 #include "scene/CppScript.hpp"
 
 namespace Disarray::Components {
@@ -60,6 +61,7 @@ struct Mesh {
 	explicit Mesh(Ref<Disarray::Mesh>);
 
 	Ref<Disarray::Mesh> mesh { nullptr };
+	bool draw_aabb { false };
 };
 template <> inline constexpr std::string_view component_name<Mesh> = "Mesh";
 
@@ -215,5 +217,32 @@ struct Inheritance {
 	[[nodiscard]] auto has_children() const -> bool { return !children.empty(); }
 };
 template <> inline constexpr std::string_view component_name<Inheritance> = "Inheritance";
+
+struct Controller {
+	void on_update(float time_step, Components::Transform&);
+
+	static constexpr auto default_velocity = 1.F;
+	float velocity { 0.0F };
+
+	static constexpr auto default_acceleration = 0.5F;
+	float acceleration { 0.0F };
+
+	glm::vec3 direction { 1, 1, -1 };
+};
+template <> inline constexpr std::string_view component_name<Controller> = "Controller";
+
+struct Camera {
+	CameraType type { CameraType::Perspective };
+	float fov_degrees { 60.F };
+	float near_perspective { 0.1F };
+	float far_perspective { 1000.F };
+	float near_orthographic { 0.1F };
+	float far_orthographic { 1000.F };
+	bool is_primary { true };
+	bool reverse { false };
+
+	[[nodiscard]] auto compute(const Transform& transform, const Extent& extent) const -> const std::tuple<glm::mat4, glm::mat4, glm::mat4>&;
+};
+template <> inline constexpr std::string_view component_name<Camera> = "Camera";
 
 } // namespace Disarray::Components

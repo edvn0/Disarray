@@ -178,6 +178,7 @@ auto Image::read_pixel(const glm::vec2& pos) const -> PixelReadData
 		ensure(data != nullptr);
 
 		auto span = std::span { data, size };
+
 		if (get_properties().format == ImageFormat::Uint) {
 			// ID of the entity
 			read_data = static_cast<std::uint32_t>(span[offset]);

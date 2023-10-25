@@ -12,12 +12,10 @@ layout(location = 1) in vec2 uvs;
 layout(location = 2) in vec3 normals;
 
 layout(location = 0) out vec4 colour;
-layout(location = 1) out uint identifier;
 
 void main()
 {
 	PushConstant pc = PC.pc;
 
 	colour = fragColour * vec4(uvs.xy, 0, 1.0F);
-	identifier = pc.current_identifier;
 }

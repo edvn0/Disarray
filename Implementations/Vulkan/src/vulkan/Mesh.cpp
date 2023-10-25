@@ -49,54 +49,58 @@ void Mesh::load_and_initialise_model()
 		return std::optional<std::int32_t> { std::nullopt };
 	};
 
+	ModelLoader loader;
 	try {
-		ModelLoader loader { make_scope<AssimpModelLoader>(props.initial_rotation), props.path };
-		mesh_textures = loader.construct_textures(device);
-		for (const auto& mesh_data = loader.get_mesh_data(); const auto& [key, submesh] : mesh_data) {
-			auto vertex_buffer = VertexBuffer::construct_scoped(device,
-				{
-					.data = submesh.data<ModelVertex>(),
-					.size = submesh.size<ModelVertex>(),
-					.count = submesh.count<ModelVertex>(),
-				});
-			auto index_buffer = IndexBuffer::construct_scoped(device,
-				{
-					.data = submesh.data<std::uint32_t>(),
-					.size = submesh.size<std::uint32_t>(),
-					.count = submesh.count<std::uint32_t>(),
-				});
-
-			std::unordered_set<std::int32_t> image_indices {};
-			for (const auto& tex : submesh.textures) {
-				if (const auto found = find_index(mesh_textures, tex); found.has_value()) {
-					image_indices.insert(*found);
-				}
-			}
-
-			auto substructure = make_scope<MeshSubstructure>(std::move(vertex_buffer), std::move(index_buffer), std::move(image_indices));
-			submeshes.try_emplace(key, std::move(substructure));
-		}
-
-		mesh_name = props.path.filename().replace_extension().string();
+		loader = ModelLoader(make_scope<AssimpModelLoader>(props.initial_rotation), props.path);
 	} catch (const CouldNotLoadModelException& exc) {
 		Log::error("Mesh", "Model could not be loaded: {}", exc.what());
+		return;
 	}
+
+	mesh_textures = loader.construct_textures(device);
+	aabb = loader.get_aabb();
+	for (const auto& mesh_data = loader.get_mesh_data(); const auto& [key, submesh] : mesh_data) {
+		auto vertex_buffer = VertexBuffer::construct_scoped(device,
+			{
+				.data = submesh.data<ModelVertex>(),
+				.size = submesh.size<ModelVertex>(),
+				.count = submesh.count<ModelVertex>(),
+			});
+		auto index_buffer = IndexBuffer::construct_scoped(device,
+			{
+				.data = submesh.data<std::uint32_t>(),
+				.size = submesh.size<std::uint32_t>(),
+				.count = submesh.count<std::uint32_t>(),
+			});
+
+		std::unordered_set<std::int32_t> image_indices {};
+		for (const auto& tex : submesh.textures) {
+			if (const auto found = find_index(mesh_textures, tex); found.has_value()) {
+				image_indices.insert(*found);
+			}
+		}
+
+		auto substructure = make_scope<MeshSubstructure>(std::move(vertex_buffer), std::move(index_buffer), std::move(image_indices));
+		submeshes.try_emplace(key, std::move(substructure));
+	}
+
+	mesh_name = props.path.filename().replace_extension().string();
 }
 
 auto Mesh::get_indices() const -> Disarray::IndexBuffer&
 {
-	if (submeshes.contains(mesh_name))
+	if (submeshes.contains(mesh_name)) {
 		return *submeshes.at(mesh_name)->indices;
-	else
-		return *submeshes.begin()->second->indices;
+	}
+	return *submeshes.begin()->second->indices;
 }
 
 auto Mesh::get_vertices() const -> Disarray::VertexBuffer&
 {
-	if (submeshes.contains(mesh_name))
+	if (submeshes.contains(mesh_name)) {
 		return *submeshes.at(mesh_name)->vertices;
-	else
-		return *submeshes.begin()->second->vertices;
+	}
+	return *submeshes.begin()->second->vertices;
 }
 
 void Mesh::force_recreation() { load_and_initialise_model(); }
@@ -115,5 +119,7 @@ auto Mesh::construct_deferred(const Disarray::Device& device, MeshProperties pro
 {
 	return std::async(std::launch::async, MeshConstructor {}, std::cref(device), std::move(properties));
 }
+
+auto Mesh::get_aabb() const -> const AABB& { return aabb; }
 
 } // namespace Disarray::Vulkan

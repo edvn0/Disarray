@@ -8,6 +8,7 @@ set(SOURCES
 	include/vulkan/Pipeline.hpp
 	include/vulkan/PropertySupplier.hpp
 	include/vulkan/IndexBuffer.hpp
+	include/vulkan/StorageBuffer.hpp
 	include/vulkan/VertexBuffer.hpp
 	include/vulkan/MemoryAllocator.hpp
 	include/vulkan/ExtensionSupport.hpp
@@ -68,6 +69,7 @@ set(SOURCES
 	src/vulkan/ImageUtilities.cpp
 	src/vulkan/Structures.cpp
 	src/vulkan/IndexBuffer.cpp
+	src/vulkan/StorageBuffer.cpp
 	src/vulkan/Texture.cpp
 	src/vulkan/Image.cpp)
 
@@ -91,6 +93,7 @@ target_link_libraries(
 	magic_enum::magic_enum
 	spirv-cross-core
 	spirv-cross-glsl
+	spirv-cross-reflect
 	glslang
 	glslang-default-resource-limits
 	SPIRV

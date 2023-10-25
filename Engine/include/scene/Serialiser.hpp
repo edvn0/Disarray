@@ -27,7 +27,6 @@ namespace {
 			: runtime_error(message)
 		{
 		}
-		~CouldNotSerialiseException() noexcept override = default;
 	};
 
 	template <class... Serialisers> struct Serialiser {

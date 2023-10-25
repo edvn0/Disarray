@@ -96,7 +96,7 @@ void ScenePanel::interface()
 		draw_entity_node(entity, true);
 	});
 
-	if (ImGui::BeginPopupContextWindow("EmptyEntityId", 1)) {
+	if (ImGui::BeginPopupContextWindow("EmptyEntityId", ImGuiPopupFlags_MouseButtonRight)) {
 		if (ImGui::MenuItem("Create Empty Entity")) {
 			scene->create("Empty Entity");
 		}
@@ -192,6 +192,21 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (ImGui::ColorEdit4("Specular", glm::value_ptr(point.specular))) { }
 	});
 
+	draw_component<Components::Camera>(entity, "Camera", [](Components::Camera& cam) {
+		std::ignore = UI::combo_choice<CameraType>("Type", std::ref(cam.type));
+
+		if (cam.type == CameraType::Perspective) {
+			if (ImGui::DragFloat("Near", &cam.near_perspective)) { }
+			if (ImGui::DragFloat("Far", &cam.far_perspective)) { }
+		} else {
+			if (ImGui::DragFloat("Near", &cam.near_orthographic)) { }
+			if (ImGui::DragFloat("Far", &cam.far_orthographic)) { }
+		}
+		if (ImGui::DragFloat("Fov", &cam.fov_degrees, 2.F, 4.F, 160.F)) { }
+		if (ImGui::Checkbox("Primary", &cam.is_primary)) { }
+		if (ImGui::Checkbox("Reverse", &cam.reverse)) { }
+	});
+
 	draw_component<Components::Mesh>(entity, "Mesh", [](Components::Mesh& mesh_component) {
 		auto& [path, pipeline, _] = mesh_component.mesh->get_properties();
 
@@ -201,6 +216,7 @@ void ScenePanel::for_all_components(Entity& entity)
 			selected = UI::Popup::select_file({ "*.mesh" });
 			any_changed |= selected.has_value();
 		}
+		if (ImGui::Checkbox("Draw AABB", &mesh_component.draw_aabb)) { };
 
 		if (any_changed) {
 			if (selected.has_value()) {

@@ -6,6 +6,7 @@
 
 #include "core/Collections.hpp"
 #include "core/PointerDefinition.hpp"
+#include "graphics/AABB.hpp"
 #include "graphics/ModelVertex.hpp"
 #include "graphics/Texture.hpp"
 
@@ -63,12 +64,14 @@ struct IModelImporter {
 
 class ModelLoader {
 public:
+	explicit ModelLoader() = default;
 	explicit ModelLoader(Scope<IModelImporter>);
 	explicit ModelLoader(Scope<IModelImporter>, const std::filesystem::path&);
 	void import_model(const std::filesystem::path&);
 	[[nodiscard]] auto construct_textures(const Device&) -> std::vector<Ref<Disarray::Texture>>;
 
 	[[nodiscard]] auto get_mesh_data() -> const ImportedMesh& { return mesh_data; }
+	[[nodiscard]] auto get_aabb() const -> AABB;
 
 private:
 	Scope<IModelImporter> importer { nullptr };
