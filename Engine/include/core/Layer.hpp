@@ -14,7 +14,7 @@ class Layer {
 public:
 	virtual ~Layer() = default;
 
-	virtual void construct(App&, Threading::ThreadPool&);
+	virtual void construct(App&);
 	virtual void handle_swapchain_recreation(Swapchain&);
 	virtual void on_event(Event&);
 	virtual void interface();

@@ -3,7 +3,9 @@
 #include <Disarray.hpp>
 #include <entt/entt.hpp>
 
+#include "core/KeyCode.hpp"
 #include "core/Panel.hpp"
+#include "scene/Component.hpp"
 #include "scene/Components.hpp"
 #include "ui/UI.hpp"
 
@@ -26,37 +28,37 @@ private:
 
 	std::unique_ptr<entt::entity> selected_entity {};
 
-	template <ValidComponent TComponent, class UIFunction>
-	void draw_component(Entity& entity, std::string_view name, UIFunction&& uiFunction, Ref<Disarray::Texture> icon = nullptr)
+	template <ValidComponent T, class Func>
+	void draw_component(Entity& entity, std::string_view name, Func&& ui_function, Ref<Disarray::Texture> icon = nullptr)
 	{
-		if (!entity.has_component<TComponent>()) {
+		if (!entity.has_component<T>()) {
 			return;
 		}
 
-		ImGui::PushID((void*)typeid(TComponent).hash_code());
-		ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
+		ImGui::PushID((void*)typeid(T).hash_code());
+		ImVec2 content_region_available = ImGui::GetContentRegionAvail();
 
 		bool open = ImGui::TreeNodeEx(name.data(), ImGuiTreeNodeFlags_OpenOnDoubleClick);
 		bool right_clicked = ImGui::IsItemClicked(ImGuiMouseButton_Right);
-		float lineHeight = ImGui::GetItemRectMax().y - ImGui::GetItemRectMin().y;
+		float line_height = ImGui::GetItemRectMax().y - ImGui::GetItemRectMin().y;
 
 		bool reset_values = false;
 		bool remove_component = false;
 
-		ImGui::SameLine(contentRegionAvailable.x - lineHeight - 5.0f);
-		UI::shift_cursor_y(lineHeight / 4.0f);
-		if (ImGui::Button("+", ImVec2 { lineHeight, lineHeight }) || right_clicked) {
+		ImGui::SameLine(content_region_available.x - line_height - 5.0f);
+		UI::shift_cursor_y(line_height / 4.0F);
+		if (ImGui::Button("+", ImVec2 { line_height, line_height }) || right_clicked) {
 			ImGui::OpenPopup("ComponentSettings");
 		}
 
 		if (ImGui::BeginPopup("ComponentSettings")) {
-			auto& component = entity.get_components<TComponent>();
+			auto& component = entity.get_components<T>();
 
 			if (ImGui::MenuItem("Reset")) {
 				reset_values = true;
 			}
 
-			if constexpr (!std::is_same_v<TComponent, Components::Transform>) {
+			if constexpr (!std::is_same_v<T, Components::Transform>) {
 				if (ImGui::MenuItem("Remove component")) {
 					remove_component = true;
 				}
@@ -66,26 +68,27 @@ private:
 		}
 
 		if (open) {
-			TComponent& component = entity.get_components<TComponent>();
-			std::forward<UIFunction>(uiFunction)(component);
+			T& component = entity.get_components<T>();
+			std::forward<Func>(ui_function)(component);
 			ImGui::TreePop();
 		}
 
 		if (remove_component) {
-			if (entity.has_component<TComponent>()) {
-				entity.remove_component<TComponent>();
+			if (entity.has_component<T>()) {
+				entity.remove_component<T>();
 			}
 		}
 
 		if (reset_values) {
-			if (entity.has_component<TComponent>()) {
-				entity.remove_component<TComponent>();
-				entity.add_component<TComponent>();
+			if (entity.has_component<T>()) {
+				entity.remove_component<T>();
+				entity.add_component<T>();
 			}
 		}
 
-		if (!open)
-			UI::shift_cursor_y(-(ImGui::GetStyle().ItemSpacing.y + 1.0f));
+		if (!open) {
+			UI::shift_cursor_y(-(ImGui::GetStyle().ItemSpacing.y + 1.0F));
+		}
 
 		ImGui::PopID();
 	}

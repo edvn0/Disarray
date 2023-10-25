@@ -27,8 +27,7 @@ void Camera::set_ortho_projection_matrix(const float width, const float height, 
 	unreversed_projection_matrix = Maths::ortho(-width * half, width * half, -height * half, height * half, near_plane, far_plane);
 }
 
-void Camera::set_perspective_projection_matrix(
-	const float radians_fov, const float width, const float height, const float near_plane, const float far_plane)
+void Camera::set_perspective_projection_matrix(float radians_fov, float width, float height, float near_plane, float far_plane)
 {
 	projection_matrix = glm::perspectiveFov(radians_fov, width, height, far_plane, near_plane);
 	unreversed_projection_matrix = glm::perspectiveFov(radians_fov, width, height, near_plane, far_plane);
@@ -201,10 +200,10 @@ void EditorCamera::focus(const glm::vec3& focus_point)
 
 auto EditorCamera::pan_speed() const -> std::pair<float, float>
 {
-	const float x = glm::min(float(viewport_width) / 1000.0F, 2.4F); // max = 2.4f
+	const float x = glm::min(static_cast<float>(viewport.width) / 1000.0F, 2.4F); // max = 2.4f
 	const float x_factor = 0.0366f * (x * x) - 0.1778f * x + 0.3021F;
 
-	const float y = glm::min(float(viewport_height) / 1000.0F, 2.4F); // max = 2.4f
+	const float y = glm::min(static_cast<float>(viewport.height) / 1000.0F, 2.4F); // max = 2.4f
 	const float y_factor = 0.0366f * (y * y) - 0.1778f * y + 0.3021F;
 
 	return { x_factor, y_factor };

@@ -60,17 +60,15 @@ void App::run()
 {
 	on_attach();
 
-	Threading::ThreadPool pool { {}, 2 };
-
 	auto ui_layer = add_layer<UI::InterfaceLayer>();
 
 	UI::InterfaceCaches::initialise();
 
 	for (auto& layer : layers) {
-		layer->construct(*this, pool);
+		layer->construct(*this);
 	}
 
-	static float current_time = Clock::ms();
+	static auto current_time = Clock::ms();
 	while (!window->should_close()) {
 		const auto could_prepare = could_prepare_frame();
 		if (!could_prepare) [[unlikely]] {

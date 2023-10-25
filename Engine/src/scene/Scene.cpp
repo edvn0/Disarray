@@ -147,10 +147,11 @@ void Scene::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
 		});
 }
 
-void Scene::construct(Disarray::App& app, Disarray::Threading::ThreadPool& pool)
+void Scene::construct(Disarray::App& app)
 {
 	scene_renderer = Renderer::construct_unique(device, app.get_swapchain(), {});
 
+	auto& pool = App::get_thread_pool();
 	setup_filewatcher_and_threadpool(pool);
 
 	extent = app.get_swapchain().get_extent();
@@ -255,7 +256,23 @@ Scene::~Scene() = default;
 
 void Scene::begin_frame(const Camera& camera)
 {
-	scene_renderer->begin_frame(camera);
+	auto find_one = get_by_components<Components::Camera>();
+	bool camera_component_usable = true;
+	if (find_one) {
+		auto&& [camera_component, transform] = find_one->get_components<Components::Camera, const Components::Transform>();
+		// if we have a primary camera, then camera_component_usable should be false
+		if (camera_component.is_primary) {
+			auto&& [projection, view, pre_mul] = camera_component.compute(transform, extent);
+			scene_renderer->begin_frame(view, projection, pre_mul);
+		} else {
+			camera_component_usable = false;
+		}
+	}
+
+	if (!camera_component_usable) {
+		scene_renderer->begin_frame(camera);
+	}
+
 	auto [ubo, camera_ubo, light_ubos, shadow_pass, directional, glyph] = scene_renderer->get_graphics_resource().get_editable_ubos();
 	auto& push_constant = scene_renderer->get_graphics_resource().get_editable_push_constant();
 
@@ -353,7 +370,6 @@ void Scene::update(float time_step)
 		pipeline.pipeline->force_recreation();
 	}
 	{
-		DISARRAY_PROFILE_SCOPE("Script Update");
 		auto script_view = registry.view<Components::Script>();
 		script_view.each([scene = this, step = time_step](const auto entity, Components::Script& script) {
 			if (script.has_been_bound()) {
@@ -365,17 +381,18 @@ void Scene::update(float time_step)
 			instantiated.on_update(step);
 		});
 	}
+	{
+		auto controller_view = registry.view<Components::Controller, Components::Transform>();
+		controller_view.each([step = time_step](const auto entity, Components::Controller& controller, Components::Transform& transform) {
+			controller.on_update(step, transform);
+		});
+	}
 }
 
 void Scene::render()
 {
 	command_executor->begin();
 	auto& executor = *command_executor;
-	{
-		scene_renderer->draw_text({ 0, 0 }, "Hello world! {}\nHello", "Edwin");
-		scene_renderer->draw_text({ 10, -5, 20 }, "Hello world! {}\nHello", "Edwin");
-		scene_renderer->text_rendering_pass(executor);
-	}
 	{
 		// Shadow pass
 		scene_renderer->begin_pass(executor, *shadow_framebuffer);
@@ -398,6 +415,11 @@ void Scene::render()
 		scene_renderer->end_pass(executor);
 	}
 #endif
+	{
+		scene_renderer->draw_text({ 0, 0 }, "Hello world! {}\nHello", "Edwin");
+		scene_renderer->draw_text({ 10, -5, 20 }, "Hello world! {}\nHello", "Edwin");
+		scene_renderer->text_rendering_pass(executor);
+	}
 	{
 		// This is the composite pass!
 		scene_renderer->fullscreen_quad_pass(executor, extent);
@@ -923,8 +945,7 @@ void Scene::create_entities()
 		sun.add_component<Components::Mesh>(sphere);
 		sun.add_component<Components::Pipeline>(pipe);
 		sun.add_component<Components::Transform>().position = { -15, -15, 16 };
-
-		sun.add_script<Scripts::MoveInCircleScript>(30, 0.F, -.08F);
+		sun.add_component<Components::Controller>();
 
 		auto pl_system = create("PointLightSystem");
 		for (std::uint32_t i = 0; i < colours.size(); i++) {
@@ -934,7 +955,9 @@ void Scene::create_entities()
 			light_component.diffuse = colours.at(i);
 			light_component.specular = colours.at(i);
 
-			const auto point_in_sphere = Random::in_sphere(static_cast<float>(point_light_radius));
+			constexpr auto float_radius = static_cast<float>(point_light_radius);
+			const auto point_in_sphere = Random::in_sphere(float_radius, { -2, 5, 6 });
+			Log::info("Scene", "Position of sphere point: {}", point_in_sphere);
 			auto& transform = point_light.get_components<Components::Transform>();
 			transform.position = point_in_sphere;
 			// transform.scale *= 2;
@@ -945,6 +968,10 @@ void Scene::create_entities()
 			pl_system.add_child(point_light);
 		}
 	}
+
+	auto camera = create("Scene Camera");
+	camera.add_component<Components::Camera>();
+	camera.get_components<Components::Transform>().position = { 15, -16, 16 };
 }
 
 } // namespace Disarray

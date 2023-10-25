@@ -18,14 +18,14 @@ public:
 	InterfaceLayer(Disarray::Device& dev, Disarray::Window& win, Disarray::Swapchain& swap);
 	~InterfaceLayer() override;
 
-	void construct(App&, Threading::ThreadPool&) override;
+	void construct(App&) override;
 	void handle_swapchain_recreation(Swapchain&) override;
 	void on_event(Event&) override;
 	void interface() override;
 	void update(float time_step) override;
 	void destruct() override;
 	void render() override;
-	bool is_interface_layer() const override { return true; }
+	auto is_interface_layer() const -> bool override { return true; }
 
 	template <typename T, typename... Args>
 		requires(std::is_base_of_v<Panel, T>

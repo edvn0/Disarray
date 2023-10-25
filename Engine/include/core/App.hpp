@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "core/Layer.hpp"
+#include "core/ThreadPool.hpp"
 #include "core/events/Event.hpp"
 #include "ui/InterfaceLayer.hpp"
 
@@ -86,6 +87,8 @@ public:
 	[[nodiscard]] auto get_statistics() const -> const auto& { return statistics; }
 	[[nodiscard]] auto get_swapchain() const -> const auto& { return *swapchain; }
 
+	[[nodiscard]] static auto get_thread_pool() -> auto& { return thread_pool; }
+
 private:
 	auto could_prepare_frame() -> bool;
 
@@ -94,6 +97,8 @@ private:
 	Scope<Swapchain> swapchain { nullptr };
 	std::vector<std::shared_ptr<Layer>> layers {};
 	ApplicationStatistics statistics;
+
+	static inline Threading::ThreadPool thread_pool { {}, 5 };
 };
 
 struct AppDeleter {

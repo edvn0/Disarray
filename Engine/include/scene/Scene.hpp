@@ -50,7 +50,7 @@ public:
 	void update(float);
 	void render();
 	void interface();
-	void construct(Disarray::App&, Disarray::Threading::ThreadPool&);
+	void construct(Disarray::App&);
 	void destruct();
 	void on_event(Disarray::Event&);
 	void recreate(const Extent& extent);

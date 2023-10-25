@@ -55,6 +55,7 @@ namespace Components {
 	struct DirectionalLight;
 	struct PointLight;
 	struct Script;
+	struct Controller;
 } // namespace Components
 
 } // namespace Disarray

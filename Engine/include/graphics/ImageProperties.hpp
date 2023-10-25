@@ -1,7 +1,8 @@
 #pragma once
 
-#include <cstddef>
+#include <concepts>
 #include <cstdint>
+#include <limits>
 
 #include "core/Concepts.hpp"
 #include "core/Types.hpp"
@@ -25,7 +26,7 @@ enum class SamplerMode : std::uint8_t {
 	MirrorClampToEdge = 4,
 };
 
-enum class SampleCount {
+enum class SampleCount : std::uint8_t {
 	One = 0x00000001,
 	Two = 0x00000002,
 	Four = 0x00000004,
@@ -35,7 +36,7 @@ enum class SampleCount {
 	SixtyFour = 0x00000040,
 };
 
-enum class Tiling { Linear, DeviceOptimal };
+enum class Tiling : std::uint8_t { Linear, DeviceOptimal };
 
 template <IsNumber T> struct IExtent {
 	T width {};
@@ -46,8 +47,23 @@ template <IsNumber T> struct IExtent {
 
 	[[nodiscard]] auto valid() const -> bool { return width > 0 && height > 0; }
 
-	auto operator==(const IExtent<T>& other) const -> bool { return width == other.width && height == other.height; }
-	auto operator!=(const IExtent<T>& other) const -> bool { return width != other.width || height != other.height; }
+	auto operator==(const IExtent<T>& other) const -> bool
+	{
+		return compare_operation(width, other.width) && compare_operation(height, other.height);
+	}
+	auto operator!=(const IExtent<T>& other) const -> bool
+	{
+		return !compare_operation(width, other.width) || !compare_operation(height, other.height);
+	}
+
+	template <IsNumber Other> auto operator==(const IExtent<Other>& other) const -> bool
+	{
+		return compare_operation(width, other.width) && compare_operation(height, other.height);
+	}
+	template <IsNumber Other> auto operator!=(const IExtent<Other>& other) const -> bool
+	{
+		return !compare_operation(width, other.width) || !compare_operation(height, other.height);
+	}
 
 	template <IsNumber Other> auto operator*=(const IExtent<Other>& other) -> IExtent<T>& { return operator*=(other.template as<T>()); }
 	auto operator*=(const IExtent<T>& other) -> IExtent<T>&
@@ -56,6 +72,23 @@ template <IsNumber T> struct IExtent {
 		height *= other.height;
 		return *this;
 	}
+
+	constexpr auto compare_operation(std::floating_point auto left, std::floating_point auto right) const
+	{
+		return std::fabs(left - right) < std::numeric_limits<float>::epsilon();
+	}
+
+	constexpr auto compare_operation(std::integral auto left, std::floating_point auto right) const
+	{
+		return std::fabs(static_cast<decltype(right)>(left) - right) < std::numeric_limits<float>::epsilon();
+	}
+
+	constexpr auto compare_operation(std::floating_point auto left, std::integral auto right) const
+	{
+		return std::fabs(left - static_cast<decltype(left)>(right)) < std::numeric_limits<float>::epsilon();
+	}
+
+	constexpr auto compare_operation(std::integral auto left, std::integral auto right) const { return left == right; }
 
 	auto to_string() -> std::string { return fmt::format("{}:{}", width, height); }
 

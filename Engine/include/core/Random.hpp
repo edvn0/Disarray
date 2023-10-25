@@ -6,6 +6,7 @@
 #include <random>
 #include <type_traits>
 
+#include "core/KeyCode.hpp"
 #include "glm/detail/qualifier.hpp"
 #include "glm/geometric.hpp"
 #include "glm/gtx/norm.hpp"
@@ -30,7 +31,7 @@ enum class Distribution : std::uint8_t { Normal, Uniform };
 
 namespace Detail {
 
-	static inline std::random_device random_device;
+	static inline std::random_device random_device {};
 	static inline std::mt19937 mersenne_twister(random_device());
 
 	template <glm::length_t T, Distribution D> auto random_vector_with_size(float min = 0, float max = 1) -> glm::vec<T, float, glm::packed_highp>
@@ -53,7 +54,8 @@ namespace Detail {
 	template <std::floating_point Floating = float, Distribution D = Distribution::Uniform>
 	auto random_floating_point(Floating min_or_mean = 0.0, Floating max_or_stdev = 1.0) -> Floating
 	{
-		using distribution = std::conditional_t<D == Distribution::Uniform, std::uniform_real_distribution<float>, std::normal_distribution<float>>;
+		using distribution
+			= std::conditional_t<D == Distribution::Uniform, std::uniform_real_distribution<Floating>, std::normal_distribution<Floating>>;
 		distribution dist(min_or_mean, max_or_stdev);
 
 		return dist(mersenne_twister);
@@ -81,22 +83,21 @@ auto as_double(std::floating_point auto min = 0.0, std::floating_point auto max 
 	return Detail::random_floating_point<Floating, D>(min, max);
 }
 
-template <std::floating_point Floating = float, Distribution D = Distribution::Uniform>
-auto in_sphere(std::floating_point auto radius = 1.0F) -> glm::vec<3, Floating, glm::defaultp>
+template <std::floating_point Floating = float>
+auto in_sphere(std::floating_point auto radius, const glm::vec3& center) -> glm::vec<3, Floating, glm::defaultp>
 {
-	const auto u = Detail::random_floating_point<Floating, D>(0.F, 1.F);
-	const auto v = Detail::random_floating_point<Floating, D>(0.F, 1.F);
-	const auto theta = u * 2.0 * glm::pi<Floating>();
-	const auto phi = glm::acos(2.0 * v - 1.0);
-	const auto r = glm::pow(radius, 1.0F / 3.0F);
-	const auto sinTheta = glm::sin(theta);
-	const auto cosTheta = glm::cos(theta);
-	const auto sinPhi = glm::sin(phi);
-	const auto cosPhi = glm::cos(phi);
-	const auto x = r * sinPhi * cosTheta;
-	const auto y = r * sinPhi * sinTheta;
-	const auto z = r * cosPhi;
-	return { x, z, y };
+	auto position = Detail::random_vector_with_size<3, Distribution::Uniform>(-radius, radius);
+	const auto square = radius * radius;
+	while (glm::dot(position, position) > square) {
+		position = Detail::random_vector_with_size<3, Distribution::Uniform>();
+	}
+
+	return position - center;
+}
+
+template <std::floating_point Floating = float> auto in_sphere(std::floating_point auto radius = 1.0F) -> glm::vec<3, Floating, glm::defaultp>
+{
+	return in_sphere(radius, { 0.0, 0.0, 0.0 });
 }
 
 template <std::floating_point Floating = float> auto on_sphere(std::floating_point auto radius = 1.0F) -> glm::vec<3, Floating, glm::defaultp>
