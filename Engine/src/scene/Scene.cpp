@@ -374,27 +374,23 @@ void Scene::update(float time_step)
 			throw UnreachableException("Should never happen!");
 		}
 		}
-
 		pipeline.pipeline->force_recreation();
 	}
-	{
-		auto script_view = registry.view<Components::Script>();
-		script_view.each([scene = this, step = time_step](const auto entity, Components::Script& script) {
-			if (script.has_been_bound()) {
-				script.instantiate();
-			}
 
-			auto& instantiated = script.get_script();
-			instantiated.update_entity(scene, entity);
-			instantiated.on_update(step);
-		});
-	}
-	{
-		auto controller_view = registry.view<Components::Controller, Components::Transform>();
-		controller_view.each([step = time_step](const auto entity, Components::Controller& controller, Components::Transform& transform) {
-			controller.on_update(step, transform);
-		});
-	}
+	auto script_view = registry.view<Components::Script>();
+	script_view.each([scene = this, step = time_step](const auto entity, Components::Script& script) {
+		if (script.has_been_bound()) {
+			script.instantiate();
+		}
+
+		auto& instantiated = script.get_script();
+		instantiated.update_entity(scene, entity);
+		instantiated.on_update(step);
+	});
+	auto controller_view = registry.view<Components::Controller, Components::Transform>();
+	controller_view.each([step = time_step](const auto, Components::Controller& controller, Components::Transform& transform) {
+		controller.on_update(step, transform);
+	});
 }
 
 void Scene::render()
@@ -429,6 +425,12 @@ void Scene::render()
 		scene_renderer->text_rendering_pass(executor);
 	}
 	{
+		// Skybox pass
+		scene_renderer->begin_pass(executor, *get_framebuffer<SceneFramebuffer::Geometry>());
+		draw_skybox();
+		scene_renderer->end_pass(executor);
+	}
+	{
 		// This is the composite pass!
 		scene_renderer->fullscreen_quad_pass(executor, extent);
 	}
@@ -449,6 +451,17 @@ void Scene::draw_identifiers()
 }
 
 auto Scene::get_final_image() const -> const Disarray::Image& { return scene_renderer->get_composite_pass_image(); }
+
+void Scene::draw_skybox()
+{
+	auto [ubo, camera_ubo, light_ubos, shadow_pass, directional, glyph] = scene_renderer->get_graphics_resource().get_editable_ubos();
+
+	auto skybox_view = registry.view<const Components::Skybox, const Components::Mesh, const Components::Pipeline>();
+	for (auto&& [entity, skybox, mesh, pipeline] : skybox_view.each()) {
+		scene_renderer->draw_mesh(
+			*command_executor, *mesh.mesh, *pipeline.pipeline, glm::translate(glm::mat4 { 1.0f }, glm::vec3(camera_ubo.position)), 0);
+	}
+}
 
 void Scene::draw_geometry()
 {
@@ -514,7 +527,7 @@ void Scene::draw_geometry()
 	}
 
 	for (auto mesh_view = registry.view<const Components::Mesh, const Components::Pipeline, const Components::Texture, const Components::Transform>(
-			 entt::exclude<Components::PointLight>);
+			 entt::exclude<Components::PointLight, Components::Skybox>);
 		 auto&& [entity, mesh, pipeline, texture, transform] : mesh_view.each()) {
 		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *pipeline.pipeline;
@@ -533,7 +546,7 @@ void Scene::draw_geometry()
 	for (auto&& [entity, mesh, pipeline, transform] :
 		registry
 			.view<const Components::Mesh, const Components::Pipeline, const Components::Transform>(
-				entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight>)
+				entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight, Components::Skybox>)
 			.each()) {
 		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *pipeline.pipeline;
@@ -566,7 +579,7 @@ void Scene::draw_shadows()
 	for (auto&& [entity, mesh, pipeline, texture, transform] :
 		registry
 			.view<const Components::Mesh, const Components::Pipeline, const Components::Texture, const Components::Transform>(
-				entt::exclude<Components::PointLight>)
+				entt::exclude<Components::PointLight, Components::Skybox>)
 			.each()) {
 		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *shadow_pipeline;
@@ -582,7 +595,7 @@ void Scene::draw_shadows()
 	for (auto&& [entity, mesh, pipeline, transform] :
 		registry
 			.view<const Components::Mesh, const Components::Pipeline, const Components::Transform>(
-				entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight>)
+				entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight, Components::Skybox>)
 			.each()) {
 		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *shadow_pipeline;

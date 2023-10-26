@@ -178,7 +178,13 @@ static auto create_set_two_bindings()
 	glyph_array_sampler_binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
 	glyph_array_sampler_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	return std::array { image_array_binding, image_array_sampler_binding, glyph_texture_binding, glyph_array_sampler_binding };
+	auto skybox_image = vk_structures<VkDescriptorSetLayoutBinding> {}();
+	skybox_image.descriptorCount = 1;
+	skybox_image.binding = 4;
+	skybox_image.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	skybox_image.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	return std::array { image_array_binding, image_array_sampler_binding, glyph_texture_binding, glyph_array_sampler_binding, skybox_image };
 }
 
 template <std::size_t Count> static auto create_set_three_bindings()

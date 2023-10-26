@@ -172,6 +172,7 @@ private:
 	void draw_shadows();
 	void draw_identifiers();
 	void draw_geometry();
+	void draw_skybox();
 
 	void setup_filewatcher_and_threadpool(Threading::ThreadPool&);
 

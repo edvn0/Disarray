@@ -49,6 +49,14 @@ enum class ImageDimension : std::uint8_t {
 
 enum class Tiling : std::uint8_t { Linear, DeviceOptimal };
 
+struct CopyRegion {
+	std::uint32_t mip_level;
+	std::uint32_t base_array_layer;
+	std::uint32_t width;
+	std::uint32_t height;
+	std::uint32_t buffer_offset;
+};
+
 template <IsNumber T> struct IExtent {
 	T width {};
 	T height {};

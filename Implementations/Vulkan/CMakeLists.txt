@@ -98,6 +98,7 @@ target_link_libraries(
 	glslang-default-resource-limits
 	SPIRV
 	freetype
+	ktx
 )
 target_include_directories(${PROJECT_NAME} PUBLIC include)
 default_compile_flags()

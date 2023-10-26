@@ -33,6 +33,7 @@ struct ImageProperties {
 		.v = SamplerMode::Repeat,
 		.w = SamplerMode::Repeat,
 	};
+	std::vector<CopyRegion> copy_regions {};
 	SamplerFilter filter { SamplerFilter::Linear };
 	BorderColour border_colour { BorderColour::FloatOpaqueWhite };
 	std::uint32_t layers { 1 };

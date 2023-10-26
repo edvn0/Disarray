@@ -58,7 +58,7 @@ public:
 		recreate_texture(should_clean);
 	}
 
-	auto get_image(std::uint32_t index) const -> const Disarray::Image& override { return *image; }
+	auto get_image(std::uint32_t) const -> const Disarray::Image& override { return *image; }
 
 	void construct_using(Disarray::CommandExecutor&) override {};
 

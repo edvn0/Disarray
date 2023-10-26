@@ -6,12 +6,14 @@
 
 #include <span>
 
+#include "core/Collections.hpp"
 #include "core/Ensure.hpp"
 #include "core/Formatters.hpp"
 #include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/ImageProperties.hpp"
+#include "ktxvulkan.h"
 #include "util/FormattingUtilities.hpp"
 #include "vulkan/Allocator.hpp"
 #include "vulkan/CommandExecutor.hpp"
@@ -206,7 +208,7 @@ auto Image::read_pixel(const glm::vec2& pos) const -> PixelReadData
 	return read_data;
 }
 
-void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor* command_executor)
+void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor*)
 {
 	if (should_clean) {
 		destroy_resources();
@@ -229,11 +231,6 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor* c
 
 	auto width = props.extent.width;
 	auto height = props.extent.height;
-
-	if (props.dimension == ImageDimension::Three) {
-		width /= 4;
-		height /= 3;
-	}
 
 	VkImageCreateInfo image_create_info {};
 	image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -287,35 +284,20 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor* c
 
 	{
 		// Setup buffer copy regions for each face including all of its miplevels
-		std::vector<VkBufferImageCopy> bufferCopyRegions;
-		uint32_t offset = 0;
-
-		for (std::size_t face = 0; face < 6; face++) {
-			// Calculate offset into staging buffer for the current mip level and face
-
-			std::size_t xOffset = (face % 3) * (props.extent.width / 3ULL);
-			std::size_t yOffset = (face / 3) * (props.extent.height / 2ULL);
-
-			VkDeviceSize buffer_offset { (xOffset + yOffset) * 4 };
-			VkBufferImageCopy bufferCopyRegion = {};
-			bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			bufferCopyRegion.imageSubresource.mipLevel = 0;
-			bufferCopyRegion.imageSubresource.baseArrayLayer = static_cast<std::uint32_t>(face);
-			bufferCopyRegion.imageSubresource.layerCount = 1;
-			bufferCopyRegion.imageExtent.width = props.extent.width;
-			bufferCopyRegion.imageExtent.height = props.extent.height;
-			bufferCopyRegion.imageExtent.depth = 1;
-			bufferCopyRegion.bufferOffset = buffer_offset;
-			bufferCopyRegions.push_back(bufferCopyRegion);
-
-			// Lets do mips later on!
-			// for (uint32_t level = 0; level < props.mips; level++) {
-			//
-			//}
-		}
+		std::vector<VkBufferImageCopy> buffer_copy_regions = Collections::map(props.copy_regions, [](const CopyRegion& region) -> VkBufferImageCopy {
+			return {
+				.bufferOffset = region.buffer_offset,
+				.imageSubresource = { .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .mipLevel = region.mip_level,.baseArrayLayer = region.base_array_layer,.layerCount = 1,  },
+				.imageExtent = {
+					.width = region.width,
+					.height = region.height,
+					.depth = 1,
+				}
+			};
+		});
 
 		if (props.dimension == ImageDimension::Two) {
-			bufferCopyRegions.clear();
+			buffer_copy_regions.clear();
 			VkBufferImageCopy buffer_copy_region = {};
 			buffer_copy_region.imageSubresource.aspectMask = aspect_mask;
 			buffer_copy_region.imageSubresource.mipLevel = 0;
@@ -325,7 +307,7 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor* c
 			buffer_copy_region.imageExtent.height = get_properties().extent.height;
 			buffer_copy_region.imageExtent.depth = 1;
 			buffer_copy_region.bufferOffset = 0;
-			bufferCopyRegions.emplace_back(std::move(buffer_copy_region));
+			buffer_copy_regions.emplace_back(buffer_copy_region);
 		}
 
 		auto executor = construct_immediate(device);
@@ -333,7 +315,7 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor* c
 		subresource_range.aspectMask = aspect_mask;
 		subresource_range.baseMipLevel = 0;
 		subresource_range.levelCount = get_properties().mips;
-		subresource_range.layerCount = 1;
+		subresource_range.layerCount = props.layers;
 
 		VkImageMemoryBarrier image_memory_barrier {};
 		image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -351,10 +333,10 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor* c
 
 		set_image_layout(executor->supply(), info.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
 		vkCmdCopyBufferToImage(executor->supply(), staging, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			static_cast<std::uint32_t>(bufferCopyRegions.size()), bufferCopyRegions.data());
+			static_cast<std::uint32_t>(buffer_copy_regions.size()), buffer_copy_regions.data());
 
 		auto image_layout = to_vulkan_layout(get_properties().format);
-		if (is_depth_format(get_properties().format)) {
+		if (is_depth_format(get_properties().format) || props.dimension == ImageDimension::Three) {
 			set_image_layout(executor->supply(), info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, image_layout, subresource_range);
 		}
 	}

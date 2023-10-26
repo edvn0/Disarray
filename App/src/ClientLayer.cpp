@@ -62,6 +62,11 @@ void ClientLayer::create_entities()
 	auto& renderer = scene->get_renderer();
 	auto& graphics_resource = renderer.get_graphics_resource();
 
+	const auto cube_mesh = Mesh::construct(device,
+		MeshProperties {
+			.path = FS::model("cube.obj"),
+		});
+
 	const VertexLayout layout {
 		{ ElementType::Float3, "position" },
 		{ ElementType::Float2, "uv" },
@@ -70,24 +75,41 @@ void ClientLayer::create_entities()
 		{ ElementType::Float3, "tangents" },
 		{ ElementType::Float3, "bitangents" },
 	};
-	const auto& resources = graphics_resource;
+	auto& resources = graphics_resource;
 	const auto& desc_layout = resources.get_descriptor_set_layouts();
 
 	auto texture_cube = Texture::construct(device,
 		{
-			.path = FS::texture("skybox_default.png"),
+			.path = FS::texture("cubemap_yokohama_rgba.ktx"),
 			.dimension = TextureDimension::Three,
 			.debug_name = "Skybox",
 		});
+	resources.expose_to_shaders(texture_cube->get_image(), 2, 4);
 	auto skybox_material = Material::construct(device,
 		{
 			.vertex_shader = renderer.get_pipeline_cache().get_shader("skybox.vert"),
 			.fragment_shader = renderer.get_pipeline_cache().get_shader("skybox.frag"),
 			.textures = { texture_cube },
 		});
+	auto skybox_pipeline = Pipeline::construct(device,
+		{
+			.vertex_shader = renderer.get_pipeline_cache().get_shader("skybox.vert"),
+			.fragment_shader = renderer.get_pipeline_cache().get_shader("skybox.frag"),
+			.framebuffer = scene->get_framebuffer<SceneFramebuffer::Geometry>(),
+			.layout = layout,
+			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+			.extent = extent,
+			.cull_mode = CullMode::Back,
+			.face_mode = FaceMode::CounterClockwise,
+			.write_depth = false,
+			.test_depth = false,
+			.descriptor_set_layouts = desc_layout,
+		});
 	auto environment = scene->create("Environment");
 	environment.add_component<Components::Material>(skybox_material);
 	environment.add_component<Components::Skybox>(texture_cube);
+	environment.add_component<Components::Mesh>(cube_mesh);
+	environment.add_component<Components::Pipeline>(skybox_pipeline);
 
 	{
 		constexpr int rects { 2 };
@@ -106,11 +128,6 @@ void ClientLayer::create_entities()
 				.extent = extent,
 				.cull_mode = CullMode::Front,
 				.descriptor_set_layouts = desc_layout,
-			});
-
-		const auto cube_mesh = Mesh::construct(device,
-			MeshProperties {
-				.path = FS::model("cube.obj"),
 			});
 
 		auto floor = scene->create("Floor");
