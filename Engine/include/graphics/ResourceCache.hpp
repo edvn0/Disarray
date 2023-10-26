@@ -94,7 +94,7 @@ protected:
 	{
 	}
 
-	[[nodiscard]] auto get_unique_files_recursively() const -> UniquePathSet
+	[[nodiscard]] auto get_unique_files_recursively(const std::vector<std::filesystem::path>& extra_paths = {}) const -> UniquePathSet
 	{
 		UniquePathSet paths;
 		if (!std::filesystem::exists(path)) {
@@ -108,6 +108,17 @@ protected:
 			}
 
 			paths.insert(current.path());
+		}
+
+		for (const auto& extra_path : extra_paths) {
+			for (const auto& current : std::filesystem::recursive_directory_iterator { extra_path }) {
+				const auto has_correct_extension = extensions.contains(current.path().extension().string());
+				if (!current.is_regular_file() || !has_correct_extension) {
+					continue;
+				}
+
+				paths.insert(current.path());
+			}
 		}
 		return paths;
 	}

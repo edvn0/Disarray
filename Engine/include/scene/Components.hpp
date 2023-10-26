@@ -111,6 +111,7 @@ struct ID {
 	Identifier identifier {};
 
 	template <std::integral T> [[nodiscard]] T get_id() const { return static_cast<T>(identifier); }
+	[[nodiscard]] auto get_id() const -> Identifier { return identifier; }
 };
 template <> inline constexpr std::string_view component_name<ID> = "ID";
 
@@ -244,15 +245,22 @@ struct Camera {
 };
 template <> inline constexpr std::string_view component_name<Camera> = "Camera";
 
-struct BoxCollider { };
+struct BoxCollider {
+	BoxCollider() = default;
+	float half_size { 1.0F };
+};
 template <> inline constexpr std::string_view component_name<BoxCollider> = "BoxCollider";
 
 struct SphereCollider {
+	SphereCollider() = default;
 	float radius { 1.0F };
 };
 template <> inline constexpr std::string_view component_name<SphereCollider> = "SphereCollider";
 
-struct PillCollider { };
+struct PillCollider {
+	PillCollider() = default;
+	float radius { 1.0F };
+};
 template <> inline constexpr std::string_view component_name<PillCollider> = "PillCollider";
 
 } // namespace Disarray::Components

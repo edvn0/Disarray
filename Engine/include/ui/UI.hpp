@@ -83,9 +83,9 @@ template <typename... Args> void text_wrapped(fmt::format_string<Args...> fmt_st
 
 static constexpr inline auto button_size = 64;
 
-void image_button(const Disarray::Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+bool image_button(const Disarray::Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
 void image(const Disarray::Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
-void image_button(const Disarray::Texture&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+bool image_button(const Disarray::Texture&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
 void image(const Disarray::Texture&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
 
 namespace Tabular {

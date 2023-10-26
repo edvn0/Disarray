@@ -47,9 +47,9 @@ static auto add_image(VkSampler sampler, VkImageView view, VkImageLayout layout)
 
 static auto add_image(VkDescriptorImageInfo info) -> ImageIdentifier { return add_image(info.sampler, info.imageView, info.imageLayout); }
 
-void image_button(const Disarray::Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
+auto image_button(const Disarray::Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs) -> bool
 {
-	auto& vk_image = cast_to<Vulkan::Image>(image);
+	const auto& vk_image = cast_to<Vulkan::Image>(image);
 
 	const auto hash = vk_image.hash();
 	auto& cache = get_cache();
@@ -61,12 +61,12 @@ void image_button(const Disarray::Image& image, glm::vec2 size, const std::array
 		identifier = *get_cache()[hash];
 	}
 
-	ImGui::ImageButton("Image", identifier, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
+	return ImGui::ImageButton("Image", identifier, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
 }
 
 void image(const Disarray::Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
 {
-	auto& vk_image = cast_to<Vulkan::Image>(image);
+	const auto& vk_image = cast_to<Vulkan::Image>(image);
 
 	const auto hash = vk_image.hash();
 	auto& cache = get_cache();
@@ -81,10 +81,10 @@ void image(const Disarray::Image& image, glm::vec2 size, const std::array<glm::v
 	ImGui::Image(identifier, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
 }
 
-void image_button(const Disarray::Texture& tex, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
+auto image_button(const Disarray::Texture& tex, glm::vec2 size, const std::array<glm::vec2, 2>& uvs) -> bool
 {
-	auto& vk_image = cast_to<Vulkan::Image>(tex.get_image());
-	image_button(vk_image, size, uvs);
+	const auto& vk_image = cast_to<Vulkan::Image>(tex.get_image());
+	return image_button(vk_image, size, uvs);
 }
 
 void image(const Disarray::Texture& tex, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)

@@ -14,11 +14,19 @@ namespace {
 		Components::LineGeometry, Components::QuadGeometry, Components::Mesh, Components::Material, Components::Pipeline, Components::Texture,
 		Components::DirectionalLight, Components::PointLight, Components::Script, Components::Controller, Components::Camera, Components::BoxCollider,
 		Components::SphereCollider, Components::PillCollider>;
+
+	template <typename... Component> struct ComponentGroup { };
 } // namespace
 
+using AllComponents = ComponentGroup<Components::Tag, Components::Transform, Components::ID, Components::Inheritance, Components::LineGeometry,
+	Components::QuadGeometry, Components::Mesh, Components::Material, Components::Pipeline, Components::Texture, Components::DirectionalLight,
+	Components::PointLight, Components::Script, Components::Controller, Components::Camera, Components::BoxCollider, Components::SphereCollider,
+	Components::PillCollider>;
+
 template <class T>
-concept ValidComponent = (IsInAllowedComponents<T> && std::is_default_constructible_v<T>)
-	|| (IsInAllowedComponents<std::remove_const_t<T>> && std::is_default_constructible_v<std::remove_const_t<T>>);
+concept ValidComponent = !std::is_empty_v<T>
+	&& ((IsInAllowedComponents<T> && std::is_default_constructible_v<T> && std::is_copy_constructible_v<T>)
+		|| (IsInAllowedComponents<std::remove_const_t<T>> && std::is_default_constructible_v<std::remove_const_t<T>>));
 
 template <class T>
 concept DeletableComponent

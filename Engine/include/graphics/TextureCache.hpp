@@ -29,7 +29,7 @@ public:
 	TextureCache(const Disarray::Device& device, std::filesystem::path path)
 		: ResourceCache(device, std::move(path), { ".png", ".jpg" })
 	{
-		auto files = get_unique_files_recursively();
+		auto files = get_unique_files_recursively({ "Assets/Icons" });
 		for (const auto& file_path : files) {
 			put(TextureCacheCreationProperties {
 				.key = file_path.stem().string(),

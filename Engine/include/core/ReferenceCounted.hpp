@@ -62,7 +62,7 @@ public:
 		increment_reference_count();
 	}
 
-	ReferenceCounted(ReferenceCounted<T>&& other)
+	ReferenceCounted(ReferenceCounted<T>&& other) noexcept
 		: instance(std::move(other.instance))
 	{
 		increment_reference_count();
@@ -76,9 +76,11 @@ public:
 
 	virtual ~ReferenceCounted() { decrement_reference_count(); }
 
-	template <class Other> ReferenceCounted(const ReferenceCounted<Other>& other)
+	template <class Other>
+	ReferenceCounted(const ReferenceCounted<Other>& other)
+		: instance(static_cast<T*>(other.instance))
 	{
-		instance = static_cast<T*>(other.instance);
+
 		increment_reference_count();
 	}
 

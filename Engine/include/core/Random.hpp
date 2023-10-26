@@ -115,7 +115,7 @@ template <Distribution D = Distribution::Uniform> auto colour() -> glm::vec<4, f
 
 template <std::size_t Count> static auto choose_from(auto& engine)
 {
-	std::uniform_int_distribution dist(0, static_cast<int>(Count));
+	std::uniform_int_distribution dist(0, static_cast<int>(Count - 1));
 	return dist(engine);
 };
 
