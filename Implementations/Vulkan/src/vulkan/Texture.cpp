@@ -35,7 +35,6 @@ Texture::Texture(const Disarray::Device& dev, Disarray::TextureProperties proper
 				.w = props.sampler_modes.w,
 			},
 			.border_colour = props.border_colour,
-			.should_initialise_directly = props.should_initialise_directly,
 			.debug_name = props.debug_name,
 		});
 }
@@ -55,7 +54,6 @@ Texture::Texture(const CommandExecutor* command_executor, const Disarray::Device
 			.data = std::move(pixels),
 			.mips = *props.mips,
 			.locked_extent = props.locked_extent,
-			.should_initialise_directly = props.should_initialise_directly,
 			.debug_name = props.debug_name,
 		});
 }
@@ -78,5 +76,35 @@ auto Texture::load_pixels() -> DataBuffer
 	}
 	return pixels;
 }
+
+Texture3D::Texture3D(const Device& dev, TextureProperties properties)
+	: Disarray::Texture(std::move(properties))
+	, device(dev)
+{
+
+	Extent full_extent;
+	DataBuffer pixels {};
+	if (!props.path.empty()) {
+		ImageLoader loader { props.path, pixels };
+		props.extent = loader.get_extent();
+		full_extent = loader.get_extent();
+		props.extent.width /= 4;
+		props.extent.height /= 3;
+	}
+
+	ImageProperties image_properties {
+		.extent = full_extent,
+		.format = props.format,
+		.data = std::move(pixels),
+		.layers = 6,
+		.dimension = ImageDimension::Three,
+		.debug_name = props.debug_name,
+	};
+	image = make_scope<Vulkan::Image>(device, std::move(image_properties));
+}
+
+void Texture3D::recreate_texture(bool should_clean) { }
+
+Texture3D::~Texture3D() = default;
 
 } // namespace Disarray::Vulkan

@@ -28,27 +28,7 @@ template <std::size_t Count> static auto generate_colours() -> std::array<glm::v
 	return colours;
 }
 
-template <std::size_t Count> static consteval auto generate_angles() -> std::array<float, Count>
-{
-	std::array<float, Count> angles {};
-	constexpr auto division = 1.F / static_cast<float>(Count - 1);
-	for (std::size_t i = 0; i < Count; i++) {
-		angles.at(i) = glm::two_pi<float>() * division * static_cast<float>(i);
-	}
-	return angles;
-}
-
 namespace Disarray::Client {
-
-template <std::size_t Count> static consteval auto generate_angles_client() -> std::array<float, Count>
-{
-	std::array<float, Count> angles {};
-	constexpr auto division = 1.F / static_cast<float>(Count);
-	for (std::size_t i = 0; i < Count; i++) {
-		angles.at(i) = glm::two_pi<float>() * static_cast<float>(i) * division;
-	}
-	return angles;
-}
 
 ClientLayer::ClientLayer(Device& device, Window& win, Swapchain& swapchain)
 	: device(device)
@@ -82,7 +62,7 @@ void ClientLayer::create_entities()
 	auto& renderer = scene->get_renderer();
 	auto& graphics_resource = renderer.get_graphics_resource();
 
-	VertexLayout layout {
+	const VertexLayout layout {
 		{ ElementType::Float3, "position" },
 		{ ElementType::Float2, "uv" },
 		{ ElementType::Float4, "colour" },
@@ -92,6 +72,22 @@ void ClientLayer::create_entities()
 	};
 	const auto& resources = graphics_resource;
 	const auto& desc_layout = resources.get_descriptor_set_layouts();
+
+	auto texture_cube = Texture::construct(device,
+		{
+			.path = FS::texture("skybox_default.png"),
+			.dimension = TextureDimension::Three,
+			.debug_name = "Skybox",
+		});
+	auto skybox_material = Material::construct(device,
+		{
+			.vertex_shader = renderer.get_pipeline_cache().get_shader("skybox.vert"),
+			.fragment_shader = renderer.get_pipeline_cache().get_shader("skybox.frag"),
+			.textures = { texture_cube },
+		});
+	auto environment = scene->create("Environment");
+	environment.add_component<Components::Material>(skybox_material);
+	environment.add_component<Components::Skybox>(texture_cube);
 
 	{
 		constexpr int rects { 2 };
@@ -120,6 +116,7 @@ void ClientLayer::create_entities()
 		auto floor = scene->create("Floor");
 		floor.get_transform().scale = { 30, 1, 30 };
 		floor.get_transform().position = { 0, 7, 0 };
+		floor.add_component<Components::BoxCollider>();
 
 		floor.add_component<Components::Texture>(nullptr, glm::vec4 { .1, .1, .9, 1.0 });
 		floor.add_component<Components::Mesh>(cube_mesh);
@@ -131,8 +128,8 @@ void ClientLayer::create_entities()
 				auto rect = scene->create(fmt::format("Rect{}-{}", i, j));
 				parent.add_child(rect);
 				auto& transform = rect.get_components<Components::Transform>();
-				transform.position = { 5 * static_cast<float>(i) + 2.5f, -1.2, 5 * static_cast<float>(j) + 2.5f };
-				transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
+				transform.position = { 5 * static_cast<float>(i) + 2.5F, -1.2, 5 * static_cast<float>(j) + 2.5F };
+				transform.rotation = glm::angleAxis(glm::radians(90.0F), glm::vec3 { 1, 0, 0 });
 				rect.add_component<Components::Mesh>(cube_mesh);
 				rect.add_component<Components::Texture>(Random::strong_colour());
 				rect.add_component<Components::Pipeline>(pipe);
@@ -174,13 +171,14 @@ void ClientLayer::create_entities()
 
 		static constexpr auto offset = glm::vec3(3, 3, 1);
 		static constexpr auto squares = 10;
-		for (auto i = -squares / 2; i < (squares / 2) - 1; i++) {
-			for (auto j = -squares / 2; j < (squares / 2) - 1; j++) {
-				auto axis = scene->create("Square - {}", i);
+		static constexpr auto half_extent = (squares / 2) - 1;
+		for (auto i = -squares / 2; i < half_extent; i++) {
+			for (auto j = -squares / 2; j < half_extent; j++) {
+				auto axis = scene->create("Square-x{}y{}", i, j);
 				auto& transform = axis.add_component<Components::Transform>();
 				transform.position = glm::vec3 { i, 7, j };
 				transform.scale /= offset;
-				transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3 { 1, 0, 0 });
+				transform.rotation = glm::angleAxis(glm::radians(90.0F), glm::vec3 { 1, 0, 0 });
 				axis.add_component<Components::QuadGeometry>();
 				axis.add_component<Components::Texture>(glm::vec4 { 0, 0, 1, 1 });
 				unit_squares.add_child(axis);
@@ -219,13 +217,14 @@ void ClientLayer::create_entities()
 				.fragment_shader = frag,
 			}));
 
-		TextureProperties texture_properties {
-			.extent = extent,
-			.format = ImageFormat::SBGR,
-			.debug_name = "viking",
-		};
-		texture_properties.path = FS::texture("viking_room.png");
-		v_mesh.add_component<Components::Texture>(Texture::construct(device, texture_properties));
+		auto viking_room_texture = Texture::construct(device,
+			{
+				.extent = extent,
+				.format = ImageFormat::SBGR,
+				.path = FS::texture("viking_room.png"),
+				.debug_name = "viking",
+			});
+		v_mesh.add_component<Components::Texture>(viking_room_texture);
 		static constexpr auto val = 10.0F;
 		v_mesh.add_script<Scripts::LinearMovementScript>(-val, val);
 	}
@@ -252,7 +251,7 @@ void ClientLayer::create_entities()
 			});
 
 		auto sun = scene->create("Sun");
-		sun.add_component<Components::DirectionalLight>(glm::vec4 { 0.7, 0.7, 0.1, 0.1f },
+		sun.add_component<Components::DirectionalLight>(glm::vec4 { 0.7, 0.7, 0.1, 0.1 },
 			Components::DirectionalLight::ProjectionParameters {
 				.factor = 20.F,
 				.near = -90.F,
@@ -317,7 +316,7 @@ void ClientLayer::interface()
 
 	ImGui::PopStyleVar(2);
 
-	float min_win_size_x = style.WindowMinSize.x;
+	const float min_win_size_x = style.WindowMinSize.x;
 	style.WindowMinSize.x = 370.0F;
 	ImGui::DockSpace(ImGui::GetID("Dockspace"));
 	style.WindowMinSize.x = min_win_size_x;
@@ -350,7 +349,7 @@ void ClientLayer::interface()
 		min_bound.x -= viewport_offset.x;
 		min_bound.y -= viewport_offset.y;
 
-		ImVec2 max_bound = { min_bound.x + window_size.x, min_bound.y + window_size.y };
+		const ImVec2 max_bound = { min_bound.x + window_size.x, min_bound.y + window_size.y };
 		viewport_bounds[0] = { min_bound.x, min_bound.y };
 		viewport_bounds[1] = { max_bound.x, max_bound.y };
 

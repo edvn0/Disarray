@@ -38,6 +38,20 @@ static constexpr auto to_vulkan_sampler_mode(SamplerMode mode)
 	};
 }
 
+static constexpr auto to_vulkan_filter(SamplerFilter filter)
+{
+	switch (filter) {
+	case SamplerFilter::Nearest:
+		return VK_FILTER_NEAREST;
+	case SamplerFilter::Linear:
+		return VK_FILTER_LINEAR;
+	case SamplerFilter::Cubic:
+		return VK_FILTER_CUBIC_EXT;
+	default:
+		unreachable(fmt::format("Missing mapping for Sampler Mode {}", static_cast<std::uint8_t>(filter)));
+	};
+}
+
 static constexpr auto to_vulkan_border_colour(BorderColour colour)
 {
 	switch (colour) {
@@ -213,62 +227,39 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor* c
 
 	VkFormat vulkan_format = to_vulkan_format(get_properties().format);
 
+	auto width = props.extent.width;
+	auto height = props.extent.height;
+
+	if (props.dimension == ImageDimension::Three) {
+		width /= 4;
+		height /= 3;
+	}
+
 	VkImageCreateInfo image_create_info {};
 	image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	image_create_info.imageType = VK_IMAGE_TYPE_2D;
 	image_create_info.format = vulkan_format;
-	image_create_info.extent.width = get_properties().extent.width;
-	image_create_info.extent.height = get_properties().extent.height;
+	image_create_info.extent.width = width;
+	image_create_info.extent.height = height;
 	image_create_info.extent.depth = 1;
 	image_create_info.samples = to_vulkan_samples(get_properties().samples);
 	image_create_info.mipLevels = get_properties().mips;
-	image_create_info.arrayLayers = 1;
+	image_create_info.arrayLayers = get_properties().layers;
 	image_create_info.tiling = to_vulkan_tiling(get_properties().tiling);
 	image_create_info.usage = usage;
 	image_create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	image_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	if (props.dimension == ImageDimension::Three) {
+		image_create_info.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+	}
 	{
 		Allocator allocator { "Image[" + get_properties().debug_name + "]" };
-		info.allocation = allocator.allocate_image(info.image, image_create_info, { .usage = Usage::GPU_ONLY });
+		info.allocation = allocator.allocate_image(info.image, image_create_info,
+			{
+				.usage = Usage::GPU_ONLY,
+			});
 	}
-
-	VkImageViewCreateInfo image_view_create_info {};
-	image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	image_view_create_info.format = vulkan_format;
-	image_view_create_info.flags = 0;
-	image_view_create_info.subresourceRange = {};
-	image_view_create_info.subresourceRange.aspectMask = aspect_mask;
-	image_view_create_info.subresourceRange.baseMipLevel = 0;
-	image_view_create_info.subresourceRange.levelCount = get_properties().mips;
-	image_view_create_info.subresourceRange.baseArrayLayer = 0;
-	image_view_create_info.subresourceRange.layerCount = 1;
-	image_view_create_info.image = info.image;
-	verify(vkCreateImageView(supply_cast<Vulkan::Device>(device), &image_view_create_info, nullptr, &info.view));
-
-	VkSamplerCreateInfo sampler_create_info {};
-	sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	sampler_create_info.maxAnisotropy = 1.0F;
-	sampler_create_info.magFilter = VK_FILTER_LINEAR;
-	sampler_create_info.minFilter = VK_FILTER_LINEAR;
-	sampler_create_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	if (!is_depth_format(props.format)) {
-		sampler_create_info.compareEnable = VK_TRUE;
-		sampler_create_info.compareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-	}
-
-	auto&& [u, v, w] = get_properties().sampler_modes;
-
-	sampler_create_info.addressModeU = to_vulkan_sampler_mode(u);
-	sampler_create_info.addressModeV = to_vulkan_sampler_mode(v);
-	sampler_create_info.addressModeW = to_vulkan_sampler_mode(w);
-	sampler_create_info.mipLodBias = 0.0F;
-	sampler_create_info.maxAnisotropy = 1.0F;
-	sampler_create_info.minLod = 0.0F;
-	sampler_create_info.maxLod = is_depth_format(props.format) ? 1.0F : static_cast<float>(get_properties().mips);
-	sampler_create_info.borderColor = to_vulkan_border_colour(props.border_colour);
-	verify(vkCreateSampler(supply_cast<Vulkan::Device>(device), &sampler_create_info, nullptr, &info.sampler));
-
-	update_descriptor();
 
 	VkDeviceSize size { 0 };
 	if (get_properties().data.is_valid()) {
@@ -294,7 +285,49 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor* c
 		AllocationMapper<std::byte> mapper { staging_allocator, staging_allocation, get_properties().data };
 	}
 
-	if (command_executor == nullptr) {
+	{
+		// Setup buffer copy regions for each face including all of its miplevels
+		std::vector<VkBufferImageCopy> bufferCopyRegions;
+		uint32_t offset = 0;
+
+		for (std::size_t face = 0; face < 6; face++) {
+			// Calculate offset into staging buffer for the current mip level and face
+
+			std::size_t xOffset = (face % 3) * (props.extent.width / 3ULL);
+			std::size_t yOffset = (face / 3) * (props.extent.height / 2ULL);
+
+			VkDeviceSize buffer_offset { (xOffset + yOffset) * 4 };
+			VkBufferImageCopy bufferCopyRegion = {};
+			bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			bufferCopyRegion.imageSubresource.mipLevel = 0;
+			bufferCopyRegion.imageSubresource.baseArrayLayer = static_cast<std::uint32_t>(face);
+			bufferCopyRegion.imageSubresource.layerCount = 1;
+			bufferCopyRegion.imageExtent.width = props.extent.width;
+			bufferCopyRegion.imageExtent.height = props.extent.height;
+			bufferCopyRegion.imageExtent.depth = 1;
+			bufferCopyRegion.bufferOffset = buffer_offset;
+			bufferCopyRegions.push_back(bufferCopyRegion);
+
+			// Lets do mips later on!
+			// for (uint32_t level = 0; level < props.mips; level++) {
+			//
+			//}
+		}
+
+		if (props.dimension == ImageDimension::Two) {
+			bufferCopyRegions.clear();
+			VkBufferImageCopy buffer_copy_region = {};
+			buffer_copy_region.imageSubresource.aspectMask = aspect_mask;
+			buffer_copy_region.imageSubresource.mipLevel = 0;
+			buffer_copy_region.imageSubresource.baseArrayLayer = 0;
+			buffer_copy_region.imageSubresource.layerCount = 1;
+			buffer_copy_region.imageExtent.width = get_properties().extent.width;
+			buffer_copy_region.imageExtent.height = get_properties().extent.height;
+			buffer_copy_region.imageExtent.depth = 1;
+			buffer_copy_region.bufferOffset = 0;
+			bufferCopyRegions.emplace_back(std::move(buffer_copy_region));
+		}
+
 		auto executor = construct_immediate(device);
 		VkImageSubresourceRange subresource_range = {};
 		subresource_range.aspectMask = aspect_mask;
@@ -316,62 +349,19 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor* c
 		vkCmdPipelineBarrier(
 			executor->supply(), VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
 
-		VkBufferImageCopy buffer_copy_region = {};
-		buffer_copy_region.imageSubresource.aspectMask = aspect_mask;
-		buffer_copy_region.imageSubresource.mipLevel = 0;
-		buffer_copy_region.imageSubresource.baseArrayLayer = 0;
-		buffer_copy_region.imageSubresource.layerCount = 1;
-		buffer_copy_region.imageExtent.width = get_properties().extent.width;
-		buffer_copy_region.imageExtent.height = get_properties().extent.height;
-		buffer_copy_region.imageExtent.depth = 1;
-		buffer_copy_region.bufferOffset = 0;
-
 		set_image_layout(executor->supply(), info.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
-		vkCmdCopyBufferToImage(executor->supply(), staging, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &buffer_copy_region);
+		vkCmdCopyBufferToImage(executor->supply(), staging, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			static_cast<std::uint32_t>(bufferCopyRegions.size()), bufferCopyRegions.data());
 
 		auto image_layout = to_vulkan_layout(get_properties().format);
 		if (is_depth_format(get_properties().format)) {
 			set_image_layout(executor->supply(), info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, image_layout, subresource_range);
 		}
-	} else {
-		VkImageSubresourceRange subresource_range = {};
-		subresource_range.aspectMask = aspect_mask;
-		subresource_range.baseMipLevel = 0;
-		subresource_range.levelCount = get_properties().mips;
-		subresource_range.layerCount = 1;
-
-		VkImageMemoryBarrier image_memory_barrier {};
-		image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		image_memory_barrier.image = info.image;
-		image_memory_barrier.subresourceRange = subresource_range;
-		image_memory_barrier.srcAccessMask = 0;
-		image_memory_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-
-		auto* cast = supply_cast<Vulkan::CommandExecutor>(*command_executor);
-		vkCmdPipelineBarrier(cast, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
-
-		VkBufferImageCopy buffer_copy_region = {};
-		buffer_copy_region.imageSubresource.aspectMask = aspect_mask;
-		buffer_copy_region.imageSubresource.mipLevel = 0;
-		buffer_copy_region.imageSubresource.baseArrayLayer = 0;
-		buffer_copy_region.imageSubresource.layerCount = 1;
-		buffer_copy_region.imageExtent.width = get_properties().extent.width;
-		buffer_copy_region.imageExtent.height = get_properties().extent.height;
-		buffer_copy_region.imageExtent.depth = 1;
-		buffer_copy_region.bufferOffset = 0;
-
-		set_image_layout(cast, info.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
-		vkCmdCopyBufferToImage(cast, staging, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &buffer_copy_region);
-
-		auto image_layout = to_vulkan_layout(get_properties().format);
-		if (is_depth_format(get_properties().format)) {
-			set_image_layout(cast, info.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, image_layout, subresource_range);
-		}
 	}
+
+	create_image_view(vulkan_format, aspect_mask);
+	create_sampler();
+	update_descriptor();
 
 	staging_allocator.deallocate_buffer(staging_allocation, staging);
 	if (!is_depth_format(get_properties().format)) {
@@ -390,7 +380,7 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor* c
 	layout_create_info.pBindings = bindings.data();
 
 	vkCreateDescriptorSetLayout(supply_cast<Vulkan::Device>(device), &layout_create_info, nullptr, &layout);
-}
+} // namespace Disarray::Vulkan
 
 void Image::update_descriptor()
 {
@@ -538,6 +528,60 @@ void Image::create_mips()
 
 	vkCmdPipelineBarrier(
 		command_buffer->supply(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+}
+void Image::create_image_view(VkFormat vulkan_format, VkImageAspectFlags aspect_mask)
+{
+	VkImageViewCreateInfo image_view_create_info {};
+	if (props.dimension == ImageDimension::Two) {
+		image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		image_view_create_info.format = vulkan_format;
+		image_view_create_info.flags = 0;
+		image_view_create_info.subresourceRange = {};
+		image_view_create_info.subresourceRange.aspectMask = aspect_mask;
+		image_view_create_info.subresourceRange.baseMipLevel = 0;
+		image_view_create_info.subresourceRange.levelCount = get_properties().mips;
+		image_view_create_info.subresourceRange.baseArrayLayer = 0;
+		image_view_create_info.subresourceRange.layerCount = 1;
+		image_view_create_info.image = info.image;
+		verify(vkCreateImageView(supply_cast<Vulkan::Device>(device), &image_view_create_info, nullptr, &info.view));
+	} else {
+		image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+		image_view_create_info.format = vulkan_format;
+		image_view_create_info.flags = 0;
+		image_view_create_info.subresourceRange = {};
+		image_view_create_info.subresourceRange.aspectMask = aspect_mask;
+		image_view_create_info.subresourceRange.baseMipLevel = 0;
+		image_view_create_info.subresourceRange.levelCount = get_properties().mips;
+		image_view_create_info.subresourceRange.baseArrayLayer = 0;
+		image_view_create_info.subresourceRange.layerCount = get_properties().layers;
+		image_view_create_info.image = info.image;
+		verify(vkCreateImageView(supply_cast<Vulkan::Device>(device), &image_view_create_info, nullptr, &info.view));
+	}
+}
+void Image::create_sampler()
+{
+	VkSamplerCreateInfo sampler_create_info {};
+	sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	sampler_create_info.maxAnisotropy = 1.0F;
+	sampler_create_info.minFilter = to_vulkan_filter(props.filter);
+	sampler_create_info.magFilter = to_vulkan_filter(props.filter);
+	sampler_create_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	if (!is_depth_format(props.format) && props.dimension == ImageDimension::Two) {
+		sampler_create_info.compareEnable = VK_TRUE;
+		sampler_create_info.compareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+	}
+	auto&& [u, v, w] = get_properties().sampler_modes;
+	sampler_create_info.addressModeU = to_vulkan_sampler_mode(u);
+	sampler_create_info.addressModeV = to_vulkan_sampler_mode(v);
+	sampler_create_info.addressModeW = to_vulkan_sampler_mode(w);
+	sampler_create_info.mipLodBias = 0.0F;
+	sampler_create_info.maxAnisotropy = 1.0F;
+	sampler_create_info.minLod = 0.0F;
+	sampler_create_info.maxLod = is_depth_format(props.format) ? 1.0F : static_cast<float>(get_properties().mips);
+	sampler_create_info.borderColor = to_vulkan_border_colour(props.border_colour);
+	verify(vkCreateSampler(supply_cast<Vulkan::Device>(device), &sampler_create_info, nullptr, &info.sampler));
 }
 
 } // namespace Disarray::Vulkan

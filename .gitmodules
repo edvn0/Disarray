@@ -52,3 +52,6 @@
 [submodule "ThirdParty/reactphysics3d"]
 	path = ThirdParty/reactphysics3d
 	url = git@github.com:edvn0/reactphysics3d.git
+[submodule "ThirdParty/KTX-Software"]
+	path = ThirdParty/KTX-Software
+	url = git@github.com:KhronosGroup/KTX-Software.git

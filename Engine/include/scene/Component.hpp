@@ -13,7 +13,7 @@ namespace {
 	concept IsInAllowedComponents = AnyOf<T, Components::Tag, Components::Transform, Components::ID, Components::Inheritance,
 		Components::LineGeometry, Components::QuadGeometry, Components::Mesh, Components::Material, Components::Pipeline, Components::Texture,
 		Components::DirectionalLight, Components::PointLight, Components::Script, Components::Controller, Components::Camera, Components::BoxCollider,
-		Components::SphereCollider, Components::PillCollider>;
+		Components::SphereCollider, Components::PillCollider, Components::Skybox>;
 
 	template <typename... Component> struct ComponentGroup { };
 } // namespace
@@ -21,7 +21,7 @@ namespace {
 using AllComponents = ComponentGroup<Components::Tag, Components::Transform, Components::ID, Components::Inheritance, Components::LineGeometry,
 	Components::QuadGeometry, Components::Mesh, Components::Material, Components::Pipeline, Components::Texture, Components::DirectionalLight,
 	Components::PointLight, Components::Script, Components::Controller, Components::Camera, Components::BoxCollider, Components::SphereCollider,
-	Components::PillCollider>;
+	Components::PillCollider, Components::Skybox>;
 
 template <class T>
 concept ValidComponent = !std::is_empty_v<T>

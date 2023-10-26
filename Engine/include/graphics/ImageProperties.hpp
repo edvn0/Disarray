@@ -26,6 +26,12 @@ enum class SamplerMode : std::uint8_t {
 	MirrorClampToEdge = 4,
 };
 
+enum class SamplerFilter : std::uint8_t {
+	Linear,
+	Nearest,
+	Cubic,
+};
+
 enum class SampleCount : std::uint8_t {
 	One = 0x00000001,
 	Two = 0x00000002,
@@ -34,6 +40,11 @@ enum class SampleCount : std::uint8_t {
 	Sixteen = 0x00000010,
 	ThirtyTwo = 0x00000020,
 	SixtyFour = 0x00000040,
+};
+
+enum class ImageDimension : std::uint8_t {
+	Two,
+	Three,
 };
 
 enum class Tiling : std::uint8_t { Linear, DeviceOptimal };
@@ -70,6 +81,40 @@ template <IsNumber T> struct IExtent {
 	{
 		width *= other.width;
 		height *= other.height;
+		return *this;
+	}
+
+	template <IsNumber Other> auto operator*(const IExtent<Other>& other) -> IExtent<T> { return operator*(other.template as<T>()); }
+	auto operator*(const IExtent<T>& other) -> IExtent<T>
+	{
+		return IExtent<T> {
+			.width = width * other.width,
+			.height = height * other.height,
+		};
+	}
+
+	template <IsNumber Other> auto operator*(Other other) -> IExtent<T> { return operator*(static_cast<T>(other)); }
+	auto operator*(T other) -> IExtent<T>
+	{
+		return IExtent<T> {
+			.width = width * other,
+			.height = height * other,
+		};
+	}
+
+	template <IsNumber Other> auto operator/=(const IExtent<Other>& other) -> IExtent<T>& { return operator/=(other.template as<T>()); }
+	auto operator/=(const IExtent<T>& other) -> IExtent<T>&
+	{
+		width *= other.width;
+		height *= other.height;
+		return *this;
+	}
+
+	template <IsNumber Other> auto operator/=(Other other) -> IExtent<T>& { return operator/=(other); }
+	auto operator/=(T other) -> IExtent<T>&
+	{
+		width /= other;
+		height /= other;
 		return *this;
 	}
 

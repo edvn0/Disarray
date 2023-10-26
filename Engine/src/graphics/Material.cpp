@@ -10,4 +10,9 @@ auto Material::construct(const Disarray::Device& device, MaterialProperties prop
 	return make_ref<Vulkan::Material>(device, properties);
 }
 
+auto Material::construct_scoped(const Disarray::Device& device, MaterialProperties properties) -> Scope<Disarray::Material>
+{
+	return make_scope<Vulkan::Material>(device, properties);
+}
+
 } // namespace Disarray

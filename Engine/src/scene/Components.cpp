@@ -157,4 +157,10 @@ auto Camera::compute(const Disarray::Components::Transform& transform, const Dis
 	return pre_computed_for_parameters.at(hash);
 }
 
+Skybox::Skybox(Ref<Disarray::Texture> tex, const glm::vec4& col)
+	: texture(tex)
+	, colour(col)
+{
+}
+
 } // namespace Disarray::Components

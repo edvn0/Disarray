@@ -263,4 +263,15 @@ struct PillCollider {
 };
 template <> inline constexpr std::string_view component_name<PillCollider> = "PillCollider";
 
+struct Skybox {
+	Skybox() = default;
+	explicit Skybox(Ref<Disarray::Texture>, const glm::vec4& = glm::vec4 { 1.0F });
+	explicit Skybox(const glm::vec4&);
+	// Deserialisation constructor :)
+	explicit Skybox(const Device&, std::string_view path);
+	Ref<Disarray::Texture> texture { nullptr };
+	glm::vec4 colour { 1.0F };
+};
+template <> inline constexpr std::string_view component_name<Skybox> = "Skybox";
+
 } // namespace Disarray::Components

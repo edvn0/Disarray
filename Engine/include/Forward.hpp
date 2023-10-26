@@ -56,6 +56,10 @@ namespace Components {
 	struct PointLight;
 	struct Script;
 	struct Controller;
+	struct PillCollider;
+	struct BoxCollider;
+	struct SphereCollider;
+	struct Skybox;
 } // namespace Components
 
 } // namespace Disarray

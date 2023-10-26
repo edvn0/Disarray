@@ -12,6 +12,7 @@ namespace Disarray {
 struct MaterialProperties {
 	Ref<Shader> vertex_shader;
 	Ref<Shader> fragment_shader;
+	std::vector<Ref<Texture>> textures {};
 };
 
 class Material : public ReferenceCountable {

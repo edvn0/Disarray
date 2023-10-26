@@ -16,7 +16,7 @@ namespace Disarray {
 
 ImageLoader::ImageLoader(const std::filesystem::path& path, Disarray::DataBuffer& buffer)
 {
-	int tex_width, tex_height, tex_channels;
+	int tex_width, tex_height;
 
 	if (!std::filesystem::exists(path)) {
 		data = nullptr;
@@ -25,7 +25,7 @@ ImageLoader::ImageLoader(const std::filesystem::path& path, Disarray::DataBuffer
 	}
 
 	int requested = STBI_rgb_alpha;
-	data = stbi_load(path.string().c_str(), &tex_width, &tex_height, &tex_channels, requested);
+	data = stbi_load(path.string().c_str(), &tex_width, &tex_height, &channels, requested);
 	size = tex_width * tex_height * requested;
 
 	extent.width = static_cast<std::uint32_t>(tex_width);

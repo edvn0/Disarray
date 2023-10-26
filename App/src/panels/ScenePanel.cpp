@@ -192,6 +192,18 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (ImGui::ColorEdit4("Specular", glm::value_ptr(point.specular))) { }
 	});
 
+	draw_component<Components::Material>(entity, "Material", [](Components::Material& mat) {
+		const auto& props = mat.material->get_properties();
+		UI::text_wrapped("VS: {}", props.vertex_shader->get_properties().identifier.string());
+		UI::text_wrapped("FS: {}", props.fragment_shader->get_properties().identifier.string());
+		for (const auto& text : props.textures) {
+			UI::text("{}", text->get_properties().debug_name);
+			UI::image(text->get_image());
+		}
+	});
+
+	draw_component<Components::Skybox>(entity, "Skybox", [](Components::Skybox& skybox) { UI::image(skybox.texture->get_image()); });
+
 	draw_component<Components::Camera>(entity, "Camera", [](Components::Camera& cam) {
 		std::ignore = UI::combo_choice<CameraType>("Type", std::ref(cam.type));
 

@@ -138,6 +138,8 @@ private:
 	VkDescriptorSetLayout layout {};
 
 	const Disarray::Device& device;
+	void create_image_view(VkFormat vulkan_format, VkImageAspectFlags aspect_mask);
+	void create_sampler();
 };
 
 } // namespace Disarray::Vulkan

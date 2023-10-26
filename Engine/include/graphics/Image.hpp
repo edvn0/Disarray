@@ -17,12 +17,10 @@
 namespace Disarray {
 
 struct ImageProperties {
-
 	Extent extent;
 	ImageFormat format;
 	DataBuffer data;
 	std::uint32_t mips { static_cast<std::uint32_t>(std::floor(std::log2(std::max(extent.width, extent.height)))) + 1 };
-	bool should_present { false };
 	SampleCount samples { SampleCount::One };
 	Tiling tiling { Tiling::DeviceOptimal };
 	bool locked_extent { false };
@@ -35,8 +33,10 @@ struct ImageProperties {
 		.v = SamplerMode::Repeat,
 		.w = SamplerMode::Repeat,
 	};
+	SamplerFilter filter { SamplerFilter::Linear };
 	BorderColour border_colour { BorderColour::FloatOpaqueWhite };
-	bool should_initialise_directly { true };
+	std::uint32_t layers { 1 };
+	ImageDimension dimension { ImageDimension::Two };
 	std::string debug_name;
 };
 
