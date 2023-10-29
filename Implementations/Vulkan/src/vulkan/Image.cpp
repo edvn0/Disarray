@@ -285,14 +285,25 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor*)
 	{
 		// Setup buffer copy regions for each face including all of its miplevels
 		std::vector<VkBufferImageCopy> buffer_copy_regions = Collections::map(props.copy_regions, [](const CopyRegion& region) -> VkBufferImageCopy {
+			VkImageSubresourceLayers layers = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.mipLevel = region.mip_level,
+				.baseArrayLayer = region.base_array_layer,
+				.layerCount = 1,
+			};
+			VkOffset3D offset = { 0, 0, 0 };
+			VkExtent3D extent = {
+				.width = region.width,
+				.height = region.height,
+				.depth = 1,
+			};
 			return {
 				.bufferOffset = region.buffer_offset,
-				.imageSubresource = { .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .mipLevel = region.mip_level,.baseArrayLayer = region.base_array_layer,.layerCount = 1,  },
-				.imageExtent = {
-					.width = region.width,
-					.height = region.height,
-					.depth = 1,
-				}
+				.bufferRowLength = 0,
+				.bufferImageHeight = 0,
+				.imageSubresource = layers,
+				.imageOffset = offset,
+				.imageExtent = extent,
 			};
 		});
 
@@ -312,6 +323,7 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor*)
 
 		auto executor = construct_immediate(device);
 		VkImageSubresourceRange subresource_range = {};
+		subresource_range.baseArrayLayer = 0;
 		subresource_range.aspectMask = aspect_mask;
 		subresource_range.baseMipLevel = 0;
 		subresource_range.levelCount = get_properties().mips;
@@ -346,7 +358,7 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor*)
 	update_descriptor();
 
 	staging_allocator.deallocate_buffer(staging_allocation, staging);
-	if (!is_depth_format(get_properties().format)) {
+	if (!is_depth_format(get_properties().format) && props.dimension == ImageDimension::Two) {
 		create_mips();
 	}
 
@@ -553,6 +565,10 @@ void Image::create_sampler()
 	if (!is_depth_format(props.format) && props.dimension == ImageDimension::Two) {
 		sampler_create_info.compareEnable = VK_TRUE;
 		sampler_create_info.compareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+	}
+	if (props.dimension == ImageDimension::Three) {
+		sampler_create_info.compareEnable = VK_TRUE;
+		sampler_create_info.compareOp = VK_COMPARE_OP_NEVER;
 	}
 	auto&& [u, v, w] = get_properties().sampler_modes;
 	sampler_create_info.addressModeU = to_vulkan_sampler_mode(u);

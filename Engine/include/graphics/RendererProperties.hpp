@@ -96,6 +96,7 @@ struct UBO : Resettable<UBO> {
 struct CameraUBO : Resettable<CameraUBO> {
 	glm::vec4 position { 0 };
 	glm::vec4 direction { 0 };
+	glm::mat4 view { 0 };
 	void reset_impl();
 };
 

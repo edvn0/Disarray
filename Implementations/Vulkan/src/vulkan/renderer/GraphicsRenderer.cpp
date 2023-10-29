@@ -212,7 +212,7 @@ void Renderer::draw_aabb(Disarray::CommandExecutor& executor, const Disarray::AA
 	glm::vec3 aabb_center = aabb.middle_point();
 	glm::vec3 translation = -aabb_center;
 
-	glm::mat4 transformation_matrix = glm::mat4(1.0f);
+	glm::mat4 transformation_matrix = glm::mat4(1.0F);
 	transformation_matrix = glm::translate(transformation_matrix, translation);
 	transformation_matrix = transform * scale_matrix * transformation_matrix;
 	draw_mesh(executor, *aabb_model, *aabb_pipeline, transformation_matrix);
@@ -249,7 +249,7 @@ void Renderer::text_rendering_pass(Disarray::CommandExecutor& executor) { text_r
 
 void Renderer::planar_geometry_pass(Disarray::CommandExecutor& executor) { batch_renderer.submit(*this, executor); }
 
-void Renderer::fullscreen_quad_pass(Disarray::CommandExecutor& executor, const Extent& input_extent)
+void Renderer::fullscreen_quad_pass(Disarray::CommandExecutor& executor, const Extent&)
 {
 	begin_pass(executor, fullscreen_quad_pipeline->get_framebuffer());
 
@@ -260,7 +260,11 @@ void Renderer::fullscreen_quad_pass(Disarray::CommandExecutor& executor, const E
 	end_pass(executor);
 }
 
-void Renderer::end_pass(Disarray::CommandExecutor& executor) { vkCmdEndRenderPass(supply_cast<Vulkan::CommandExecutor>(executor)); }
+void Renderer::end_pass(Disarray::CommandExecutor& executor)
+{
+	vkCmdEndRenderPass(supply_cast<Vulkan::CommandExecutor>(executor));
+	batch_renderer.reset();
+}
 
 void Renderer::begin_pass(
 	Disarray::CommandExecutor& executor, Disarray::Framebuffer& framebuffer, bool explicit_clear, const glm::vec2& mouse_position)

@@ -3,10 +3,11 @@
 #include <tinyobjloader.h>
 
 #include "core/Log.hpp"
+#include "graphics/ModelLoader.hpp"
 
 namespace Disarray {
 
-auto TinyObjModelLoader::import(const std::filesystem::path& path) -> ImportedMesh
+auto TinyObjModelLoader::import(const std::filesystem::path& path, ImportFlag) -> ImportedMesh
 {
 	std::vector<ModelVertex> vertices;
 	std::vector<std::uint32_t> indices;

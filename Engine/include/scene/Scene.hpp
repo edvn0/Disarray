@@ -46,6 +46,11 @@ enum class SceneFramebuffer : std::uint8_t {
 	Shadow,
 };
 
+struct SceneParameters {
+	bool enable_batch_renderer { true };
+	bool enable_text_renderer { true };
+};
+
 class Scene {
 public:
 	Scene(const Disarray::Device&, std::string_view);
@@ -108,7 +113,7 @@ public:
 		} else {
 			out.reserve(view_for.size_hint());
 		}
-		view_for.each([this, &out](auto entity, auto... other_ts) { out.push_back(Entity { this, entity }); });
+		view_for.each([this, &out](auto entity, auto...) { out.push_back(Entity { this, entity }); });
 		return out;
 	}
 
@@ -145,6 +150,7 @@ public:
 private:
 	const Disarray::Device& device;
 	std::string scene_name;
+	SceneParameters parameters {};
 	Scope<Renderer> scene_renderer { nullptr };
 	Scope<FileWatcher> file_watcher { nullptr };
 

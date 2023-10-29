@@ -11,12 +11,12 @@ namespace Disarray {
 struct TinyObjModelLoader final : public IModelImporter {
 	glm::mat4 initial_rotation;
 
-	TinyObjModelLoader(const glm::mat4& initial)
+	explicit TinyObjModelLoader(const glm::mat4& initial)
 		: initial_rotation(initial)
 	{
 	}
 
-	auto import(const std::filesystem::path& path) -> ImportedMesh final;
+	auto import(const std::filesystem::path& path, ImportFlag) -> ImportedMesh final;
 };
 
 } // namespace Disarray

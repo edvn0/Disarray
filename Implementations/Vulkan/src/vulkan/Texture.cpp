@@ -130,6 +130,11 @@ Texture3D::Texture3D(const Device& dev, TextureProperties properties)
 		.format = props.format,
 		.data = std::move(pixels),
 		.mips = *props.mips,
+		.sampler_modes = {
+			.u = SamplerMode::ClampToEdge,
+			.v = SamplerMode::ClampToEdge,
+			.w = SamplerMode::ClampToEdge,
+		},
 		.copy_regions = copy_regions,
 		.layers = 6,
 		.dimension = ImageDimension::Three,

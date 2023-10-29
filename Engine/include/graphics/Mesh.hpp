@@ -23,6 +23,8 @@ struct MeshProperties {
 	std::filesystem::path path {};
 	Ref<Pipeline> pipeline { nullptr };
 	glm::mat4 initial_rotation { 1.0F };
+	ImportFlag flags { default_import_flags };
+	std::unordered_set<VertexInput> include_inputs = { std::begin(default_vertex_inputs), std::end(default_vertex_inputs) };
 };
 
 struct MeshSubstructure {

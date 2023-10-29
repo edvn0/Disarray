@@ -27,6 +27,10 @@
 #include "graphics/Shader.hpp"
 #include "graphics/Texture.hpp"
 
+extern "C" {
+struct ImRect;
+}
+
 namespace Disarray::UI {
 
 namespace Detail {
@@ -246,6 +250,9 @@ template <IsEnum T> auto combo_choice(std::string_view name, std::reference_wrap
 }
 
 auto checkbox(const std::string&, bool&) -> bool;
+
+auto begin_menu_bar(const ImRect&) -> bool;
+auto end_menu_bar() -> void;
 
 auto shader_drop_button(Device&, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader) -> bool;
 auto texture_drop_button(Device&, const Texture& texture) -> Ref<Disarray::Texture>;

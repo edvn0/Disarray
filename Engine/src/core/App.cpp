@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <thread>
 
 #include "core/AllocatorConfigurator.hpp"
 #include "core/Clock.hpp"
@@ -76,6 +77,12 @@ void App::run()
 		}
 
 		const auto step = Clock::ms() - current_time;
+#ifdef DISARRAY_VSYNC
+		if (step < 16.0) {
+			const auto sleep_time = std::chrono::duration<double, std::milli>(16.0 - step);
+			std::this_thread::sleep_for(sleep_time);
+		}
+#endif
 
 		window->handle_input(step);
 		update_layers(step, could_prepare);

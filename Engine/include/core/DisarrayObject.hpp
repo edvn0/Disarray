@@ -32,7 +32,7 @@ public:                                                                         
                                                                                                                                                      \
 protected:                                                                                                                                           \
 	Type() = default;                                                                                                                                \
-	Type(PropertiesType properties)                                                                                                                  \
+	explicit Type(PropertiesType properties)                                                                                                         \
 		: props(std::move(properties))                                                                                                               \
 	{                                                                                                                                                \
 	}                                                                                                                                                \

@@ -127,7 +127,7 @@ void Swapchain::present()
 	}
 
 	current_frame = (current_frame + 1) % image_count();
-	verify(vkWaitForFences(supply_cast<Vulkan::Device>(device), 1, &in_flight_fences[current_frame], true, UINT64_MAX));
+	verify(vkWaitForFences(supply_cast<Vulkan::Device>(device), 1, &in_flight_fences[current_frame], VK_TRUE, UINT64_MAX));
 }
 
 void Swapchain::recreate_renderpass()
@@ -291,8 +291,8 @@ void Swapchain::cleanup_swapchain()
 
 	render_pass.reset();
 
-	for (auto& fb : framebuffers) {
-		vkDestroyFramebuffer(vk_device, fb, nullptr);
+	for (auto& framebuffer : framebuffers) {
+		vkDestroyFramebuffer(vk_device, framebuffer, nullptr);
 	}
 
 	for (auto& [_, command_pool] : command_buffers) {
@@ -320,9 +320,9 @@ void Swapchain::recreate_framebuffer()
 
 	framebuffers.resize(image_count());
 
-	std::uint32_t i { 0 };
-	for (auto& fb : framebuffers) {
-		std::array<VkImageView, 1> attachments = { swapchain_image_views[i++] };
+	std::uint32_t index { 0 };
+	for (auto& framebuffer : framebuffers) {
+		std::array<VkImageView, 1> attachments = { swapchain_image_views[index++] };
 
 		VkFramebufferCreateInfo fb_create_info {};
 		fb_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -333,7 +333,7 @@ void Swapchain::recreate_framebuffer()
 		fb_create_info.height = extent.height;
 		fb_create_info.layers = 1;
 
-		verify(vkCreateFramebuffer(vk_device, &fb_create_info, nullptr, &fb));
+		verify(vkCreateFramebuffer(vk_device, &fb_create_info, nullptr, &framebuffer));
 	}
 }
 } // namespace Disarray::Vulkan

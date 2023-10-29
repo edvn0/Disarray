@@ -14,9 +14,9 @@ PC;
 
 #include "DefaultInput.glsl"
 
-layout(location = 0) flat out vec4 fragment_colour;
+layout(location = 0) out vec4 fragment_colour;
 layout(location = 1) out vec2 uvs;
-layout(location = 2) flat out vec3 out_normals;
+layout(location = 2) out vec3 out_normals;
 layout(location = 3) out vec3 frag_pos;
 layout(location = 4) out vec4 light_space_frag_pos;
 

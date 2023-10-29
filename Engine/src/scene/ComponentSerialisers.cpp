@@ -152,7 +152,6 @@ void DirectionalLightSerialiser::serialise_impl(const Components::DirectionalLig
 			params.fov,
 		},
 	};
-	object["position"] = light.position;
 	object["direction"] = light.direction;
 	object["ambient"] = light.ambient;
 	object["diffuse"] = light.diffuse;

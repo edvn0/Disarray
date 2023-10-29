@@ -150,7 +150,7 @@ void Renderer::begin_frame(const Camera& camera)
 
 void Renderer::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_projection)
 {
-	// TODO: Move to some kind of scene scope?
+	// TODO(edvin): Move to some kind of scene scope?
 	batch_renderer.reset();
 
 	auto [ubo, camera, lights, _, __, ___] = get_graphics_resource().get_editable_ubos();
@@ -178,6 +178,24 @@ void Renderer::end_frame()
 
 void Renderer::force_recreation() { on_resize(); }
 
+void Renderer::clear_pass(Disarray::CommandExecutor& executor, RenderPasses pass)
+{
+	switch (pass) {
+	case RenderPasses::Text:
+		text_renderer.clear_pass(*this, executor);
+		break;
+	case RenderPasses::PlanarGeometry:
+		batch_renderer.clear_pass(*this, executor);
+		break;
+	}
+}
+
+void Renderer::clear_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& pass)
+{
+	begin_pass(executor, pass, true);
+	end_pass(executor);
+}
+
 void Renderer::submit_batched_geometry(Disarray::CommandExecutor& executor)
 {
 	if (batch_renderer.should_submit()) {
@@ -187,8 +205,20 @@ void Renderer::submit_batched_geometry(Disarray::CommandExecutor& executor)
 	batch_renderer.reset();
 }
 
-void Renderer::draw_text(std::string_view text, const glm::uvec2& position, float size) { text_renderer.submit_text(text, position, size); }
-void Renderer::draw_text(std::string_view text, const glm::vec3& position, float size) { text_renderer.submit_text(text, position, size); }
+void Renderer::draw_text(std::string_view text, const glm::mat4& transform, float size, const glm::vec4& colour)
+{
+	text_renderer.submit_text(text, transform, size, colour);
+}
+
+void Renderer::draw_text(std::string_view text, const glm::uvec2& position, float size, const glm::vec4& colour)
+{
+	text_renderer.submit_text(text, position, size, colour);
+}
+
+void Renderer::draw_text(std::string_view text, const glm::vec3& position, float size, const glm::vec4& colour)
+{
+	text_renderer.submit_text(text, position, size, colour);
+}
 
 void Renderer::draw_planar_geometry(Geometry geometry, const GeometryProperties& properties)
 {

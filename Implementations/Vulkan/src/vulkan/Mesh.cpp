@@ -51,7 +51,7 @@ void Mesh::load_and_initialise_model()
 
 	ModelLoader loader;
 	try {
-		loader = ModelLoader(make_scope<AssimpModelLoader>(props.initial_rotation), props.path);
+		loader = ModelLoader(make_scope<AssimpModelLoader>(props.initial_rotation), props.path, props.flags);
 	} catch (const CouldNotLoadModelException& exc) {
 		Log::error("Mesh", "Model could not be loaded: {}", exc.what());
 		return;

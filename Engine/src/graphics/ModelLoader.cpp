@@ -20,16 +20,16 @@ ModelLoader::ModelLoader(Scope<IModelImporter> input)
 
 	};
 
-ModelLoader::ModelLoader(Scope<IModelImporter> input, const std::filesystem::path& path)
+ModelLoader::ModelLoader(Scope<IModelImporter> input, const std::filesystem::path& path, ImportFlag flags)
 	: importer(std::move(input))
 	, mesh_path(path)
 {
-	import_model(path);
+	import_model(mesh_path, flags);
 };
 
-auto ModelLoader::import_model(const std::filesystem::path& path) -> void
+auto ModelLoader::import_model(const std::filesystem::path& path, ImportFlag flags) -> void
 {
-	auto&& meshes = importer->import(path);
+	auto&& meshes = importer->import(path, flags);
 	mesh_data = meshes;
 }
 

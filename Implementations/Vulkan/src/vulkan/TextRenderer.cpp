@@ -6,6 +6,7 @@
 #include <ft2build.h>
 #include <vector>
 #include "core/DataBuffer.hpp"
+#include "graphics/CommandExecutor.hpp"
 #include "graphics/Pipeline.hpp"
 #include FT_FREETYPE_H
 // clang-format on
@@ -131,6 +132,8 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 		{
 			.extent = extent,
 			.attachments = { { ImageFormat::SBGR, true }, { ImageFormat::Depth } },
+			.clear_colour_on_load = true,
+			.clear_depth_on_load = true,
 			.should_blend = true,
 			.blend_mode = FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha,
 			.debug_name = "GlyphFramebuffer",
@@ -189,7 +192,7 @@ auto TextRenderer::get_pipelines() -> std::array<Disarray::Pipeline*, 2>
 	return { renderer_api->world_space_glyph_pipeline.get(), renderer_api->screen_space_glyph_pipeline.get() };
 }
 
-void TextRenderer::submit_text(std::string_view text, const glm::uvec2& position, float scale)
+void TextRenderer::submit_text(std::string_view text, const glm::uvec2& position, float scale, const glm::vec4& colour)
 {
 	ensure(screen_space_text_data_index < screen_space_text_data.size());
 	auto x_position = static_cast<float>(position.x);
@@ -211,6 +214,7 @@ void TextRenderer::submit_text(std::string_view text, const glm::uvec2& position
 		x_position += scaled_advance;
 
 		screen_space_text_character_texture_data.at(screen_space_text_data_index) = static_cast<std::uint32_t>(character);
+		screen_space_text_character_colour_data.at(screen_space_text_data_index) = colour;
 		screen_space_text_data.at(screen_space_vertex_data_index++) = {
 			.pos = { xpos, ypos },
 			.tex_coords = { 0, 0 },
@@ -232,7 +236,7 @@ void TextRenderer::submit_text(std::string_view text, const glm::uvec2& position
 	};
 }
 
-void TextRenderer::submit_text(std::string_view text, const glm::vec3& position, float scale)
+void TextRenderer::submit_text(std::string_view text, const glm::vec3& position, float scale, const glm::vec4& colour)
 {
 	ensure(world_space_text_data_index < world_space_text_data.size());
 	auto x_position = static_cast<float>(position.x);
@@ -254,6 +258,7 @@ void TextRenderer::submit_text(std::string_view text, const glm::vec3& position,
 		x_position += scaled_advance;
 
 		world_space_text_character_texture_data.at(world_space_text_data_index) = static_cast<std::uint32_t>(character);
+		world_space_text_character_colour_data.at(world_space_text_data_index) = colour;
 		world_space_text_data.at(world_space_vertex_data_index++) = {
 			.pos = { xpos, ypos, position.z },
 			.tex_coords = { 0, 0 },
@@ -273,6 +278,71 @@ void TextRenderer::submit_text(std::string_view text, const glm::vec3& position,
 		world_space_text_data_index++;
 		world_space_submitted_vertices += 4;
 	};
+}
+
+void TextRenderer::submit_text(std::string_view text, const glm::mat4& transform, float scale, const glm::vec4& colour)
+{
+	static constexpr auto rotate_3d_by_transform = [](const glm::vec3& vector, const glm::mat4& transform) {
+		// Extract the rotation and scale components from the full matrix
+		glm::mat4 copied = transform;
+
+		// Set the translation components to identity (or zeros, depending on your convention)
+		copied[3][0] = 0;
+		copied[3][1] = 0;
+		copied[3][2] = 0;
+		copied[3][3] = 1;
+
+		return glm::vec3(copied * glm::vec4(vector, 1.0F));
+	};
+
+	ensure(world_space_text_data_index < world_space_text_data.size());
+	const auto& position = transform[3];
+
+	auto x_position = static_cast<float>(position.x);
+	static auto max_h = static_cast<float>(max_height);
+	auto y_position = static_cast<float>(position.y) + max_h;
+	for (const auto& character : text) {
+		if (character == '\n' || character == '\r') {
+			y_position += max_h;
+			x_position = static_cast<float>(position.x);
+			continue;
+		}
+		auto& character_font_data = font_data.at(static_cast<std::size_t>(character));
+		float xpos = x_position + static_cast<float>(character_font_data.bearing.x) * scale;
+		float ypos = y_position - static_cast<float>(character_font_data.bearing.y) * scale;
+
+		float width = static_cast<float>(character_font_data.size.x) * scale;
+		float height = static_cast<float>(character_font_data.size.y) * scale;
+		auto scaled_advance = static_cast<float>((character_font_data.advance >> 6)) * scale;
+		x_position += scaled_advance;
+
+		world_space_text_character_texture_data.at(world_space_text_data_index) = static_cast<std::uint32_t>(character);
+		world_space_text_character_colour_data.at(world_space_text_data_index) = colour;
+		world_space_text_data.at(world_space_vertex_data_index++) = {
+			.pos = rotate_3d_by_transform({ xpos, ypos, position.z }, transform),
+			.tex_coords = { 0, 0 },
+		};
+		world_space_text_data.at(world_space_vertex_data_index++) = {
+			.pos = rotate_3d_by_transform({ xpos, ypos + height, position.z }, transform),
+			.tex_coords = { 0, 1 },
+		};
+		world_space_text_data.at(world_space_vertex_data_index++) = {
+			.pos = rotate_3d_by_transform({ xpos + width, ypos + height, position.z }, transform),
+			.tex_coords = { 1, 1 },
+		};
+		world_space_text_data.at(world_space_vertex_data_index++) = {
+			.pos = rotate_3d_by_transform({ xpos + width, ypos, position.z }, transform),
+			.tex_coords = { 1, 0 },
+		};
+		world_space_text_data_index++;
+		world_space_submitted_vertices += 4;
+	};
+}
+
+void TextRenderer::clear_pass(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
+{
+	renderer.begin_pass(executor, *renderer_api->glyph_framebuffer, true);
+	renderer.end_pass(executor);
 }
 
 void TextRenderer::render(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
@@ -310,6 +380,7 @@ void TextRenderer::render(Disarray::Renderer& renderer, Disarray::CommandExecuto
 		auto& push_constant = renderer.get_graphics_resource().get_editable_push_constant();
 		for (auto i = 0U; i < screen_space_text_data_index; i++) {
 			push_constant.image_indices[0] = static_cast<std::int32_t>(screen_space_text_character_texture_data.at(i));
+			push_constant.colour = screen_space_text_character_colour_data.at(i);
 			vkCmdPushConstants(cmd, vk_pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),
 				renderer.get_graphics_resource().get_push_constant());
 
@@ -340,6 +411,7 @@ void TextRenderer::render(Disarray::Renderer& renderer, Disarray::CommandExecuto
 		auto& push_constant = renderer.get_graphics_resource().get_editable_push_constant();
 		for (auto i = 0U; i < world_space_text_data_index; i++) {
 			push_constant.image_indices[0] = static_cast<std::int32_t>(world_space_text_character_texture_data.at(i));
+			push_constant.colour = world_space_text_character_colour_data.at(i);
 			vkCmdPushConstants(cmd, vk_pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),
 				renderer.get_graphics_resource().get_push_constant());
 

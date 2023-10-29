@@ -130,7 +130,6 @@ struct DirectionalLight {
 		[[nodiscard]] auto compute() const -> glm::mat4;
 	};
 	ProjectionParameters projection_parameters {};
-	glm::vec4 position { 0 };
 	glm::vec4 direction { 1 };
 	glm::vec4 ambient { 1 };
 	glm::vec4 diffuse { 1 };
@@ -201,7 +200,7 @@ private:
 	ScriptPtr instance_slot { nullptr };
 
 	using DestroyScriptFunctor = decltype(+[](Script&) {});
-	DestroyScriptFunctor destroy_script_functor;
+	DestroyScriptFunctor destroy_script_functor {};
 
 	bool bound { false };
 	bool instantiated { false };
@@ -273,5 +272,29 @@ struct Skybox {
 	glm::vec4 colour { 1.0F };
 };
 template <> inline constexpr std::string_view component_name<Skybox> = "Skybox";
+
+enum class TextProjection : std::uint8_t {
+	ScreenSpace,
+	WorldSpace,
+};
+struct Text {
+	std::string text_data {};
+	glm::vec4 colour { 1.0F };
+	float size { 1.0F };
+	TextProjection projection { TextProjection::WorldSpace };
+
+	template <typename... Args> void set_text(fmt::format_string<Args...> fmt_string, Args&&... args)
+	{
+		text_data = fmt::format(fmt_string, std::forward<Args>(args)...);
+	}
+
+	explicit Text(std::string text)
+		: text_data(std::move(text))
+	{
+	}
+
+	Text() = default;
+};
+template <> inline constexpr std::string_view component_name<Text> = "Text";
 
 } // namespace Disarray::Components

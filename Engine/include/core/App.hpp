@@ -47,6 +47,7 @@ public:
 	void run();
 
 	void update_layers(float time_step, bool could_prepare);
+	void update_layers(double time_step, bool could_prepare) { update_layers(static_cast<float>(time_step), could_prepare); }
 	void render_layers();
 	void render_ui(const std::shared_ptr<Disarray::UI::InterfaceLayer>& ui_layer);
 

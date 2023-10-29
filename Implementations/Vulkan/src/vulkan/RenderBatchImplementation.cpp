@@ -58,12 +58,12 @@ void QuadVertexBatch::create_new_impl(Geometry geometry, const GeometryPropertie
 		return;
 	}
 
-	static constexpr std::array<glm::vec2, 4> texture_coordinates = { glm::vec2 { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 1.0f } };
+	static constexpr std::array<glm::vec2, 4> texture_coordinates = { glm::vec2 { 0.0F, 0.0F }, { 1.0F, 0.0F }, { 1.0F, 1.0F }, { 0.0F, 1.0F } };
 	static constexpr std::array<glm::vec4, 4> quad_positions
-		= { glm::vec4 { -0.5f, -0.5f, 0.0f, 1.0f }, { 0.5f, -0.5f, 0.0f, 1.0f }, { 0.5f, 0.5f, 0.0f, 1.0f }, { -0.5f, 0.5f, 0.0f, 1.0f } };
+		= { glm::vec4 { -0.5F, -0.5F, 0.0F, 1.0F }, { 0.5F, -0.5F, 0.0F, 1.0F }, { 0.5F, 0.5F, 0.0F, 1.0F }, { -0.5F, 0.5F, 0.0F, 1.0F } };
 
 	glm::mat4 transform
-		= glm::translate(glm::mat4 { 1.0f }, props.position) * glm::mat4_cast(props.rotation) * glm::scale(glm::mat4 { 1.0f }, props.dimensions);
+		= glm::translate(glm::mat4 { 1.0F }, props.position) * glm::mat4_cast(props.rotation) * glm::scale(glm::mat4 { 1.0F }, props.dimensions);
 
 	auto start_index = submitted_vertices;
 	for (std::size_t i = 0; i < vertex_per_object_count<QuadVertex>; i++) {
@@ -125,6 +125,12 @@ void QuadVertexBatch::flush_impl(Renderer& renderer, CommandExecutor& executor)
 	submit_impl(renderer, executor);
 	reset();
 	// flush_vertex_buffer();
+}
+
+void QuadVertexBatch::clear_pass_impl(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
+{
+	renderer.begin_pass(executor, pipeline->get_framebuffer(), true);
+	renderer.end_pass(executor);
 }
 
 void LineVertexBatch::construct_impl(Disarray::Renderer& renderer, const Disarray::Device& dev)
@@ -218,6 +224,12 @@ void LineVertexBatch::flush_impl(Disarray::Renderer& renderer, Disarray::Command
 	submit_impl(renderer, executor);
 	reset();
 	// flush_vertex_buffer();
+}
+
+void LineVertexBatch::clear_pass_impl(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
+{
+	renderer.begin_pass(executor, pipeline->get_framebuffer(), true);
+	renderer.end_pass(executor);
 }
 
 } // namespace Disarray

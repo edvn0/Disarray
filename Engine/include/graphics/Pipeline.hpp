@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <stdexcept>
 #include <utility>
@@ -54,6 +55,23 @@ enum class ElementType : std::uint8_t {
 	Uint2,
 	Uint3,
 	Uint4,
+};
+
+enum class VertexInput : std::uint8_t {
+	Position,
+	TextureCoordinates,
+	Normals,
+	Colour,
+	Tangent,
+	Bitangent,
+};
+static constexpr inline const std::array<VertexInput, 6> default_vertex_inputs {
+	VertexInput::Position,
+	VertexInput::TextureCoordinates,
+	VertexInput::Normals,
+	VertexInput::Colour,
+	VertexInput::Tangent,
+	VertexInput::Bitangent,
 };
 
 static constexpr auto to_size(ElementType type)

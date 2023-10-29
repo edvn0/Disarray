@@ -29,11 +29,11 @@ void main()
 	PushConstant pc = PC.pc;
 	ShadowPassUBO spu = SPU.spu;
 
-	vec4 model_position = pc.object_transform * vec4(pos, 1.0);
+	vec4 model_position = vec4(pos, 1.0);
 	gl_Position = ubo.view_projection * model_position;
 	fragment_position = vec3(model_position);
 
-	light_space_fragment_position = bias_matrix() * spu.view_projection * pc.object_transform * vec4(pos, 1.0);
+	light_space_fragment_position = bias_matrix() * spu.view_projection * model_position;
 	fragment_colour = colour;
 	uvs = uv;
 	outNormals = normals;

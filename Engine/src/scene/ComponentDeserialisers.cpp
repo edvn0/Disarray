@@ -178,7 +178,6 @@ void DirectionalLightDeserialiser::deserialise_impl(const nlohmann::json& object
 	light.projection_parameters.far = params["far"];
 	light.projection_parameters.fov = params["fov"];
 
-	light.position = object["position"];
 	light.direction = object["direction"];
 	light.ambient = object["ambient"];
 	light.diffuse = object["diffuse"];

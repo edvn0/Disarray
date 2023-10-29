@@ -2,6 +2,9 @@
 
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
+
+#include <magic_enum.hpp>
 
 #include <algorithm>
 #include <cstdint>
@@ -24,16 +27,16 @@ struct ResolvedSwapchainSupport {
 	VkSampleCountFlagBits msaa { VK_SAMPLE_COUNT_1_BIT };
 };
 
-inline ResolvedSwapchainSupport resolve_swapchain_support(VkPhysicalDevice device, Disarray::Surface& surf);
+inline auto resolve_swapchain_support(VkPhysicalDevice device, Disarray::Surface& surf) -> ResolvedSwapchainSupport;
 
-inline ResolvedSwapchainSupport resolve_swapchain_support(Disarray::PhysicalDevice& device, Disarray::Surface& surf)
+inline auto resolve_swapchain_support(Disarray::PhysicalDevice& device, Disarray::Surface& surf) -> ResolvedSwapchainSupport
 {
 	return resolve_swapchain_support(supply_cast<Vulkan::PhysicalDevice>(device), surf);
 }
 
-inline ResolvedSwapchainSupport resolve_swapchain_support(VkPhysicalDevice physical_device, Disarray::Surface& surf)
+inline auto resolve_swapchain_support(VkPhysicalDevice physical_device, Disarray::Surface& surf) -> ResolvedSwapchainSupport
 {
-	auto surface = supply_cast<Vulkan::Surface>(surf);
+	auto* surface = supply_cast<Vulkan::Surface>(surf);
 	ResolvedSwapchainSupport support;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &support.capabilities);
 
@@ -102,20 +105,19 @@ inline auto decide_present_mode(const std::vector<VkPresentModeKHR>& present_mod
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-inline VkExtent2D determine_extent(Disarray::Window& window, const VkSurfaceCapabilitiesKHR& capabilities)
+inline auto determine_extent(Disarray::Window& window, const VkSurfaceCapabilitiesKHR& capabilities) -> VkExtent2D
 {
 	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 		return capabilities.currentExtent;
-	} else {
-		const auto&& [width, height] = window.get_framebuffer_size();
-
-		VkExtent2D actual_extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
-
-		actual_extent.width = std::clamp(actual_extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-		actual_extent.height = std::clamp(actual_extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
-
-		return actual_extent;
 	}
+	const auto&& [width, height] = window.get_framebuffer_size();
+
+	VkExtent2D actual_extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+
+	actual_extent.width = std::clamp(actual_extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+	actual_extent.height = std::clamp(actual_extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+	return actual_extent;
 }
 
 } // namespace Disarray::Vulkan

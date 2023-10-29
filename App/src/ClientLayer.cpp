@@ -13,13 +13,20 @@
 #include <type_traits>
 #include <utility>
 
+#include "core/Random.hpp"
+#include "graphics/Pipeline.hpp"
+#include "graphics/RendererProperties.hpp"
+#include "imgui_internal.h"
 #include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
+#include "panels/LogPanel.hpp"
 #include "panels/ScenePanel.hpp"
 #include "panels/StatisticsPanel.hpp"
 #include "scene/Scene.hpp"
 
-template <std::size_t Count> static auto generate_colours() -> std::array<glm::vec4, Count>
+template <std::size_t Count>
+	requires(Count <= Disarray::max_point_lights)
+static auto generate_colours() -> std::array<glm::vec4, Count>
 {
 	std::array<glm::vec4, Count> colours {};
 	for (std::size_t i = 0; i < Count; i++) {
@@ -50,11 +57,13 @@ void ClientLayer::construct(App& app)
 	auto content_panel = app.add_panel<DirectoryContentPanel>("Assets");
 	auto scene_panel = app.add_panel<ScenePanel>(scene.get());
 	auto execution_stats_panel = app.add_panel<ExecutionStatisticsPanel>(scene->get_command_executor());
+	// auto log_panel = app.add_panel<LogPanel>("Assets/Logs/disarray_errors.log");
 
 	stats_panel->construct(app);
 	content_panel->construct(app);
 	scene_panel->construct(app);
 	execution_stats_panel->construct(app);
+	// log_panel->construct(app);
 };
 
 void ClientLayer::create_entities()
@@ -112,9 +121,6 @@ void ClientLayer::create_entities()
 	environment.add_component<Components::Pipeline>(skybox_pipeline);
 
 	{
-		constexpr int rects { 2 };
-		static_assert(rects % 2 == 0);
-
 		const auto& vert = renderer.get_pipeline_cache().get_shader("cube.vert");
 		const auto& frag = renderer.get_pipeline_cache().get_shader("cube.frag");
 
@@ -131,27 +137,13 @@ void ClientLayer::create_entities()
 			});
 
 		auto floor = scene->create("Floor");
-		floor.get_transform().scale = { 30, 1, 30 };
+		floor.get_transform().scale = { 5000, 1, 5000 };
 		floor.get_transform().position = { 0, 7, 0 };
 		floor.add_component<Components::BoxCollider>();
 
 		floor.add_component<Components::Texture>(nullptr, glm::vec4 { .1, .1, .9, 1.0 });
 		floor.add_component<Components::Mesh>(cube_mesh);
 		floor.add_component<Components::Pipeline>(pipe);
-
-		auto parent = scene->create("Grid");
-		for (auto j = -rects / 2; j < rects / 2; j++) {
-			for (auto i = -rects / 2; i < rects / 2; i++) {
-				auto rect = scene->create(fmt::format("Rect{}-{}", i, j));
-				parent.add_child(rect);
-				auto& transform = rect.get_components<Components::Transform>();
-				transform.position = { 5 * static_cast<float>(i) + 2.5F, -1.2, 5 * static_cast<float>(j) + 2.5F };
-				transform.rotation = glm::angleAxis(glm::radians(90.0F), glm::vec3 { 1, 0, 0 });
-				rect.add_component<Components::Mesh>(cube_mesh);
-				rect.add_component<Components::Texture>(Random::strong_colour());
-				rect.add_component<Components::Pipeline>(pipe);
-			}
-		}
 	}
 
 	{
@@ -193,7 +185,7 @@ void ClientLayer::create_entities()
 			for (auto j = -squares / 2; j < half_extent; j++) {
 				auto axis = scene->create("Square-x{}y{}", i, j);
 				auto& transform = axis.add_component<Components::Transform>();
-				transform.position = glm::vec3 { i, 7, j };
+				transform.position = glm::vec3 { i, -7, j };
 				transform.scale /= offset;
 				transform.rotation = glm::angleAxis(glm::radians(90.0F), glm::vec3 { 1, 0, 0 });
 				axis.add_component<Components::QuadGeometry>();
@@ -248,10 +240,10 @@ void ClientLayer::create_entities()
 
 	{
 
-		auto colours = generate_colours<count_point_lights>();
+		auto colours = generate_colours<150>();
 		const auto sphere = Mesh::construct(device,
 			{
-				.path = FS::model("sphere.obj"),
+				.path = FS::model("sphere.fbx"),
 			});
 		const auto& vert = renderer.get_pipeline_cache().get_shader("point_light.vert");
 		const auto& frag = renderer.get_pipeline_cache().get_shader("point_light.frag");
@@ -277,7 +269,7 @@ void ClientLayer::create_entities()
 			});
 		sun.add_component<Components::Mesh>(sphere);
 		sun.add_component<Components::Pipeline>(pipe);
-		sun.add_component<Components::Transform>().position = { -15, -15, 16 };
+		sun.add_component<Components::Transform>().position = { -15, -15, -16 };
 		sun.add_component<Components::Controller>();
 
 		auto pl_system = scene->create("PointLightSystem");
@@ -287,9 +279,10 @@ void ClientLayer::create_entities()
 			light_component.ambient = colours.at(i);
 			light_component.diffuse = colours.at(i);
 			light_component.specular = colours.at(i);
+			light_component.factors = { 1, 10, 10, 10 };
 
 			constexpr auto float_radius = static_cast<float>(point_light_radius);
-			const auto point_in_sphere = Random::in_sphere(float_radius, { -2, 5, 6 });
+			const auto point_in_sphere = Random::on_sphere(3.0F * float_radius);
 			auto& transform = point_light.get_components<Components::Transform>();
 			transform.position = point_in_sphere;
 			// transform.scale *= 2;
@@ -299,6 +292,16 @@ void ClientLayer::create_entities()
 			point_light.add_component<Components::Pipeline>(pipe);
 			pl_system.add_child(point_light);
 		}
+	}
+	{
+		// sponza
+		auto sponza = scene->create("Sponza");
+	}
+	{
+		// Text
+		auto text_hello = scene->create("Hello Text");
+		auto& component = text_hello.add_component<Components::Text>();
+		component.set_text("{}", "Hello world!");
 	}
 
 	auto scene_camera = scene->create("Scene Camera");
@@ -420,6 +423,7 @@ void ClientLayer::on_event(Event& event)
 			} else {
 				gizmo_type = GizmoType::Translate;
 			}
+			return;
 		}
 		default:
 			return;
@@ -547,14 +551,193 @@ private:
 	friend class FileHandlerBase<SceneHandler>;
 };
 
-using FileHandlers = std::tuple<PNGHandler, SceneHandler>;
+namespace {
+	template <class... T> struct HandlerGroup { };
+
+	using FileHandlers = HandlerGroup<PNGHandler, SceneHandler>;
+} // namespace
+
 void ClientLayer::handle_file_drop(const std::filesystem::path& path)
 {
 	if (!std::filesystem::exists(path)) {
 		return;
 	}
-	PNGHandler { device, scene.get(), path };
-	SceneHandler { device, scene.get(), path };
+
+	static constexpr auto evaluate_all = []<class... T>(HandlerGroup<T...>, auto& dev, auto* scene_ptr, const auto& path) {
+		(T { dev, scene_ptr, path }, ...);
+	};
+	evaluate_all(FileHandlers {}, device, scene.get(), path);
+}
+
+void ClientLayer::draw_menubar()
+{
+	const ImRect menuBarRect = { ImGui::GetCursorPos(), { ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeightWithSpacing() } };
+
+	ImGui::BeginGroup();
+
+	if (UI::begin_menu_bar(menuBarRect)) {
+		bool menuOpen = ImGui::IsPopupOpen("##menubar", ImGuiPopupFlags_AnyPopupId);
+
+		auto popItemHighlight = [&menuOpen] {
+			if (menuOpen) {
+				ImGui::PopStyleColor(3);
+				menuOpen = false;
+			}
+		};
+
+		auto pushDarkTextIfActive = [](const char* menuName) {
+			if (ImGui::IsPopupOpen(menuName)) {
+				return true;
+			}
+			return false;
+		};
+
+		const ImU32 colHovered = IM_COL32(0, 0, 0, 80);
+
+		{
+			bool colourPushed = pushDarkTextIfActive("File");
+
+			if (ImGui::BeginMenu("File")) {
+				popItemHighlight();
+				colourPushed = false;
+
+				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, colHovered);
+
+				if (ImGui::MenuItem("Create Project...")) {
+					Log::info("ClientLayer", "Create new project");
+				}
+				if (ImGui::MenuItem("Open Project...", "Ctrl+O")) {
+					Log::info("ClientLayer", "Open Project");
+				}
+				if (ImGui::BeginMenu("Open Recent")) {
+					Log::info("ClientLayer", "Open Recent");
+				}
+				if (ImGui::MenuItem("Save Project")) {
+					Log::info("ClientLayer", "Save Project");
+				}
+
+				ImGui::Separator();
+				if (ImGui::MenuItem("New Scene", "Ctrl+N")) {
+					Log::info("ClientLayer", "New scene");
+				}
+
+				if (ImGui::MenuItem("Save Scene", "Ctrl+S")) {
+					Log::info("ClientLayer", "Save scene");
+				}
+
+				if (ImGui::MenuItem("Save Scene As...", "Ctrl+Shift+S")) {
+					Log::info("ClientLayer", "Save scene as");
+				}
+
+				ImGui::Separator();
+				if (ImGui::MenuItem("Build shader pack")) {
+					Log::info("ClientLayer", "Build shader pack");
+				}
+				ImGui::Separator();
+				if (ImGui::MenuItem("Exit", "Alt + F4")) {
+					Log::info("ClientLayer", "Close");
+				}
+
+				ImGui::PopStyleColor();
+				ImGui::EndMenu();
+			}
+
+			if (colourPushed)
+				ImGui::PopStyleColor();
+		}
+
+		{
+			bool colourPushed = pushDarkTextIfActive("Edit");
+
+			if (ImGui::BeginMenu("Edit")) {
+				popItemHighlight();
+				colourPushed = false;
+
+				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, colHovered);
+
+				ImGui::MenuItem("testname", nullptr, true);
+
+				ImGui::Separator();
+
+				if (ImGui::MenuItem("Reload scripts Assembly")) {
+					Log::info("ClientLayer", "Reload scripts");
+				}
+
+				ImGui::PopStyleColor();
+				ImGui::EndMenu();
+			}
+
+			if (colourPushed)
+				ImGui::PopStyleColor();
+		}
+
+		{
+			bool colourPushed = pushDarkTextIfActive("View");
+
+			if (ImGui::BeginMenu("View")) {
+				popItemHighlight();
+				colourPushed = false;
+
+				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, colHovered);
+
+				ImGui::MenuItem("testagain", nullptr, true);
+
+				ImGui::PopStyleColor();
+				ImGui::EndMenu();
+			}
+
+			if (colourPushed)
+				ImGui::PopStyleColor();
+		}
+
+		{
+			bool colourPushed = pushDarkTextIfActive("Tools");
+
+			if (ImGui::BeginMenu("Tools")) {
+				popItemHighlight();
+				colourPushed = false;
+
+				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, colHovered);
+
+				ImGui::MenuItem("ImGui Metrics Tool", nullptr, false);
+				ImGui::MenuItem("ImGui Stack Tool", nullptr, false);
+				ImGui::MenuItem("ImGui Style Editor", nullptr, false);
+
+				ImGui::PopStyleColor();
+				ImGui::EndMenu();
+			}
+
+			if (colourPushed)
+				ImGui::PopStyleColor();
+		}
+
+		{
+			bool colourPushed = pushDarkTextIfActive("Help");
+
+			if (ImGui::BeginMenu("Help")) {
+				popItemHighlight();
+				colourPushed = false;
+
+				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, colHovered);
+
+				if (ImGui::MenuItem("About")) {
+					Log::info("ClientLayer", "Show about");
+				}
+
+				ImGui::PopStyleColor();
+				ImGui::EndMenu();
+			}
+
+			if (colourPushed)
+				ImGui::PopStyleColor();
+		}
+
+		if (menuOpen)
+			ImGui::PopStyleColor(2);
+	}
+	UI::end_menu_bar();
+
+	ImGui::EndGroup();
 }
 
 } // namespace Disarray::Client

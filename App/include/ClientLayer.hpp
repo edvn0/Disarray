@@ -41,6 +41,7 @@ private:
 	bool viewport_panel_focused { false };
 	std::array<glm::vec2, 2> viewport_bounds {};
 	std::array<glm::vec2, 2> vp_bounds {};
+	void draw_menubar();
 };
 
 } // namespace Disarray::Client

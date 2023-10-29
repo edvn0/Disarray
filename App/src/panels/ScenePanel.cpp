@@ -32,7 +32,7 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_pa
 {
 	static constexpr auto max_recursion = 4;
 	const auto has_inheritance = entity.has_component<Components::Inheritance>();
-	const auto has_children = has_inheritance ? entity.get_components<Components::Inheritance>().has_children() : false;
+	const auto has_children = has_inheritance && entity.get_components<Components::Inheritance>().has_children();
 	const auto has_hit_max_recursion = depth >= max_recursion;
 	if (!has_hit_max_recursion && check_if_has_parent && has_inheritance) {
 		const auto& inheritance = entity.get_components<Components::Inheritance>();
@@ -40,24 +40,32 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_pa
 			return;
 		}
 	}
+	if (has_hit_max_recursion) {
+		UI::text_wrapped("There are more children, but we only support {} children levels for now.", max_recursion);
+		return;
+	}
+
 	const auto& tag = entity.get_components<Components::Tag>().name;
 
-	const auto is_same = (*selected_entity == entity.get_identifier());
-	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | (is_same ? ImGuiTreeNodeFlags_Selected : 0);
+	const auto is_same = selected_entity && (*selected_entity == entity.get_identifier());
+	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_OpenOnArrow | (is_same ? ImGuiTreeNodeFlags_Selected : 0);
 	if (!has_children) {
 		flags |= ImGuiTreeNodeFlags_Leaf;
 	}
 
 	flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
 	const auto& id_component = entity.get_components<Components::ID>();
-	bool opened = ImGui::TreeNodeEx(Disarray::bit_cast<const void*>(id_component.identifier), flags, "%s", tag.c_str());
+	bool opened = ImGui::TreeNodeEx(Disarray::bit_cast<const void*>(&id_component.identifier), flags, "%s", tag.c_str());
 	if (ImGui::IsItemClicked()) {
 		*selected_entity = entity.get_identifier();
 	}
 
 	bool entity_deleted = false;
-	if (ImGui::BeginPopupContextWindow("##DeleteEntityPopup")) {
+	if (ImGui::BeginPopupContextWindow("DeleteEntityPopup", ImGuiPopupFlags_MouseButtonRight)) {
 		if (ImGui::MenuItem("Delete Entity")) {
+			entity_deleted = true;
+		}
+		if (ImGui::MenuItem("Add Component")) {
 			entity_deleted = true;
 		}
 		ImGui::EndPopup();
@@ -98,7 +106,12 @@ void ScenePanel::interface()
 
 	if (ImGui::BeginPopupContextWindow("EmptyEntityId", ImGuiPopupFlags_MouseButtonRight)) {
 		if (ImGui::MenuItem("Create Empty Entity")) {
-			scene->create("Empty Entity");
+			if (auto entity = Entity { scene, *selected_entity }; entity.is_valid()) {
+				auto child = scene->create("Parent{}-Child", static_cast<Identifier>(entity.get_identifier()));
+				entity.add_child(child);
+			} else {
+				scene->create("Empty Entity");
+			}
 		}
 
 		ImGui::EndPopup();
@@ -126,7 +139,8 @@ void Disarray::Client::ScenePanel::update(float)
 
 void ScenePanel::for_all_components(Entity& entity)
 {
-	draw_component<Components::Tag>(entity, "Tag", [](Components::Tag& tag) {
+	if (entity.has_component<Components::Tag>()) {
+		auto& tag = entity.get_components<Components::Tag>();
 		std::string buffer = tag.name;
 		buffer.resize(256);
 
@@ -137,9 +151,23 @@ void ScenePanel::for_all_components(Entity& entity)
 				tag.name = buffer;
 			}
 		}
-	});
+	}
 
-	draw_component<Components::Transform>(entity, "Transform", [](Components::Transform& transform) {
+	ImGui::SameLine();
+	ImGui::PushItemWidth(-1);
+
+	if (ImGui::Button("Add Component"))
+		ImGui::OpenPopup("AddComponent");
+
+	if (ImGui::BeginPopup("AddComponent")) {
+		draw_add_component_all(AllComponents {});
+
+		ImGui::EndPopup();
+	}
+
+	ImGui::PopItemWidth();
+
+	draw_component<Components::Transform>(entity, [](Components::Transform& transform) {
 		bool any_changed = false;
 
 		any_changed |= ImGui::DragFloat3("Position", glm::value_ptr(transform.position));
@@ -152,7 +180,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		}
 	});
 
-	draw_component<Components::Texture>(entity, "Texture", [&dev = device](Components::Texture& tex) {
+	draw_component<Components::Texture>(entity, [&dev = device](Components::Texture& tex) {
 		auto& [texture, colour] = tex;
 		Ref<Texture> new_texture { nullptr };
 		if (texture) {
@@ -171,12 +199,11 @@ void ScenePanel::for_all_components(Entity& entity)
 		}
 	});
 
-	draw_component<Components::DirectionalLight>(entity, "Directional Light", [](Components::DirectionalLight& directional) {
+	draw_component<Components::DirectionalLight>(entity, [](Components::DirectionalLight& directional) {
 		if (ImGui::ColorEdit4("Ambient", glm::value_ptr(directional.ambient))) { }
 		if (ImGui::ColorEdit4("Diffuse", glm::value_ptr(directional.diffuse))) { }
 		if (ImGui::ColorEdit4("Specular", glm::value_ptr(directional.specular))) { }
 		if (ImGui::DragFloat3("Direction", glm::value_ptr(directional.direction), 0.1F, -glm::pi<float>(), glm::pi<float>())) { }
-		if (ImGui::DragFloat3("Position", glm::value_ptr(directional.position))) { }
 		if (ImGui::DragFloat("Factor", &directional.projection_parameters.factor)) { }
 		if (ImGui::DragFloat("Near", &directional.projection_parameters.near)) { }
 		if (ImGui::DragFloat("Far", &directional.projection_parameters.far)) { }
@@ -185,14 +212,30 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (ImGui::Checkbox("Direction Vector", &directional.use_direction_vector)) { }
 	});
 
-	draw_component<Components::PointLight>(entity, "Point Light", [](Components::PointLight& point) {
+	draw_component<Components::PointLight>(entity, [](Components::PointLight& point) {
 		if (UI::Input::drag("Factors", point.factors, 0.1F, 0.F, 10.F)) { }
 		if (ImGui::ColorEdit4("Ambient", glm::value_ptr(point.ambient))) { }
 		if (ImGui::ColorEdit4("Diffuse", glm::value_ptr(point.diffuse))) { }
 		if (ImGui::ColorEdit4("Specular", glm::value_ptr(point.specular))) { }
 	});
 
-	draw_component<Components::Material>(entity, "Material", [](Components::Material& mat) {
+	draw_component<Components::Text>(entity, [](Components::Text& text) {
+		std::string buffer = text.text_data;
+		buffer.resize(256);
+
+		if (ImGui::InputText("Text", buffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+			buffer.shrink_to_fit();
+
+			if (!buffer.empty() && text.text_data != buffer) {
+				text.text_data = buffer;
+			}
+		}
+		if (ImGui::ColorEdit4("Colour", glm::value_ptr(text.colour))) { }
+		if (ImGui::DragFloat("Size", &text.size, 0.1F, 0.2F, 5.0F)) { }
+		if (UI::combo_choice<Components::TextProjection>("Space Choice", std::ref(text.projection))) { }
+	});
+
+	draw_component<Components::Material>(entity, [](Components::Material& mat) {
 		const auto& props = mat.material->get_properties();
 		UI::text_wrapped("VS: {}", props.vertex_shader->get_properties().identifier.string());
 		UI::text_wrapped("FS: {}", props.fragment_shader->get_properties().identifier.string());
@@ -202,9 +245,9 @@ void ScenePanel::for_all_components(Entity& entity)
 		}
 	});
 
-	draw_component<Components::Skybox>(entity, "Skybox", [](Components::Skybox& skybox) { UI::image(skybox.texture->get_image()); });
+	draw_component<Components::Skybox>(entity, [](Components::Skybox& skybox) { UI::image(skybox.texture->get_image()); });
 
-	draw_component<Components::Camera>(entity, "Camera", [](Components::Camera& cam) {
+	draw_component<Components::Camera>(entity, [](Components::Camera& cam) {
 		std::ignore = UI::combo_choice<CameraType>("Type", std::ref(cam.type));
 
 		if (cam.type == CameraType::Perspective) {
@@ -219,8 +262,8 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (ImGui::Checkbox("Reverse", &cam.reverse)) { }
 	});
 
-	draw_component<Components::Mesh>(entity, "Mesh", [](Components::Mesh& mesh_component) {
-		auto& [path, pipeline, _] = mesh_component.mesh->get_properties();
+	draw_component<Components::Mesh>(entity, [](Components::Mesh& mesh_component) {
+		auto& [path, pipeline, _, flags, inputs] = mesh_component.mesh->get_properties();
 
 		bool any_changed = false;
 		std::optional<std::filesystem::path> selected { std::nullopt };
@@ -238,7 +281,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		}
 	});
 
-	draw_component<Components::Script>(entity, "Script", [](Components::Script& script_component) {
+	draw_component<Components::Script>(entity, [](Components::Script& script_component) {
 		UI::text("Script name: {}", script_component.get_script().identifier());
 		auto& parameters = script_component.get_script().get_parameters();
 		bool any_changed = false;
@@ -262,7 +305,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		}
 	});
 
-	draw_component<Components::Pipeline>(entity, "Pipeline", [&dev = device](Components::Pipeline& pipeline) {
+	draw_component<Components::Pipeline>(entity, [&dev = device](Components::Pipeline& pipeline) {
 		auto& [pipe] = pipeline;
 		auto& props = pipe->get_properties();
 		bool any_changed = false;
@@ -278,6 +321,18 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (any_changed) {
 			pipe->recreate(true, {});
 		}
+	});
+
+	draw_component<Components::PillCollider>(entity, [&](Components::PillCollider& collider) {
+
+	});
+
+	draw_component<Components::BoxCollider>(entity, [&](Components::BoxCollider collider) {
+
+	});
+
+	draw_component<Components::SphereCollider>(entity, [&](Components::SphereCollider& collider) {
+
 	});
 }
 

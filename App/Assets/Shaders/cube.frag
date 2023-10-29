@@ -27,9 +27,9 @@ layout(set = 1, binding = 1) uniform sampler2D depth_texture;
 layout(push_constant) uniform PushConstantBlock { PushConstant pc; }
 PC;
 
-layout(location = 0) flat in vec4 fragColor;
+layout(location = 0) in vec4 fragColor;
 layout(location = 1) in vec2 uvs;
-layout(location = 2) flat in vec3 normals;
+layout(location = 2) in vec3 normals;
 layout(location = 3) in vec3 fragment_position;
 layout(location = 4) in vec4 light_space_fragment_position;
 

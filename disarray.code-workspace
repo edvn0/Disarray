@@ -240,6 +240,7 @@
       "repr",
       "Serialiser",
       "Serialisers",
+      "Skybox",
       "spdlog",
       "spirv",
       "sponza",

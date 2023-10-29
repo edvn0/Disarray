@@ -10,6 +10,7 @@
 #include "core/UsageBadge.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Renderer.hpp"
+#include "imgui_internal.h"
 
 namespace Disarray::UI {
 

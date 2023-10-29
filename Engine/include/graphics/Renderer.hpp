@@ -38,6 +38,11 @@ enum class UBOIdentifier : std::uint8_t {
 	ImageIndices,
 };
 
+enum class RenderPasses : std::uint8_t {
+	Text,
+	PlanarGeometry,
+};
+
 class IGraphicsResource {
 public:
 	virtual ~IGraphicsResource() = default;
@@ -93,6 +98,22 @@ public:
 	virtual void fullscreen_quad_pass(Disarray::CommandExecutor&, const Extent& extent) = 0;
 
 	virtual void on_resize() = 0;
+	virtual void clear_pass(Disarray::CommandExecutor&, RenderPasses passes) = 0;
+
+	template <std::size_t T> void clear_pass(Disarray::CommandExecutor& executor, const std::array<RenderPasses, T>& passes)
+	{
+		for (const auto& pass : passes) {
+			clear_pass(executor, pass);
+		}
+	}
+
+	template <RenderPasses... Passes> void clear_pass(Disarray::CommandExecutor& executor)
+	{
+		constexpr auto pass_count = sizeof...(Passes);
+		clear_pass<pass_count>(executor, std::array<RenderPasses, pass_count> { Passes... });
+	}
+
+	virtual void clear_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&) = 0;
 
 	virtual void bind_pipeline(Disarray::CommandExecutor&, const Disarray::Pipeline&, PipelineBindPoint = PipelineBindPoint::BindPointGraphics) = 0;
 	virtual void bind_descriptor_sets(Disarray::CommandExecutor&, const Disarray::Pipeline&) = 0;
@@ -125,9 +146,16 @@ public:
 
 	virtual void draw_identifier(Disarray::CommandExecutor&, const Disarray::Pipeline&, std::uint32_t identifier, const glm::mat4& transform) = 0;
 
-	virtual void draw_text(std::string_view text, const glm::uvec2& position, float size) = 0;
-	virtual void draw_text(std::string_view text, const glm::uvec2& position) { return draw_text(text, position, 1.0F); };
-	virtual void draw_text(std::string_view text, const glm::vec3& position, float size) = 0;
+	virtual void draw_text(std::string_view text, const glm::uvec2& position, float size, const glm::vec4& colour) = 0;
+	virtual void draw_text(std::string_view text, const glm::vec3& position, float size, const glm::vec4& colour) = 0;
+	virtual void draw_text(std::string_view text, const glm::mat4& transform, float size, const glm::vec4& colour) = 0;
+	virtual void draw_text(std::string_view text, const glm::uvec2& position, const glm::vec4& colour)
+	{
+		return draw_text(text, position, 1.0F, colour);
+	};
+	virtual void draw_text(std::string_view text, const glm::uvec2& position, float size) { draw_text(text, position, size, { 1, 1, 1, 1 }); };
+	virtual void draw_text(std::string_view text, const glm::uvec2& position) { return draw_text(text, position, 1.0F, { 1, 1, 1, 1 }); };
+	virtual void draw_text(std::string_view text, const glm::vec3& position, float size) { draw_text(text, position, size, { 1, 1, 1, 1 }); };
 
 	template <typename... Args> void draw_text(const glm::uvec2& position, fmt::format_string<Args...> fmt_string, Args&&... args)
 	{
@@ -136,6 +164,16 @@ public:
 	template <typename... Args> void draw_text(const glm::vec3& position, fmt::format_string<Args...> fmt_string, Args&&... args)
 	{
 		return draw_text(fmt::format(fmt_string, std::forward<Args>(args)...), position, 1.0F);
+	};
+	template <typename... Args>
+	void draw_text(const glm::uvec2& position, const glm::vec4& colour, fmt::format_string<Args...> fmt_string, Args&&... args)
+	{
+		return draw_text(fmt::format(fmt_string, std::forward<Args>(args)...), position, 1.0F, colour);
+	};
+	template <typename... Args>
+	void draw_text(const glm::vec3& position, const glm::vec4& colour, fmt::format_string<Args...> fmt_string, Args&&... args)
+	{
+		return draw_text(fmt::format(fmt_string, std::forward<Args>(args)...), position, 1.0F, colour);
 	};
 
 	virtual void submit_batched_geometry(Disarray::CommandExecutor&) = 0;
@@ -160,7 +198,7 @@ public:
 	static auto construct_unique(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&) -> Scope<Disarray::Renderer>;
 
 protected:
-	Renderer(Scope<IGraphicsResource> resource)
+	explicit Renderer(Scope<IGraphicsResource> resource)
 		: graphics_resource { std::move(resource) }
 	{
 	}

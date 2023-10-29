@@ -42,7 +42,7 @@ auto load_texture(aiMaterial* mat, const std::filesystem::path& base_directory, 
 	return properties;
 }
 
-auto process_mesh(aiMesh* mesh, const std::filesystem::path& base_directory, const aiScene* scene) -> Submesh
+auto AssimpModelLoader::process_mesh(aiMesh* mesh, const std::filesystem::path& base_directory, const aiScene* scene) -> Submesh
 {
 	std::span mesh_vertices { mesh->mVertices, mesh->mNumVertices };
 	std::span mesh_normals { mesh->mNormals, mesh->mNumVertices };
@@ -135,7 +135,8 @@ inline auto get_mutex() -> std::mutex&
 	return mutex;
 }
 
-auto process_current_node(ImportedMesh& mesh_map, const std::filesystem::path& base_directory, aiNode* current_node, const aiScene* scene)
+auto AssimpModelLoader::process_current_node(
+	ImportedMesh& mesh_map, const std::filesystem::path& base_directory, aiNode* current_node, const aiScene* scene)
 {
 	if (scene == nullptr) {
 		return;
@@ -146,7 +147,7 @@ auto process_current_node(ImportedMesh& mesh_map, const std::filesystem::path& b
 	std::span children { current_node->mChildren, current_node->mNumChildren };
 
 	auto& mutex = get_mutex();
-	Collections::parallel_for_each(node_meshes, [&mutex, &scene_meshes, &mesh_map, &base_directory, &scene](const auto& mesh_index) {
+	Collections::parallel_for_each(node_meshes, [&](const auto& mesh_index) {
 		std::scoped_lock lock { mutex };
 		aiMesh* ai_mesh = scene_meshes[mesh_index];
 		const aiString mesh_name = ai_mesh->mName;
@@ -157,18 +158,16 @@ auto process_current_node(ImportedMesh& mesh_map, const std::filesystem::path& b
 		mesh_map.try_emplace(name, process_mesh(ai_mesh, base_directory, scene));
 	});
 
-	Collections::parallel_for_each(
-		children, [&scene, &mesh_map, &base_directory](auto* child) { process_current_node(mesh_map, base_directory, child, scene); });
+	Collections::parallel_for_each(children, [&](auto* child) { process_current_node(mesh_map, base_directory, child, scene); });
 }
 
-auto AssimpModelLoader::import(const std::filesystem::path& path) -> ImportedMesh
+auto AssimpModelLoader::import(const std::filesystem::path& path, ImportFlag flags) -> ImportedMesh
 {
 	MSTimer timer;
 	ImportedMesh output {};
 
 	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile(path.string().c_str(),
-		aiProcess_OptimizeGraph | aiProcess_CalcTangentSpace | aiProcess_SplitLargeMeshes | aiProcess_Triangulate | aiProcess_FlipUVs);
+	const aiScene* scene = importer.ReadFile(path.string().c_str(), Disarray::bit_cast<aiPostProcessSteps>(flags));
 
 	if ((scene == nullptr) || ((scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) != 0U) || (scene->mRootNode == nullptr)) {
 		throw CouldNotLoadModelException(fmt::format("Error: {}", importer.GetErrorString()));

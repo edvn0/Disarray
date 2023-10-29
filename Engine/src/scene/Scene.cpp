@@ -32,6 +32,7 @@
 #include "graphics/PipelineCache.hpp"
 #include "graphics/PushConstantLayout.hpp"
 #include "graphics/RenderBatch.hpp"
+#include "graphics/RenderPass.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "graphics/ShaderCompiler.hpp"
@@ -277,7 +278,7 @@ void Scene::begin_frame(const Camera& camera)
 		}
 	}
 
-	if (!camera_component_usable) {
+	if (!camera_component_usable || !find_one) {
 		scene_renderer->begin_frame(camera);
 	}
 
@@ -287,8 +288,7 @@ void Scene::begin_frame(const Camera& camera)
 	for (auto sun_component_view = registry.view<const Components::Transform, Components::DirectionalLight>();
 		 auto&& [entity, transform, sun] : sun_component_view.each()) {
 		directional.position = { transform.position, 1.0F };
-		sun.position = directional.position;
-		sun.direction = glm::normalize(-sun.position); // Lookat {0,0,0};
+		sun.direction = glm::normalize(-directional.position); // Lookat {0,0,0};
 		directional.direction = sun.direction;
 		directional.ambient = sun.ambient;
 		directional.diffuse = sun.diffuse;
@@ -309,7 +309,7 @@ void Scene::begin_frame(const Camera& camera)
 				light.projection_parameters.fov, extent.aspect_ratio(), light.projection_parameters.near, light.projection_parameters.far);
 			directional.near_far = { light.projection_parameters.near, light.projection_parameters.far, 0, 0 };
 		}
-		const auto view = glm::lookAt(glm::vec3(light.position), center, { 0.0F, 1.0F, 0.0F });
+		const auto view = glm::lookAt(glm::vec3(transform.position), center, { 0.0F, 1.0F, 0.0F });
 
 		const auto view_projection = projection * view;
 
@@ -349,6 +349,23 @@ void Scene::interface()
 	for (auto&& [entity, script] : script_view.each()) {
 		script.get_script().on_interface();
 	}
+
+	UI::scope("Parameters", [&]() {
+		bool changed_batch_renderer = UI::checkbox("Enable Batch Renderer", std::ref(parameters.enable_batch_renderer));
+		bool changed_text_renderer = UI::checkbox("Enable Text Renderer", std::ref(parameters.enable_text_renderer));
+
+		if (changed_batch_renderer || changed_text_renderer) {
+			command_executor->begin();
+			if (changed_batch_renderer && changed_text_renderer) {
+				scene_renderer->clear_pass<RenderPasses::PlanarGeometry, RenderPasses::Text>(*command_executor);
+			} else if (changed_text_renderer && !changed_batch_renderer) {
+				scene_renderer->clear_pass(*command_executor, RenderPasses::Text);
+			} else if (changed_batch_renderer && !changed_text_renderer) {
+				scene_renderer->clear_pass(*command_executor, RenderPasses::PlanarGeometry);
+			}
+			command_executor->submit_and_end();
+		}
+	});
 }
 
 void Scene::update(float time_step)
@@ -395,20 +412,49 @@ void Scene::update(float time_step)
 
 void Scene::render()
 {
+	auto render_batch = [&]() {
+		if (!parameters.enable_batch_renderer) {
+			return;
+		}
+		scene_renderer->planar_geometry_pass(*command_executor);
+	};
+
+	auto render_text = [&]() {
+		if (!parameters.enable_text_renderer) {
+			return;
+		}
+		for (auto&& [entity, text, transform] : registry.view<const Components::Text, const Components::Transform>().each()) {
+			if (text.projection == Components::TextProjection::ScreenSpace) {
+				scene_renderer->draw_text(text.text_data, glm::uvec2(transform.position), text.size, text.colour);
+			} else {
+				scene_renderer->draw_text(text.text_data, transform.compute(), text.size, text.colour);
+			}
+		}
+
+		scene_renderer->text_rendering_pass(*command_executor);
+	};
+
 	command_executor->begin();
 	auto& executor = *command_executor;
+	{
+		// Skybox pass
+		scene_renderer->begin_pass(executor, *get_framebuffer<SceneFramebuffer::Geometry>());
+		draw_skybox();
+		render_batch();
+		scene_renderer->end_pass(executor);
+	}
 	{
 		// Shadow pass
 		scene_renderer->begin_pass(executor, *get_framebuffer<SceneFramebuffer::Shadow>());
 		draw_shadows();
-		scene_renderer->planar_geometry_pass(executor);
+		render_batch();
 		scene_renderer->end_pass(executor);
 	}
 	{
 		// Geometry pass
 		scene_renderer->begin_pass(executor, *get_framebuffer<SceneFramebuffer::Geometry>());
 		draw_geometry();
-		scene_renderer->planar_geometry_pass(executor);
+		render_batch();
 		scene_renderer->end_pass(executor);
 	}
 #ifdef DISARRAY_DRAW_IDENTIFIERS
@@ -420,15 +466,7 @@ void Scene::render()
 	}
 #endif
 	{
-		scene_renderer->draw_text({ 0, 0 }, "Hello world! {}\nHello", "Edwin");
-		scene_renderer->draw_text({ 10, -5, 20 }, "Hello world! {}\nHello", "Edwin");
-		scene_renderer->text_rendering_pass(executor);
-	}
-	{
-		// Skybox pass
-		scene_renderer->begin_pass(executor, *get_framebuffer<SceneFramebuffer::Geometry>());
-		draw_skybox();
-		scene_renderer->end_pass(executor);
+		render_text();
 	}
 	{
 		// This is the composite pass!
@@ -455,11 +493,11 @@ auto Scene::get_final_image() const -> const Disarray::Image& { return scene_ren
 void Scene::draw_skybox()
 {
 	auto [ubo, camera_ubo, light_ubos, shadow_pass, directional, glyph] = scene_renderer->get_graphics_resource().get_editable_ubos();
-
+	camera_ubo.view = glm::mat3 { ubo.view };
+	scene_renderer->get_graphics_resource().update_ubo(UBOIdentifier::Default);
 	auto skybox_view = registry.view<const Components::Skybox, const Components::Mesh, const Components::Pipeline>();
 	for (auto&& [entity, skybox, mesh, pipeline] : skybox_view.each()) {
-		scene_renderer->draw_mesh(
-			*command_executor, *mesh.mesh, *pipeline.pipeline, glm::translate(glm::mat4 { 1.0f }, glm::vec3(camera_ubo.position)), 0);
+		scene_renderer->draw_mesh(*command_executor, *mesh.mesh, *pipeline.pipeline, glm::mat4 { 1.0F }, 0);
 	}
 }
 

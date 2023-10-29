@@ -60,8 +60,9 @@ public:
 	void draw_identifier(
 		Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, std::uint32_t identifier, const glm::mat4& transform) override;
 
-	void draw_text(std::string_view text, const glm::uvec2& position, float size) override;
-	void draw_text(std::string_view text, const glm::vec3& position, float size) override;
+	void draw_text(std::string_view text, const glm::uvec2& position, float size, const glm::vec4& colour) override;
+	void draw_text(std::string_view text, const glm::vec3& position, float size, const glm::vec4& colour) override;
+	void draw_text(std::string_view text, const glm::mat4& transform, float size, const glm::vec4& colour) override;
 	void draw_planar_geometry(Disarray::Geometry /*unused*/, const Disarray::GeometryProperties& /*unused*/) override;
 	void submit_batched_geometry(Disarray::CommandExecutor& /*unused*/) override;
 	void on_batch_full(std::function<void(Disarray::Renderer&)>&& func) override { on_batch_full_func = std::move(func); }
@@ -80,6 +81,8 @@ public:
 	void end_frame() override;
 
 	void force_recreation() override;
+	void clear_pass(Disarray::CommandExecutor&, RenderPasses passes) override;
+	void clear_pass(Disarray::CommandExecutor&, Disarray::Framebuffer& passes) override;
 
 	void bind_pipeline(Disarray::CommandExecutor&, const Disarray::Pipeline&, PipelineBindPoint = PipelineBindPoint::BindPointGraphics) override;
 	void bind_descriptor_sets(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline) override;

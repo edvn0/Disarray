@@ -28,6 +28,11 @@ private:
 
 	std::unique_ptr<entt::entity> selected_entity {};
 
+	template <ValidComponent ToTest, ValidComponent... CompareWith> auto is_deletable_component(ComponentGroup<CompareWith...>)
+	{
+		return (std::is_same_v<ToTest, CompareWith> || ...);
+	}
+
 	template <ValidComponent T, class Func>
 	void draw_component(Entity& entity, std::string_view name, Func&& ui_function, Ref<Disarray::Texture> icon = nullptr)
 	{
@@ -58,7 +63,7 @@ private:
 				reset_values = true;
 			}
 
-			if constexpr (!std::is_same_v<T, Components::Transform>) {
+			if (!is_deletable_component<T>(NonDeletableComponents {})) {
 				if (ImGui::MenuItem("Remove component")) {
 					remove_component = true;
 				}
@@ -92,6 +97,23 @@ private:
 
 		ImGui::PopID();
 	}
+
+	template <ValidComponent T, class Func> void draw_component(Entity& entity, Func&& ui_function, Ref<Disarray::Texture> icon = nullptr)
+	{
+		draw_component<T, Func>(entity, Components::component_name<T>, std::forward<Func>(ui_function), icon);
+	}
+
+	template <ValidComponent T> void draw_add_component_entry()
+	{
+		if (auto entity = Entity { scene, *selected_entity }; entity.is_valid() && !entity.has_component<T>()) {
+			if (ImGui::MenuItem(Components::component_name<T>.data())) {
+				entity.add_component<T>();
+				ImGui::CloseCurrentPopup();
+			}
+		}
+	}
+
+	template <ValidComponent... T> void draw_add_component_all(ComponentGroup<T...>) { (draw_add_component_entry<T>(), ...); }
 };
 
 } // namespace Disarray::Client
