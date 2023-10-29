@@ -773,16 +773,22 @@ void Scene::clear()
 	registry.clear();
 }
 
+namespace {
+	template <ValidComponent Component> constexpr auto copy_component(auto& identifier_map, auto& old_reg)
+	{
+		for (auto&& [srcEntity, identifier, component] : old_reg.template view<Components::ID, Component>().each()) {
+			Entity& destination_entity = identifier_map.at(identifier.get_id());
+			destination_entity.add_component<Component>(component);
+		}
+	};
+} // namespace
+
 auto Scene::copy(Scene& scene) -> Scope<Scene>
 {
 	using CopyableComponents = ComponentGroup<Components::Transform>;
 
-	static constexpr auto copy_component = []<ValidComponent Component>(const auto& identifier_map, auto& old_reg, auto& new_reg) {
-
-	};
-	static constexpr auto copy_all = []<ValidComponent... C>(ComponentGroup<C...>, const auto& identifier_map, auto& old_reg, auto& new_reg) {
-		(copy_component<C>(identifier_map, old_reg, new_reg), ...);
-	};
+	static constexpr auto copy_all
+		= []<ValidComponent... C>(ComponentGroup<C...>, auto& identifier_map, auto& old_reg) { (copy_component<C>(identifier_map, old_reg), ...); };
 
 	Scope<Scene> new_scene = make_scope<Scene>(scene.get_device(), "scene.get_name()");
 
@@ -796,7 +802,7 @@ auto Scene::copy(Scene& scene) -> Scope<Scene>
 		identifiers.try_emplace(identifier.get_id(), std::move(created));
 	}
 
-	copy_all(CopyableComponents {}, identifiers, old_registry, new_registry);
+	copy_all(CopyableComponents {}, identifiers, old_registry);
 
 	return new_scene;
 }

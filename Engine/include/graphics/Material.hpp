@@ -6,6 +6,7 @@
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "graphics/Shader.hpp"
+#include "graphics/Texture.hpp"
 
 namespace Disarray {
 

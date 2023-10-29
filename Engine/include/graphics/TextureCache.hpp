@@ -53,7 +53,7 @@ public:
 			return get(props.key);
 		}
 
-		return Texture::construct(get_device(),
+		return Texture::construct(ResourceCache::get_device(),
 			TextureProperties {
 				.generate_mips = true,
 				.mips = props.mips,
