@@ -226,7 +226,7 @@ void Pipeline::construct_layout(const Extent& extent)
 	VkPipelineVertexInputStateCreateInfo vertex_input_info {};
 	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-	const auto bindings = props.layout.construct_binding();
+	const auto& bindings = props.layout.construct_binding();
 	VkVertexInputBindingDescription binding_description {};
 	binding_description.binding = bindings.binding;
 	binding_description.stride = bindings.stride;

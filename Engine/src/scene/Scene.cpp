@@ -234,8 +234,8 @@ void Scene::construct(Disarray::App& app)
 				{
 					.extent = extent,
 					.attachments = { { ImageFormat::SBGR }, { ImageFormat::Depth } },
-					.clear_colour_on_load = true,
-					.clear_depth_on_load = true,
+					.clear_colour_on_load = false,
+					.clear_depth_on_load = false,
 					.should_blend = true,
 					.blend_mode = FramebufferBlendMode::SrcAlphaOneMinusSrcAlpha,
 					.debug_name = "GeometryFramebuffer",
@@ -438,7 +438,7 @@ void Scene::render()
 	auto& executor = *command_executor;
 	{
 		// Skybox pass
-		scene_renderer->begin_pass(executor, *get_framebuffer<SceneFramebuffer::Geometry>());
+		scene_renderer->begin_pass(executor, *get_framebuffer<SceneFramebuffer::Geometry>(), true);
 		draw_skybox();
 		render_batch();
 		scene_renderer->end_pass(executor);
