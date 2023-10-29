@@ -103,6 +103,7 @@ public:
 	auto get_registry() -> entt::registry& { return registry; };
 	auto get_registry() const -> const entt::registry& { return registry; };
 	auto get_name() const -> const std::string& { return scene_name; };
+	auto get_device() const -> const Disarray::Device& { return device; };
 
 	template <ValidComponent... T> auto entities_with() -> std::vector<Entity>
 	{
@@ -146,6 +147,8 @@ public:
 
 	template <SceneFramebuffer Framebuffer> auto get_framebuffer() const { return framebuffers.at(Framebuffer); }
 	auto get_renderer() -> auto& { return *scene_renderer; }
+
+	static auto copy(Scene& scene) -> Scope<Scene>;
 
 private:
 	const Disarray::Device& device;

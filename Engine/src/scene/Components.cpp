@@ -2,15 +2,17 @@
 
 #include "scene/Components.hpp"
 
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/quaternion_transform.hpp>
+
 #include <graphics/Maths.hpp>
 
 #include <string>
 #include <utility>
 
+#include "core/Formatters.hpp"
 #include "core/Input.hpp"
 #include "core/Log.hpp"
-#include "glm/ext/matrix_clip_space.hpp"
-#include "glm/ext/quaternion_transform.hpp"
 #include "graphics/Mesh.hpp"
 #include "scene/Camera.hpp"
 #include "scene/CppScript.hpp"
@@ -161,6 +163,13 @@ Skybox::Skybox(Ref<Disarray::Texture> tex, const glm::vec4& col)
 	: texture(tex)
 	, colour(col)
 {
+}
+
+DirectionalLight::DirectionalLight(const glm::vec4& ambience, ProjectionParameters params)
+	: projection_parameters(params)
+	, ambient(Maths::scale_colour(ambience))
+{
+	Log::info("Components", "Ambience: {}", ambient);
 }
 
 } // namespace Disarray::Components

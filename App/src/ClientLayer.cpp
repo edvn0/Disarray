@@ -64,6 +64,8 @@ void ClientLayer::construct(App& app)
 	scene_panel->construct(app);
 	execution_stats_panel->construct(app);
 	// log_panel->construct(app);
+
+	auto copied = Scene::copy(*scene);
 };
 
 void ClientLayer::create_entities()
@@ -137,7 +139,7 @@ void ClientLayer::create_entities()
 			});
 
 		auto floor = scene->create("Floor");
-		floor.get_transform().scale = { 5000, 1, 5000 };
+		floor.get_transform().scale = { 70, 1, 70 };
 		floor.get_transform().position = { 0, 7, 0 };
 		floor.add_component<Components::BoxCollider>();
 
@@ -240,7 +242,7 @@ void ClientLayer::create_entities()
 
 	{
 
-		auto colours = generate_colours<150>();
+		auto colours = generate_colours<3>();
 		const auto sphere = Mesh::construct(device,
 			{
 				.path = FS::model("sphere.fbx"),
@@ -260,13 +262,15 @@ void ClientLayer::create_entities()
 			});
 
 		auto sun = scene->create("Sun");
-		sun.add_component<Components::DirectionalLight>(glm::vec4 { 0.7, 0.7, 0.1, 0.1 },
+		auto& directional_sun = sun.add_component<Components::DirectionalLight>(glm::vec4 { 255, 255, 255, 255 },
 			Components::DirectionalLight::ProjectionParameters {
-				.factor = 20.F,
-				.near = -90.F,
-				.far = 70.F,
+				.factor = 145.F,
+				.near = -190.F,
+				.far = 90.F,
 				.fov = 60.F,
 			});
+		directional_sun.diffuse = Maths::scale_colour({ 49, 22, 22, 255 });
+		directional_sun.specular = Maths::scale_colour({ 181, 255, 0, 255 });
 		sun.add_component<Components::Mesh>(sphere);
 		sun.add_component<Components::Pipeline>(pipe);
 		sun.add_component<Components::Transform>().position = { -15, -15, -16 };
@@ -290,6 +294,8 @@ void ClientLayer::create_entities()
 			point_light.add_component<Components::Mesh>(sphere);
 			point_light.add_component<Components::Texture>(colours.at(i));
 			point_light.add_component<Components::Pipeline>(pipe);
+			point_light.add_script<Scripts::LinearMovementScript>(
+				-point_light_radius, point_light_radius, Random::as_enum<Scripts::LinearMovementScript::Axis>());
 			pl_system.add_child(point_light);
 		}
 	}
@@ -433,10 +439,6 @@ void ClientLayer::on_event(Event& event)
 		if (ImGuizmo::IsUsing()) {
 			return true;
 		}
-
-#ifndef DISARRAY_DRAW_IDENTIFIERS
-		return false;
-#endif
 
 		const auto vp_is_focused = viewport_panel_focused && viewport_panel_mouse_over;
 		if (pressed.get_mouse_button() == MouseCode::Left && vp_is_focused) {

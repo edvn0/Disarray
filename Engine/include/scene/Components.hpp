@@ -14,7 +14,7 @@
 #include "Forward.hpp"
 #include "core/Collections.hpp"
 #include "core/Concepts.hpp"
-#include "core/Log.hpp"
+#include "core/Formatters.hpp"
 #include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
 #include "graphics/Material.hpp"
@@ -138,15 +138,7 @@ struct DirectionalLight {
 	bool use_direction_vector { false };
 
 	DirectionalLight() = default;
-	DirectionalLight(const glm::vec4& ambience)
-		: ambient(ambience)
-	{
-	}
-	DirectionalLight(const glm::vec4& ambience, ProjectionParameters params)
-		: projection_parameters(params)
-		, ambient(ambience)
-	{
-	}
+	DirectionalLight(const glm::vec4& ambience, ProjectionParameters params);
 };
 template <> inline constexpr std::string_view component_name<DirectionalLight> = "DirectionalLight";
 

@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 
+#include <magic_enum.hpp>
+
 #include <concepts>
 #include <random>
 #include <type_traits>
@@ -113,7 +115,7 @@ template <Distribution D = Distribution::Uniform> auto colour() -> glm::vec<4, f
 	return colour;
 }
 
-template <std::size_t Count> static auto choose_from(auto& engine)
+template <std::size_t Count> auto choose_from(auto& engine)
 {
 	std::uniform_int_distribution dist(0, static_cast<int>(Count - 1));
 	return dist(engine);
@@ -127,6 +129,14 @@ template <Distribution D = Distribution::Uniform> auto strong_colour() -> glm::v
 	auto index = choose_from<4>(Detail::mersenne_twister);
 	colour[index] = 1.0F;
 	return colour;
+}
+
+template <typename Enum>
+	requires(std::is_enum_v<Enum>)
+auto as_enum(Enum default_enum = {})
+{
+	const auto random_int = Random::choose_from<magic_enum::enum_count<Enum>()>(Detail::mersenne_twister);
+	return magic_enum::enum_cast<Enum>(random_int).value_or(default_enum);
 }
 
 } // namespace Disarray::Random

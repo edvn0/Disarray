@@ -125,7 +125,7 @@ public:
 		return bit_cast<std::uint64_t>(descriptor_info.imageView) ^ bit_cast<std::uint64_t>(descriptor_info.sampler);
 	};
 
-	void construct_using(CommandExecutor&) override {};
+	void construct_using(Disarray::CommandExecutor&) override {};
 
 private:
 	void recreate_image(bool should_clean, const Disarray::CommandExecutor* = nullptr);

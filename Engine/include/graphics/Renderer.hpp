@@ -12,6 +12,7 @@
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/IndexBuffer.hpp"
 #include "graphics/Pipeline.hpp"
+#include "graphics/RenderCommandQueue.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "graphics/TextRenderer.hpp"
 #include "graphics/VertexBuffer.hpp"
@@ -197,6 +198,12 @@ public:
 	static auto construct(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&) -> Ref<Disarray::Renderer>;
 	static auto construct_unique(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&) -> Scope<Disarray::Renderer>;
 
+	template <class Func> static auto submit(Func&& func) { get_render_command_queue().allocate(std::forward<Func>(func)); }
+
+	static auto execute_queue() { get_render_command_queue().execute(); }
+
+	static auto get_render_command_queue() -> RenderCommandQueue& { return command_queue; }
+
 protected:
 	explicit Renderer(Scope<IGraphicsResource> resource)
 		: graphics_resource { std::move(resource) }
@@ -205,6 +212,8 @@ protected:
 
 private:
 	Scope<IGraphicsResource> graphics_resource { nullptr };
+
+	static inline RenderCommandQueue command_queue { {} };
 };
 
 } // namespace Disarray

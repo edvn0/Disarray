@@ -25,6 +25,7 @@ set(ENGINE_SOURCES
 	include/graphics/PushConstantLayout.hpp
 	include/graphics/Image.hpp
 	include/graphics/ResourceCache.hpp
+	include/graphics/RenderCommandQueue.hpp
 	include/graphics/Texture.hpp
 	include/graphics/QueueFamilyIndex.hpp
 	include/graphics/PipelineCache.hpp
@@ -105,6 +106,7 @@ set(ENGINE_SOURCES
 	src/graphics/UniformBuffer.cpp
 	src/graphics/PipelineCache.cpp
 	src/graphics/Renderer.cpp
+	src/graphics/RenderCommandQueue.cpp
 	src/graphics/Pipeline.cpp
 	src/graphics/Device.cpp
 	src/graphics/Material.cpp

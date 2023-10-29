@@ -395,15 +395,20 @@ void Scene::update(float time_step)
 	}
 
 	auto script_view = registry.view<Components::Script>();
-	script_view.each([scene = this, step = time_step](const auto entity, Components::Script& script) {
+	std::vector<CppScript*> deferred_scripts {};
+	deferred_scripts.reserve(script_view.size());
+	script_view.each([&](const auto entity, Components::Script& script) {
 		if (script.has_been_bound()) {
 			script.instantiate();
 		}
 
 		auto& instantiated = script.get_script();
-		instantiated.update_entity(scene, entity);
-		instantiated.on_update(step);
+		instantiated.update_entity(this, entity);
+		deferred_scripts.push_back(&instantiated);
 	});
+
+	Collections::parallel_for_each(deferred_scripts, [step = time_step](auto* script) { script->on_update(step); });
+
 	auto controller_view = registry.view<Components::Controller, Components::Transform>();
 	controller_view.each([step = time_step](const auto, Components::Controller& controller, Components::Transform& transform) {
 		controller.on_update(step, transform);
@@ -457,14 +462,12 @@ void Scene::render()
 		render_batch();
 		scene_renderer->end_pass(executor);
 	}
-#ifdef DISARRAY_DRAW_IDENTIFIERS
 	{
 		// Identifier pass
 		scene_renderer->begin_pass(executor, *get_framebuffer<SceneFramebuffer::Identity>());
 		draw_identifiers();
 		scene_renderer->end_pass(executor);
 	}
-#endif
 	{
 		render_text();
 	}
@@ -768,6 +771,34 @@ void Scene::clear()
 {
 	std::scoped_lock lock { registry_access };
 	registry.clear();
+}
+
+auto Scene::copy(Scene& scene) -> Scope<Scene>
+{
+	using CopyableComponents = ComponentGroup<Components::Transform>;
+
+	static constexpr auto copy_component = []<ValidComponent Component>(const auto& identifier_map, auto& old_reg, auto& new_reg) {
+
+	};
+	static constexpr auto copy_all = []<ValidComponent... C>(ComponentGroup<C...>, const auto& identifier_map, auto& old_reg, auto& new_reg) {
+		(copy_component<C>(identifier_map, old_reg, new_reg), ...);
+	};
+
+	Scope<Scene> new_scene = make_scope<Scene>(scene.get_device(), "scene.get_name()");
+
+	auto& new_registry = new_scene->get_registry();
+	auto& old_registry = scene.get_registry();
+
+	std::unordered_map<Identifier, Entity> identifiers {};
+	for (auto&& [entity, identifier, tag] : old_registry.view<const Components::ID, const Components::Tag>().each()) {
+		auto created = new_scene->create(tag.name);
+		created.get_components<Components::ID>().identifier = identifier.identifier;
+		identifiers.try_emplace(identifier.get_id(), std::move(created));
+	}
+
+	copy_all(CopyableComponents {}, identifiers, old_registry, new_registry);
+
+	return new_scene;
 }
 
 } // namespace Disarray
