@@ -15,6 +15,7 @@
 
 #include "core/Random.hpp"
 #include "graphics/Pipeline.hpp"
+#include "graphics/PipelineCache.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "imgui_internal.h"
 #include "panels/DirectoryContentPanel.hpp"
@@ -96,27 +97,28 @@ void ClientLayer::create_entities()
 			.dimension = TextureDimension::Three,
 			.debug_name = "Skybox",
 		});
-	resources.expose_to_shaders(texture_cube->get_image(), 2, 4);
+	resources.expose_to_shaders(texture_cube->get_image(), DescriptorSet(2), DescriptorBinding(4));
 	auto skybox_material = Material::construct(device,
 		{
 			.vertex_shader = renderer.get_pipeline_cache().get_shader("skybox.vert"),
 			.fragment_shader = renderer.get_pipeline_cache().get_shader("skybox.frag"),
 			.textures = { texture_cube },
 		});
-	auto skybox_pipeline = Pipeline::construct(device,
-		{
-			.vertex_shader = renderer.get_pipeline_cache().get_shader("skybox.vert"),
-			.fragment_shader = renderer.get_pipeline_cache().get_shader("skybox.frag"),
-			.framebuffer = scene->get_framebuffer<SceneFramebuffer::Geometry>(),
-			.layout = layout,
-			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-			.extent = extent,
-			.cull_mode = CullMode::Back,
-			.face_mode = FaceMode::CounterClockwise,
-			.write_depth = false,
-			.test_depth = false,
-			.descriptor_set_layouts = desc_layout,
-		});
+
+	const auto& skybox_pipeline = renderer.get_pipeline_cache().put(PipelineCacheCreationProperties {
+		.pipeline_key = "Skybox",
+		.vertex_shader_key = "skybox.vert",
+		.fragment_shader_key = "skybox.frag",
+		.framebuffer = scene->get_framebuffer<SceneFramebuffer::Geometry>(),
+		.layout = layout,
+		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+		.extent = extent,
+		.cull_mode = CullMode::Back,
+		.face_mode = FaceMode::CounterClockwise,
+		.write_depth = false,
+		.test_depth = false,
+		.descriptor_set_layouts = desc_layout,
+	});
 	auto environment = scene->create("Environment");
 	environment.add_component<Components::Material>(skybox_material);
 	environment.add_component<Components::Skybox>(texture_cube);
@@ -124,20 +126,17 @@ void ClientLayer::create_entities()
 	environment.add_component<Components::Pipeline>(skybox_pipeline);
 
 	{
-		const auto& vert = renderer.get_pipeline_cache().get_shader("cube.vert");
-		const auto& frag = renderer.get_pipeline_cache().get_shader("cube.frag");
-
-		auto pipe = Pipeline::construct(device,
-			{
-				.vertex_shader = vert,
-				.fragment_shader = frag,
-				.framebuffer = scene->get_framebuffer<SceneFramebuffer::Geometry>(),
-				.layout = layout,
-				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-				.extent = extent,
-				.cull_mode = CullMode::Front,
-				.descriptor_set_layouts = desc_layout,
-			});
+		auto pipe = renderer.get_pipeline_cache().put({
+			.pipeline_key = "Cube",
+			.vertex_shader_key = "cube.vert",
+			.fragment_shader_key = "cube.frag",
+			.framebuffer = scene->get_framebuffer<SceneFramebuffer::Geometry>(),
+			.layout = layout,
+			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+			.extent = extent,
+			.cull_mode = CullMode::Front,
+			.descriptor_set_layouts = desc_layout,
+		});
 
 		auto floor = scene->create("Floor");
 		floor.get_transform().scale = { 70, 1, 70 };
@@ -155,6 +154,7 @@ void ClientLayer::create_entities()
 		const glm::vec3 base_pos { 0, 0, 0 };
 		{
 			auto axis = scene->create("XAxis");
+			axis.get_components<Components::ID>().can_interact_with = false;
 			auto& transform = axis.get_components<Components::Transform>();
 			transform.position = base_pos;
 			axis.add_component<Components::LineGeometry>(base_pos + glm::vec3 { 10.0, 0, 0 });
@@ -163,6 +163,7 @@ void ClientLayer::create_entities()
 		}
 		{
 			auto axis = scene->create("YAxis");
+			axis.get_components<Components::ID>().can_interact_with = false;
 			auto& transform = axis.get_components<Components::Transform>();
 			transform.position = base_pos;
 			axis.add_component<Components::LineGeometry>(base_pos + glm::vec3 { 0, -10.0, 0 });
@@ -171,6 +172,7 @@ void ClientLayer::create_entities()
 		}
 		{
 			auto axis = scene->create("ZAxis");
+			axis.get_components<Components::ID>().can_interact_with = false;
 			auto& transform = axis.get_components<Components::Transform>();
 			transform.position = base_pos;
 			axis.add_component<Components::LineGeometry>(base_pos + glm::vec3 { 0, 0, -10.0 });
@@ -200,8 +202,17 @@ void ClientLayer::create_entities()
 	}
 
 	{
-		const auto& vert = renderer.get_pipeline_cache().get_shader("main.vert");
-		const auto& frag = renderer.get_pipeline_cache().get_shader("main.frag");
+		const auto& viking_pipeline = renderer.get_pipeline_cache().put({
+			.pipeline_key = "Main",
+			.vertex_shader_key = "main.vert",
+			.fragment_shader_key = "main.frag",
+			.framebuffer = scene->get_framebuffer<SceneFramebuffer::Geometry>(),
+			.layout = layout,
+			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+			.extent = extent,
+			.cull_mode = CullMode::Back,
+			.descriptor_set_layouts = desc_layout,
+		});
 
 		auto viking_rotation = Maths::rotate_by(glm::radians(glm::vec3 { 0, 0, 0 }));
 		auto v_mesh = scene->create("Viking");
@@ -212,22 +223,12 @@ void ClientLayer::create_entities()
 			});
 		v_mesh.get_components<Components::Transform>().position.y = -2;
 		v_mesh.add_component<Components::Mesh>(viking);
-		v_mesh.add_component<Components::Pipeline>(Pipeline::construct(device,
-			{
-				.vertex_shader = vert,
-				.fragment_shader = frag,
-				.framebuffer = scene->get_framebuffer<SceneFramebuffer::Geometry>(),
-				.layout = layout,
-				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-				.extent = extent,
-				.cull_mode = CullMode::Back,
-				.descriptor_set_layouts = desc_layout,
-			}));
+		v_mesh.add_component<Components::Pipeline>(viking_pipeline);
 		v_mesh.add_component<Components::Texture>(renderer.get_texture_cache().get("viking_room"));
 		v_mesh.add_component<Components::Material>(Material::construct(device,
 			{
-				.vertex_shader = vert,
-				.fragment_shader = frag,
+				.vertex_shader = viking_pipeline->get_properties().vertex_shader,
+				.fragment_shader = viking_pipeline->get_properties().fragment_shader,
 			}));
 
 		auto viking_room_texture = Texture::construct(device,
@@ -244,24 +245,22 @@ void ClientLayer::create_entities()
 
 	{
 
-		auto colours = generate_colours<3>();
+		auto colours = generate_colours<300>();
 		const auto sphere = Mesh::construct(device,
 			{
 				.path = FS::model("sphere.fbx"),
 			});
-		const auto& vert = renderer.get_pipeline_cache().get_shader("point_light.vert");
-		const auto& frag = renderer.get_pipeline_cache().get_shader("point_light.frag");
-		auto pipe = Pipeline::construct(device,
-			{
-				.vertex_shader = vert,
-				.fragment_shader = frag,
-				.framebuffer = scene->get_framebuffer<SceneFramebuffer::Geometry>(),
-				.layout = layout,
-				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-				.extent = extent,
-				.cull_mode = CullMode::Front,
-				.descriptor_set_layouts = desc_layout,
-			});
+		auto pipe = renderer.get_pipeline_cache().put({
+			.pipeline_key = "PointLight",
+			.vertex_shader_key = "point_light.vert",
+			.fragment_shader_key = "point_light.frag",
+			.framebuffer = scene->get_framebuffer<SceneFramebuffer::Geometry>(),
+			.layout = layout,
+			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+			.extent = extent,
+			.cull_mode = CullMode::Front,
+			.descriptor_set_layouts = desc_layout,
+		});
 
 		auto sun = scene->create("Sun");
 		auto& directional_sun = sun.add_component<Components::DirectionalLight>(glm::vec4 { 255, 255, 255, 255 },
@@ -318,10 +317,10 @@ void ClientLayer::create_entities()
 
 void ClientLayer::interface()
 {
-	ImGuiIO& io = ImGui::GetIO();
+	ImGuiIO& imgui_io = ImGui::GetIO();
 	ImGuiStyle& style = ImGui::GetStyle();
 
-	io.ConfigWindowsResizeFromEdges = ((io.BackendFlags & ImGuiBackendFlags_HasMouseCursors) != 0);
+	imgui_io.ConfigWindowsResizeFromEdges = ((imgui_io.BackendFlags & ImGuiBackendFlags_HasMouseCursors) != 0);
 
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
 

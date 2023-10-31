@@ -368,11 +368,7 @@ void Pipeline::construct_layout(const Extent& extent)
 	pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipeline_create_info.basePipelineIndex = -1; // Optional
 
-	try {
-		vkCreateGraphicsPipelines(supply_cast<Vulkan::Device>(device), cache, 1, &pipeline_create_info, nullptr, &pipeline);
-	} catch (const std::exception& exc) {
-		Log::error("Pipeline", "Could not construct pipeline because: {}", exc.what());
-	}
+	verify(vkCreateGraphicsPipelines(supply_cast<Vulkan::Device>(device), cache, 1, &pipeline_create_info, nullptr, &pipeline));
 }
 
 Pipeline::~Pipeline()

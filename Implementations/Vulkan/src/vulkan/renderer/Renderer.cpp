@@ -84,18 +84,18 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 				.attachments = { { ImageFormat::SBGR } },
 				.debug_name = "FullscreenFramebuffer",
 			});
-		fullscreen_quad_pipeline = Pipeline::construct_scoped(device,
-			PipelineProperties {
-				.vertex_shader = get_graphics_resource().get_pipeline_cache().get_shader("fullscreen_quad.vert"),
-				.fragment_shader = get_graphics_resource().get_pipeline_cache().get_shader("fullscreen_quad.frag"),
-				.framebuffer = fullscreen_framebuffer,
-				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-				.extent = extent,
-				.cull_mode = CullMode::Front,
-				.write_depth = false,
-				.test_depth = false,
-				.descriptor_set_layouts = get_graphics_resource().get_descriptor_set_layouts(),
-			});
+		fullscreen_quad_pipeline = resource.get_pipeline_cache().put({
+			.pipeline_key = "Fullscreen",
+			.vertex_shader_key = "fullscreen_quad.vert",
+			.fragment_shader_key = "fullscreen_quad.frag",
+			.framebuffer = fullscreen_framebuffer,
+			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+			.extent = extent,
+			.cull_mode = CullMode::Front,
+			.write_depth = false,
+			.test_depth = false,
+			.descriptor_set_layouts = get_graphics_resource().get_descriptor_set_layouts(),
+		});
 	}
 
 	aabb_model = Mesh::construct_scoped(device,
@@ -103,22 +103,22 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 			.path = FS::model("cube.obj"),
 		});
 
-	aabb_pipeline = Pipeline::construct_scoped(device,
-		PipelineProperties {
-			.vertex_shader = get_graphics_resource().get_pipeline_cache().get_shader("aabb.vert"),
-			.fragment_shader = get_graphics_resource().get_pipeline_cache().get_shader("aabb.frag"),
-			.framebuffer = geometry_framebuffer,
-			.layout = { { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float4, "colour" },
-				{ ElementType::Float3, "normals" }, { ElementType::Float3, "tangents" }, { ElementType::Float3, "bitangents" } },
-			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-			.extent = extent,
-			.polygon_mode = PolygonMode::Line,
-			.line_width = 3.0F,
-			.cull_mode = CullMode::Front,
-			.write_depth = true,
-			.test_depth = true,
-			.descriptor_set_layouts = get_graphics_resource().get_descriptor_set_layouts(),
-		});
+	aabb_pipeline = resource.get_pipeline_cache().put({
+		.pipeline_key = "AABB",
+		.vertex_shader_key = "aabb.vert",
+		.fragment_shader_key = "aabb.frag",
+		.framebuffer = geometry_framebuffer,
+		.layout = { { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float4, "colour" },
+			{ ElementType::Float3, "normals" }, { ElementType::Float3, "tangents" }, { ElementType::Float3, "bitangents" } },
+		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+		.extent = extent,
+		.polygon_mode = PolygonMode::Line,
+		.line_width = 3.0F,
+		.cull_mode = CullMode::Front,
+		.write_depth = true,
+		.test_depth = true,
+		.descriptor_set_layouts = get_graphics_resource().get_descriptor_set_layouts(),
+	});
 }
 
 Renderer::~Renderer() = default;
@@ -137,6 +137,7 @@ void Renderer::on_resize()
 	get_pipeline_cache().force_recreation(extent);
 
 	geometry_framebuffer->recreate(true, extent);
+	fullscreen_framebuffer->recreate(true, extent);
 }
 
 void Renderer::begin_frame(const Camera& camera)

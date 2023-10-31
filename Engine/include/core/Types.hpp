@@ -4,6 +4,7 @@
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "core/PointerDefinition.hpp"
@@ -11,6 +12,22 @@
 #include "core/exceptions/GeneralExceptions.hpp"
 
 namespace Disarray {
+
+template <std::integral T> struct TypeSafeWrapper {
+	T value { 0 };
+
+	constexpr explicit TypeSafeWrapper(std::integral auto input)
+		: value(static_cast<T>(input))
+	{
+	}
+
+	constexpr auto operator+(std::integral auto addend) { return TypeSafeWrapper { value + addend }; }
+	constexpr auto operator-(std::integral auto addend) { return TypeSafeWrapper { value - addend }; }
+	constexpr auto operator==(const TypeSafeWrapper& other) { return value == other.value; }
+	constexpr auto operator==(std::integral auto other) { return std::cmp_equal(value, other); }
+
+	explicit operator T() const { return value; }
+};
 
 using UnkownData = void*;
 #ifdef CUSTOM_PREFER_IRC
@@ -75,3 +92,11 @@ auto supply_cast(const From& obj) -> decltype(auto)
 [[noreturn]] inline auto unreachable(std::string_view info = "Reached unreachable code") { throw UnreachableException { info }; }
 
 } // namespace Disarray
+
+template <std::integral T> struct fmt::formatter<Disarray::TypeSafeWrapper<T>> : fmt::formatter<std::string_view> {
+	auto format(const Disarray::TypeSafeWrapper<T>& format, format_context& ctx) -> decltype(ctx.out());
+};
+
+template <> struct fmt::formatter<Disarray::TypeSafeWrapper<std::uint32_t>> : fmt::formatter<std::string_view> {
+	auto format(const Disarray::TypeSafeWrapper<std::uint32_t>& format, format_context& ctx) -> decltype(ctx.out());
+};

@@ -183,8 +183,8 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 	for (const auto& tex : font_data) {
 		textures.at(i++) = tex.texture == nullptr ? nullptr : tex.texture.get();
 	}
-	resources.expose_to_shaders(textures, 2, 2);
-	resources.expose_to_shaders(renderer_api->glyph_framebuffer->get_image(0), 1, 2);
+	resources.expose_to_shaders(textures, DescriptorSet { 2 }, DescriptorBinding { 2 });
+	resources.expose_to_shaders(renderer_api->glyph_framebuffer->get_image(0), DescriptorSet { 1 }, DescriptorBinding { 2 });
 }
 
 auto TextRenderer::get_pipelines() -> std::array<Disarray::Pipeline*, 2>
@@ -365,8 +365,9 @@ void TextRenderer::render(Disarray::Renderer& renderer, Disarray::CommandExecuto
 		const auto& vk_pipeline = cast_to<Vulkan::Pipeline>(*renderer_api->screen_space_glyph_pipeline);
 		renderer.bind_pipeline(executor, *renderer_api->screen_space_glyph_pipeline);
 
-		const std::array desc { renderer.get_graphics_resource().get_descriptor_set(0), renderer.get_graphics_resource().get_descriptor_set(1),
-			renderer.get_graphics_resource().get_descriptor_set(2) };
+		const std::array desc { renderer.get_graphics_resource().get_descriptor_set(DescriptorSet(0)),
+			renderer.get_graphics_resource().get_descriptor_set(DescriptorSet(1)),
+			renderer.get_graphics_resource().get_descriptor_set(DescriptorSet(2)) };
 		vkCmdBindDescriptorSets(
 			cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
 
@@ -396,8 +397,9 @@ void TextRenderer::render(Disarray::Renderer& renderer, Disarray::CommandExecuto
 		const auto& vk_pipeline = cast_to<Vulkan::Pipeline>(*renderer_api->world_space_glyph_pipeline);
 		renderer.bind_pipeline(executor, *renderer_api->world_space_glyph_pipeline);
 
-		const std::array desc { renderer.get_graphics_resource().get_descriptor_set(0), renderer.get_graphics_resource().get_descriptor_set(1),
-			renderer.get_graphics_resource().get_descriptor_set(2) };
+		const std::array desc { renderer.get_graphics_resource().get_descriptor_set(DescriptorSet(0)),
+			renderer.get_graphics_resource().get_descriptor_set(DescriptorSet(1)),
+			renderer.get_graphics_resource().get_descriptor_set(DescriptorSet(2)) };
 		vkCmdBindDescriptorSets(
 			cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
 

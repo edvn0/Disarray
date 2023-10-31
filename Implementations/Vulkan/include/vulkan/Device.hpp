@@ -9,7 +9,7 @@ namespace Disarray::Vulkan {
 
 class Device : public Disarray::Device, public PropertySupplier<VkDevice> {
 public:
-	Device(Disarray::Window&);
+	explicit Device(Disarray::Window&);
 	~Device() override;
 
 	auto get_graphics_queue() const -> VkQueue { return graphics; }

@@ -9,6 +9,7 @@
 #include <tuple>
 
 #include "Forward.hpp"
+#include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/IndexBuffer.hpp"
 #include "graphics/Pipeline.hpp"
@@ -26,8 +27,9 @@ struct RendererProperties {
 	std::string debug_name { "Unknown" };
 };
 
-using DescriptorSet = std::uint32_t;
-using DescriptorBinding = std::uint32_t;
+using DescriptorSet = TypeSafeWrapper<std::uint32_t>;
+using DescriptorBinding = TypeSafeWrapper<std::uint32_t>;
+using FrameIndex = TypeSafeWrapper<std::uint32_t>;
 
 enum class UBOIdentifier : std::uint8_t {
 	Default,
@@ -63,12 +65,14 @@ public:
 	[[nodiscard]] virtual auto get_pipeline_cache() const -> const PipelineCache& = 0;
 	[[nodiscard]] virtual auto get_texture_cache() const -> const TextureCache& = 0;
 
-	virtual void expose_to_shaders(std::span<const Ref<Disarray::Texture>> images, DescriptorSet set, DescriptorBinding binding) = 0;
 	virtual void expose_to_shaders(const Disarray::StorageBuffer& buffer, DescriptorSet set, DescriptorBinding binding) = 0;
+
+	virtual void expose_to_shaders(std::span<const Ref<Disarray::Texture>> images, DescriptorSet set, DescriptorBinding binding) = 0;
 	virtual void expose_to_shaders(std::span<const Disarray::Texture*> images, DescriptorSet set, DescriptorBinding binding) = 0;
 	virtual void expose_to_shaders(const Disarray::Image& images, DescriptorSet set, DescriptorBinding binding) = 0;
 	virtual void expose_to_shaders(const Disarray::Texture& images, DescriptorSet set, DescriptorBinding binding) = 0;
-	[[nodiscard]] virtual auto get_descriptor_set(DescriptorSet, DescriptorBinding) const -> VkDescriptorSet = 0;
+
+	[[nodiscard]] virtual auto get_descriptor_set(FrameIndex, DescriptorSet) const -> VkDescriptorSet = 0;
 	[[nodiscard]] virtual auto get_descriptor_set(DescriptorSet) const -> VkDescriptorSet = 0;
 	[[nodiscard]] virtual auto get_descriptor_set() const -> VkDescriptorSet = 0;
 	[[nodiscard]] virtual auto get_descriptor_set_layouts() const -> const std::vector<VkDescriptorSetLayout>& = 0;

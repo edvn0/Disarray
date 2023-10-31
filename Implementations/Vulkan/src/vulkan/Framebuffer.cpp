@@ -82,7 +82,9 @@ void Framebuffer::recreate_framebuffer(bool should_clean)
 		for (auto& image : attachments) {
 			image->force_recreation();
 		}
-		depth_attachment->force_recreation();
+		if (depth_attachment) {
+			depth_attachment->force_recreation();
+		}
 	}
 
 	std::vector<VkAttachmentDescription> attachment_descriptions;

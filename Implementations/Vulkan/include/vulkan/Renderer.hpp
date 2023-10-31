@@ -20,6 +20,7 @@
 #include "graphics/VertexTypes.hpp"
 
 using VkPipelineLayout = struct VkPipelineLayout_T*;
+using VkDevice = struct VkDevice_T*;
 
 namespace Disarray::Vulkan {
 
@@ -110,12 +111,12 @@ private:
 	Ref<Disarray::Framebuffer> geometry_framebuffer;
 
 	Ref<Disarray::Framebuffer> fullscreen_framebuffer;
-	Scope<Pipeline> fullscreen_quad_pipeline;
+	Ref<Pipeline> fullscreen_quad_pipeline;
 
 	mutable const Disarray::Pipeline* bound_pipeline { nullptr };
 	std::function<void(Disarray::Renderer&)> on_batch_full_func = [](auto&) {};
 	Scope<Mesh> aabb_model {};
-	Scope<Pipeline> aabb_pipeline;
+	Ref<Pipeline> aabb_pipeline;
 
 	Scope<IndexBuffer> quad_ib;
 	Scope<VertexBuffer> quad_vb;

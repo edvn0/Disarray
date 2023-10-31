@@ -36,15 +36,18 @@ public:
 	{
 		return expose_to_shaders(image.get_image(), set, binding);
 	}
-	[[nodiscard]] auto get_descriptor_set(std::uint32_t frame_index, std::uint32_t set) const -> VkDescriptorSet override
+	[[nodiscard]] auto get_descriptor_set(FrameIndex frame_index, DescriptorSet set) const -> VkDescriptorSet override
 	{
-		return descriptor_sets.at(frame_index).at(set);
+		return descriptor_sets.at(frame_index.value).at(set.value);
 	}
-	[[nodiscard]] auto get_descriptor_set(std::uint32_t set) const -> VkDescriptorSet override
+	[[nodiscard]] auto get_descriptor_set(DescriptorSet set) const -> VkDescriptorSet override
 	{
-		return descriptor_sets.at(swapchain.get_current_frame()).at(set);
+		return descriptor_sets.at(swapchain.get_current_frame()).at(set.value);
 	}
-	[[nodiscard]] auto get_descriptor_set() const -> VkDescriptorSet override { return get_descriptor_set(swapchain.get_current_frame(), 0); };
+	[[nodiscard]] auto get_descriptor_set() const -> VkDescriptorSet override
+	{
+		return get_descriptor_set(FrameIndex(swapchain.get_current_frame()), DescriptorSet(0));
+	};
 	[[nodiscard]] auto get_descriptor_set_layouts() const -> const std::vector<VkDescriptorSetLayout>& override { return layouts; }
 	[[nodiscard]] auto get_push_constant() const -> const PushConstant* override { return &pc; }
 	auto get_editable_push_constant() -> PushConstant& override { return pc; }
@@ -60,7 +63,7 @@ public:
 
 private:
 	void cleanup_graphics_resource();
-	auto descriptor_write_sets_per_frame(std::size_t descriptor_set) -> std::vector<VkWriteDescriptorSet>;
+	auto descriptor_write_sets_per_frame(DescriptorSet descriptor_set) -> std::vector<VkWriteDescriptorSet>;
 
 	const Disarray::Device& device;
 	const Disarray::Swapchain& swapchain;

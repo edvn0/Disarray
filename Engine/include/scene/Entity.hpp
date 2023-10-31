@@ -23,7 +23,7 @@ public:
 	Entity(Scene*, entt::entity);
 	Entity(Scene* input_scene, entt::id_type input_id)
 		: Entity(input_scene, static_cast<entt::entity>(input_id)) {};
-	Entity(Scene*);
+	explicit Entity(Scene*);
 
 	static auto deserialise(Scene&, Identifier, std::string_view = "Empty") -> Entity;
 

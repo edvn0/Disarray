@@ -140,7 +140,7 @@ void Scene::construct(Disarray::App& app)
 	command_executor = CommandExecutor::construct(device, &app.get_swapchain(), { .count = 3, .is_primary = true, .record_stats = true });
 	scene_renderer->on_batch_full([&exec = *command_executor](Renderer& renderer) { renderer.flush_batch(exec); });
 
-	const auto& resources = scene_renderer->get_graphics_resource();
+	auto& resources = scene_renderer->get_graphics_resource();
 	const auto& desc_layout = resources.get_descriptor_set_layouts();
 
 	{
@@ -155,12 +155,14 @@ void Scene::construct(Disarray::App& app)
 		framebuffers.try_emplace(SceneFramebuffer::Shadow, std::move(temporary_shadow));
 
 		const auto& shadow_framebuffer = get_framebuffer<SceneFramebuffer::Shadow>();
-		scene_renderer->get_graphics_resource().expose_to_shaders(shadow_framebuffer->get_depth_image(), 1, 1);
+		scene_renderer->get_graphics_resource().expose_to_shaders(
+			shadow_framebuffer->get_depth_image(), DescriptorSet { 1 }, DescriptorBinding { 1 });
 
-		shadow_pipeline = Pipeline::construct(device,
+		shadow_pipeline = resources.get_pipeline_cache().put(
 		{
-			.vertex_shader = scene_renderer->get_pipeline_cache().get_shader("shadow.vert"),
-			.fragment_shader = scene_renderer->get_pipeline_cache().get_shader("shadow.frag"),
+			.pipeline_key = "Shadow",
+			.vertex_shader_key = "shadow.vert",
+			.fragment_shader_key = "shadow.frag",
 			.framebuffer = shadow_framebuffer,
 			.layout = {
 				{ ElementType::Float3, "position" },
@@ -177,10 +179,11 @@ void Scene::construct(Disarray::App& app)
 			.descriptor_set_layouts = desc_layout,
 		});
 
-		shadow_instances_pipeline = Pipeline::construct(device,
+		shadow_instances_pipeline = resources.get_pipeline_cache().put(
 		{
-			.vertex_shader = scene_renderer->get_pipeline_cache().get_shader("shadow_instances.vert"),
-			.fragment_shader = scene_renderer->get_pipeline_cache().get_shader("shadow.frag"),
+			.pipeline_key = "ShadowInstanced",
+			.vertex_shader_key = "shadow_instances.vert",
+			.fragment_shader_key = "shadow.frag",
 			.framebuffer = shadow_framebuffer,
 			.layout = {
 				{ ElementType::Float3, "position" },
@@ -210,22 +213,22 @@ void Scene::construct(Disarray::App& app)
 					.blend_mode = FramebufferBlendMode::None,
 					.debug_name = "IdentityFramebuffer",
 				}));
-		identity_pipeline = Pipeline::construct(device,
-			PipelineProperties {
-				.vertex_shader = scene_renderer->get_pipeline_cache().get_shader("identity.vert"),
-				.fragment_shader = scene_renderer->get_pipeline_cache().get_shader("identity.frag"),
-				.framebuffer = get_framebuffer<SceneFramebuffer::Identity>(),
-				.layout = { { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float4, "colour" },
-					{ ElementType::Float3, "normals" }, { ElementType::Float3, "tangents" }, { ElementType::Float3, "bitangents" } },
-				.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-				.extent = extent,
-				.polygon_mode = PolygonMode::Fill,
-				.cull_mode = CullMode::Back,
-				.face_mode = FaceMode::Clockwise,
-				.write_depth = true,
-				.test_depth = true,
-				.descriptor_set_layouts = resources.get_descriptor_set_layouts(),
-			});
+		identity_pipeline = resources.get_pipeline_cache().put({
+			.pipeline_key = "Identity",
+			.vertex_shader_key = "identity.vert",
+			.fragment_shader_key = "identity.frag",
+			.framebuffer = get_framebuffer<SceneFramebuffer::Identity>(),
+			.layout = { { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float4, "colour" },
+				{ ElementType::Float3, "normals" }, { ElementType::Float3, "tangents" }, { ElementType::Float3, "bitangents" } },
+			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+			.extent = extent,
+			.polygon_mode = PolygonMode::Fill,
+			.cull_mode = CullMode::Back,
+			.face_mode = FaceMode::Clockwise,
+			.write_depth = true,
+			.test_depth = true,
+			.descriptor_set_layouts = resources.get_descriptor_set_layouts(),
+		});
 	}
 
 	{
@@ -242,7 +245,7 @@ void Scene::construct(Disarray::App& app)
 				}));
 
 		const auto& geometry_framebuffer = get_framebuffer<SceneFramebuffer::Geometry>();
-		scene_renderer->get_graphics_resource().expose_to_shaders(geometry_framebuffer->get_image(), 1, 0);
+		scene_renderer->get_graphics_resource().expose_to_shaders(geometry_framebuffer->get_image(), DescriptorSet { 1 }, DescriptorBinding { 0 });
 	}
 
 	point_light_transforms = StorageBuffer::construct_scoped(device,
@@ -271,10 +274,10 @@ void Scene::construct(Disarray::App& app)
 			.count = max_identifier_objects,
 			.always_mapped = true,
 		});
-	scene_renderer->get_graphics_resource().expose_to_shaders(*point_light_transforms, 3, 0);
-	scene_renderer->get_graphics_resource().expose_to_shaders(*point_light_colours, 3, 1);
-	scene_renderer->get_graphics_resource().expose_to_shaders(*entity_identifiers, 3, 2);
-	scene_renderer->get_graphics_resource().expose_to_shaders(*entity_transforms, 3, 3);
+	scene_renderer->get_graphics_resource().expose_to_shaders(*point_light_transforms, DescriptorSet { 3 }, DescriptorBinding { 0 });
+	scene_renderer->get_graphics_resource().expose_to_shaders(*point_light_colours, DescriptorSet { 3 }, DescriptorBinding { 1 });
+	scene_renderer->get_graphics_resource().expose_to_shaders(*entity_identifiers, DescriptorSet { 3 }, DescriptorBinding { 2 });
+	scene_renderer->get_graphics_resource().expose_to_shaders(*entity_transforms, DescriptorSet { 3 }, DescriptorBinding { 3 });
 }
 
 Scene::~Scene() = default;
@@ -304,7 +307,7 @@ void Scene::begin_frame(const Camera& camera)
 	for (auto sun_component_view = registry.view<const Components::Transform, Components::DirectionalLight>();
 		 auto&& [entity, transform, sun] : sun_component_view.each()) {
 		directional.position = { transform.position, 1.0F };
-		sun.direction = glm::normalize(-directional.position); // Lookat {0,0,0};
+		sun.direction = glm::normalize(directional.position); // Lookat {0,0,0};
 		directional.direction = sun.direction;
 		directional.ambient = sun.ambient;
 		directional.diffuse = sun.diffuse;
@@ -381,6 +384,7 @@ void Scene::interface()
 	UI::scope("Parameters", [&]() {
 		bool changed_batch_renderer = UI::checkbox("Enable Batch Renderer", std::ref(parameters.enable_batch_renderer));
 		bool changed_text_renderer = UI::checkbox("Enable Text Renderer", std::ref(parameters.enable_text_renderer));
+		std::ignore = UI::checkbox("Enable identifiers", std::ref(parameters.draw_identifiers));
 
 		if (changed_batch_renderer || changed_text_renderer) {
 			command_executor->begin();
@@ -491,9 +495,11 @@ void Scene::render()
 		scene_renderer->end_pass(executor);
 	}
 	{
-		scene_renderer->begin_pass(executor, *get_framebuffer<SceneFramebuffer::Identity>(), false);
-		draw_identifiers();
-		scene_renderer->end_pass(executor);
+		if (parameters.draw_identifiers) {
+			scene_renderer->begin_pass(executor, *get_framebuffer<SceneFramebuffer::Identity>(), false);
+			draw_identifiers();
+			scene_renderer->end_pass(executor);
+		}
 	}
 	{
 		render_text();
@@ -521,7 +527,7 @@ void Scene::draw_skybox()
 {
 	auto [ubo, camera_ubo, light_ubos, shadow_pass, directional, glyph] = scene_renderer->get_graphics_resource().get_editable_ubos();
 	camera_ubo.view = glm::mat3 { ubo.view };
-	scene_renderer->get_graphics_resource().update_ubo(UBOIdentifier::Default);
+	scene_renderer->get_graphics_resource().update_ubo(UBOIdentifier::Camera);
 	auto skybox_view = registry.view<const Components::Skybox, const Components::Mesh, const Components::Pipeline>();
 	for (auto&& [entity, skybox, mesh, pipeline] : skybox_view.each()) {
 		scene_renderer->draw_mesh(*command_executor, *mesh.mesh, *pipeline.pipeline, glm::mat4 { 1.0F }, 0);
@@ -639,7 +645,8 @@ void Scene::draw_shadows()
 			}
 		}
 
-		scene_renderer->draw_mesh_instanced(*command_executor, count_point_lights, *vertex_buffer, *index_buffer, *shadow_instances_pipeline);
+		auto point_light_view_for_count = registry.view<const Components::PointLight>().size();
+		scene_renderer->draw_mesh_instanced(*command_executor, point_light_view_for_count, *vertex_buffer, *index_buffer, *shadow_instances_pipeline);
 	}
 
 	for (auto&& [entity, mesh, pipeline, texture, transform] :
@@ -810,7 +817,6 @@ namespace {
 
 auto Scene::copy(Scene& scene) -> Scope<Scene>
 {
-	using CopyableComponents = ComponentGroup<Components::Transform>;
 
 	static constexpr auto copy_all
 		= []<ValidComponent... C>(ComponentGroup<C...>, auto& identifier_map, auto& old_reg) { (copy_component<C>(identifier_map, old_reg), ...); };
@@ -826,6 +832,7 @@ auto Scene::copy(Scene& scene) -> Scope<Scene>
 		identifiers.try_emplace(identifier.get_id(), std::move(created));
 	}
 
+	using CopyableComponents = ComponentGroup<Components::Transform>;
 	copy_all(CopyableComponents {}, identifiers, old_registry);
 
 	return new_scene;

@@ -25,7 +25,7 @@ namespace Disarray {
 
 enum class GizmoType : std::uint16_t {
 	TranslateX = (1U << 0),
-	Translate_Y = (1U << 1),
+	TranslateY = (1U << 1),
 	TranslateZ = (1U << 2),
 	RotateX = (1U << 3),
 	RotateY = (1U << 4),
@@ -35,7 +35,7 @@ enum class GizmoType : std::uint16_t {
 	ScaleY = (1U << 8),
 	ScaleZ = (1U << 9),
 	Bounds = (1U << 10),
-	Translate = TranslateX | Translate_Y | TranslateZ,
+	Translate = TranslateX | TranslateY | TranslateZ,
 	Rotate = RotateX | RotateY | RotateZ | RotateScreen,
 	Scale = ScaleX | ScaleY | ScaleZ
 };
@@ -49,6 +49,7 @@ enum class SceneFramebuffer : std::uint8_t {
 struct SceneParameters {
 	bool enable_batch_renderer { true };
 	bool enable_text_renderer { true };
+	bool draw_identifiers { true };
 };
 
 class Scene {

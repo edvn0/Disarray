@@ -42,10 +42,10 @@ void Renderer::bind_pipeline(Disarray::CommandExecutor& executor, const Disarray
 void Renderer::bind_descriptor_sets(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline)
 {
 	auto* pipeline_layout = cast_to<Vulkan::Pipeline>(pipeline).get_layout();
-	const std::array desc { get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 0),
-		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 1),
-		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 2),
-		get_graphics_resource().get_descriptor_set(swapchain.get_current_frame(), 3) };
+	FrameIndex index { swapchain.get_current_frame() };
+	const std::array desc { get_graphics_resource().get_descriptor_set(index, DescriptorSet(0)),
+		get_graphics_resource().get_descriptor_set(index, DescriptorSet(1)), get_graphics_resource().get_descriptor_set(index, DescriptorSet(2)),
+		get_graphics_resource().get_descriptor_set(index, DescriptorSet(3)) };
 	vkCmdBindDescriptorSets(supply_cast<Vulkan::CommandExecutor>(executor), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0,
 		static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
 }

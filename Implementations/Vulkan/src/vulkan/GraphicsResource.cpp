@@ -352,7 +352,7 @@ void GraphicsResource::expose_to_shaders(const Disarray::Image& image, Descripto
 
 	Log::info("GraphicsResource", "Exposing '{}' to shader at set {} - binding {}", image.get_properties().debug_name, descriptor_set, binding);
 	for (auto& write_set : write_sets) {
-		write_set.dstBinding = binding;
+		write_set.dstBinding = binding.value;
 		write_set.dstArrayElement = 0;
 		write_set.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		write_set.descriptorCount = 1;
@@ -383,7 +383,7 @@ void GraphicsResource::expose_to_shaders(const Disarray::StorageBuffer& buffer, 
 	const auto& vk_buffer = cast_to<Vulkan::StorageBuffer>(buffer);
 
 	for (auto& write_set : write_sets) {
-		write_set.dstBinding = binding;
+		write_set.dstBinding = binding.value;
 		write_set.dstArrayElement = 0;
 		write_set.descriptorType = Vulkan::StorageBuffer::get_descriptor_type();
 		write_set.descriptorCount = 1;
@@ -469,13 +469,13 @@ void GraphicsResource::cleanup_graphics_resource()
 
 GraphicsResource::~GraphicsResource() { cleanup_graphics_resource(); }
 
-auto GraphicsResource::descriptor_write_sets_per_frame(std::size_t descriptor_set) -> std::vector<VkWriteDescriptorSet>
+auto GraphicsResource::descriptor_write_sets_per_frame(DescriptorSet descriptor_set) -> std::vector<VkWriteDescriptorSet>
 {
 	std::vector<VkWriteDescriptorSet> output {};
 	for (std::size_t i = 0; i < swapchain_image_count; i++) {
 		auto& write_set = output.emplace_back();
 		write_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		write_set.dstSet = descriptor_sets.at(i).at(descriptor_set);
+		write_set.dstSet = descriptor_sets.at(FrameIndex { i }.value).at(descriptor_set.value);
 	}
 	return output;
 }
@@ -495,10 +495,11 @@ void GraphicsResource::internal_expose_to_shaders(
 	};
 
 	for (std::size_t i = 0; i < swapchain_image_count; i++) {
+		FrameIndex index { i };
 		auto& write_set = write_sets.emplace_back();
 		write_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		write_set.dstSet = descriptor_sets.at(i).at(set);
-		write_set.dstBinding = binding;
+		write_set.dstSet = descriptor_sets.at(index.value).at(set.value);
+		write_set.dstBinding = binding.value;
 		write_set.dstArrayElement = 0;
 		write_set.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 		write_set.descriptorCount = size;
@@ -506,8 +507,8 @@ void GraphicsResource::internal_expose_to_shaders(
 
 		auto& sampler = write_sets.emplace_back();
 		sampler.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		sampler.dstSet = descriptor_sets.at(i).at(set);
-		sampler.dstBinding = binding + 1;
+		sampler.dstSet = descriptor_sets.at(index.value).at(set.value);
+		sampler.dstBinding = (binding + 1).value;
 		sampler.dstArrayElement = 0;
 		sampler.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
 		sampler.descriptorCount = 1;
