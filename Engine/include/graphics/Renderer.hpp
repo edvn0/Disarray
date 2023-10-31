@@ -44,6 +44,14 @@ enum class RenderPasses : std::uint8_t {
 	PlanarGeometry,
 };
 
+struct RenderAreaExtent {
+	Extent offset {};
+	Extent extent {};
+
+	explicit RenderAreaExtent(const Disarray::Framebuffer&);
+	RenderAreaExtent(const Extent& offset, const Extent& extent);
+};
+
 class IGraphicsResource {
 public:
 	virtual ~IGraphicsResource() = default;
@@ -77,10 +85,15 @@ public:
 
 class Renderer : public ReferenceCountable {
 public:
-	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) = 0;
-	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear, const glm::vec2& mouse_position) = 0;
-	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&) = 0;
-	virtual void begin_pass(Disarray::CommandExecutor&) = 0;
+	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear, const RenderAreaExtent&) = 0;
+	virtual void begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& framebuffer, bool explicit_clear)
+	{
+		begin_pass(executor, framebuffer, explicit_clear, RenderAreaExtent { framebuffer });
+	}
+	virtual void begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& framebuffer)
+	{
+		begin_pass(executor, framebuffer, false, RenderAreaExtent { framebuffer });
+	}
 	virtual void end_pass(Disarray::CommandExecutor&) = 0;
 
 	/**
@@ -122,6 +135,10 @@ public:
 	virtual void draw_planar_geometry(Geometry, const GeometryProperties&) = 0;
 	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const GeometryProperties&) = 0;
 	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const glm::mat4& transform = glm::identity<glm::mat4>()) = 0;
+	virtual void draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
+		const glm::vec4& colour, const glm::mat4& transform)
+		= 0;
+
 	virtual void draw_mesh(
 		Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4& transform = glm::identity<glm::mat4>())
 		= 0;
@@ -142,6 +159,7 @@ public:
 	virtual void draw_mesh_instanced(
 		Disarray::CommandExecutor&, std::size_t count, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&)
 		= 0;
+	virtual void draw_mesh_instanced(Disarray::CommandExecutor&, std::size_t count, const Disarray::Pipeline&) = 0;
 
 	virtual void draw_aabb(Disarray::CommandExecutor&, const Disarray::AABB&, const glm::vec4&, const glm::mat4& transform) = 0;
 
@@ -176,6 +194,9 @@ public:
 	{
 		return draw_text(fmt::format(fmt_string, std::forward<Args>(args)...), position, 1.0F, colour);
 	};
+
+	virtual void set_scissors(Disarray::CommandExecutor& executor, const glm::vec2& scissor_extent, const glm::vec2& offset) = 0;
+	virtual void set_viewport(Disarray::CommandExecutor& executor, const glm::vec2& viewport_extent) = 0;
 
 	virtual void submit_batched_geometry(Disarray::CommandExecutor&) = 0;
 	virtual void on_batch_full(std::function<void(Renderer&)>&&) = 0;

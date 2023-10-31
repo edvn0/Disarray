@@ -221,7 +221,7 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 	auto set_zero_bindings = create_set_zero_bindings();
 	auto set_one_bindings = create_set_one_bindings();
 	auto set_two_bindings = create_set_two_bindings();
-	auto set_three_bindings = create_set_three_bindings<2>();
+	auto set_three_bindings = create_set_three_bindings<4>();
 
 	auto layout_create_info = vk_structures<VkDescriptorSetLayoutCreateInfo> {}();
 	layout_create_info.bindingCount = static_cast<std::uint32_t>(set_zero_bindings.size());

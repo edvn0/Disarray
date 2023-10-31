@@ -25,15 +25,14 @@ namespace Disarray::Vulkan {
 
 class Renderer : public Disarray::Renderer {
 	DISARRAY_MAKE_NONCOPYABLE(Renderer)
+	using BaseRenderer = Disarray::Renderer;
+
 public:
 	Renderer(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&);
 	~Renderer() override;
 
-	void begin_pass(
-		Disarray::CommandExecutor& executor, Disarray::Framebuffer& framebuffer, bool explicit_clear, const glm::vec2& mouse_position) override;
-	void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear) override;
-	void begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& fb) override { begin_pass(executor, fb, false); }
-	void begin_pass(Disarray::CommandExecutor& command_executor) override { begin_pass(command_executor, *geometry_framebuffer); }
+	void begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& framebuffer, bool explicit_clear,
+		const RenderAreaExtent& render_area_extent) override;
 	void end_pass(Disarray::CommandExecutor&) override;
 
 	void text_rendering_pass(Disarray::CommandExecutor& /*unused*/) override;
@@ -43,11 +42,14 @@ public:
 	// IGraphics
 	void draw_mesh_instanced(Disarray::CommandExecutor&, std::size_t count, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&,
 		const Disarray::Pipeline&) override;
+	void draw_mesh_instanced(Disarray::CommandExecutor&, std::size_t count, const Disarray::Pipeline&) override;
 
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const GeometryProperties& = {}) override;
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const glm::mat4&) override;
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4&) override;
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4&, const std::uint32_t) override;
+	void draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline, const glm::vec4& colour,
+		const glm::mat4& transform) override;
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&, const glm::mat4&,
 		const std::uint32_t) override;
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&, const glm::vec4&,
@@ -88,6 +90,9 @@ public:
 	void bind_descriptor_sets(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline) override;
 
 	[[nodiscard]] auto get_composite_pass_image() const -> const Disarray::Image& override;
+
+	void set_scissors(Disarray::CommandExecutor& executor, const glm::vec2& scissor_extent, const glm::vec2& offset) override;
+	void set_viewport(Disarray::CommandExecutor& executor, const glm::vec2& viewport_extent) override;
 
 private:
 	void add_geometry_to_batch(Geometry, const GeometryProperties&);

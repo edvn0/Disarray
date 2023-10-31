@@ -24,9 +24,11 @@ public:
 	};
 
 	template <class T> auto get_mutable() { return std::span<T>(static_cast<T*>(get_raw()), count()); }
+	template <class T> auto get_mutable() const { return std::span<T>(static_cast<T*>(get_raw()), count()); }
 
 protected:
 	virtual auto get_raw() -> void* = 0;
+	virtual auto get_raw() const -> void* = 0;
 };
 
 } // namespace Disarray

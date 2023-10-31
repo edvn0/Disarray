@@ -192,7 +192,7 @@ void Renderer::clear_pass(Disarray::CommandExecutor& executor, RenderPasses pass
 
 void Renderer::clear_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& pass)
 {
-	begin_pass(executor, pass, true);
+	BaseRenderer::begin_pass(executor, pass, true);
 	end_pass(executor);
 }
 

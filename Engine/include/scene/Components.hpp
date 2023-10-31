@@ -77,6 +77,7 @@ struct Pipeline {
 	Pipeline() = default;
 	explicit Pipeline(Ref<Disarray::Pipeline>);
 	Ref<Disarray::Pipeline> pipeline { nullptr };
+	std::size_t identifier;
 };
 template <> inline constexpr std::string_view component_name<Pipeline> = "Pipeline";
 
@@ -109,8 +110,9 @@ template <> inline constexpr std::string_view component_name<QuadGeometry> = "Qu
 
 struct ID {
 	Identifier identifier {};
+	bool can_interact_with { true };
 
-	template <std::integral T> [[nodiscard]] T get_id() const { return static_cast<T>(identifier); }
+	template <std::integral T> [[nodiscard]] auto get_id() const -> T { return static_cast<T>(identifier); }
 	[[nodiscard]] auto get_id() const -> Identifier { return identifier; }
 };
 template <> inline constexpr std::string_view component_name<ID> = "ID";

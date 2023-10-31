@@ -6,6 +6,8 @@
 
 #include "core/Concepts.hpp"
 #include "core/Types.hpp"
+#include "glm/detail/qualifier.hpp"
+#include "glm/gtx/norm.hpp"
 
 namespace Disarray {
 
@@ -154,6 +156,20 @@ template <IsNumber T> struct IExtent {
 		return {
 			.width = static_cast<Other>(width),
 			.height = static_cast<Other>(height),
+		};
+	}
+
+	template <typename VecType>
+		requires requires(VecType vector) {
+			glm::length(vector);
+			vector.x;
+			vector.y;
+		}
+	auto as() const -> VecType
+	{
+		return VecType {
+			static_cast<float>(width),
+			static_cast<float>(height),
 		};
 	}
 

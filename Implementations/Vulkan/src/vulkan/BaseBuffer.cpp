@@ -144,5 +144,14 @@ auto BaseBuffer::get_raw() -> void*
 	ensure(false, "Never here");
 	return nullptr;
 }
+auto BaseBuffer::get_raw() const -> void*
+{
+	if (props.always_mapped) {
+		return vma_allocation_info.pMappedData;
+	}
+
+	ensure(false, "Never here");
+	return nullptr;
+}
 
 } // namespace Disarray::Vulkan

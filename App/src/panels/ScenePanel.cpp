@@ -292,7 +292,7 @@ void ScenePanel::for_all_components(Entity& entity)
 			any_changed |= switch_parameter<float>(value, [key](float& vector) { return UI::Input::slider<1>(key, &vector, 0.1F); });
 			any_changed |= switch_parameter<double>(value, [key](double& vector) {
 				auto as_float = static_cast<float>(vector);
-				bool changed = ImGui::DragFloat(key.data(), &as_float, 0.1f);
+				bool changed = ImGui::DragFloat(key.data(), &as_float, 0.1F);
 				if (changed) {
 					vector = static_cast<double>(as_float);
 				}
@@ -306,7 +306,7 @@ void ScenePanel::for_all_components(Entity& entity)
 	});
 
 	draw_component<Components::Pipeline>(entity, [&dev = device](Components::Pipeline& pipeline) {
-		auto& [pipe] = pipeline;
+		auto& [pipe, identifier] = pipeline;
 		auto& props = pipe->get_properties();
 		bool any_changed = false;
 		any_changed |= UI::combo_choice<DepthCompareOperator>("Compare operator", std::ref(props.depth_comparison_operator));

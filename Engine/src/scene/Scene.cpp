@@ -146,7 +146,7 @@ void Scene::construct(Disarray::App& app)
 	{
 		auto temporary_shadow = Framebuffer::construct(device,
 			{
-				.extent = { 4096, 4096 },
+				.extent = { 1024, 1024 },
 				.attachments = { { ImageFormat::Depth, false } },
 				.clear_colour_on_load = true,
 				.clear_depth_on_load = true,
@@ -257,8 +257,24 @@ void Scene::construct(Disarray::App& app)
 			.count = count_point_lights,
 			.always_mapped = true,
 		});
+
+	static constexpr auto max_identifier_objects = 2000;
+	entity_identifiers = StorageBuffer::construct_scoped(device,
+		{
+			.size = max_identifier_objects * sizeof(std::uint32_t),
+			.count = max_identifier_objects,
+			.always_mapped = true,
+		});
+	entity_transforms = StorageBuffer::construct_scoped(device,
+		{
+			.size = max_identifier_objects * sizeof(glm::mat4),
+			.count = max_identifier_objects,
+			.always_mapped = true,
+		});
 	scene_renderer->get_graphics_resource().expose_to_shaders(*point_light_transforms, 3, 0);
 	scene_renderer->get_graphics_resource().expose_to_shaders(*point_light_colours, 3, 1);
+	scene_renderer->get_graphics_resource().expose_to_shaders(*entity_identifiers, 3, 2);
+	scene_renderer->get_graphics_resource().expose_to_shaders(*entity_transforms, 3, 3);
 }
 
 Scene::~Scene() = default;
@@ -335,6 +351,18 @@ void Scene::begin_frame(const Camera& camera)
 		point_light_ssbo[light_index] = pos.compute();
 		point_light_ssbo_colour[light_index] = texture.colour;
 		light_index++;
+	}
+
+	std::size_t identifier_index { 0 };
+	auto ssbo_identifiers = entity_identifiers->get_mutable<std::uint32_t>();
+	auto identifiers_transforms = entity_transforms->get_mutable<glm::mat4>();
+	for (auto&& [entity, transform, id] : registry.view<const Components::Transform, const Components::ID>().each()) {
+		if (!id.can_interact_with) {
+			continue;
+		}
+		ssbo_identifiers[identifier_index] = static_cast<std::uint32_t>(entity);
+		identifiers_transforms[identifier_index] = transform.compute();
+		identifier_index++;
 	}
 	push_constant.max_point_lights = static_cast<std::uint32_t>(light_index);
 
@@ -463,8 +491,7 @@ void Scene::render()
 		scene_renderer->end_pass(executor);
 	}
 	{
-		// Identifier pass
-		scene_renderer->begin_pass(executor, *get_framebuffer<SceneFramebuffer::Identity>());
+		scene_renderer->begin_pass(executor, *get_framebuffer<SceneFramebuffer::Identity>(), false);
 		draw_identifiers();
 		scene_renderer->end_pass(executor);
 	}
@@ -481,14 +508,11 @@ void Scene::render()
 
 void Scene::draw_identifiers()
 {
-	scene_renderer->bind_pipeline(*command_executor, *identity_pipeline);
-	scene_renderer->bind_descriptor_sets(*command_executor, *identity_pipeline);
-	for (auto&& [entity, transform, tag] : registry.view<const Components::Transform, const Components::Tag>().each()) {
-		if (tag.name == "Floor") [[unlikely]] {
-			continue;
-		}
-		scene_renderer->draw_identifier(*command_executor, *identity_pipeline, static_cast<std::uint32_t>(entity), transform.compute());
+	std::size_t count { 0 };
+	for (auto&& [entity, id] : registry.view<Components::ID>().each()) {
+		count += id.can_interact_with ? 1 : 0;
 	}
+	scene_renderer->draw_mesh_instanced(*command_executor, count, *identity_pipeline);
 }
 
 auto Scene::get_final_image() const -> const Disarray::Image& { return scene_renderer->get_composite_pass_image(); }
@@ -521,7 +545,8 @@ void Scene::draw_geometry()
 			}
 		}
 
-		scene_renderer->draw_mesh_instanced(*command_executor, count_point_lights, *vertex_buffer, *index_buffer, *point_light_pipeline);
+		auto point_light_view_for_count = registry.view<const Components::PointLight>().size();
+		scene_renderer->draw_mesh_instanced(*command_executor, point_light_view_for_count, *vertex_buffer, *index_buffer, *point_light_pipeline);
 	}
 
 	for (auto line_view = registry.view<const Components::LineGeometry, const Components::Texture, const Components::Transform>();
@@ -776,7 +801,7 @@ void Scene::clear()
 namespace {
 	template <ValidComponent Component> constexpr auto copy_component(auto& identifier_map, auto& old_reg)
 	{
-		for (auto&& [srcEntity, identifier, component] : old_reg.template view<Components::ID, Component>().each()) {
+		for (auto&& [_, identifier, component] : old_reg.template view<Components::ID, Component>().each()) {
 			Entity& destination_entity = identifier_map.at(identifier.get_id());
 			destination_entity.add_component<Component>(component);
 		}
@@ -792,7 +817,6 @@ auto Scene::copy(Scene& scene) -> Scope<Scene>
 
 	Scope<Scene> new_scene = make_scope<Scene>(scene.get_device(), "scene.get_name()");
 
-	auto& new_registry = new_scene->get_registry();
 	auto& old_registry = scene.get_registry();
 
 	std::unordered_map<Identifier, Entity> identifiers {};

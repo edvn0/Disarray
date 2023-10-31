@@ -150,6 +150,8 @@ public:
 
 	static auto copy(Scene& scene) -> Scope<Scene>;
 
+	auto get_identifier_buffer() const -> const auto& { return *entity_identifiers; }
+
 private:
 	const Disarray::Device& device;
 	std::string scene_name;
@@ -174,6 +176,8 @@ private:
 
 	Scope<Disarray::StorageBuffer> point_light_transforms {};
 	Scope<Disarray::StorageBuffer> point_light_colours {};
+	Scope<Disarray::StorageBuffer> entity_identifiers {};
+	Scope<Disarray::StorageBuffer> entity_transforms {};
 
 	std::mutex registry_access;
 	entt::registry registry;

@@ -53,13 +53,14 @@ Material::Material(Device& device, std::string_view vertex, std::string_view fra
 {
 }
 
-Material::Material(Ref<Disarray::Material> m)
-	: material(std::move(m))
+Material::Material(Ref<Disarray::Material> input)
+	: material(std::move(input))
 {
 }
 
-Pipeline::Pipeline(Ref<Disarray::Pipeline> p)
-	: pipeline(std::move(p))
+Pipeline::Pipeline(Ref<Disarray::Pipeline> input)
+	: pipeline(std::move(input))
+	, identifier(pipeline->get_properties().hash())
 {
 }
 
@@ -72,8 +73,8 @@ Texture::Texture(Device& device, std::string_view path)
 {
 }
 
-Texture::Texture(Ref<Disarray::Texture> m, const glm::vec4& colour)
-	: texture(std::move(m))
+Texture::Texture(Ref<Disarray::Texture> input, const glm::vec4& colour)
+	: texture(std::move(input))
 	, colour(colour)
 {
 }
@@ -160,7 +161,7 @@ auto Camera::compute(const Disarray::Components::Transform& transform, const Dis
 }
 
 Skybox::Skybox(Ref<Disarray::Texture> tex, const glm::vec4& col)
-	: texture(tex)
+	: texture(std::move(tex))
 	, colour(col)
 {
 }

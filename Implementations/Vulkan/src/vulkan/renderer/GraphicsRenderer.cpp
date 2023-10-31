@@ -118,6 +118,27 @@ void Renderer::draw_mesh_instanced(Disarray::CommandExecutor& executor, std::siz
 	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(index_buffer.size()), static_cast<std::uint32_t>(instance_count), 0, 0, 0);
 }
 
+void Renderer::draw_mesh_instanced(Disarray::CommandExecutor& executor, std::size_t instance_count, const Disarray::Pipeline& mesh_pipeline)
+{
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
+	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
+	bind_pipeline(executor, pipeline);
+	bind_descriptor_sets(executor, pipeline);
+
+	std::array arr { supply_cast<Vulkan::VertexBuffer>(aabb_model->get_vertices()) };
+	std::array offsets = { VkDeviceSize { 0 } };
+	vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets.data());
+
+	if (pipeline.get_properties().polygon_mode == PolygonMode::Line) {
+		vkCmdSetLineWidth(command_buffer, pipeline.get_properties().line_width);
+	}
+
+	vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(aabb_model->get_indices()), 0, VK_INDEX_TYPE_UINT32);
+
+	vkCmdDrawIndexed(
+		command_buffer, static_cast<std::uint32_t>(aabb_model->get_indices().size()), static_cast<std::uint32_t>(instance_count), 0, 0, 0);
+}
+
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
 	const Disarray::Texture& texture, const glm::mat4& transform, const std::uint32_t identifier)
 {
@@ -137,6 +158,36 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 	push_constant.object_transform = transform;
 	push_constant.colour = colour;
 	push_constant.current_identifier = identifier;
+	vkCmdPushConstants(
+		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &push_constant);
+
+	bind_descriptor_sets(executor, pipeline);
+
+	const std::array arr { supply_cast<Vulkan::VertexBuffer>(mesh.get_vertices()) };
+	const std::array offsets = { VkDeviceSize { 0 } };
+	vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets.data());
+
+	if (pipeline.get_properties().polygon_mode == PolygonMode::Line) {
+		vkCmdSetLineWidth(command_buffer, pipeline.get_properties().line_width);
+	}
+
+	const auto& indices = cast_to<Vulkan::IndexBuffer>(mesh.get_indices());
+	vkCmdBindIndexBuffer(command_buffer, indices.supply(), 0, VK_INDEX_TYPE_UINT32);
+	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(indices.size()), 1, 0, 0, 0);
+}
+
+void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
+	const glm::vec4& colour, const glm::mat4& transform)
+{
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
+	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
+	bind_pipeline(executor, pipeline);
+
+	auto& push_constant = get_graphics_resource().get_editable_push_constant();
+
+	push_constant.object_transform = transform;
+	push_constant.colour = colour;
+	push_constant.current_identifier = 0;
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &push_constant);
 
@@ -215,7 +266,7 @@ void Renderer::draw_aabb(Disarray::CommandExecutor& executor, const Disarray::AA
 	glm::mat4 transformation_matrix = glm::mat4(1.0F);
 	transformation_matrix = glm::translate(transformation_matrix, translation);
 	transformation_matrix = transform * scale_matrix * transformation_matrix;
-	draw_mesh(executor, *aabb_model, *aabb_pipeline, transformation_matrix);
+	draw_mesh(executor, *aabb_model, *aabb_pipeline, colour, transformation_matrix);
 }
 
 void Renderer::draw_identifier(
@@ -251,7 +302,8 @@ void Renderer::planar_geometry_pass(Disarray::CommandExecutor& executor) { batch
 
 void Renderer::fullscreen_quad_pass(Disarray::CommandExecutor& executor, const Extent&)
 {
-	begin_pass(executor, fullscreen_quad_pipeline->get_framebuffer());
+	auto& framebuffer = fullscreen_quad_pipeline->get_framebuffer();
+	begin_pass(executor, framebuffer, false, RenderAreaExtent { framebuffer });
 
 	auto* cmd = supply_cast<Vulkan::CommandExecutor>(executor);
 	bind_pipeline(executor, *fullscreen_quad_pipeline);
@@ -267,7 +319,7 @@ void Renderer::end_pass(Disarray::CommandExecutor& executor)
 }
 
 void Renderer::begin_pass(
-	Disarray::CommandExecutor& executor, Disarray::Framebuffer& framebuffer, bool explicit_clear, const glm::vec2& mouse_position)
+	Disarray::CommandExecutor& executor, Disarray::Framebuffer& framebuffer, bool explicit_clear, const RenderAreaExtent& render_area_extent)
 {
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 
@@ -275,11 +327,14 @@ void Renderer::begin_pass(
 	render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	render_pass_begin_info.renderPass = supply_cast<Vulkan::RenderPass>(framebuffer.get_render_pass());
 	render_pass_begin_info.framebuffer = supply_cast<Vulkan::Framebuffer>(framebuffer);
-	render_pass_begin_info.renderArea.offset = { 0, 0 };
+	render_pass_begin_info.renderArea.offset = {
+		static_cast<std::int32_t>(render_area_extent.offset.width),
+		static_cast<std::int32_t>(render_area_extent.offset.height),
+	};
 
 	VkExtent2D extent_2_d {
-		.width = framebuffer.get_properties().extent.width,
-		.height = framebuffer.get_properties().extent.height,
+		.width = render_area_extent.extent.width,
+		.height = render_area_extent.extent.height,
 	};
 	render_pass_begin_info.renderArea.extent = extent_2_d;
 
@@ -323,105 +378,50 @@ void Renderer::begin_pass(
 		vkCmdClearAttachments(command_buffer, total_attachment_count, attachments.data(), total_attachment_count, clear_rects.data());
 	}
 
-	VkViewport viewport {};
-	viewport.x = 0.0F;
-	viewport.y = 0.0F;
-	viewport.width = static_cast<float>(extent_2_d.width);
-	viewport.height = static_cast<float>(extent_2_d.height);
-	viewport.minDepth = 0.0F;
-	viewport.maxDepth = 1.0F;
-	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+	set_viewport(executor,
+		{
+			extent_2_d.width,
+			extent_2_d.height,
+		});
+	set_scissors(executor,
+		{
+			render_area_extent.extent.width,
+			render_area_extent.extent.height,
+		},
+		{
+			render_area_extent.offset.width,
+			render_area_extent.offset.height,
+		});
+}
+
+void Renderer::set_scissors(Disarray::CommandExecutor& executor, const glm::vec2& scissor_extent, const glm::vec2& offset)
+{
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 
 	VkRect2D scissor {};
 	scissor.offset = {
-		static_cast<std::int32_t>(mouse_position.x),
-		static_cast<std::int32_t>(mouse_position.y),
+		static_cast<std::int32_t>(offset.x),
+		static_cast<std::int32_t>(offset.y),
 	};
 	scissor.extent = {
-		.width = 30,
-		.height = 30,
+		.width = static_cast<std::uint32_t>(scissor_extent.x),
+		.height = static_cast<std::uint32_t>(scissor_extent.y),
 	};
 	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 }
 
-void Renderer::begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& framebuffer, bool explicit_clear)
+void Renderer::set_viewport(Disarray::CommandExecutor& executor, const glm::vec2& viewport_extent)
 {
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
-
-	VkRenderPassBeginInfo render_pass_begin_info {};
-	render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	render_pass_begin_info.renderPass = supply_cast<Vulkan::RenderPass>(framebuffer.get_render_pass());
-	render_pass_begin_info.framebuffer = supply_cast<Vulkan::Framebuffer>(framebuffer);
-	render_pass_begin_info.renderArea.offset = { 0, 0 };
-
-	VkExtent2D extent_2_d {
-		.width = framebuffer.get_properties().extent.width,
-		.height = framebuffer.get_properties().extent.height,
-	};
-	render_pass_begin_info.renderArea.extent = extent_2_d;
-
-	const auto& clear_values = cast_to<Vulkan::Framebuffer>(framebuffer).get_clear_values();
-
-	render_pass_begin_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
-	render_pass_begin_info.pClearValues = clear_values.data();
-
-	vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
-
-	if (explicit_clear) {
-		auto& vk_framebuffer = cast_to<Vulkan::Framebuffer>(framebuffer);
-
-		std::vector<VkClearValue> fb_clear_values = vk_framebuffer.get_clear_values();
-
-		const std::uint32_t color_attachment_count = vk_framebuffer.get_colour_attachment_count();
-		const std::uint32_t total_attachment_count = color_attachment_count + (vk_framebuffer.has_depth() ? 1 : 0);
-
-		std::vector<VkClearAttachment> attachments(total_attachment_count);
-		std::vector<VkClearRect> clear_rects(total_attachment_count);
-		for (uint32_t i = 0; i < color_attachment_count; i++) {
-			attachments[i].aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			attachments[i].colorAttachment = i;
-			attachments[i].clearValue = fb_clear_values[i];
-
-			clear_rects[i].rect.offset = { 0, 0 };
-			clear_rects[i].rect.extent = extent_2_d;
-			clear_rects[i].baseArrayLayer = 0;
-			clear_rects[i].layerCount = 1;
-		}
-
-		if (vk_framebuffer.has_depth()) {
-			attachments[color_attachment_count].aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-			attachments[color_attachment_count].clearValue = fb_clear_values[color_attachment_count];
-			clear_rects[color_attachment_count].rect.offset = { 0, 0 };
-			clear_rects[color_attachment_count].rect.extent = extent_2_d;
-			clear_rects[color_attachment_count].baseArrayLayer = 0;
-			clear_rects[color_attachment_count].layerCount = 1;
-		}
-
-		vkCmdClearAttachments(command_buffer, total_attachment_count, attachments.data(), total_attachment_count, clear_rects.data());
-	}
 
 	VkViewport viewport {};
 	viewport.x = 0.0F;
 	viewport.y = 0.0F;
-	viewport.width = static_cast<float>(extent_2_d.width);
-	viewport.height = static_cast<float>(extent_2_d.height);
+	viewport.width = static_cast<float>(viewport_extent.x);
+	viewport.height = static_cast<float>(viewport_extent.y);
 	viewport.minDepth = 0.0F;
 	viewport.maxDepth = 1.0F;
 	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
-
-	VkRect2D scissor {};
-	const auto& scissors = framebuffer.get_properties().scissors;
-	const auto offset = scissors.offset.as<std::int32_t>();
-	const auto scissor_extent = scissors.extent;
-	scissor.offset = {
-		offset.width,
-		offset.height,
-	};
-	scissor.extent = {
-		.width = scissor_extent.width,
-		.height = scissor_extent.height,
-	};
-	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 }
 
 } // namespace Disarray::Vulkan

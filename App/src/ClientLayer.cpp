@@ -24,9 +24,10 @@
 #include "panels/StatisticsPanel.hpp"
 #include "scene/Scene.hpp"
 
+namespace {
 template <std::size_t Count>
 	requires(Count <= Disarray::max_point_lights)
-static auto generate_colours() -> std::array<glm::vec4, Count>
+auto generate_colours() -> std::array<glm::vec4, Count>
 {
 	std::array<glm::vec4, Count> colours {};
 	for (std::size_t i = 0; i < Count; i++) {
@@ -34,7 +35,7 @@ static auto generate_colours() -> std::array<glm::vec4, Count>
 	}
 	return colours;
 }
-
+} // namespace
 namespace Disarray::Client {
 
 ClientLayer::ClientLayer(Device& device, Window& win, Swapchain& swapchain)
@@ -143,6 +144,7 @@ void ClientLayer::create_entities()
 		floor.get_transform().position = { 0, 7, 0 };
 		floor.add_component<Components::BoxCollider>();
 
+		floor.get_components<Components::ID>().can_interact_with = false;
 		floor.add_component<Components::Texture>(nullptr, glm::vec4 { .1, .1, .9, 1.0 });
 		floor.add_component<Components::Mesh>(cube_mesh);
 		floor.add_component<Components::Pipeline>(pipe);
@@ -283,7 +285,6 @@ void ClientLayer::create_entities()
 			light_component.ambient = colours.at(i);
 			light_component.diffuse = colours.at(i);
 			light_component.specular = colours.at(i);
-			light_component.factors = { 1, 10, 10, 10 };
 
 			constexpr auto float_radius = static_cast<float>(point_light_radius);
 			const auto point_in_sphere = Random::on_sphere(3.0F * float_radius);
@@ -587,12 +588,7 @@ void ClientLayer::draw_menubar()
 			}
 		};
 
-		auto pushDarkTextIfActive = [](const char* menuName) {
-			if (ImGui::IsPopupOpen(menuName)) {
-				return true;
-			}
-			return false;
-		};
+		auto pushDarkTextIfActive = [](const char* menuName) { return ImGui::IsPopupOpen(menuName); };
 
 		const ImU32 colHovered = IM_COL32(0, 0, 0, 80);
 
@@ -644,8 +640,9 @@ void ClientLayer::draw_menubar()
 				ImGui::EndMenu();
 			}
 
-			if (colourPushed)
+			if (colourPushed) {
 				ImGui::PopStyleColor();
+			}
 		}
 
 		{
@@ -669,8 +666,9 @@ void ClientLayer::draw_menubar()
 				ImGui::EndMenu();
 			}
 
-			if (colourPushed)
+			if (colourPushed) {
 				ImGui::PopStyleColor();
+			}
 		}
 
 		{
@@ -688,8 +686,9 @@ void ClientLayer::draw_menubar()
 				ImGui::EndMenu();
 			}
 
-			if (colourPushed)
+			if (colourPushed) {
 				ImGui::PopStyleColor();
+			}
 		}
 
 		{
@@ -709,8 +708,9 @@ void ClientLayer::draw_menubar()
 				ImGui::EndMenu();
 			}
 
-			if (colourPushed)
+			if (colourPushed) {
 				ImGui::PopStyleColor();
+			}
 		}
 
 		{
@@ -730,12 +730,14 @@ void ClientLayer::draw_menubar()
 				ImGui::EndMenu();
 			}
 
-			if (colourPushed)
+			if (colourPushed) {
 				ImGui::PopStyleColor();
+			}
 		}
 
-		if (menuOpen)
+		if (menuOpen) {
 			ImGui::PopStyleColor(2);
+		}
 	}
 	UI::end_menu_bar();
 
