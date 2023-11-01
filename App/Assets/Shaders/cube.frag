@@ -53,7 +53,7 @@ void main()
 	light.specular = vec3(dlu.specular);
 	vec3 out_vec = calculate_directional_light(light, normals, view_direction, shadow, 32);
 
-	for (uint i = 0; i < pc.max_point_lights; i++) {
+	[[unroll]] for (uint i = 0; i < pc.max_point_lights; i++) {
 		PointLight current_point_light = PLBO.lights[i];
 		vec4 point_light_position = current_point_light.position;
 		vec4 point_light_factors = current_point_light.factors;

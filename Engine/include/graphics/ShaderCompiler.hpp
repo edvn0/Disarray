@@ -1,10 +1,11 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <filesystem>
 #include <memory>
 #include <vector>
 
-#include "Forward.hpp"
 #include "core/Collections.hpp"
 
 namespace Disarray {
@@ -15,7 +16,7 @@ namespace Disarray::Runtime {
 
 class BasicIncluder {
 public:
-	BasicIncluder(std::filesystem::path directory = "Assets/Shaders/Include");
+	explicit BasicIncluder(std::filesystem::path directory = "Assets/Shaders/Include");
 	void replace_all_includes(std::string&);
 
 private:

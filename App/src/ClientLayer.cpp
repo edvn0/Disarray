@@ -28,11 +28,14 @@
 namespace {
 template <std::size_t Count>
 	requires(Count <= Disarray::max_point_lights)
-auto generate_colours() -> std::array<glm::vec4, Count>
+auto generate_colours() -> std::array<std::array<glm::vec4, 4>, Count>
 {
-	std::array<glm::vec4, Count> colours {};
+	std::array<std::array<glm::vec4, 4>, Count> colours {};
 	for (std::size_t i = 0; i < Count; i++) {
-		colours.at(i) = Disarray::Random::colour();
+		colours.at(i).at(0) = Disarray::Random::colour();
+		colours.at(i).at(1) = Disarray::Random::colour();
+		colours.at(i).at(2) = Disarray::Random::colour();
+		colours.at(i).at(3) = Disarray::Random::colour();
 	}
 	return colours;
 }
@@ -245,7 +248,7 @@ void ClientLayer::create_entities()
 
 	{
 
-		auto colours = generate_colours<16>();
+		auto colours = generate_colours<1000>();
 		const auto sphere = Mesh::construct(device,
 			{
 				.path = FS::model("sphere.fbx"),
@@ -281,9 +284,9 @@ void ClientLayer::create_entities()
 		for (std::uint32_t i = 0; i < colours.size(); i++) {
 			auto point_light = scene->create("PointLight-{}", i);
 			auto& light_component = point_light.add_component<Components::PointLight>();
-			light_component.ambient = colours.at(i);
-			light_component.diffuse = colours.at(i);
-			light_component.specular = colours.at(i);
+			light_component.ambient = colours.at(i).at(0);
+			light_component.diffuse = colours.at(i).at(1);
+			light_component.specular = colours.at(i).at(2);
 
 			constexpr auto float_radius = static_cast<float>(point_light_radius);
 			const auto point_in_sphere = Random::on_sphere(3.0F * float_radius);
@@ -292,7 +295,7 @@ void ClientLayer::create_entities()
 			// transform.scale *= 2;
 
 			point_light.add_component<Components::Mesh>(sphere);
-			point_light.add_component<Components::Texture>(colours.at(i));
+			point_light.add_component<Components::Texture>(colours.at(i).at(0));
 			point_light.add_component<Components::Pipeline>(pipe);
 			point_light.add_script<Scripts::LinearMovementScript>(
 				-point_light_radius, point_light_radius, Random::as_enum<Scripts::LinearMovementScript::Axis>());
@@ -484,18 +487,18 @@ void ClientLayer::render()
 void ClientLayer::destruct() { scene->destruct(); }
 
 template <typename Child> class FileHandlerBase {
-protected:
-	explicit FileHandlerBase(const Device& dev, Scene* scene, std::filesystem::path path, std::initializer_list<std::string_view> exts)
+public:
+	explicit FileHandlerBase(const Device& dev, Scene* scene, std::filesystem::path path)
 		: device(dev)
 		, base_scene(scene)
 		, file_path(std::move(path))
-		, extensions(exts)
 	{
-		valid = extensions.contains(file_path.extension().string());
-		if (valid) {
+		if (valid_file()) {
 			handle();
 		}
 	}
+
+protected:
 	auto child() -> auto& { return static_cast<Child&>(*this); }
 	auto get_scene() -> auto* { return base_scene; }
 	[[nodiscard]] auto get_device() const -> const auto& { return device; }
@@ -503,6 +506,7 @@ protected:
 
 private:
 	void handle() { return child().handle_impl(); }
+	auto valid_file() -> bool { return child().valid_file_impl(); }
 	const Device& device;
 	Scene* base_scene;
 	std::filesystem::path file_path {};
@@ -512,10 +516,7 @@ private:
 
 class PNGHandler : public FileHandlerBase<PNGHandler> {
 public:
-	explicit PNGHandler(const Device& device, Scene* scene, const std::filesystem::path& path)
-		: FileHandlerBase(device, scene, path, { ".png" })
-	{
-	}
+	using FileHandlerBase<PNGHandler>::FileHandlerBase;
 
 private:
 	void handle_impl()
@@ -532,15 +533,20 @@ private:
 		entity.add_component<Components::Texture>(texture);
 	}
 
+	auto valid_file_impl() -> bool
+	{
+		using namespace std::string_view_literals;
+		const auto& path = get_path();
+		static std::unordered_set valid_extenstions = { ".png"sv, ".jpg"sv, ".png"sv, ".jpeg"sv, ".bmp"sv };
+		return valid_extenstions.contains(path.extension().string());
+	}
+
 	friend class FileHandlerBase<PNGHandler>;
 };
 
 class SceneHandler : public FileHandlerBase<SceneHandler> {
 public:
-	explicit SceneHandler(const Device& device, Scene* scene, const std::filesystem::path& path)
-		: FileHandlerBase(device, scene, path, { ".scene", ".json" })
-	{
-	}
+	using FileHandlerBase<SceneHandler>::FileHandlerBase;
 
 private:
 	void handle_impl()
@@ -550,13 +556,20 @@ private:
 		Scene::deserialise_into(current_scene, get_device(), get_path());
 	}
 
+	auto valid_file_impl() -> bool
+	{
+		using namespace std::string_view_literals;
+		const auto& path = get_path();
+		static std::unordered_set valid_extenstions = { ".scene"sv, ".json"sv };
+		return valid_extenstions.contains(path.extension().string());
+	}
+
 	friend class FileHandlerBase<SceneHandler>;
 };
 
 namespace {
 	template <class... T> struct HandlerGroup { };
 
-	using FileHandlers = HandlerGroup<PNGHandler, SceneHandler>;
 } // namespace
 
 void ClientLayer::handle_file_drop(const std::filesystem::path& path)
@@ -565,182 +578,12 @@ void ClientLayer::handle_file_drop(const std::filesystem::path& path)
 		return;
 	}
 
-	static constexpr auto evaluate_all = []<class... T>(HandlerGroup<T...>, auto& dev, auto* scene_ptr, const auto& path) {
+	static constexpr auto evaluate_all = []<class... T>(HandlerGroup<T...>, const auto& dev, auto* scene_ptr, const auto& path) {
 		(T { dev, scene_ptr, path }, ...);
 	};
+
+	using FileHandlers = HandlerGroup<PNGHandler, SceneHandler>;
 	evaluate_all(FileHandlers {}, device, scene.get(), path);
-}
-
-void ClientLayer::draw_menubar()
-{
-	const ImRect menuBarRect = { ImGui::GetCursorPos(), { ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeightWithSpacing() } };
-
-	ImGui::BeginGroup();
-
-	if (UI::begin_menu_bar(menuBarRect)) {
-		bool menuOpen = ImGui::IsPopupOpen("##menubar", ImGuiPopupFlags_AnyPopupId);
-
-		auto popItemHighlight = [&menuOpen] {
-			if (menuOpen) {
-				ImGui::PopStyleColor(3);
-				menuOpen = false;
-			}
-		};
-
-		auto pushDarkTextIfActive = [](const char* menuName) { return ImGui::IsPopupOpen(menuName); };
-
-		const ImU32 colHovered = IM_COL32(0, 0, 0, 80);
-
-		{
-			bool colourPushed = pushDarkTextIfActive("File");
-
-			if (ImGui::BeginMenu("File")) {
-				popItemHighlight();
-				colourPushed = false;
-
-				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, colHovered);
-
-				if (ImGui::MenuItem("Create Project...")) {
-					Log::info("ClientLayer", "Create new project");
-				}
-				if (ImGui::MenuItem("Open Project...", "Ctrl+O")) {
-					Log::info("ClientLayer", "Open Project");
-				}
-				if (ImGui::BeginMenu("Open Recent")) {
-					Log::info("ClientLayer", "Open Recent");
-				}
-				if (ImGui::MenuItem("Save Project")) {
-					Log::info("ClientLayer", "Save Project");
-				}
-
-				ImGui::Separator();
-				if (ImGui::MenuItem("New Scene", "Ctrl+N")) {
-					Log::info("ClientLayer", "New scene");
-				}
-
-				if (ImGui::MenuItem("Save Scene", "Ctrl+S")) {
-					Log::info("ClientLayer", "Save scene");
-				}
-
-				if (ImGui::MenuItem("Save Scene As...", "Ctrl+Shift+S")) {
-					Log::info("ClientLayer", "Save scene as");
-				}
-
-				ImGui::Separator();
-				if (ImGui::MenuItem("Build shader pack")) {
-					Log::info("ClientLayer", "Build shader pack");
-				}
-				ImGui::Separator();
-				if (ImGui::MenuItem("Exit", "Alt + F4")) {
-					Log::info("ClientLayer", "Close");
-				}
-
-				ImGui::PopStyleColor();
-				ImGui::EndMenu();
-			}
-
-			if (colourPushed) {
-				ImGui::PopStyleColor();
-			}
-		}
-
-		{
-			bool colourPushed = pushDarkTextIfActive("Edit");
-
-			if (ImGui::BeginMenu("Edit")) {
-				popItemHighlight();
-				colourPushed = false;
-
-				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, colHovered);
-
-				ImGui::MenuItem("testname", nullptr, true);
-
-				ImGui::Separator();
-
-				if (ImGui::MenuItem("Reload scripts Assembly")) {
-					Log::info("ClientLayer", "Reload scripts");
-				}
-
-				ImGui::PopStyleColor();
-				ImGui::EndMenu();
-			}
-
-			if (colourPushed) {
-				ImGui::PopStyleColor();
-			}
-		}
-
-		{
-			bool colourPushed = pushDarkTextIfActive("View");
-
-			if (ImGui::BeginMenu("View")) {
-				popItemHighlight();
-				colourPushed = false;
-
-				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, colHovered);
-
-				ImGui::MenuItem("testagain", nullptr, true);
-
-				ImGui::PopStyleColor();
-				ImGui::EndMenu();
-			}
-
-			if (colourPushed) {
-				ImGui::PopStyleColor();
-			}
-		}
-
-		{
-			bool colourPushed = pushDarkTextIfActive("Tools");
-
-			if (ImGui::BeginMenu("Tools")) {
-				popItemHighlight();
-				colourPushed = false;
-
-				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, colHovered);
-
-				ImGui::MenuItem("ImGui Metrics Tool", nullptr, false);
-				ImGui::MenuItem("ImGui Stack Tool", nullptr, false);
-				ImGui::MenuItem("ImGui Style Editor", nullptr, false);
-
-				ImGui::PopStyleColor();
-				ImGui::EndMenu();
-			}
-
-			if (colourPushed) {
-				ImGui::PopStyleColor();
-			}
-		}
-
-		{
-			bool colourPushed = pushDarkTextIfActive("Help");
-
-			if (ImGui::BeginMenu("Help")) {
-				popItemHighlight();
-				colourPushed = false;
-
-				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, colHovered);
-
-				if (ImGui::MenuItem("About")) {
-					Log::info("ClientLayer", "Show about");
-				}
-
-				ImGui::PopStyleColor();
-				ImGui::EndMenu();
-			}
-
-			if (colourPushed) {
-				ImGui::PopStyleColor();
-			}
-		}
-
-		if (menuOpen) {
-			ImGui::PopStyleColor(2);
-		}
-	}
-	UI::end_menu_bar();
-
-	ImGui::EndGroup();
 }
 
 } // namespace Disarray::Client

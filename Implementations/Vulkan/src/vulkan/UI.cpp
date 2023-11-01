@@ -1,6 +1,6 @@
 #include "DisarrayPCH.hpp"
 
-#include "ui/UI.hpp"
+#include "Forward.hpp"
 
 #include <GLFW/glfw3.h>
 #include <backends/imgui_impl_vulkan.h>
@@ -12,11 +12,11 @@
 #include <filesystem>
 #include <unordered_map>
 
-#include "Forward.hpp"
 #include "core/FileWatcher.hpp"
 #include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
 #include "imgui_internal.h"
+#include "ui/UI.hpp"
 #include "util/BitCast.hpp"
 #include "vulkan/Image.hpp"
 #include "vulkan/Texture.hpp"
@@ -100,7 +100,7 @@ auto image_button(const Disarray::Texture& tex, glm::vec2 size, const std::array
 
 void image(const Disarray::Texture& tex, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
 {
-	auto& vk_image = cast_to<Vulkan::Image>(tex.get_image());
+	const auto& vk_image = cast_to<Vulkan::Image>(tex.get_image());
 	image(vk_image, size, uvs);
 }
 
