@@ -126,7 +126,7 @@ void ClientLayer::create_entities()
 	environment.add_component<Components::Pipeline>(skybox_pipeline);
 
 	{
-		auto pipe = renderer.get_pipeline_cache().put({
+		const auto& pipe = renderer.get_pipeline_cache().put({
 			.pipeline_key = "Cube",
 			.vertex_shader_key = "cube.vert",
 			.fragment_shader_key = "cube.frag",
@@ -245,12 +245,12 @@ void ClientLayer::create_entities()
 
 	{
 
-		auto colours = generate_colours<300>();
+		auto colours = generate_colours<16>();
 		const auto sphere = Mesh::construct(device,
 			{
 				.path = FS::model("sphere.fbx"),
 			});
-		auto pipe = renderer.get_pipeline_cache().put({
+		const auto& pipe = renderer.get_pipeline_cache().put({
 			.pipeline_key = "PointLight",
 			.vertex_shader_key = "point_light.vert",
 			.fragment_shader_key = "point_light.frag",

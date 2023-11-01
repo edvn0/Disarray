@@ -6,7 +6,9 @@ SortIncludes: CaseSensitive
 IncludeBlocks: Regroup
 IncludeCategories:
   - Regex: "DisarrayPCH.hpp"
-    Priority: -1
+    Priority: 0
+  - Regex: "Forward.hpp"
+    Priority: 1
   - Regex: "<(vulkan|glm|GLFW|SPIRV|backends).*>"
     Priority: 2
   - Regex: '<[\w\/-_]+[\.\/][\w\/-_]+>'

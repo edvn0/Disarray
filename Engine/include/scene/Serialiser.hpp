@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <tuple>
+#include <utility>
 
 #include "core/Collections.hpp"
 #include "core/Hashes.hpp"
@@ -20,7 +21,7 @@
 
 namespace Disarray {
 
-namespace {
+namespace Detail {
 	class CouldNotSerialiseException : public std::runtime_error {
 	public:
 		explicit CouldNotSerialiseException(const std::string& message)
@@ -36,9 +37,9 @@ namespace {
 	public:
 		using json = nlohmann::json;
 
-		explicit Serialiser(const Scene* input_scene, const std::filesystem::path& output_path = "Assets/Scene")
+		explicit Serialiser(const Scene* input_scene, std::filesystem::path output_path = "Assets/Scene")
 			: scene(input_scene)
-			, path(output_path)
+			, path(std::move(output_path))
 		{
 			try {
 				serialised_object = serialise();
@@ -46,7 +47,6 @@ namespace {
 				return;
 			}
 
-			namespace ch = std::chrono;
 			auto name = scene->get_name();
 			std::replace(name.begin(), name.end(), ' ', '_');
 			std::replace(name.begin(), name.end(), '+', '_');
@@ -131,9 +131,9 @@ namespace {
 		std::filesystem::path path;
 		json serialised_object;
 	};
-} // namespace
+} // namespace Detail
 
-using SceneSerialiser = Serialiser<PipelineSerialiser, ScriptSerialiser, TextureSerialiser, MeshSerialiser, TransformSerialiser,
+using SceneSerialiser = Detail::Serialiser<PipelineSerialiser, ScriptSerialiser, TextureSerialiser, MeshSerialiser, TransformSerialiser,
 	InheritanceSerialiser, LineGeometrySerialiser, QuadGeometrySerialiser, DirectionalLightSerialiser, PointLightSerialiser>;
 
 } // namespace Disarray

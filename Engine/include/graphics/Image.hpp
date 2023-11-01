@@ -1,11 +1,12 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <glm/glm.hpp>
 
 #include <array>
 #include <variant>
 
-#include "Forward.hpp"
 #include "core/Concepts.hpp"
 #include "core/DataBuffer.hpp"
 #include "core/DisarrayObject.hpp"
@@ -28,11 +29,7 @@ struct ImageProperties {
 		SamplerMode u = SamplerMode::Repeat;
 		SamplerMode v = SamplerMode::Repeat;
 		SamplerMode w = SamplerMode::Repeat;
-	} sampler_modes {
-		.u = SamplerMode::Repeat,
-		.v = SamplerMode::Repeat,
-		.w = SamplerMode::Repeat,
-	};
+	} sampler_modes {};
 	std::vector<CopyRegion> copy_regions {};
 	SamplerFilter filter { SamplerFilter::Linear };
 	BorderColour border_colour { BorderColour::FloatOpaqueWhite };

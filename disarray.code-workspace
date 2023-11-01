@@ -233,6 +233,7 @@
       "Multisample",
       "normalised",
       "Pathlike",
+      "PLBO",
       "quat",
       "renderable",
       "renderables",

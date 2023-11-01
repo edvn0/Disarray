@@ -13,7 +13,6 @@ Checks: >
   -misc-non-private-member-variables-in-classes,
   -readability-named-parameter,
   -readability-braces-around-statements,
-  -readability-magic-numbers
   -readability-identifier-length
 
 # Turn all the warnings from the checks above into errors.

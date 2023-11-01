@@ -1,7 +1,5 @@
 #include "DisarrayPCH.hpp"
 
-#include "graphics/Renderer.hpp"
-
 #include <vulkan/vulkan_core.h>
 
 #include <array>
@@ -18,6 +16,7 @@
 #include "graphics/PhysicalDevice.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
+#include "graphics/Renderer.hpp"
 #include "graphics/Swapchain.hpp"
 #include "util/Timer.hpp"
 #include "vulkan/Device.hpp"
@@ -45,7 +44,6 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 	auto& resource = get_graphics_resource();
 
 	PipelineCacheCreationProperties pipeline_properties = {
-
 		.pipeline_key = "quad",
 		.vertex_shader_key = "quad.vert",
 		.fragment_shader_key = "quad.frag",
@@ -54,6 +52,7 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 			{ ElementType::Float4, "colour" }, },
 		.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, sizeof(PushConstant) } },
 		.extent = swapchain.get_extent(),
+		.cull_mode = CullMode::None,
 		.descriptor_set_layouts = resource.get_descriptor_set_layouts(),
 	};
 

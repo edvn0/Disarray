@@ -1,12 +1,13 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <array>
 #include <cstdint>
 #include <stdexcept>
 #include <utility>
 #include <vector>
 
-#include "Forward.hpp"
 #include "PushConstantLayout.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/Hashes.hpp"
