@@ -445,7 +445,7 @@ void Pipeline::recreate_pipeline(bool should_clean, const Extent& extent)
 	}
 
 	if (is_valid()) {
-		construct_layout(extent);
+		construct_layout(extent.valid() ? extent : props.extent);
 	}
 }
 

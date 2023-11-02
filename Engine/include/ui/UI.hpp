@@ -65,6 +65,14 @@ private:
 	static inline Collections::StringMap<ImFont*> font_map {};
 };
 
+class Scope {
+	DISARRAY_MAKE_NONCOPYABLE(Scope);
+
+public:
+	explicit Scope(std::string_view name);
+	~Scope();
+};
+
 static constexpr std::array<glm::vec2, 2> default_uvs = { glm::vec2 { 0.f, 0.f }, glm::vec2 { 1.f, 1.f } };
 
 using UIFunction = std::function<void(void)>;

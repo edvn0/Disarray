@@ -401,4 +401,8 @@ void InterfaceCaches::destruct()
 	}
 }
 
+Scope::Scope(std::string_view name) { ImGui::Begin(name.data(), nullptr); }
+
+Scope::~Scope() { ImGui::End(); }
+
 } // namespace Disarray::UI

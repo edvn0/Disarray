@@ -21,6 +21,7 @@
 #include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
 #include "panels/LogPanel.hpp"
+#include "panels/PipelineEditorPanel.hpp"
 #include "panels/ScenePanel.hpp"
 #include "panels/StatisticsPanel.hpp"
 #include "scene/Components.hpp"
@@ -64,12 +65,14 @@ void ClientLayer::construct(App& app)
 	auto content_panel = app.add_panel<DirectoryContentPanel>("Assets");
 	auto scene_panel = app.add_panel<ScenePanel>(scene.get());
 	auto execution_stats_panel = app.add_panel<ExecutionStatisticsPanel>(scene->get_command_executor());
+	auto pipeline_editor_panel = app.add_panel<PipelineEditorPanel>(scene->get_renderer().get_pipeline_cache());
 	// auto log_panel = app.add_panel<LogPanel>("Assets/Logs/disarray_errors.log");
 
 	stats_panel->construct(app);
 	content_panel->construct(app);
 	scene_panel->construct(app);
 	execution_stats_panel->construct(app);
+	pipeline_editor_panel->construct(app);
 	// log_panel->construct(app);
 
 	auto copied = Scene::copy(*scene);
@@ -250,6 +253,9 @@ void ClientLayer::create_entities()
 			{
 				.path = FS::model("sphere.fbx"),
 			});
+
+		SpecialisationConstantDescription specialisation_constant_description { point_light_data };
+
 		const auto& pipe = renderer.get_pipeline_cache().put({
 			.pipeline_key = "PointLight",
 			.vertex_shader_key = "point_light.vert",
@@ -260,6 +266,7 @@ void ClientLayer::create_entities()
 			.extent = extent,
 			.cull_mode = CullMode::Front,
 			.descriptor_set_layouts = desc_layout,
+			.specialisation_constant = specialisation_constant_description,
 		});
 
 		auto sun = scene->create("Sun");

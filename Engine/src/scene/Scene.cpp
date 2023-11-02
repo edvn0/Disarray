@@ -63,69 +63,11 @@ void Scene::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
 	static constexpr auto tick_time = std::chrono::milliseconds(3000);
 	file_watcher = make_scope<FileWatcher>(pool, "Assets/Shaders", Collections::StringSet { ".vert", ".frag", ".glsl" }, tick_time);
 	auto& pipeline_cache = scene_renderer->get_graphics_resource().get_pipeline_cache();
-	file_watcher->on_modified(
-		[&renderer = scene_renderer, &pipeline_cache, &dev = device, &reg = registry, &mutex = registry_access](const FileInformation& entry) {
-			std::scoped_lock lock { mutex };
-			Log::info("Scene FileWatcher", "Recompiling entry: {}", entry.to_path());
-			const auto as_path = entry.to_path();
-
-			if (as_path.extension() == ".glsl") {
-				auto glsl_shader = Shader::compile(dev, entry.path);
-				pipeline_cache.update(as_path, std::move(glsl_shader));
-			}
-
-			std::unordered_set<Disarray::Pipeline*> pipelines_sharing_changed_shader {};
-			for (auto* pipeline : renderer->get_text_renderer().get_pipelines()) {
-				const bool pipeline_uses_this_updated_shader = pipeline->has_shader_with_name(as_path);
-				if (!pipeline_uses_this_updated_shader) {
-					continue;
-				}
-
-				pipelines_sharing_changed_shader.insert(pipeline);
-			}
-
-			for (auto* pipeline : renderer->get_batch_renderer().get_pipelines()) {
-				const bool pipeline_uses_this_updated_shader = pipeline->has_shader_with_name(as_path);
-				if (!pipeline_uses_this_updated_shader) {
-					continue;
-				}
-
-				pipelines_sharing_changed_shader.insert(pipeline);
-			}
-
-			pipeline_cache.for_each_in_storage([&](auto&& kv) {
-				auto&& [key, pipeline] = kv;
-				const bool pipeline_uses_this_updated_shader = pipeline->has_shader_with_name(as_path);
-				if (!pipeline_uses_this_updated_shader) {
-					return;
-				}
-
-				pipelines_sharing_changed_shader.insert(pipeline.get());
-			});
-
-			if (pipelines_sharing_changed_shader.empty()) {
-				return;
-			}
-
-			Ref<Shader> shader = nullptr;
-			try {
-				shader = Shader::compile(dev, entry.path);
-			} catch (const CouldNotCompileShaderException& exc) {
-				Log::info("Scene FileWatcher", "{}", exc);
-				return;
-			}
-
-			for (auto* pipe : pipelines_sharing_changed_shader) {
-				pipe->get_properties().set_shader_with_type(shader->get_properties().type, shader);
-			}
-
-			wait_for_idle(dev);
-			for (auto* pipe : pipelines_sharing_changed_shader) {
-				pipe->force_recreation();
-			}
-			wait_for_idle(dev);
-			Log::info("Scene FileWatcher", "Finished compilation and {} pipelines reconstructed.", pipelines_sharing_changed_shader.size());
-		});
+	file_watcher->on_modified([&ext = extent, &pipeline_cache, &mutex = registry_access](const FileInformation& entry) {
+		std::scoped_lock lock { mutex };
+		Log::info("Scene FileWatcher", "Recompiling entry: {}", entry.to_path());
+		pipeline_cache.force_recreation(ext);
+	});
 }
 
 void Scene::construct(Disarray::App& app)

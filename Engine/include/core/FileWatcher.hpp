@@ -25,7 +25,6 @@ static constexpr auto operator|(FileStatus left, FileStatus right)
 {
 	return static_cast<FileStatus>(static_cast<std::uint8_t>(left) | static_cast<std::uint8_t>(right));
 }
-
 static constexpr auto operator&(FileStatus left, FileStatus right)
 {
 	return static_cast<FileStatus>(static_cast<std::uint8_t>(left) & static_cast<std::uint8_t>(right));

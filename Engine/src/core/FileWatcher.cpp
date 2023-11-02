@@ -100,10 +100,11 @@ namespace {
 
 	auto register_callback(FileStatus status, auto& activations, auto&& function)
 	{
-		auto func = [activation = function, status = status](const auto& file) {
-			const auto is_given_status = static_cast<bool>(file.status & status);
-			Log::info("FileWatcher", "Status: {}, {}", magic_enum::enum_name(file.status), magic_enum::enum_name(status));
+		auto func = [activation = function, status = status](const FileInformation& file) {
+			const auto is_given_status = (file.status & status) != FileStatus {};
 			if (is_given_status) {
+				Log::info("FileWatcher", "Status for file '{}': Old status: '{}', New status: '{}'", file.path, magic_enum::enum_name(file.status),
+					magic_enum::enum_name(status));
 				activation(file);
 			}
 		};

@@ -274,7 +274,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		bool any_changed = false;
 		std::optional<std::filesystem::path> selected { std::nullopt };
 		if (ImGui::Button("Choose path", { 80, 30 })) {
-			selected = UI::Popup::select_file({ "*.mesh" });
+			selected = UI::Popup::select_file({ "*.mesh", "*.obj", "*.fbx" });
 			any_changed |= selected.has_value();
 		}
 		if (ImGui::Checkbox("Draw AABB", &mesh_component.draw_aabb)) { };
@@ -336,26 +336,6 @@ void ScenePanel::for_all_components(Entity& entity)
 			script_component.get_script().reload();
 		}
 	});
-
-	/*
-	draw_component<Components::Pipeline>(entity, [&dev = device](Components::Pipeline& pipeline) {
-		auto& [pipe, identifier] = pipeline;
-		auto& props = pipe->get_properties();
-		bool any_changed = false;
-		any_changed |= UI::combo_choice<DepthCompareOperator>("Compare operator", std::ref(props.depth_comparison_operator));
-		any_changed |= UI::combo_choice<CullMode>("Cull mode", std::ref(props.cull_mode));
-		any_changed |= UI::combo_choice<FaceMode>("Face mode", std::ref(props.face_mode));
-		any_changed |= UI::combo_choice<PolygonMode>("Polygon mode", std::ref(props.polygon_mode));
-		any_changed |= UI::shader_drop_button(dev, "Vertex Shader", ShaderType::Vertex, std::ref(props.vertex_shader));
-		any_changed |= UI::shader_drop_button(dev, "Fragment Shader", ShaderType::Fragment, std::ref(props.fragment_shader));
-		any_changed |= UI::checkbox("Depth test", props.test_depth);
-		any_changed |= UI::checkbox("Depth write", props.write_depth);
-
-		if (any_changed) {
-			pipe->recreate(true, {});
-		}
-	});
-	 */
 
 	draw_component<Components::PillCollider>(entity, [&](Components::PillCollider& collider) {
 

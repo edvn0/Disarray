@@ -23,6 +23,8 @@ set(APP_SOURCES
         src/panels/StatisticsPanel.cpp
         include/panels/LogPanel.hpp
         src/panels/LogPanel.cpp
+        include/panels/PipelineEditorPanel.hpp
+        src/panels/PipelineEditorPanel.cpp
 )
 
 add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/src/Application.cpp

@@ -22,16 +22,16 @@ layout(location = 4) out vec4 light_space_frag_pos;
 
 void main()
 {
-	Uniform ubo = UBO.ubo;
-	PushConstant pc = PC.pc;
-	ShadowPassUBO spu = SPU.spu;
+    Uniform ubo = UBO.ubo;
+    PushConstant pc = PC.pc;
+    ShadowPassUBO spu = SPU.spu;
 
-	vec4 model_position = pc.object_transform * vec4(pos, 1.0);
+    vec4 model_position = pc.object_transform * vec4(pos, 1.0);
 
-	frag_pos = vec3(model_position);
-	gl_Position = ubo.view_projection * model_position;
-	light_space_frag_pos = bias_matrix() * spu.view_projection * pc.object_transform * vec4(pos, 1.0);
-	fragment_colour = colour;
-	uvs = uv;
-	out_normals = correct_normals(pc.object_transform, normals);
+    frag_pos = vec3(model_position);
+    gl_Position = ubo.view_projection * model_position;
+    light_space_frag_pos = bias_matrix() * spu.view_projection * pc.object_transform * vec4(pos, 1.0);
+    fragment_colour = colour;
+    uvs = uv;
+    out_normals = correct_normals(pc.object_transform, normals);
 }
