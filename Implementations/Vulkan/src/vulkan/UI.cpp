@@ -292,23 +292,16 @@ namespace Tabular {
 
 	auto table(std::string_view name, const Collections::StringViewMap<std::string>& map) -> bool
 	{
-		ImGui::Begin(name.data());
-		if (!ImGui::BeginTable(name.data(), 2)) {
+		if (ImGui::BeginTable(name.data(), 2)) {
+			for (const auto& [key, value] : map) {
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				UI::text("{}", key);
+				ImGui::TableNextColumn();
+				UI::text("{}", value);
+			}
 			ImGui::EndTable();
-			ImGui::End();
-			return false;
 		}
-
-		for (const auto& [key, value] : map) {
-			ImGui::TableNextRow();
-			ImGui::TableNextColumn();
-			UI::text("{}", key);
-			ImGui::TableNextColumn();
-			UI::text("{}", value);
-		}
-
-		ImGui::EndTable();
-		ImGui::End();
 		return false;
 	}
 
