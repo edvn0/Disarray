@@ -353,6 +353,26 @@ namespace Input {
 		return ImGui::InputScalarN(name.data(), ImGuiDataType_Float, base, static_cast<int>(count), &min, &max);
 	}
 
+	auto general_input(std::string_view name, int count, std::uint32_t* base, std::uint32_t min, std::uint32_t max) -> bool
+	{
+		return ImGui::InputScalarN(name.data(), ImGuiDataType_U32, base, static_cast<int>(count), &min, &max);
+	}
+
+	auto general_input(std::string_view name, int count, std::uint64_t* base, std::uint64_t min, std::uint64_t max) -> bool
+	{
+		return ImGui::InputScalarN(name.data(), ImGuiDataType_U64, base, static_cast<int>(count), &min, &max);
+	}
+
+	auto general_input(std::string_view name, int count, std::int32_t* base, std::int32_t min, std::int32_t max) -> bool
+	{
+		return ImGui::InputScalarN(name.data(), ImGuiDataType_S32, base, static_cast<int>(count), &min, &max);
+	}
+
+	auto general_input(std::string_view name, int count, std::int64_t* base, std::int64_t min, std::int64_t max) -> bool
+	{
+		return ImGui::InputScalarN(name.data(), ImGuiDataType_S64, base, static_cast<int>(count), &min, &max);
+	}
+
 } // namespace Input
 
 void remove_image(const Texture& tex)

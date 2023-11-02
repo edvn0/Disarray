@@ -23,7 +23,9 @@
 #include "panels/LogPanel.hpp"
 #include "panels/ScenePanel.hpp"
 #include "panels/StatisticsPanel.hpp"
+#include "scene/Components.hpp"
 #include "scene/Scene.hpp"
+#include "util/Timer.hpp"
 
 namespace {
 template <std::size_t Count>
@@ -129,7 +131,8 @@ void ClientLayer::create_entities()
 	environment.add_component<Components::Pipeline>(skybox_pipeline);
 
 	{
-		const auto& pipe = renderer.get_pipeline_cache().put({
+		SpecialisationConstantDescription specialisation_constant_description { point_light_data };
+		const auto& floor_pipeline = renderer.get_pipeline_cache().put({
 			.pipeline_key = "Cube",
 			.vertex_shader_key = "cube.vert",
 			.fragment_shader_key = "cube.frag",
@@ -139,6 +142,21 @@ void ClientLayer::create_entities()
 			.extent = extent,
 			.cull_mode = CullMode::Front,
 			.descriptor_set_layouts = desc_layout,
+			.specialisation_constant = specialisation_constant_description,
+		});
+
+		point_light_data.calculate_point_lights = 1;
+		const auto& other_floor_pipeline = renderer.get_pipeline_cache().put({
+			.pipeline_key = "CubeRenderThings",
+			.vertex_shader_key = "cube.vert",
+			.fragment_shader_key = "cube.frag",
+			.framebuffer = scene->get_framebuffer<SceneFramebuffer::Geometry>(),
+			.layout = layout,
+			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+			.extent = extent,
+			.cull_mode = CullMode::Front,
+			.descriptor_set_layouts = desc_layout,
+			.specialisation_constant = specialisation_constant_description,
 		});
 
 		auto floor = scene->create("Floor");
@@ -149,7 +167,7 @@ void ClientLayer::create_entities()
 		floor.get_components<Components::ID>().can_interact_with = false;
 		floor.add_component<Components::Texture>(nullptr, glm::vec4 { .1, .1, .9, 1.0 });
 		floor.add_component<Components::Mesh>(cube_mesh);
-		floor.add_component<Components::Pipeline>(pipe);
+		floor.add_component<Components::Pipeline>(floor_pipeline);
 	}
 
 	{
@@ -305,6 +323,7 @@ void ClientLayer::create_entities()
 	{
 		// sponza
 		auto sponza = scene->create("Sponza");
+		sponza.add_component<Components::Pipeline>();
 	}
 	{
 		// Text
@@ -396,17 +415,26 @@ void ClientLayer::interface()
 		UI::image(depth_image, { viewport_size.x, viewport_size.y });
 	});
 
-	UI::scope("Camera Settings", [&cam = camera]() {
-		auto near_clip = cam.get_near_clip();
-		auto far_clip = cam.get_far_clip();
-		bool any_changed = false;
-		any_changed |= UI::Input::input("Near", &near_clip);
-		any_changed |= UI::Input::input("Far", &far_clip);
-		if (any_changed) {
-			cam.set_near_clip(near_clip);
-			cam.set_far_clip(far_clip);
-		}
-	});
+	UI::scope(
+		"Client layer settings", [&ext = extent, &cam = camera, &pl_data = point_light_data, &cache = scene->get_renderer().get_pipeline_cache()] {
+			auto near_clip = cam.get_near_clip();
+			auto far_clip = cam.get_far_clip();
+			bool any_changed_camera = false;
+			any_changed_camera |= UI::Input::input("Near", &near_clip);
+			any_changed_camera |= UI::Input::input("Far", &far_clip);
+
+			if (any_changed_camera) {
+				cam.set_near_clip(near_clip);
+				cam.set_far_clip(far_clip);
+			}
+
+			bool any_changed_spec = false;
+			any_changed_spec |= UI::Input::input("Point Light", &pl_data.calculate_point_lights);
+			any_changed_spec |= UI::Input::input("Gamma correct", &pl_data.use_gamma_correction);
+			if (any_changed_spec) {
+				cache.force_recreation(ext);
+			}
+		});
 
 	ImGui::End();
 
@@ -537,8 +565,8 @@ private:
 	{
 		using namespace std::string_view_literals;
 		const auto& path = get_path();
-		static std::unordered_set valid_extenstions = { ".png"sv, ".jpg"sv, ".png"sv, ".jpeg"sv, ".bmp"sv };
-		return valid_extenstions.contains(path.extension().string());
+		static std::unordered_set valid_extensions = { ".png"sv, ".jpg"sv, ".png"sv, ".jpeg"sv, ".bmp"sv };
+		return valid_extensions.contains(path.extension().string());
 	}
 
 	friend class FileHandlerBase<PNGHandler>;
@@ -560,8 +588,8 @@ private:
 	{
 		using namespace std::string_view_literals;
 		const auto& path = get_path();
-		static std::unordered_set valid_extenstions = { ".scene"sv, ".json"sv };
-		return valid_extenstions.contains(path.extension().string());
+		static std::unordered_set valid_extensions = { ".scene"sv, ".json"sv };
+		return valid_extensions.contains(path.extension().string());
 	}
 
 	friend class FileHandlerBase<SceneHandler>;

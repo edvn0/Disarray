@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <glm/common.hpp>
 #include <glm/detail/qualifier.hpp>
 #include <glm/glm.hpp>
@@ -16,7 +18,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "Forward.hpp"
 #include "core/Collections.hpp"
 #include "core/Concepts.hpp"
 #include "core/Hashes.hpp"
@@ -159,6 +160,23 @@ namespace Input {
 	template <std::floating_point T, int N> auto input(std::string_view name, glm::vec<N, T>& vec, T velocity = T { 1 }, T min = 0, T max = 1) -> bool
 	{
 		return general_input(name, N, glm::value_ptr(vec), velocity, min, max);
+	}
+
+	auto general_input(std::string_view name, int count, std::uint32_t* base, std::uint32_t min, std::uint32_t max) -> bool;
+	auto general_input(std::string_view name, int count, std::uint64_t* base, std::uint64_t min, std::uint64_t max) -> bool;
+	auto general_input(std::string_view name, int count, std::int32_t* base, std::int32_t min, std::int32_t max) -> bool;
+	auto general_input(std::string_view name, int count, std::int64_t* base, std::int64_t min, std::int64_t max) -> bool;
+
+	template <std::size_t N = 1, std::integral T = std::uint32_t>
+		requires(N >= 0 && N <= 4)
+	auto input(std::string_view name, T* base, T min = 0, T max = 1) -> bool
+	{
+		return general_input(name, N, base, min, max);
+	}
+
+	template <std::integral T, int N> auto input(std::string_view name, glm::vec<N, T>& vec, T min = 0, T max = 1) -> bool
+	{
+		return general_input(name, N, glm::value_ptr(vec), min, max);
 	}
 
 } // namespace Input

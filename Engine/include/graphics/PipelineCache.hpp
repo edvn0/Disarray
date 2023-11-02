@@ -1,12 +1,13 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <algorithm>
 #include <filesystem>
 #include <set>
 #include <unordered_map>
 #include <utility>
 
-#include "Forward.hpp"
 #include "core/Types.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PushConstantLayout.hpp"
@@ -37,6 +38,7 @@ struct PipelineCacheCreationProperties {
 	bool write_depth { true };
 	bool test_depth { true };
 	std::vector<VkDescriptorSetLayout> descriptor_set_layouts {};
+	SpecialisationConstantDescription specialisation_constant {};
 };
 
 class PipelineCache : public ResourceCache<Ref<Disarray::Pipeline>, PipelineCacheCreationProperties, PipelineCache, std::string, StringHash> {
@@ -69,6 +71,7 @@ public:
 			.write_depth = props.write_depth,
 			.test_depth = props.test_depth,
 			.descriptor_set_layouts = props.descriptor_set_layouts,
+			.specialisation_constants = props.specialisation_constant,
 		};
 
 		return Pipeline::construct(get_device(), properties);

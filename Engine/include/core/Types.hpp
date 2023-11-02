@@ -41,7 +41,7 @@ template <class T, class... Args> Ref<T> make_ref(Args&&... args) { return std::
 
 template <class T, class D = DefaultDelete<T>, class... Args> inline auto make_scope(Args&&... args) -> Scope<T, D>
 {
-	return Scope<T, D> { new T { std::forward<Args>(args)... } };
+	return Scope<T, D> { new T { std::forward<Args>(args)... }, D {} };
 }
 
 template <class T> using RefVector = std::vector<Ref<T>>;

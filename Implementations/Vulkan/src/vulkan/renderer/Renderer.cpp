@@ -43,6 +43,23 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 		});
 	auto& resource = get_graphics_resource();
 
+	struct PointLightData {
+		std::uint32_t calculate_point_lights { 1 };
+		std::uint32_t use_gamma_correction { 0 };
+
+		[[nodiscard]] static auto get_constants() -> std::vector<SpecialisationConstant>
+		{
+			return {
+				SpecialisationConstant { ElementType::Uint },
+				SpecialisationConstant { ElementType::Uint },
+			};
+		}
+		[[nodiscard]] auto get_pointer() const -> const void* { return this; }
+	};
+
+	PointLightData point_light_data {};
+
+	SpecialisationConstantDescription specialisation_constant_description { point_light_data };
 	PipelineCacheCreationProperties pipeline_properties = {
 		.pipeline_key = "quad",
 		.vertex_shader_key = "quad.vert",
@@ -54,6 +71,7 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 		.extent = swapchain.get_extent(),
 		.cull_mode = CullMode::None,
 		.descriptor_set_layouts = resource.get_descriptor_set_layouts(),
+		.specialisation_constant = specialisation_constant_description,
 	};
 
 	{

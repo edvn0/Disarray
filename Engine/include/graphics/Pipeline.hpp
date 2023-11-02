@@ -25,9 +25,7 @@ enum class PipelineBindPoint : std::uint8_t {
 	BindPointGraphics = 0,
 	BindPointCompute = 1,
 };
-
 enum class PolygonMode : std::uint8_t { Fill, Line, Point };
-
 enum class DepthCompareOperator : std::uint8_t {
 	None = 0,
 	Never,
@@ -39,10 +37,8 @@ enum class DepthCompareOperator : std::uint8_t {
 	Equal,
 	Always,
 };
-
 enum class CullMode : std::uint8_t { Back, Front, None, Both };
 enum class FaceMode : std::uint8_t { Clockwise, CounterClockwise };
-
 enum class ElementType : std::uint8_t {
 	Float,
 	Double,
@@ -57,7 +53,6 @@ enum class ElementType : std::uint8_t {
 	Uint3,
 	Uint4,
 };
-
 enum class VertexInput : std::uint8_t {
 	Position,
 	TextureCoordinates,
@@ -75,7 +70,7 @@ static constexpr inline const std::array<VertexInput, 6> default_vertex_inputs {
 	VertexInput::Bitangent,
 };
 
-static constexpr auto to_size(ElementType type)
+static constexpr auto to_size(ElementType type) -> std::size_t
 {
 	switch (type) {
 	case ElementType::Float:
@@ -87,7 +82,7 @@ static constexpr auto to_size(ElementType type)
 	case ElementType::Float4:
 		return sizeof(float) * 4;
 	case ElementType::Uint:
-		return sizeof(unsigned);
+		return sizeof(std::uint32_t);
 	default:
 		unreachable("Could not map to size.");
 	}
@@ -134,6 +129,88 @@ struct VertexLayout {
 	VertexBinding binding;
 };
 
+struct SpecialisationConstant {
+	std::uint32_t size;
+	std::uint32_t id { 0 };
+	std::uint32_t offset { 0 };
+
+	explicit constexpr SpecialisationConstant(ElementType type)
+		: size(to_size(type))
+	{
+	}
+};
+
+template <class Describer>
+concept SpecialisationConstantDescriber = requires(Describer describer) {
+	{
+		Describer::get_constants()
+	} -> std::same_as<std::vector<SpecialisationConstant>>;
+	{
+		describer.get_pointer()
+	} -> std::same_as<const void*>;
+};
+
+struct SpecialisationConstantDescription {
+	std::vector<SpecialisationConstant> constants {};
+	std::uint32_t total_size { 0 };
+	const void* data { nullptr };
+
+	constexpr SpecialisationConstantDescription() = default;
+
+	template <SpecialisationConstantDescriber Describer>
+	explicit SpecialisationConstantDescription(const Describer& describer)
+		: constants(Describer::get_constants())
+		, data(describer.get_pointer())
+	{
+		if constexpr (requires {
+						  {
+							  Describer::get_identifiers()
+						  } -> std::same_as<std::vector<std::uint32_t>>;
+					  }) {
+			compute_total_size(Describer::get_identifiers());
+		} else {
+			compute_total_size();
+		}
+	}
+
+	[[nodiscard]] auto valid() const { return total_size > 0 && data != nullptr && !constants.empty(); }
+
+private:
+	static constexpr auto make_sequenced(std::size_t count)
+	{
+		std::vector<std::uint32_t> output;
+		output.resize(count);
+		for (auto i = 0ULL; i < count; i++) {
+			output.at(i) = i;
+		}
+		return output;
+	}
+	constexpr void compute_total_size(const std::vector<std::uint32_t>& identifiers)
+	{
+		std::uint32_t offset = 0;
+		std::size_t identifier = 0;
+		for (auto& constant : constants) {
+			constant.id = identifiers.at(identifier++);
+			constant.offset = offset;
+			total_size += static_cast<std::uint32_t>(constant.size);
+			offset += total_size;
+		}
+	}
+	constexpr void compute_total_size()
+	{
+		const auto count = constants.size();
+		auto identifiers = make_sequenced(count);
+		std::uint32_t offset = 0;
+		std::size_t identifier = 0;
+		for (auto& constant : constants) {
+			constant.id = identifiers.at(identifier++);
+			constant.offset = offset;
+			total_size += constant.size;
+			offset += total_size;
+		}
+	}
+};
+
 struct PipelineProperties {
 	Ref<Shader> vertex_shader { nullptr };
 	Ref<Shader> fragment_shader { nullptr };
@@ -151,6 +228,7 @@ struct PipelineProperties {
 	bool write_depth { true };
 	bool test_depth { true };
 	std::vector<VkDescriptorSetLayout> descriptor_set_layouts {};
+	SpecialisationConstantDescription specialisation_constants {};
 
 	auto hash() const -> std::size_t
 	{

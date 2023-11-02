@@ -37,11 +37,26 @@ private:
 	EditorCamera camera;
 	GizmoType gizmo_type { GizmoType::Rotate };
 
+	struct PointLightData {
+		std::uint32_t calculate_point_lights { 1 };
+		std::uint32_t use_gamma_correction { 0 };
+
+		[[nodiscard]] static auto get_constants() -> std::vector<SpecialisationConstant>
+		{
+			return {
+				SpecialisationConstant { ElementType::Uint },
+				SpecialisationConstant { ElementType::Uint },
+			};
+		}
+		[[nodiscard]] auto get_pointer() const -> const void* { return this; }
+	};
+
+	PointLightData point_light_data {};
+
 	bool viewport_panel_mouse_over { false };
 	bool viewport_panel_focused { false };
 	std::array<glm::vec2, 2> viewport_bounds {};
 	std::array<glm::vec2, 2> vp_bounds {};
-	void draw_menubar();
 };
 
 } // namespace Disarray::Client

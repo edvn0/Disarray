@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -11,7 +13,6 @@
 #include <string_view>
 #include <unordered_set>
 
-#include "Forward.hpp"
 #include "core/Collections.hpp"
 #include "core/Concepts.hpp"
 #include "core/Formatters.hpp"
@@ -78,6 +79,8 @@ struct Pipeline {
 	explicit Pipeline(Ref<Disarray::Pipeline>);
 	Ref<Disarray::Pipeline> pipeline { nullptr };
 	std::size_t identifier;
+
+	[[nodiscard]] auto invalid() const { return pipeline == nullptr; }
 };
 template <> inline constexpr std::string_view component_name<Pipeline> = "Pipeline";
 

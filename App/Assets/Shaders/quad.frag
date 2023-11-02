@@ -3,7 +3,10 @@
 #include "LightingUtilities.glsl"
 #include "PC.glsl"
 #include "PointLight.glsl"
+#include "Random.glsl"
 #include "UBO.glsl"
+
+layout(constant_id = 0) const int POINT_LIGHT_CHOICE = 0;
 
 layout(set = 0, binding = 0) uniform UniformBlock { Uniform ubo; }
 UBO;
@@ -53,9 +56,18 @@ void main()
 	light.diffuse = vec3(dlu.diffuse);
 	light.specular = vec3(dlu.specular);
 	vec3 out_vec = calculate_directional_light(light, normals, view_direction, shadow, 32);
-	[[unroll]] for (uint i = 0; i < pc.max_point_lights; i++) {
-		PointLight light = PLBO.lights[i];
-		out_vec += calc_point_light(light, shadow, normals, fragment_position, view_direction);
+
+	if (POINT_LIGHT_CHOICE == 0) {
+		for (uint i = 0; i < pc.max_point_lights; i++) {
+			PointLight light = PLBO.lights[i];
+			out_vec += calc_point_light(light, shadow, normals, fragment_position, view_direction);
+		}
+	} else {
+		uint base = tea(103, 107);
+		[[unroll]] for (uint i = 0; i < 8; i++) {
+			PointLight light = PLBO.lights[next_uint(base, pc.max_point_lights)];
+			out_vec += calc_point_light(light, shadow, normals, fragment_position, view_direction);
+		}
 	}
 
 	colour = pc.colour * vec4(out_vec, 1.0f);

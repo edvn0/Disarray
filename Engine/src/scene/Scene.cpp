@@ -1,7 +1,5 @@
 #include "DisarrayPCH.hpp"
 
-#include "scene/Scene.hpp"
-
 #include <ImGuizmo.h>
 #include <entt/entt.hpp>
 
@@ -45,6 +43,7 @@
 #include "scene/CppScript.hpp"
 #include "scene/Deserialiser.hpp"
 #include "scene/Entity.hpp"
+#include "scene/Scene.hpp"
 #include "scene/Scripts.hpp"
 #include "scene/Serialiser.hpp"
 #include "ui/UI.hpp"
@@ -409,7 +408,7 @@ void Scene::update(float time_step)
 
 	auto pipeline_view = registry.view<Components::Pipeline>();
 	for (const auto& [entity, pipeline] : pipeline_view.each()) {
-		if (pipeline.pipeline->is_valid()) {
+		if (pipeline.pipeline == nullptr || pipeline.pipeline->is_valid()) {
 			continue;
 		}
 
@@ -583,6 +582,10 @@ void Scene::draw_geometry()
 			.view<Components::Transform, const Components::Texture, const Components::DirectionalLight, const Components::Mesh,
 				const Components::Pipeline>()
 			.each()) {
+		if (pipeline.invalid()) {
+			continue;
+		}
+
 		const auto identifier = static_cast<std::uint32_t>(entity);
 
 		const auto look_at = glm::lookAt(transform.position, transform.position + glm::normalize(glm::vec3(light.direction)), { 0, 1, 0 });
@@ -601,6 +604,10 @@ void Scene::draw_geometry()
 	for (auto mesh_view = registry.view<const Components::Mesh, const Components::Pipeline, const Components::Texture, const Components::Transform>(
 			 entt::exclude<Components::PointLight, Components::Skybox>);
 		 auto&& [entity, mesh, pipeline, texture, transform] : mesh_view.each()) {
+		if (pipeline.invalid()) {
+			continue;
+		}
+
 		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *pipeline.pipeline;
 		if (mesh.draw_aabb) {
@@ -620,6 +627,10 @@ void Scene::draw_geometry()
 			.view<const Components::Mesh, const Components::Pipeline, const Components::Transform>(
 				entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight, Components::Skybox>)
 			.each()) {
+		if (pipeline.invalid()) {
+			continue;
+		}
+
 		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *pipeline.pipeline;
 		const auto transform_computed = transform.compute();
@@ -633,11 +644,11 @@ void Scene::draw_geometry()
 void Scene::draw_shadows()
 {
 	{
-		auto point_light_view = registry.view<const Components::PointLight, const Components::Mesh, const Components::Pipeline>();
+		auto point_light_view = registry.view<const Components::PointLight, const Components::Mesh>();
 		static const Disarray::VertexBuffer* vertex_buffer = nullptr;
 		static const Disarray::IndexBuffer* index_buffer = nullptr;
 
-		for (auto&& [entity, point_light, mesh, pipeline] : point_light_view.each()) {
+		for (auto&& [entity, point_light, mesh] : point_light_view.each()) {
 			if (vertex_buffer == nullptr || index_buffer == nullptr) {
 				vertex_buffer = &mesh.mesh->get_vertices();
 				index_buffer = &mesh.mesh->get_indices();
@@ -654,6 +665,9 @@ void Scene::draw_shadows()
 			.view<const Components::Mesh, const Components::Pipeline, const Components::Texture, const Components::Transform>(
 				entt::exclude<Components::PointLight, Components::Skybox>)
 			.each()) {
+		if (pipeline.invalid()) {
+			continue;
+		}
 		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *shadow_pipeline;
 		if (mesh.mesh->has_children()) {
@@ -670,6 +684,9 @@ void Scene::draw_shadows()
 			.view<const Components::Mesh, const Components::Pipeline, const Components::Transform>(
 				entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight, Components::Skybox>)
 			.each()) {
+		if (pipeline.invalid()) {
+			continue;
+		}
 		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *shadow_pipeline;
 		const auto transform_computed = transform.compute();

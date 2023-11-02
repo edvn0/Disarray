@@ -27,10 +27,10 @@ template <CacheableResource Resource, class Props, class Child, class Key = std:
 public:
 	~ResourceCache() { storage.clear(); };
 
-	auto get(const Key& key) -> const Resource&
+	auto get(const Key& key) -> Resource&
 	{
 		ensure(storage.contains(key), "Key missing from the resource cache.");
-		return storage[key];
+		return storage.at(key);
 	}
 
 	auto size() const { return storage.size(); }

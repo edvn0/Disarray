@@ -1,14 +1,14 @@
 #include "DisarrayPCH.hpp"
 
-#include "graphics/Pipeline.hpp"
-
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
+#include "core/Ensure.hpp"
 #include "core/Formatters.hpp"
 #include "core/Types.hpp"
 #include "core/filesystem/FileIO.hpp"
 #include "graphics/Framebuffer.hpp"
+#include "graphics/Pipeline.hpp"
 #include "graphics/PushConstantLayout.hpp"
 #include "graphics/RenderPass.hpp"
 #include "util/Timer.hpp"
@@ -22,7 +22,7 @@ namespace Disarray::Vulkan {
 
 namespace Detail {
 
-	static constexpr auto to_vulkan_format(ElementType type) -> VkFormat
+	constexpr auto to_vulkan_format(ElementType type) -> VkFormat
 	{
 		switch (type) {
 		case ElementType::Float:
@@ -54,7 +54,7 @@ namespace Detail {
 		}
 	}
 
-	static constexpr auto vk_polygon_mode(PolygonMode mode) -> VkPolygonMode
+	constexpr auto vk_polygon_mode(PolygonMode mode) -> VkPolygonMode
 	{
 		switch (mode) {
 		case PolygonMode::Fill:
@@ -68,7 +68,7 @@ namespace Detail {
 		}
 	}
 
-	static constexpr auto vk_polygon_topology(PolygonMode mode) -> VkPrimitiveTopology
+	constexpr auto vk_polygon_topology(PolygonMode mode) -> VkPrimitiveTopology
 	{
 		switch (mode) {
 		case PolygonMode::Fill:
@@ -82,7 +82,7 @@ namespace Detail {
 		}
 	}
 
-	static constexpr auto to_vulkan_comparison(DepthCompareOperator depth_comp_operator) -> VkCompareOp
+	constexpr auto to_vulkan_comparison(DepthCompareOperator depth_comp_operator) -> VkCompareOp
 	{
 		switch (depth_comp_operator) {
 		case DepthCompareOperator::None:
@@ -107,7 +107,7 @@ namespace Detail {
 		}
 	}
 
-	static constexpr auto to_vulkan_cull_mode(CullMode cull) -> VkCullModeFlags
+	constexpr auto to_vulkan_cull_mode(CullMode cull) -> VkCullModeFlags
 	{
 		switch (cull) {
 		case CullMode::Front:
@@ -123,7 +123,7 @@ namespace Detail {
 		}
 	}
 
-	static constexpr auto to_vulkan_face_mode(FaceMode face_mode) -> VkFrontFace
+	constexpr auto to_vulkan_face_mode(FaceMode face_mode) -> VkFrontFace
 	{
 		switch (face_mode) {
 		case FaceMode::Clockwise:
@@ -350,8 +350,41 @@ void Pipeline::construct_layout(const Extent& extent)
 
 	VkGraphicsPipelineCreateInfo pipeline_create_info {};
 	pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	auto stages = retrieve_shader_stages(props.vertex_shader, props.fragment_shader);
+	auto&& stages = retrieve_shader_stages(props.vertex_shader, props.fragment_shader);
 	std::vector<VkPipelineShaderStageCreateInfo> stage_data { stages.first, stages.second };
+
+	std::vector<VkSpecializationMapEntry> specialization_map_entries {};
+	if (props.specialisation_constants.valid()) {
+		// Each shader constant of a shader stage corresponds to one map entry
+		// Shader bindings based on specialization constants are marked by the new "constant_id" layout qualifier:
+		//	layout (constant_id = 0) const int LIGHTING_MODEL = 0;
+		//	layout (constant_id = 1) const float PARAM_TOON_DESATURATION = 0.0f;
+#ifdef IS_DEBUG
+		std::unordered_set<std::uint32_t> constant_ids {};
+#endif
+		for (const auto& constants : props.specialisation_constants.constants) {
+			VkSpecializationMapEntry& entry = specialization_map_entries.emplace_back();
+			entry.constantID = constants.id;
+#ifdef IS_DEBUG
+			ensure(!constant_ids.contains(entry.constantID));
+			constant_ids.insert(entry.constantID);
+#endif
+
+			entry.size = constants.size;
+			entry.offset = constants.offset;
+		}
+
+		VkSpecializationInfo specialization_info {};
+		specialization_info.mapEntryCount = static_cast<uint32_t>(specialization_map_entries.size());
+		specialization_info.pMapEntries = specialization_map_entries.data();
+		specialization_info.dataSize = props.specialisation_constants.total_size;
+		specialization_info.pData = props.specialisation_constants.data;
+
+		for (auto& stage : stage_data) {
+			stage.pSpecializationInfo = &specialization_info;
+		}
+	}
+
 	pipeline_create_info.pStages = stage_data.data();
 	pipeline_create_info.stageCount = static_cast<std::uint32_t>(stage_data.size());
 	pipeline_create_info.pVertexInputState = &vertex_input_info;
