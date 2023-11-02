@@ -26,7 +26,7 @@ void QuadVertexBatch::construct_impl(Renderer& renderer, const Device& dev)
 {
 	reset();
 
-	pipeline = renderer.get_pipeline_cache().get("quad");
+	pipeline = renderer.get_pipeline_cache().get("Quad");
 	std::array<std::uint32_t, BatchRenderer::Objects * IndexCount> quad_indices {};
 	std::uint32_t offset = 0;
 	for (std::size_t i = 0; i < quad_indices.size(); i += index_per_object_count<QuadVertex>) {
@@ -137,7 +137,7 @@ void LineVertexBatch::construct_impl(Disarray::Renderer& renderer, const Disarra
 {
 	reset();
 
-	pipeline = renderer.get_pipeline_cache().get("line");
+	pipeline = renderer.get_pipeline_cache().get("Line");
 
 	std::vector<std::uint32_t> line_indices;
 	line_indices.resize(BatchRenderer::Objects * IndexCount);

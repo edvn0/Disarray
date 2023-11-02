@@ -1,7 +1,5 @@
 #include "DisarrayPCH.hpp"
 
-#include "graphics/Mesh.hpp"
-
 #include <algorithm>
 #include <cstdint>
 #include <exception>
@@ -19,6 +17,7 @@
 #include "core/exceptions/GeneralExceptions.hpp"
 #include "graphics/BufferProperties.hpp"
 #include "graphics/IndexBuffer.hpp"
+#include "graphics/Mesh.hpp"
 #include "graphics/ModelLoader.hpp"
 #include "graphics/ModelVertex.hpp"
 #include "graphics/VertexBuffer.hpp"
@@ -121,5 +120,14 @@ auto Mesh::construct_deferred(const Disarray::Device& device, MeshProperties pro
 }
 
 auto Mesh::get_aabb() const -> const AABB& { return aabb; }
+
+auto Mesh::invalid() const -> bool
+{
+#ifdef IS_RELEASE
+	return false;
+#else
+	return get_vertices().size() == 0 || get_indices().size() == 0;
+#endif
+}
 
 } // namespace Disarray::Vulkan

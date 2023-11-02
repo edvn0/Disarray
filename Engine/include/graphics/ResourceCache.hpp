@@ -29,7 +29,7 @@ public:
 
 	auto get(const Key& key) -> Resource&
 	{
-		ensure(storage.contains(key), "Key missing from the resource cache.");
+		ensure(storage.contains(key), "Key '{}' missing from the resource cache.", key);
 		return storage.at(key);
 	}
 

@@ -11,17 +11,17 @@ namespace Disarray {
 namespace {
 	template <class T>
 	concept IsInAllowedComponents = AnyOf<T, Components::Tag, Components::Transform, Components::ID, Components::Inheritance,
-		Components::LineGeometry, Components::QuadGeometry, Components::Mesh, Components::Material, Components::Pipeline, Components::Texture,
-		Components::DirectionalLight, Components::PointLight, Components::Script, Components::Controller, Components::Camera, Components::BoxCollider,
-		Components::SphereCollider, Components::PillCollider, Components::Skybox, Components::Text>;
+		Components::LineGeometry, Components::QuadGeometry, Components::Mesh, Components::Material, Components::Texture, Components::DirectionalLight,
+		Components::PointLight, Components::Script, Components::Controller, Components::Camera, Components::BoxCollider, Components::SphereCollider,
+		Components::PillCollider, Components::Skybox, Components::Text>;
 
 	template <typename... Component> struct ComponentGroup { };
 } // namespace
 
 using AllComponents = ComponentGroup<Components::Tag, Components::Tag, Components::Transform, Components::ID, Components::Inheritance,
-	Components::LineGeometry, Components::QuadGeometry, Components::Mesh, Components::Material, Components::Pipeline, Components::Texture,
-	Components::DirectionalLight, Components::PointLight, Components::Script, Components::Controller, Components::Camera, Components::BoxCollider,
-	Components::SphereCollider, Components::PillCollider, Components::Skybox, Components::Text>;
+	Components::LineGeometry, Components::QuadGeometry, Components::Mesh, Components::Material, Components::Texture, Components::DirectionalLight,
+	Components::PointLight, Components::Script, Components::Controller, Components::Camera, Components::BoxCollider, Components::SphereCollider,
+	Components::PillCollider, Components::Skybox, Components::Text>;
 
 using NonDeletableComponents = ComponentGroup<Components::Tag, Components::Transform, Components::ID>;
 

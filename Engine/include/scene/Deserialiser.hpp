@@ -80,7 +80,6 @@ namespace {
 				deserialise_component<Components::LineGeometry>(components, entity);
 				deserialise_component<Components::Script>(components, entity);
 				deserialise_component<Components::Transform>(components, entity);
-				deserialise_component<Components::Pipeline>(components, entity);
 				deserialise_component<Components::Texture>(components, entity);
 				deserialise_component<Components::Mesh>(components, entity);
 				deserialise_component<Components::DirectionalLight>(components, entity);
@@ -127,6 +126,6 @@ namespace {
 } // namespace
 
 using SceneDeserialiser = Deserialiser<TextureDeserialiser, ScriptDeserialiser, MeshDeserialiser, TransformDeserialiser, InheritanceDeserialiser,
-	LineGeometryDeserialiser, QuadGeometryDeserialiser, PipelineDeserialiser, DirectionalLightDeserialiser, PointLightDeserialiser>;
+	LineGeometryDeserialiser, QuadGeometryDeserialiser, DirectionalLightDeserialiser, PointLightDeserialiser>;
 
 } // namespace Disarray

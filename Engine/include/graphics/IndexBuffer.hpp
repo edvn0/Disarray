@@ -1,8 +1,8 @@
 #pragma once
 
-#include "graphics/BufferProperties.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/Types.hpp"
+#include "graphics/BufferProperties.hpp"
 
 namespace Disarray {
 
@@ -15,7 +15,12 @@ class IndexBuffer : public ReferenceCountable {
 public:
 	[[nodiscard]] virtual auto size() const -> std::size_t = 0;
 	virtual void set_data(const void* data, std::size_t size, std::size_t offset) = 0;
-	virtual void set_data(const void* data, std::uint32_t size, std::size_t offset) { return set_data(data, static_cast<std::size_t>(size), offset); };
+	virtual void set_data(const void* data, std::uint32_t size, std::size_t offset)
+	{
+		return set_data(data, static_cast<std::size_t>(size), offset);
+	};
+
+	auto invalid() const { return size() == 0; }
 };
 
 } // namespace Disarray

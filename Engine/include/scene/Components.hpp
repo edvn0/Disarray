@@ -74,16 +74,6 @@ struct Material {
 };
 template <> inline constexpr std::string_view component_name<Material> = "Material";
 
-struct Pipeline {
-	Pipeline() = default;
-	explicit Pipeline(Ref<Disarray::Pipeline>);
-	Ref<Disarray::Pipeline> pipeline { nullptr };
-	std::size_t identifier;
-
-	[[nodiscard]] auto invalid() const { return pipeline == nullptr; }
-};
-template <> inline constexpr std::string_view component_name<Pipeline> = "Pipeline";
-
 struct Texture {
 	Texture() = default;
 	explicit Texture(Ref<Disarray::Texture>, const glm::vec4& = glm::vec4 { 1.0F });

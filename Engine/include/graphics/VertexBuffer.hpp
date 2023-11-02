@@ -15,6 +15,8 @@ public:
 	{
 		return set_data(data, static_cast<std::uint32_t>(size), offset);
 	};
+
+	auto invalid() const { return size() == 0; }
 };
 
 } // namespace Disarray

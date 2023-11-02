@@ -50,7 +50,6 @@ namespace Components {
 	struct QuadGeometry;
 	struct Mesh;
 	struct Material;
-	struct Pipeline;
 	struct Texture;
 	struct DirectionalLight;
 	struct PointLight;

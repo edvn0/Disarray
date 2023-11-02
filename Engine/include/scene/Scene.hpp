@@ -171,10 +171,6 @@ private:
 
 	std::unordered_map<SceneFramebuffer, Ref<Disarray::Framebuffer>> framebuffers {};
 
-	Ref<Disarray::Pipeline> shadow_pipeline {};
-	Ref<Disarray::Pipeline> shadow_instances_pipeline {};
-	Ref<Disarray::Pipeline> identity_pipeline {};
-
 	Scope<Disarray::StorageBuffer> point_light_transforms {};
 	Scope<Disarray::StorageBuffer> point_light_colours {};
 	Scope<Disarray::StorageBuffer> entity_identifiers {};
@@ -187,6 +183,8 @@ private:
 	void draw_identifiers();
 	void draw_geometry();
 	void draw_skybox();
+
+	auto get_pipeline(const std::string& key) -> Ref<Disarray::Pipeline>&;
 
 	void setup_filewatcher_and_threadpool(Threading::ThreadPool&);
 

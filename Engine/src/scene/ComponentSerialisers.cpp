@@ -1,9 +1,8 @@
 #include "DisarrayPCH.hpp"
 
-#include "scene/ComponentSerialisers.hpp"
-
 #include <optional>
 
+#include "scene/ComponentSerialisers.hpp"
 #include "scene/Components.hpp"
 #include "scene/CppScript.hpp"
 #include "scene/SerialisationTypeConversions.hpp"
@@ -28,7 +27,7 @@ template <class T> static constexpr auto assign_or_noop(auto& json_object, std::
 	}
 	assign_or_noop<T>(json_object, key, *value);
 }
-
+/*
 void PipelineSerialiser::serialise_impl(const Components::Pipeline& pipeline, nlohmann::json& object)
 {
 	if (pipeline.pipeline) {
@@ -77,6 +76,7 @@ void PipelineSerialiser::serialise_impl(const Components::Pipeline& pipeline, nl
 		object["properties"] = properties;
 	}
 }
+ */
 
 void ScriptSerialiser::serialise_impl(const Components::Script& script, nlohmann::json& object)
 {
@@ -91,7 +91,6 @@ void MeshSerialiser::serialise_impl(const Components::Mesh& mesh, nlohmann::json
 		json properties;
 		const auto& props = mesh.mesh->get_properties();
 		properties["path"] = props.path;
-		properties["pipeline"] = static_cast<bool>(props.pipeline);
 		properties["initial_rotation"] = props.initial_rotation;
 		object["properties"] = properties;
 	}

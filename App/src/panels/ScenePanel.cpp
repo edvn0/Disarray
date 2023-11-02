@@ -180,6 +180,12 @@ void ScenePanel::for_all_components(Entity& entity)
 		}
 	});
 
+	draw_component<Components::LineGeometry>(entity, [](Components::LineGeometry& line_geometry) {
+		UI::text_wrapped("Line Geometry");
+		std::ignore = ImGui::DragFloat3("To Position", glm::value_ptr(line_geometry.to_position));
+	});
+	draw_component<Components::QuadGeometry>(entity, [](Components::QuadGeometry& quad_geometry) { UI::text_wrapped("Quad Geometry"); });
+
 	draw_component<Components::Texture>(entity, [&dev = device](Components::Texture& tex) {
 		auto& [texture, colour] = tex;
 		Ref<Texture> new_texture { nullptr };
@@ -262,8 +268,8 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (ImGui::Checkbox("Reverse", &cam.reverse)) { }
 	});
 
-	draw_component<Components::Mesh>(entity, [](Components::Mesh& mesh_component) {
-		auto& [path, pipeline, _, flags, inputs] = mesh_component.mesh->get_properties();
+	draw_component<Components::Mesh>(entity, [&dev = device](Components::Mesh& mesh_component) {
+		auto& [path, _, flags, inputs] = mesh_component.mesh->get_properties();
 
 		bool any_changed = false;
 		std::optional<std::filesystem::path> selected { std::nullopt };
@@ -274,10 +280,20 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (ImGui::Checkbox("Draw AABB", &mesh_component.draw_aabb)) { };
 
 		if (any_changed) {
+			std::filesystem::path new_path {};
 			if (selected.has_value()) {
-				path = *selected;
+				new_path = *selected;
 			}
-			mesh_component.mesh->force_recreation();
+			if (mesh_component.mesh != nullptr) {
+				path = new_path;
+				mesh_component.mesh->force_recreation();
+
+			} else {
+				mesh_component.mesh = Mesh::construct(dev,
+					{
+						.path = new_path,
+					});
+			}
 		}
 	});
 
@@ -321,6 +337,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		}
 	});
 
+	/*
 	draw_component<Components::Pipeline>(entity, [&dev = device](Components::Pipeline& pipeline) {
 		auto& [pipe, identifier] = pipeline;
 		auto& props = pipe->get_properties();
@@ -338,6 +355,7 @@ void ScenePanel::for_all_components(Entity& entity)
 			pipe->recreate(true, {});
 		}
 	});
+	 */
 
 	draw_component<Components::PillCollider>(entity, [&](Components::PillCollider& collider) {
 

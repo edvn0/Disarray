@@ -82,7 +82,6 @@ namespace Detail {
 				auto key = fmt::format("{}__disarray__{}", id.identifier, tag.name);
 				json entity_object;
 				json components;
-				serialise_component<Components::Pipeline>(entity, components);
 				serialise_component<Components::Texture>(entity, components);
 				serialise_component<Components::Script>(entity, components);
 				serialise_component<Components::Mesh>(entity, components);
@@ -133,7 +132,7 @@ namespace Detail {
 	};
 } // namespace Detail
 
-using SceneSerialiser = Detail::Serialiser<PipelineSerialiser, ScriptSerialiser, TextureSerialiser, MeshSerialiser, TransformSerialiser,
-	InheritanceSerialiser, LineGeometrySerialiser, QuadGeometrySerialiser, DirectionalLightSerialiser, PointLightSerialiser>;
+using SceneSerialiser = Detail::Serialiser<ScriptSerialiser, TextureSerialiser, MeshSerialiser, TransformSerialiser, InheritanceSerialiser,
+	LineGeometrySerialiser, QuadGeometrySerialiser, DirectionalLightSerialiser, PointLightSerialiser>;
 
 } // namespace Disarray

@@ -1,7 +1,5 @@
 #include "DisarrayPCH.hpp"
 
-#include "scene/Components.hpp"
-
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/quaternion_transform.hpp>
 
@@ -15,6 +13,7 @@
 #include "core/Log.hpp"
 #include "graphics/Mesh.hpp"
 #include "scene/Camera.hpp"
+#include "scene/Components.hpp"
 #include "scene/CppScript.hpp"
 #include "scene/Entity.hpp"
 #include "scene/Scene.hpp"
@@ -55,12 +54,6 @@ Material::Material(Device& device, std::string_view vertex, std::string_view fra
 
 Material::Material(Ref<Disarray::Material> input)
 	: material(std::move(input))
-{
-}
-
-Pipeline::Pipeline(Ref<Disarray::Pipeline> input)
-	: pipeline(std::move(input))
-	, identifier(pipeline->get_properties().hash())
 {
 }
 
@@ -127,8 +120,8 @@ auto Camera::compute(const Disarray::Components::Transform& transform, const Dis
 		return seed;
 	};
 
-	const auto hash = hash_this(
-		fov_degrees, static_cast<std::uint8_t>(type), transform.position, extent.width, extent.height, near_perspective, far_perspective, reverse);
+	const auto hash = hash_this(fov_degrees, static_cast<std::uint8_t>(type), transform.position, transform.rotation, extent.width, extent.height,
+		near_perspective, far_perspective, reverse);
 
 	bool should_skip = false;
 	if (Input::all<KeyCode::R, KeyCode::LeftShift>()) {
@@ -140,7 +133,10 @@ auto Camera::compute(const Disarray::Components::Transform& transform, const Dis
 		return pre_computed_for_parameters.at(hash);
 	}
 
-	auto view = glm::lookAt(transform.position, { 0, 0, 0 }, { 0, 1, 0 });
+	const auto rotation = glm::mat4_cast(transform.rotation);
+	const auto position = rotation * glm::vec4 { transform.position, 1.0F };
+
+	auto view = glm::lookAt(glm::vec3(position), { 0, 0, 0 }, { 0, 1, 0 });
 	const auto as_float = extent.as<float>();
 	glm::mat4 projection;
 	if (type == CameraType::Perspective) {

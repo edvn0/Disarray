@@ -67,7 +67,6 @@ void Scene::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
 		[&renderer = scene_renderer, &pipeline_cache, &dev = device, &reg = registry, &mutex = registry_access](const FileInformation& entry) {
 			std::scoped_lock lock { mutex };
 			Log::info("Scene FileWatcher", "Recompiling entry: {}", entry.to_path());
-			const auto view = reg.view<Components::Pipeline>();
 			const auto as_path = entry.to_path();
 
 			if (as_path.extension() == ".glsl") {
@@ -76,15 +75,6 @@ void Scene::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
 			}
 
 			std::unordered_set<Disarray::Pipeline*> pipelines_sharing_changed_shader {};
-			for (auto&& [ent, pipeline] : view.each()) {
-				const bool pipeline_uses_this_updated_shader = pipeline.pipeline->has_shader_with_name(as_path);
-				if (!pipeline_uses_this_updated_shader) {
-					continue;
-				}
-
-				pipelines_sharing_changed_shader.insert(pipeline.pipeline.get());
-			}
-
 			for (auto* pipeline : renderer->get_text_renderer().get_pipelines()) {
 				const bool pipeline_uses_this_updated_shader = pipeline->has_shader_with_name(as_path);
 				if (!pipeline_uses_this_updated_shader) {
@@ -102,6 +92,16 @@ void Scene::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
 
 				pipelines_sharing_changed_shader.insert(pipeline);
 			}
+
+			pipeline_cache.for_each_in_storage([&](auto&& kv) {
+				auto&& [key, pipeline] = kv;
+				const bool pipeline_uses_this_updated_shader = pipeline->has_shader_with_name(as_path);
+				if (!pipeline_uses_this_updated_shader) {
+					return;
+				}
+
+				pipelines_sharing_changed_shader.insert(pipeline.get());
+			});
 
 			if (pipelines_sharing_changed_shader.empty()) {
 				return;
@@ -157,7 +157,7 @@ void Scene::construct(Disarray::App& app)
 		scene_renderer->get_graphics_resource().expose_to_shaders(
 			shadow_framebuffer->get_depth_image(), DescriptorSet { 1 }, DescriptorBinding { 1 });
 
-		shadow_pipeline = resources.get_pipeline_cache().put(
+		resources.get_pipeline_cache().put(
 		{
 			.pipeline_key = "Shadow",
 			.vertex_shader_key = "shadow.vert",
@@ -178,9 +178,9 @@ void Scene::construct(Disarray::App& app)
 			.descriptor_set_layouts = desc_layout,
 		});
 
-		shadow_instances_pipeline = resources.get_pipeline_cache().put(
+		resources.get_pipeline_cache().put(
 		{
-			.pipeline_key = "ShadowInstanced",
+			.pipeline_key = "ShadowInstances",
 			.vertex_shader_key = "shadow_instances.vert",
 			.fragment_shader_key = "shadow.frag",
 			.framebuffer = shadow_framebuffer,
@@ -212,7 +212,7 @@ void Scene::construct(Disarray::App& app)
 					.blend_mode = FramebufferBlendMode::None,
 					.debug_name = "IdentityFramebuffer",
 				}));
-		identity_pipeline = resources.get_pipeline_cache().put({
+		resources.get_pipeline_cache().put({
 			.pipeline_key = "Identity",
 			.vertex_shader_key = "identity.vert",
 			.fragment_shader_key = "identity.frag",
@@ -289,7 +289,7 @@ void Scene::begin_frame(const Camera& camera)
 		auto&& [camera_component, transform] = find_one->get_components<Components::Camera, const Components::Transform>();
 		// if we have a primary camera, then camera_component_usable should be false
 		if (camera_component.is_primary) {
-			auto&& [projection, view, pre_mul] = camera_component.compute(transform, extent);
+			auto&& [view, projection, pre_mul] = camera_component.compute(transform, extent);
 			scene_renderer->begin_frame(view, projection, pre_mul);
 		} else {
 			camera_component_usable = false;
@@ -387,13 +387,7 @@ void Scene::interface()
 
 		if (changed_batch_renderer || changed_text_renderer) {
 			command_executor->begin();
-			if (changed_batch_renderer && changed_text_renderer) {
-				scene_renderer->clear_pass<RenderPasses::PlanarGeometry, RenderPasses::Text>(*command_executor);
-			} else if (changed_text_renderer && !changed_batch_renderer) {
-				scene_renderer->clear_pass(*command_executor, RenderPasses::Text);
-			} else if (changed_batch_renderer && !changed_text_renderer) {
-				scene_renderer->clear_pass(*command_executor, RenderPasses::PlanarGeometry);
-			}
+			scene_renderer->clear_pass<RenderPasses::PlanarGeometry, RenderPasses::Text>(*command_executor);
 			command_executor->submit_and_end();
 		}
 	});
@@ -404,25 +398,6 @@ void Scene::update(float time_step)
 	if (picked_entity) {
 		selected_entity.swap(picked_entity);
 		picked_entity = nullptr;
-	}
-
-	auto pipeline_view = registry.view<Components::Pipeline>();
-	for (const auto& [entity, pipeline] : pipeline_view.each()) {
-		if (pipeline.pipeline == nullptr || pipeline.pipeline->is_valid()) {
-			continue;
-		}
-
-		auto& props = pipeline.pipeline->get_properties();
-		props.descriptor_set_layouts = scene_renderer->get_graphics_resource().get_descriptor_set_layouts();
-		switch (props.fragment_shader->attachment_count()) {
-		case 1:
-			props.framebuffer = get_framebuffer<SceneFramebuffer::Geometry>();
-			break;
-		default: {
-			throw UnreachableException("Should never happen!");
-		}
-		}
-		pipeline.pipeline->force_recreation();
 	}
 
 	auto script_view = registry.view<Components::Script>();
@@ -476,7 +451,6 @@ void Scene::render()
 		// Skybox pass
 		scene_renderer->begin_pass(executor, *get_framebuffer<SceneFramebuffer::Geometry>(), true);
 		draw_skybox();
-		render_batch();
 		scene_renderer->end_pass(executor);
 	}
 	{
@@ -517,35 +491,39 @@ void Scene::draw_identifiers()
 	for (auto&& [entity, id] : registry.view<Components::ID>().each()) {
 		count += id.can_interact_with ? 1 : 0;
 	}
-	scene_renderer->draw_mesh_instanced(*command_executor, count, *identity_pipeline);
+	scene_renderer->draw_mesh_instanced(*command_executor, count, *get_pipeline("Identity"));
 }
 
 auto Scene::get_final_image() const -> const Disarray::Image& { return scene_renderer->get_composite_pass_image(); }
+
+auto Scene::get_pipeline(const std::string& key) -> Ref<Disarray::Pipeline>& { return scene_renderer->get_pipeline_cache().get(key); }
 
 void Scene::draw_skybox()
 {
 	auto [ubo, camera_ubo, light_ubos, shadow_pass, directional, glyph] = scene_renderer->get_graphics_resource().get_editable_ubos();
 	camera_ubo.view = glm::mat3 { ubo.view };
 	scene_renderer->get_graphics_resource().update_ubo(UBOIdentifier::Camera);
-	auto skybox_view = registry.view<const Components::Skybox, const Components::Mesh, const Components::Pipeline>();
-	for (auto&& [entity, skybox, mesh, pipeline] : skybox_view.each()) {
-		scene_renderer->draw_mesh(*command_executor, *mesh.mesh, *pipeline.pipeline, glm::mat4 { 1.0F }, 0);
+	auto skybox_view = registry.view<const Components::Skybox, const Components::Mesh>();
+	for (auto&& [entity, skybox, mesh] : skybox_view.each()) {
+		if (mesh.mesh == nullptr)
+			continue;
+
+		scene_renderer->draw_mesh(*command_executor, *mesh.mesh, *scene_renderer->get_pipeline_cache().get("Skybox"), glm::mat4 { 1.0F }, 0);
 	}
 }
 
 void Scene::draw_geometry()
 {
 	{
-		auto point_light_view = registry.view<const Components::PointLight, const Components::Mesh, const Components::Pipeline>();
+		auto point_light_view = registry.view<const Components::PointLight, const Components::Mesh>();
 		static const Disarray::VertexBuffer* vertex_buffer = nullptr;
 		static const Disarray::IndexBuffer* index_buffer = nullptr;
-		static const Disarray::Pipeline* point_light_pipeline = nullptr;
+		static const Disarray::Pipeline* point_light_pipeline = get_pipeline("PointLight").get();
 
-		for (auto&& [entity, point_light, mesh, pipeline] : point_light_view.each()) {
+		for (auto&& [entity, point_light, mesh] : point_light_view.each()) {
 			if (vertex_buffer == nullptr || index_buffer == nullptr || point_light_pipeline == nullptr) {
 				vertex_buffer = &mesh.mesh->get_vertices();
 				index_buffer = &mesh.mesh->get_indices();
-				point_light_pipeline = pipeline.pipeline.get();
 				break;
 			}
 		}
@@ -565,6 +543,17 @@ void Scene::draw_geometry()
 			});
 	}
 
+	for (auto line_view = registry.view<const Components::LineGeometry, const Components::Transform>();
+		 auto&& [entity, geom, transform] : line_view.each()) {
+		scene_renderer->draw_planar_geometry(Geometry::Line,
+			{
+				.position = transform.position,
+				.to_position = geom.to_position,
+				.colour = { 0.9F, 0.2F, 0.6F, 1.0F },
+				.identifier = static_cast<std::uint32_t>(entity),
+			});
+	}
+
 	for (auto rect_view = registry.view<const Components::Texture, const Components::QuadGeometry, const Components::Transform>();
 		 auto&& [entity, tex, geom, transform] : rect_view.each()) {
 		scene_renderer->draw_planar_geometry(Geometry::Rectangle,
@@ -577,39 +566,15 @@ void Scene::draw_geometry()
 			});
 	}
 
-	for (auto&& [entity, transform, texture, light, mesh, pipeline] :
-		registry
-			.view<Components::Transform, const Components::Texture, const Components::DirectionalLight, const Components::Mesh,
-				const Components::Pipeline>()
-			.each()) {
-		if (pipeline.invalid()) {
-			continue;
-		}
-
-		const auto identifier = static_cast<std::uint32_t>(entity);
-
-		const auto look_at = glm::lookAt(transform.position, transform.position + glm::normalize(glm::vec3(light.direction)), { 0, 1, 0 });
-		glm::quat rotation { look_at };
-		transform.rotation = rotation;
-		scene_renderer->draw_mesh(*command_executor, *mesh.mesh, *pipeline.pipeline, *texture.texture, transform.compute(), identifier);
-		scene_renderer->draw_planar_geometry(Geometry::Line,
-			{
-				.position = transform.position,
-				.to_position = { 0, 0, 0 },
-				.colour = { 1, 0, 0, 1 },
-				.identifier = identifier,
-			});
-	}
-
-	for (auto mesh_view = registry.view<const Components::Mesh, const Components::Pipeline, const Components::Texture, const Components::Transform>(
+	for (auto mesh_view = registry.view<const Components::Mesh, const Components::Texture, const Components::Transform>(
 			 entt::exclude<Components::PointLight, Components::Skybox>);
-		 auto&& [entity, mesh, pipeline, texture, transform] : mesh_view.each()) {
-		if (pipeline.invalid()) {
+		 auto&& [entity, mesh, texture, transform] : mesh_view.each()) {
+
+		if (mesh.mesh == nullptr)
 			continue;
-		}
 
 		const auto identifier = static_cast<std::uint32_t>(entity);
-		const auto& actual_pipeline = *pipeline.pipeline;
+		const auto& actual_pipeline = *get_pipeline("StaticMesh");
 		if (mesh.draw_aabb) {
 			scene_renderer->draw_aabb(*command_executor, mesh.mesh->get_aabb(), texture.colour, transform.compute());
 		}
@@ -622,17 +587,16 @@ void Scene::draw_geometry()
 		}
 	}
 
-	for (auto&& [entity, mesh, pipeline, transform] :
+	for (auto&& [entity, mesh, transform] :
 		registry
-			.view<const Components::Mesh, const Components::Pipeline, const Components::Transform>(
+			.view<const Components::Mesh, const Components::Transform>(
 				entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight, Components::Skybox>)
 			.each()) {
-		if (pipeline.invalid()) {
+		if (mesh.mesh == nullptr)
 			continue;
-		}
 
 		const auto identifier = static_cast<std::uint32_t>(entity);
-		const auto& actual_pipeline = *pipeline.pipeline;
+		const auto& actual_pipeline = *get_pipeline("StaticMesh");
 		const auto transform_computed = transform.compute();
 		scene_renderer->draw_mesh(*command_executor, *mesh.mesh, actual_pipeline, transform_computed, identifier);
 		if (mesh.draw_aabb) {
@@ -657,19 +621,19 @@ void Scene::draw_shadows()
 		}
 
 		auto point_light_view_for_count = registry.view<const Components::PointLight>().size();
-		scene_renderer->draw_mesh_instanced(*command_executor, point_light_view_for_count, *vertex_buffer, *index_buffer, *shadow_instances_pipeline);
+		scene_renderer->draw_mesh_instanced(
+			*command_executor, point_light_view_for_count, *vertex_buffer, *index_buffer, *get_pipeline("ShadowInstances"));
 	}
 
-	for (auto&& [entity, mesh, pipeline, texture, transform] :
+	for (auto&& [entity, mesh, texture, transform] :
 		registry
-			.view<const Components::Mesh, const Components::Pipeline, const Components::Texture, const Components::Transform>(
-				entt::exclude<Components::PointLight, Components::Skybox>)
+			.view<const Components::Mesh, Components::Texture, const Components::Transform>(entt::exclude<Components::PointLight, Components::Skybox>)
 			.each()) {
-		if (pipeline.invalid()) {
+		if (mesh.mesh == nullptr)
 			continue;
-		}
+
 		const auto identifier = static_cast<std::uint32_t>(entity);
-		const auto& actual_pipeline = *shadow_pipeline;
+		const auto& actual_pipeline = *get_pipeline("Shadow");
 		if (mesh.mesh->has_children()) {
 			scene_renderer->draw_submeshes(
 				*command_executor, *mesh.mesh, actual_pipeline, *texture.texture, texture.colour, transform.compute(), identifier);
@@ -679,16 +643,16 @@ void Scene::draw_shadows()
 		}
 	}
 
-	for (auto&& [entity, mesh, pipeline, transform] :
+	for (auto&& [entity, mesh, transform] :
 		registry
-			.view<const Components::Mesh, const Components::Pipeline, const Components::Transform>(
+			.view<const Components::Mesh, const Components::Transform>(
 				entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight, Components::Skybox>)
 			.each()) {
-		if (pipeline.invalid()) {
+		if (mesh.mesh == nullptr)
 			continue;
-		}
+
 		const auto identifier = static_cast<std::uint32_t>(entity);
-		const auto& actual_pipeline = *shadow_pipeline;
+		const auto& actual_pipeline = *get_pipeline("Shadow");
 		const auto transform_computed = transform.compute();
 		scene_renderer->draw_mesh(*command_executor, *mesh.mesh, actual_pipeline, transform_computed, identifier);
 	}
@@ -708,19 +672,10 @@ void Scene::on_event(Event& event)
 void Scene::recreate(const Extent& new_ex)
 {
 	extent = new_ex;
-
-	for (auto&& [entity, pipeline] : registry.view<Components::Pipeline>().each()) {
-		pipeline.pipeline->get_properties().extent = extent;
-		pipeline.pipeline->get_properties().descriptor_set_layouts = scene_renderer->get_graphics_resource().get_descriptor_set_layouts();
-	}
-
 	framebuffers.at(SceneFramebuffer::Geometry)->recreate(true, new_ex);
 	framebuffers.at(SceneFramebuffer::Identity)->recreate(true, new_ex);
 	framebuffers.at(SceneFramebuffer::Shadow)->force_recreation();
 
-	for (auto* pipe : { shadow_pipeline.get(), shadow_instances_pipeline.get(), identity_pipeline.get() }) {
-		pipe->force_recreation();
-	}
 	command_executor->recreate(true, extent);
 }
 

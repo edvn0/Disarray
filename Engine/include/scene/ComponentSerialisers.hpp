@@ -75,7 +75,6 @@ namespace {
 
 } // namespace
 
-MAKE_SERIALISER(PipelineSerialiser, Pipeline)
 MAKE_SERIALISER(ScriptSerialiser, Script)
 MAKE_SERIALISER(MeshSerialiser, Mesh)
 MAKE_SERIALISER(TextureSerialiser, Texture)
@@ -86,7 +85,6 @@ MAKE_SERIALISER(DirectionalLightSerialiser, DirectionalLight)
 MAKE_SERIALISER(PointLightSerialiser, PointLight)
 MAKE_SERIALISER(InheritanceSerialiser, Inheritance)
 
-MAKE_DESERIALISER(PipelineDeserialiser, Pipeline)
 MAKE_DESERIALISER(ScriptDeserialiser, Script)
 MAKE_DESERIALISER(MeshDeserialiser, Mesh)
 MAKE_DESERIALISER(TextureDeserialiser, Texture)

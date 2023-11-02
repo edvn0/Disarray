@@ -21,7 +21,6 @@ namespace Disarray {
 
 struct MeshProperties {
 	std::filesystem::path path {};
-	Ref<Pipeline> pipeline { nullptr };
 	glm::mat4 initial_rotation { 1.0F };
 	ImportFlag flags { default_import_flags };
 	std::unordered_set<VertexInput> include_inputs = { std::begin(default_vertex_inputs), std::end(default_vertex_inputs) };
@@ -43,8 +42,9 @@ public:
 	[[nodiscard]] virtual auto get_textures() const -> const RefVector<Disarray::Texture>& = 0;
 
 	virtual auto get_aabb() const -> const AABB& = 0;
-
 	virtual auto has_children() const -> bool = 0;
+
+	[[nodiscard]] virtual auto invalid() const -> bool = 0;
 
 	static auto construct_deferred(const Device&, MeshProperties) -> std::future<Ref<Mesh>>;
 };

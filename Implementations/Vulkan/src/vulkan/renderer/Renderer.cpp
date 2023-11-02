@@ -61,7 +61,7 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 
 	SpecialisationConstantDescription specialisation_constant_description { point_light_data };
 	PipelineCacheCreationProperties pipeline_properties = {
-		.pipeline_key = "quad",
+		.pipeline_key = "Quad",
 		.vertex_shader_key = "quad.vert",
 		.fragment_shader_key = "quad.frag",
 		.framebuffer = geometry_framebuffer,
@@ -80,7 +80,7 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 	{
 		// Line
 		pipeline_properties.framebuffer = geometry_framebuffer;
-		pipeline_properties.pipeline_key = "line";
+		pipeline_properties.pipeline_key = "Line";
 		pipeline_properties.vertex_shader_key = "line.vert";
 		pipeline_properties.fragment_shader_key = "line.frag";
 		pipeline_properties.write_depth = true;
@@ -122,8 +122,8 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 
 	aabb_pipeline = resource.get_pipeline_cache().put({
 		.pipeline_key = "AABB",
-		.vertex_shader_key = "aabb.vert",
-		.fragment_shader_key = "aabb.frag",
+		.vertex_shader_key = "static_mesh.vert",
+		.fragment_shader_key = "static_mesh.frag",
 		.framebuffer = geometry_framebuffer,
 		.layout = { { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float4, "colour" },
 			{ ElementType::Float3, "normals" }, { ElementType::Float3, "tangents" }, { ElementType::Float3, "bitangents" } },
@@ -176,6 +176,8 @@ void Renderer::begin_frame(const glm::mat4& view, const glm::mat4& proj, const g
 	ubo.view = view;
 	ubo.proj = proj;
 	ubo.view_projection = view_projection;
+
+	camera.view = view;
 
 	if (swapchain.needs_recreation()) {
 		force_recreation();

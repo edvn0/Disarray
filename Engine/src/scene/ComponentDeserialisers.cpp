@@ -10,6 +10,7 @@ namespace Disarray {
 using json = nlohmann::json;
 using namespace std::string_view_literals;
 
+/*
 auto PipelineDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return object.contains("properties"); }
 void PipelineDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Pipeline& pipeline, const Device& device)
 {
@@ -64,6 +65,7 @@ void PipelineDeserialiser::deserialise_impl(const nlohmann::json& object, Compon
 
 	pipeline.pipeline = Pipeline::construct(device, properties);
 }
+ */
 
 auto ScriptDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return object.contains("identifier"); }
 void ScriptDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Script& script, const Device& device)
@@ -98,7 +100,6 @@ void MeshDeserialiser::deserialise_impl(const nlohmann::json& object, Components
 	auto props = object["properties"];
 	MeshProperties properties {
 		.path = props["path"],
-		.pipeline = nullptr,
 		.initial_rotation = props["initial_rotation"],
 	};
 

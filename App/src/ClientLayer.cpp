@@ -128,14 +128,13 @@ void ClientLayer::create_entities()
 	environment.add_component<Components::Material>(skybox_material);
 	environment.add_component<Components::Skybox>(texture_cube);
 	environment.add_component<Components::Mesh>(cube_mesh);
-	environment.add_component<Components::Pipeline>(skybox_pipeline);
 
 	{
 		SpecialisationConstantDescription specialisation_constant_description { point_light_data };
-		const auto& floor_pipeline = renderer.get_pipeline_cache().put({
-			.pipeline_key = "Cube",
-			.vertex_shader_key = "cube.vert",
-			.fragment_shader_key = "cube.frag",
+		renderer.get_pipeline_cache().put({
+			.pipeline_key = "StaticMesh",
+			.vertex_shader_key = "static_mesh.vert",
+			.fragment_shader_key = "static_mesh.frag",
 			.framebuffer = scene->get_framebuffer<SceneFramebuffer::Geometry>(),
 			.layout = layout,
 			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
@@ -144,12 +143,11 @@ void ClientLayer::create_entities()
 			.descriptor_set_layouts = desc_layout,
 			.specialisation_constant = specialisation_constant_description,
 		});
-
 		point_light_data.calculate_point_lights = 1;
-		const auto& other_floor_pipeline = renderer.get_pipeline_cache().put({
-			.pipeline_key = "CubeRenderThings",
-			.vertex_shader_key = "cube.vert",
-			.fragment_shader_key = "cube.frag",
+		renderer.get_pipeline_cache().put({
+			.pipeline_key = "StaticMeshNoPointLights",
+			.vertex_shader_key = "static_mesh.vert",
+			.fragment_shader_key = "static_mesh.frag",
 			.framebuffer = scene->get_framebuffer<SceneFramebuffer::Geometry>(),
 			.layout = layout,
 			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
@@ -167,7 +165,6 @@ void ClientLayer::create_entities()
 		floor.get_components<Components::ID>().can_interact_with = false;
 		floor.add_component<Components::Texture>(nullptr, glm::vec4 { .1, .1, .9, 1.0 });
 		floor.add_component<Components::Mesh>(cube_mesh);
-		floor.add_component<Components::Pipeline>(floor_pipeline);
 	}
 
 	{
@@ -223,18 +220,6 @@ void ClientLayer::create_entities()
 	}
 
 	{
-		const auto& viking_pipeline = renderer.get_pipeline_cache().put({
-			.pipeline_key = "Main",
-			.vertex_shader_key = "main.vert",
-			.fragment_shader_key = "main.frag",
-			.framebuffer = scene->get_framebuffer<SceneFramebuffer::Geometry>(),
-			.layout = layout,
-			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-			.extent = extent,
-			.cull_mode = CullMode::Back,
-			.descriptor_set_layouts = desc_layout,
-		});
-
 		auto viking_rotation = Maths::rotate_by(glm::radians(glm::vec3 { 0, 0, 0 }));
 		auto v_mesh = scene->create("Viking");
 		const auto viking = Mesh::construct(device,
@@ -244,13 +229,7 @@ void ClientLayer::create_entities()
 			});
 		v_mesh.get_components<Components::Transform>().position.y = -2;
 		v_mesh.add_component<Components::Mesh>(viking);
-		v_mesh.add_component<Components::Pipeline>(viking_pipeline);
 		v_mesh.add_component<Components::Texture>(renderer.get_texture_cache().get("viking_room"));
-		v_mesh.add_component<Components::Material>(Material::construct(device,
-			{
-				.vertex_shader = viking_pipeline->get_properties().vertex_shader,
-				.fragment_shader = viking_pipeline->get_properties().fragment_shader,
-			}));
 
 		auto viking_room_texture = Texture::construct(device,
 			{
@@ -294,7 +273,6 @@ void ClientLayer::create_entities()
 		directional_sun.diffuse = Maths::scale_colour({ 49, 22, 22, 255 });
 		directional_sun.specular = Maths::scale_colour({ 181, 255, 0, 255 });
 		sun.add_component<Components::Mesh>(sphere);
-		sun.add_component<Components::Pipeline>(pipe);
 		sun.add_component<Components::Transform>().position = { -15, -15, -16 };
 		sun.add_component<Components::Controller>();
 
@@ -314,7 +292,6 @@ void ClientLayer::create_entities()
 
 			point_light.add_component<Components::Mesh>(sphere);
 			point_light.add_component<Components::Texture>(colours.at(i).at(0));
-			point_light.add_component<Components::Pipeline>(pipe);
 			point_light.add_script<Scripts::LinearMovementScript>(
 				-point_light_radius, point_light_radius, Random::as_enum<Scripts::LinearMovementScript::Axis>());
 			pl_system.add_child(point_light);
@@ -323,7 +300,6 @@ void ClientLayer::create_entities()
 	{
 		// sponza
 		auto sponza = scene->create("Sponza");
-		sponza.add_component<Components::Pipeline>();
 	}
 	{
 		// Text

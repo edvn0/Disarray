@@ -52,7 +52,7 @@ auto ortho(float left_plane, float right_plane, float bottom_plane, float top_pl
 
 constexpr auto scale_colour(const glm::vec4& maybe_8_bits)
 {
-	return glm::dot(maybe_8_bits, maybe_8_bits) >= 4.0F ? maybe_8_bits / 255.0F : maybe_8_bits;
+	return glm::dot(maybe_8_bits, maybe_8_bits) >= 4.0F ? glm::abs(maybe_8_bits) / 255.0F : glm::abs(maybe_8_bits);
 }
 
 } // namespace Disarray::Maths
