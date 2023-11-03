@@ -1,10 +1,11 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <glm/glm.hpp>
 
 #include <array>
 
-#include "Forward.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Pipeline.hpp"
 
@@ -24,6 +25,7 @@ public:
 	void submit_text(std::string_view text, const glm::mat4& transform, float scale = 1.0F, const glm::vec4& colour = { 1, 1, 1, 1 });
 	void render(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor);
 	void clear_pass(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor);
+	auto recreate(bool should_clean, const Extent& extent) -> void;
 
 	auto get_pipelines() -> std::array<Disarray::Pipeline*, 2>;
 

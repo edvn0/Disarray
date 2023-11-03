@@ -33,6 +33,8 @@ struct TextRenderer::TextRenderingAPI {
 	Ref<Disarray::Pipeline> screen_space_glyph_pipeline;
 	Ref<Disarray::Pipeline> world_space_glyph_pipeline;
 	Ref<Disarray::Framebuffer> glyph_framebuffer;
+
+	Disarray::Renderer* renderer { nullptr };
 };
 
 template <> auto PimplDeleter<TextRenderer::TextRenderingAPI>::operator()(TextRenderer::TextRenderingAPI* ptr) noexcept -> void
@@ -177,6 +179,14 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 			.test_depth = false,
 			.descriptor_set_layouts = desc_layout,
 		});
+
+	renderer_api->renderer = &renderer;
+	recreate(true, extent);
+}
+
+auto TextRenderer::recreate(bool, const Extent&) -> void
+{
+	auto& resources = renderer_api->renderer->get_graphics_resource();
 
 	std::array<const Texture*, 128> textures {};
 	std::size_t i = 0;

@@ -1,9 +1,10 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <queue>
 #include <vector>
 
-#include "Forward.hpp"
 #include "core/Collections.hpp"
 #include "core/Layer.hpp"
 #include "core/Panel.hpp"
@@ -32,7 +33,7 @@ public:
 		requires(std::is_base_of_v<Panel, T>
 			&& requires(Disarray::Device& dev, Disarray::Window& win, Disarray::Swapchain& swap,
 				Args&&... args) { T(dev, win, swap, std::forward<Args>(args)...); })
-	auto& add_panel(Args&&... args)
+	auto add_panel(Args&&... args) -> auto&
 	{
 		return panels.emplace_back(std::shared_ptr<T> { new T { device, window, swapchain, std::forward<Args>(args)... } });
 	}

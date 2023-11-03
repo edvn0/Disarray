@@ -69,8 +69,9 @@ void Renderer::draw_mesh(
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
 	const glm::mat4& transform, const std::uint32_t identifier)
 {
-	if (mesh.invalid())
+	if (mesh.invalid()) {
 		return;
+	}
 
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
@@ -103,8 +104,9 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 void Renderer::draw_mesh_instanced(Disarray::CommandExecutor& executor, std::size_t instance_count, const Disarray::VertexBuffer& vertex_buffer,
 	const Disarray::IndexBuffer& index_buffer, const Disarray::Pipeline& mesh_pipeline)
 {
-	if (vertex_buffer.invalid() || index_buffer.invalid())
+	if (vertex_buffer.invalid() || index_buffer.invalid()) {
 		return;
+	}
 
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
@@ -154,8 +156,9 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
 	const Disarray::Texture& texture, const glm::vec4& colour, const glm::mat4& transform, const std::uint32_t identifier)
 {
-	if (mesh.invalid())
+	if (mesh.invalid()) {
 		return;
+	}
 
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
@@ -188,8 +191,9 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
 	const glm::vec4& colour, const glm::mat4& transform)
 {
-	if (mesh.invalid())
+	if (mesh.invalid()) {
 		return;
+	}
 
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
@@ -244,8 +248,9 @@ void Renderer::draw_submesh(Disarray::CommandExecutor& executor, const Disarray:
 void Renderer::draw_submeshes(Disarray::CommandExecutor& executor, const Disarray::Mesh& parent_mesh, const Disarray::Pipeline& mesh_pipeline,
 	const Disarray::Texture& texture, const glm::vec4& colour, const glm::mat4& transform, const std::uint32_t identifier)
 {
-	if (parent_mesh.invalid())
+	if (parent_mesh.invalid()) {
 		return;
+	}
 
 	// draw_mesh(executor, parent_mesh, mesh_pipeline, texture, transform, identifier);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);

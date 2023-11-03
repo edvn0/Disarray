@@ -1,11 +1,12 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <array>
 #include <filesystem>
 #include <optional>
 #include <string>
 
-#include "Forward.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "graphics/CommandExecutor.hpp"
@@ -21,7 +22,7 @@ enum class TextureDimension : std::uint8_t {
 
 struct TextureProperties {
 	Extent extent {};
-	ImageFormat format { ImageFormat::SRGB }; // TODO: This is a crazy default, just to shut up clangd...
+	ImageFormat format { ImageFormat::SRGB }; // TODO(EdwinC): This is a crazy default, just to shut up clangd...
 	bool generate_mips { false };
 	std::optional<std::uint32_t> mips { std::nullopt };
 	std::filesystem::path path {};

@@ -286,6 +286,7 @@ void ClientLayer::create_entities()
 		auto pl_system = scene->create("PointLightSystem");
 		for (std::uint32_t i = 0; i < colours.size(); i++) {
 			auto point_light = scene->create("PointLight-{}", i);
+			point_light.get_components<Components::ID>().can_interact_with = false;
 			auto& light_component = point_light.add_component<Components::PointLight>();
 			light_component.ambient = colours.at(i).at(0);
 			light_component.diffuse = colours.at(i).at(1);

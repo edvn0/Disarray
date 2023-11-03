@@ -66,7 +66,7 @@ public:
 	void construct(Disarray::App&);
 	void destruct();
 	void on_event(Disarray::Event&);
-	void recreate(const Extent& extent);
+	void recreate(const Extent&);
 
 	void set_viewport_bounds(const glm::vec2& max, const glm::vec2& min)
 	{

@@ -447,8 +447,9 @@ void Scene::draw_skybox()
 	scene_renderer->get_graphics_resource().update_ubo(UBOIdentifier::Camera);
 	auto skybox_view = registry.view<const Components::Skybox, const Components::Mesh>();
 	for (auto&& [entity, skybox, mesh] : skybox_view.each()) {
-		if (mesh.mesh == nullptr)
+		if (mesh.mesh == nullptr) {
 			continue;
+		}
 
 		scene_renderer->draw_mesh(*command_executor, *mesh.mesh, *scene_renderer->get_pipeline_cache().get("Skybox"), glm::mat4 { 1.0F }, 0);
 	}
@@ -458,9 +459,9 @@ void Scene::draw_geometry()
 {
 	{
 		auto point_light_view = registry.view<const Components::PointLight, const Components::Mesh>();
-		static const Disarray::VertexBuffer* vertex_buffer = nullptr;
-		static const Disarray::IndexBuffer* index_buffer = nullptr;
-		static const Disarray::Pipeline* point_light_pipeline = get_pipeline("PointLight").get();
+		const Disarray::VertexBuffer* vertex_buffer = nullptr;
+		const Disarray::IndexBuffer* index_buffer = nullptr;
+		const Disarray::Pipeline* point_light_pipeline = get_pipeline("PointLight").get();
 
 		for (auto&& [entity, point_light, mesh] : point_light_view.each()) {
 			if (vertex_buffer == nullptr || index_buffer == nullptr || point_light_pipeline == nullptr) {
@@ -512,8 +513,9 @@ void Scene::draw_geometry()
 			 entt::exclude<Components::PointLight, Components::Skybox>);
 		 auto&& [entity, mesh, texture, transform] : mesh_view.each()) {
 
-		if (mesh.mesh == nullptr)
+		if (mesh.mesh == nullptr) {
 			continue;
+		}
 
 		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *get_pipeline("StaticMesh");
@@ -534,8 +536,9 @@ void Scene::draw_geometry()
 			.view<const Components::Mesh, const Components::Transform>(
 				entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight, Components::Skybox>)
 			.each()) {
-		if (mesh.mesh == nullptr)
+		if (mesh.mesh == nullptr) {
 			continue;
+		}
 
 		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *get_pipeline("StaticMesh");
@@ -571,8 +574,9 @@ void Scene::draw_shadows()
 		registry
 			.view<const Components::Mesh, Components::Texture, const Components::Transform>(entt::exclude<Components::PointLight, Components::Skybox>)
 			.each()) {
-		if (mesh.mesh == nullptr)
+		if (mesh.mesh == nullptr) {
 			continue;
+		}
 
 		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *get_pipeline("Shadow");
@@ -590,8 +594,9 @@ void Scene::draw_shadows()
 			.view<const Components::Mesh, const Components::Transform>(
 				entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight, Components::Skybox>)
 			.each()) {
-		if (mesh.mesh == nullptr)
+		if (mesh.mesh == nullptr) {
 			continue;
+		}
 
 		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *get_pipeline("Shadow");
@@ -617,6 +622,12 @@ void Scene::recreate(const Extent& new_ex)
 	framebuffers.at(SceneFramebuffer::Geometry)->recreate(true, new_ex);
 	framebuffers.at(SceneFramebuffer::Identity)->recreate(true, new_ex);
 	framebuffers.at(SceneFramebuffer::Shadow)->force_recreation();
+
+	const auto& shadow_framebuffer = get_framebuffer<SceneFramebuffer::Shadow>();
+	scene_renderer->get_graphics_resource().expose_to_shaders(shadow_framebuffer->get_depth_image(), DescriptorSet { 1 }, DescriptorBinding { 1 });
+
+	const auto& geometry_framebuffer = get_framebuffer<SceneFramebuffer::Geometry>();
+	scene_renderer->get_graphics_resource().expose_to_shaders(geometry_framebuffer->get_image(), DescriptorSet { 1 }, DescriptorBinding { 0 });
 
 	command_executor->recreate(true, extent);
 }

@@ -53,7 +53,7 @@ CheckOptions:
   }
   - {
     key: readability-identifier-naming.GlobalConstantCase,
-    value: UPPER_CASE
+    value: lower_case
   }
   - {
     key: readability-identifier-naming.MemberConstantCase,

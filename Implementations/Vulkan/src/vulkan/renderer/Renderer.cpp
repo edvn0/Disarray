@@ -144,14 +144,13 @@ void Renderer::on_resize()
 {
 	extent = swapchain.get_extent();
 	get_graphics_resource().recreate(true, extent);
-
 	get_texture_cache().force_recreation(extent);
-
 	get_pipeline_cache().for_each_in_storage([new_descs = get_graphics_resource().get_descriptor_set_layouts()](auto&& key_value_pair) {
 		auto&& [key, pipeline] = key_value_pair;
 		pipeline->get_properties().descriptor_set_layouts = new_descs;
 	});
 	get_pipeline_cache().force_recreation(extent);
+	text_renderer.recreate(true, extent);
 
 	geometry_framebuffer->recreate(true, extent);
 	fullscreen_framebuffer->recreate(true, extent);
