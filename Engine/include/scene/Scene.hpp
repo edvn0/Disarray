@@ -107,6 +107,8 @@ public:
 		}
 	}
 
+	template <ValidComponent T> void sort(auto&& sorter) { registry.sort<T>(sorter); }
+
 	static auto deserialise(const Device&, std::string_view, const std::filesystem::path&) -> Scope<Scene>;
 	static auto deserialise_into(Scene&, const Device&, const std::filesystem::path&) -> void;
 

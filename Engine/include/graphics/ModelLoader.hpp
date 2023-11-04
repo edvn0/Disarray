@@ -115,11 +115,12 @@ static constexpr auto operator&(const ImportFlag& left, const ImportFlag& right)
 	return static_cast<ImportFlag>(static_cast<std::uint32_t>(left) | static_cast<std::uint32_t>(right));
 }
 static constexpr auto default_import_flags = ImportFlag::OptimizeMeshes | ImportFlag::OptimizeGraph | ImportFlag::CalcTangentSpace
-	| ImportFlag::RemoveRedundantMaterials | ImportFlag::SplitLargeMeshes | ImportFlag::Triangulate | ImportFlag::FlipUVs;
+	| ImportFlag::RemoveRedundantMaterials | ImportFlag::SplitLargeMeshes | ImportFlag::Triangulate | ImportFlag::FlipUVs | ImportFlag::GenUVCoords
+	| ImportFlag::GenNormals | ImportFlag::GenBoundingBoxes;
 
 struct IModelImporter {
 	virtual ~IModelImporter() = default;
-	virtual auto import(const std::filesystem::path&, ImportFlag) -> ImportedMesh = 0;
+	virtual auto import_model(const std::filesystem::path&, ImportFlag) -> ImportedMesh = 0;
 };
 
 class ModelLoader {

@@ -16,7 +16,7 @@ struct TinyObjModelLoader final : public IModelImporter {
 	{
 	}
 
-	auto import(const std::filesystem::path& path, ImportFlag) -> ImportedMesh final;
+	auto import_model(const std::filesystem::path& path, ImportFlag) -> ImportedMesh final;
 };
 
 } // namespace Disarray

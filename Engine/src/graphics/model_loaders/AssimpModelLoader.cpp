@@ -52,6 +52,7 @@ auto AssimpModelLoader::process_mesh(aiMesh* mesh, const std::filesystem::path& 
 	std::span mesh_bitangents { mesh->mBitangents, mesh->mNumVertices };
 
 	const auto has_colours = !mesh_colours.empty() && mesh_colours.data() != nullptr;
+	const auto has_uvs = !mesh_uvs.empty() && mesh_uvs.data() != nullptr;
 	const auto has_normals = !mesh_normals.empty() && mesh_normals.data() != nullptr;
 	const auto has_tangents = !mesh_tangents.empty() && mesh_tangents.data() != nullptr;
 	const auto has_bitangents = !mesh_bitangents.empty() && mesh_bitangents.data() != nullptr;
@@ -64,7 +65,14 @@ auto AssimpModelLoader::process_mesh(aiMesh* mesh, const std::filesystem::path& 
 	for (std::size_t i = 0; i < mesh->mNumVertices; i++) {
 		ModelVertex model_vertex {};
 		model_vertex.pos = { mesh_vertices[i].x, mesh_vertices[i].y, mesh_vertices[i].z };
-		model_vertex.uvs = { mesh_uvs[i].x, mesh_uvs[i].y };
+
+		model_vertex.uvs = glm::vec2 {};
+		if (has_uvs) {
+			model_vertex.uvs = glm::vec2 {
+				mesh_uvs[i].x,
+				mesh_uvs[i].y,
+			};
+		}
 
 		model_vertex.normals = glm::vec3 {};
 		if (has_normals) {
@@ -154,6 +162,7 @@ auto AssimpModelLoader::process_current_node(
 		std::string name(mesh_name.length, '\0');
 		std::memcpy(name.data(), mesh_name.C_Str(), mesh_name.length);
 		name.resize(mesh_name.length);
+		const auto& aabb = ai_mesh->mAABB;
 
 		mesh_map.try_emplace(name, process_mesh(ai_mesh, base_directory, scene));
 	});
@@ -161,7 +170,7 @@ auto AssimpModelLoader::process_current_node(
 	Collections::parallel_for_each(children, [&](auto* child) { process_current_node(mesh_map, base_directory, child, scene); });
 }
 
-auto AssimpModelLoader::import(const std::filesystem::path& path, ImportFlag flags) -> ImportedMesh
+auto AssimpModelLoader::import_model(const std::filesystem::path& path, ImportFlag flags) -> ImportedMesh
 {
 	MSTimer timer;
 	ImportedMesh output {};
@@ -173,8 +182,6 @@ auto AssimpModelLoader::import(const std::filesystem::path& path, ImportFlag fla
 		throw CouldNotLoadModelException(fmt::format("Error: {}", importer.GetErrorString()));
 	}
 	const auto base_directory = path.parent_path();
-
-	std::vector<aiNode*> children {};
 
 	process_current_node(output, base_directory, scene->mRootNode, scene);
 

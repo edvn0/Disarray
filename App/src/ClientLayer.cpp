@@ -488,6 +488,39 @@ private:
 	friend class FileHandlerBase<PNGHandler>;
 };
 
+class MeshHandler : public FileHandlerBase<MeshHandler> {
+public:
+	using FileHandlerBase<MeshHandler>::FileHandlerBase;
+
+private:
+	void handle_impl()
+	{
+		auto* scene = get_scene();
+		const auto& path = get_path();
+		auto entity = scene->create(path.filename().string());
+		MeshProperties properties {
+			.path = path,
+		};
+		auto mesh = Mesh::construct(get_device(), properties);
+
+		entity.add_component<Components::Mesh>(mesh);
+	}
+
+	auto valid_file_impl() -> bool
+	{
+		using namespace std::string_view_literals;
+		const auto& path = get_path();
+		static std::unordered_set valid_extensions = {
+			".mesh"sv,
+			".obj"sv,
+			".fbx"sv,
+		};
+		return valid_extensions.contains(path.extension().string());
+	}
+
+	friend class FileHandlerBase<MeshHandler>;
+};
+
 class SceneHandler : public FileHandlerBase<SceneHandler> {
 public:
 	using FileHandlerBase<SceneHandler>::FileHandlerBase;
@@ -526,7 +559,7 @@ void ClientLayer::handle_file_drop(const std::filesystem::path& path)
 		(T { dev, scene_ptr, path }, ...);
 	};
 
-	using FileHandlers = HandlerGroup<PNGHandler, SceneHandler>;
+	using FileHandlers = HandlerGroup<PNGHandler, SceneHandler, MeshHandler>;
 	evaluate_all(FileHandlers {}, device, scene.get(), path);
 }
 

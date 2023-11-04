@@ -7,7 +7,7 @@
 
 namespace Disarray {
 
-auto TinyObjModelLoader::import(const std::filesystem::path& path, ImportFlag) -> ImportedMesh
+auto TinyObjModelLoader::import_model(const std::filesystem::path& path, ImportFlag) -> ImportedMesh
 {
 	std::vector<ModelVertex> vertices;
 	std::vector<std::uint32_t> indices;

@@ -16,7 +16,7 @@ namespace Disarray {
 struct AssimpModelLoader final : public IModelImporter {
 	explicit AssimpModelLoader(const glm::mat4& rot = glm::identity<glm::mat4>())
 		: initial_rotation(rot) {};
-	auto import(const std::filesystem::path& path, ImportFlag) -> ImportedMesh final;
+	auto import_model(const std::filesystem::path& path, ImportFlag) -> ImportedMesh final;
 
 private:
 	static auto process_mesh(aiMesh* mesh, const std::filesystem::path& base_directory, const aiScene* scene) -> Submesh;

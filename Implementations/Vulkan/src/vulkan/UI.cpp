@@ -320,7 +320,8 @@ namespace Popup {
 		for (const auto& ext : allowed) {
 			extensions.push_back(ext.c_str());
 		}
-		const char* str = tinyfd_openFileDialog("File selector", absolute.string().c_str(), 1, extensions.data(), nullptr, 0);
+		const char* str = tinyfd_openFileDialog(
+			"File selector", absolute.string().c_str(), static_cast<std::int32_t>(extensions.size()), extensions.data(), nullptr, 0);
 
 		if (str != nullptr) {
 			return { std::filesystem::path { str } };

@@ -1,13 +1,12 @@
 #include "DisarrayPCH.hpp"
 
-#include "graphics/ModelLoader.hpp"
-
 #include <mutex>
 
 #include "core/Collections.hpp"
 #include "core/Log.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Device.hpp"
+#include "graphics/ModelLoader.hpp"
 #include "graphics/TextureCache.hpp"
 #include "util/Timer.hpp"
 #include "vulkan/CommandExecutor.hpp"
@@ -29,7 +28,7 @@ ModelLoader::ModelLoader(Scope<IModelImporter> input, const std::filesystem::pat
 
 auto ModelLoader::import_model(const std::filesystem::path& path, ImportFlag flags) -> void
 {
-	auto&& meshes = importer->import(path, flags);
+	auto&& meshes = importer->import_model(path, flags);
 	mesh_data = meshes;
 }
 

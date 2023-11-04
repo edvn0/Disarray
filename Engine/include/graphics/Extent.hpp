@@ -1,7 +1,8 @@
 #pragma once
 
-#include "core/Concepts.hpp"
 #include <cmath>
+
+#include "core/Concepts.hpp"
 
 namespace Disarray {
 
