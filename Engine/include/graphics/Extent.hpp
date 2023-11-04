@@ -176,3 +176,21 @@ using Extent = IExtent<std::uint32_t>;
 using FloatExtent = IExtent<float>;
 
 } // namespace Disarray
+
+template <Disarray::IsNumber T> struct fmt::formatter<Disarray::IExtent<T>> : fmt::formatter<std::string_view> {
+	auto format(const Disarray::IExtent<T>& format, format_context& ctx) -> decltype(ctx.out());
+};
+
+template <Disarray::IsNumber T> struct std::hash<Disarray::IExtent<T>> {
+	auto operator()(const Disarray::IExtent<T>& index) const -> std::size_t
+	{
+		std::hash<T> hasher {};
+		std::size_t seed { 0 };
+		// Use std::hash to generate hash values for VkImageView and VkSampler
+		// Combine the hash values of VkImageView and VkSampler
+		seed ^= hasher(index.width) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+		seed ^= hasher(index.height) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+		return seed;
+	}
+};

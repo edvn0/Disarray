@@ -119,10 +119,7 @@ public:
 	auto supply() const -> VkImage override { return get_image(); }
 	auto get_descriptor_info() const -> const VkDescriptorImageInfo& { return descriptor_info; }
 
-	auto hash() const -> Identifier override
-	{
-		return bit_cast<std::uint64_t>(descriptor_info.imageView) ^ bit_cast<std::uint64_t>(descriptor_info.sampler);
-	};
+	auto hash() const -> Identifier override;
 
 	void construct_using(Disarray::CommandExecutor&) override {};
 

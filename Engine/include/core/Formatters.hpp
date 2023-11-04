@@ -14,14 +14,6 @@ template <> struct fmt::formatter<Disarray::ImageFormat> : fmt::formatter<std::s
 	auto format(const Disarray::ImageFormat& image_format, format_context& ctx) -> decltype(ctx.out());
 };
 
-template <> struct fmt::formatter<Disarray::Extent> : fmt::formatter<std::string_view> {
-	auto format(const Disarray::Extent& extent, format_context& ctx) -> decltype(ctx.out());
-};
-
-template <> struct fmt::formatter<Disarray::FloatExtent> : fmt::formatter<std::string_view> {
-	auto format(const Disarray::FloatExtent& extent, format_context& ctx) -> decltype(ctx.out());
-};
-
 template <> struct fmt::formatter<glm::vec2> : fmt::formatter<std::string_view> {
 	auto format(const glm::vec2& vec, format_context& ctx) -> decltype(ctx.out());
 };

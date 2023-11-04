@@ -356,10 +356,12 @@ auto SceneRenderer::recreate(bool should_clean, const Extent& extent) -> void
 {
 	renderer_extent = extent;
 
-	framebuffers.at(SceneFramebuffer::Geometry)->recreate(true, extent);
-	framebuffers.at(SceneFramebuffer::Identity)->recreate(true, extent);
-	framebuffers.at(SceneFramebuffer::Shadow)->force_recreation();
-	framebuffers.at(SceneFramebuffer::FullScreen)->force_recreation();
+	framebuffers.at(SceneFramebuffer::Geometry)->recreate(should_clean, extent);
+	framebuffers.at(SceneFramebuffer::Identity)->recreate(should_clean, extent);
+	framebuffers.at(SceneFramebuffer::FullScreen)->recreate(should_clean, extent);
+
+	const auto& old_extent = framebuffers.at(SceneFramebuffer::Shadow)->get_properties().extent;
+	framebuffers.at(SceneFramebuffer::Shadow)->recreate(should_clean, old_extent);
 
 	const auto& shadow_framebuffer = get_framebuffer<SceneFramebuffer::Shadow>();
 	get_graphics_resource().expose_to_shaders(shadow_framebuffer->get_depth_image(), DescriptorSet { 1 }, DescriptorBinding { 1 });
@@ -375,7 +377,13 @@ auto SceneRenderer::recreate(bool should_clean, const Extent& extent) -> void
 	command_executor->recreate(true, extent);
 }
 
-auto SceneRenderer::destruct() -> void { command_executor.reset(); }
+auto SceneRenderer::destruct() -> void
+{
+	for (auto&& [k, v] : framebuffers) {
+		v.reset();
+	}
+	command_executor.reset();
+}
 
 auto SceneRenderer::get_pipeline(const std::string& key) -> Ref<Disarray::Pipeline>& { return get_pipeline_cache().get(key); }
 auto SceneRenderer::get_graphics_resource() -> IGraphicsResource& { return renderer->get_graphics_resource(); }

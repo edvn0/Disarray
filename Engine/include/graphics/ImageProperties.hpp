@@ -77,7 +77,6 @@ enum class ImageFormat : std::uint8_t {
 template <std::integral Out = std::uint32_t> inline constexpr auto to_component_count(ImageFormat format)
 {
 	switch (format) {
-
 	case ImageFormat::SRGB:
 	case ImageFormat::RGB:
 	case ImageFormat::SBGR:
@@ -90,6 +89,26 @@ template <std::integral Out = std::uint32_t> inline constexpr auto to_component_
 		return static_cast<Out>(4U);
 	case ImageFormat::Red:
 		return static_cast<Out>(1U);
+	default:
+		unreachable();
+	}
+}
+
+inline constexpr auto to_size(ImageFormat format)
+{
+	switch (format) {
+	case ImageFormat::SRGB:
+	case ImageFormat::RGB:
+	case ImageFormat::SBGR:
+	case ImageFormat::BGR:
+	case ImageFormat::Depth:
+	case ImageFormat::DepthStencil:
+	case ImageFormat::Uint:
+	case ImageFormat::Red:
+		return sizeof(float);
+	case ImageFormat::RGB32:
+	case ImageFormat::SRGB32:
+		return 4ULL * sizeof(float);
 	default:
 		unreachable();
 	}

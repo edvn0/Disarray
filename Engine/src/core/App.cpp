@@ -1,12 +1,11 @@
 #include "DisarrayPCH.hpp"
 
-#include "core/App.hpp"
-
 #include <filesystem>
 #include <memory>
 #include <thread>
 
 #include "core/AllocatorConfigurator.hpp"
+#include "core/App.hpp"
 #include "core/Clock.hpp"
 #include "core/DebugConfigurator.hpp"
 #include "core/Formatters.hpp"
@@ -75,9 +74,6 @@ void App::run()
 	static float step = minimum_time_step;
 	while (!window->should_close()) {
 		const auto could_prepare = could_prepare_frame();
-		if (!could_prepare) [[unlikely]] {
-			continue;
-		}
 
 #ifdef DISARRAY_VSYNC
 		if (step < 16.0) {
@@ -120,7 +116,7 @@ void App::run()
 void App::update_layers(float time_step, bool could_prepare)
 {
 	for (auto& layer : layers) {
-		if (!could_prepare) {
+		if (swapchain->needs_recreation() || !could_prepare) {
 			layer->handle_swapchain_recreation(*swapchain);
 		}
 		layer->update(time_step);

@@ -84,7 +84,7 @@ void image(const Disarray::Image& image, glm::vec2 size, const std::array<glm::v
 	const auto hash = vk_image.hash();
 	auto& cache = get_cache();
 	ImageIdentifier identifier = 0;
-	if (!get_cache().contains(hash)) {
+	if (!cache.contains(hash)) {
 		identifier = add_image(vk_image.get_descriptor_info());
 		cache.try_emplace(hash, std::make_unique<ImageIdentifier>(identifier));
 	} else {

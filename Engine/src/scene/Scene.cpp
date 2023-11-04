@@ -539,8 +539,6 @@ auto Scene::copy(Scene& scene) -> Scope<Scene>
 	new_scene->sort<Components::ID>([](const Components::ID& left, const Components::ID& right) { return left.identifier < right.identifier; });
 
 	new_scene->extent = scene.extent;
-	new_scene->picked_entity.swap(scene.picked_entity);
-	new_scene->selected_entity.swap(scene.selected_entity);
 
 	return new_scene;
 }

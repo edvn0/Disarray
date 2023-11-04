@@ -1,7 +1,5 @@
 #include "DisarrayPCH.hpp"
 
-#include "graphics/Image.hpp"
-
 #include <vulkan/vulkan.h>
 
 #include <span>
@@ -12,6 +10,7 @@
 #include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
+#include "graphics/Image.hpp"
 #include "graphics/ImageProperties.hpp"
 #include "ktxvulkan.h"
 #include "util/FormattingUtilities.hpp"
@@ -262,7 +261,7 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor*)
 	if (get_properties().data.is_valid()) {
 		size = get_properties().data.get_size();
 	} else {
-		size = get_properties().extent.get_size() * sizeof(float);
+		size = get_properties().extent.get_size() * to_size(props.format);
 		auto& buffer = get_properties().data;
 		buffer.allocate(size);
 	}
@@ -526,31 +525,22 @@ void Image::create_mips()
 void Image::create_image_view(VkFormat vulkan_format, VkImageAspectFlags aspect_mask)
 {
 	VkImageViewCreateInfo image_view_create_info {};
+	image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	image_view_create_info.format = vulkan_format;
+	image_view_create_info.flags = 0;
+	image_view_create_info.subresourceRange = {};
+	image_view_create_info.subresourceRange.aspectMask = aspect_mask;
+	image_view_create_info.subresourceRange.baseMipLevel = 0;
+	image_view_create_info.subresourceRange.levelCount = get_properties().mips;
+	image_view_create_info.subresourceRange.baseArrayLayer = 0;
+	image_view_create_info.image = info.image;
 	if (props.dimension == ImageDimension::Two) {
-		image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		image_view_create_info.format = vulkan_format;
-		image_view_create_info.flags = 0;
-		image_view_create_info.subresourceRange = {};
-		image_view_create_info.subresourceRange.aspectMask = aspect_mask;
-		image_view_create_info.subresourceRange.baseMipLevel = 0;
-		image_view_create_info.subresourceRange.levelCount = get_properties().mips;
-		image_view_create_info.subresourceRange.baseArrayLayer = 0;
 		image_view_create_info.subresourceRange.layerCount = 1;
-		image_view_create_info.image = info.image;
 		verify(vkCreateImageView(supply_cast<Vulkan::Device>(device), &image_view_create_info, nullptr, &info.view));
 	} else {
-		image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-		image_view_create_info.format = vulkan_format;
-		image_view_create_info.flags = 0;
-		image_view_create_info.subresourceRange = {};
-		image_view_create_info.subresourceRange.aspectMask = aspect_mask;
-		image_view_create_info.subresourceRange.baseMipLevel = 0;
-		image_view_create_info.subresourceRange.levelCount = get_properties().mips;
-		image_view_create_info.subresourceRange.baseArrayLayer = 0;
 		image_view_create_info.subresourceRange.layerCount = get_properties().layers;
-		image_view_create_info.image = info.image;
 		verify(vkCreateImageView(supply_cast<Vulkan::Device>(device), &image_view_create_info, nullptr, &info.view));
 	}
 }
@@ -580,6 +570,14 @@ void Image::create_sampler()
 	sampler_create_info.maxLod = is_depth_format(props.format) ? 1.0F : static_cast<float>(get_properties().mips);
 	sampler_create_info.borderColor = to_vulkan_border_colour(props.border_colour);
 	verify(vkCreateSampler(supply_cast<Vulkan::Device>(device), &sampler_create_info, nullptr, &info.sampler));
+}
+
+auto Image::hash() const -> Identifier
+{
+	std::size_t seed { 0x9e3779b9 };
+	hash_combine(seed, props.extent, props.format, props.mips, props.samples, props.tiling, props.locked_extent, props.filter, props.border_colour,
+		props.layers, props.dimension, props.debug_name, info.image, info.view, info.sampler, descriptor_info.imageLayout);
+	return seed;
 }
 
 } // namespace Disarray::Vulkan

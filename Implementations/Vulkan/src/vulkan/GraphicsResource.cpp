@@ -199,14 +199,6 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 
 	auto* vk_device = supply_cast<Vulkan::Device>(device);
 
-	TextureCacheCreationProperties texture_properties {
-		.key = "viking",
-		.debug_name = "viking",
-		.path = FS::texture("viking_room.png"),
-		.format = ImageFormat::SBGR,
-	};
-	texture_cache.put(texture_properties);
-
 	auto set_zero_bindings = create_set_zero_bindings();
 	auto set_one_bindings = create_set_one_bindings();
 	auto set_two_bindings = create_set_two_bindings();
@@ -349,9 +341,9 @@ void GraphicsResource::expose_to_shaders(const Disarray::StorageBuffer& buffer, 
 	vkUpdateDescriptorSets(supply_cast<Vulkan::Device>(device), static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
 }
 
-void GraphicsResource::expose_to_shaders(std::span<const Disarray::Texture*> span, DescriptorSet set, DescriptorBinding binding)
+void GraphicsResource::expose_to_shaders(std::span<const Disarray::Texture*> textures, DescriptorSet set, DescriptorBinding binding)
 {
-	auto image_infos = Collections::map(span, [](const Disarray::Texture* texture) -> VkDescriptorImageInfo {
+	auto image_infos = Collections::map(textures, [](const Disarray::Texture* texture) -> VkDescriptorImageInfo {
 		const auto& desc_info = cast_to<Vulkan::Image>(texture->get_image()).get_descriptor_info();
 		return {
 			.sampler = nullptr,
@@ -360,7 +352,7 @@ void GraphicsResource::expose_to_shaders(std::span<const Disarray::Texture*> spa
 		};
 	});
 
-	internal_expose_to_shaders(cast_to<Vulkan::Image>(span[0]->get_image()).get_descriptor_info().sampler, image_infos, set, binding);
+	internal_expose_to_shaders(cast_to<Vulkan::Image>(textures[0]->get_image()).get_descriptor_info().sampler, image_infos, set, binding);
 }
 
 void GraphicsResource::update_ubo()

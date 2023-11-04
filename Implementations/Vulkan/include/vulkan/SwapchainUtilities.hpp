@@ -60,23 +60,23 @@ inline auto resolve_swapchain_support(VkPhysicalDevice physical_device, Disarray
 	vkGetPhysicalDeviceProperties(physical_device, &properties);
 
 	VkSampleCountFlags counts = properties.limits.framebufferColorSampleCounts & properties.limits.framebufferDepthSampleCounts;
-	if (counts & VK_SAMPLE_COUNT_64_BIT) {
-		support.msaa = VK_SAMPLE_COUNT_64_BIT;
-	}
-	if (counts & VK_SAMPLE_COUNT_32_BIT) {
-		support.msaa = VK_SAMPLE_COUNT_32_BIT;
-	}
-	if (counts & VK_SAMPLE_COUNT_16_BIT) {
-		support.msaa = VK_SAMPLE_COUNT_16_BIT;
-	}
-	if (counts & VK_SAMPLE_COUNT_8_BIT) {
-		support.msaa = VK_SAMPLE_COUNT_8_BIT;
+	if (counts & VK_SAMPLE_COUNT_2_BIT) {
+		support.msaa = VK_SAMPLE_COUNT_2_BIT;
 	}
 	if (counts & VK_SAMPLE_COUNT_4_BIT) {
 		support.msaa = VK_SAMPLE_COUNT_4_BIT;
 	}
-	if (counts & VK_SAMPLE_COUNT_2_BIT) {
-		support.msaa = VK_SAMPLE_COUNT_2_BIT;
+	if (counts & VK_SAMPLE_COUNT_8_BIT) {
+		support.msaa = VK_SAMPLE_COUNT_8_BIT;
+	}
+	if (counts & VK_SAMPLE_COUNT_16_BIT) {
+		support.msaa = VK_SAMPLE_COUNT_16_BIT;
+	}
+	if (counts & VK_SAMPLE_COUNT_32_BIT) {
+		support.msaa = VK_SAMPLE_COUNT_32_BIT;
+	}
+	if (counts & VK_SAMPLE_COUNT_64_BIT) {
+		support.msaa = VK_SAMPLE_COUNT_64_BIT;
 	}
 
 	return support;
