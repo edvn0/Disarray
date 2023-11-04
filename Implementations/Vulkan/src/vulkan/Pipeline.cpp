@@ -453,6 +453,10 @@ auto Pipeline::get_framebuffer() -> Disarray::Framebuffer& { return *props.frame
 
 auto Pipeline::get_render_pass() -> Disarray::RenderPass& { return props.framebuffer->get_render_pass(); }
 
+auto Pipeline::get_framebuffer() const -> const Disarray::Framebuffer& { return *props.framebuffer; }
+
+auto Pipeline::get_render_pass() const -> const Disarray::RenderPass& { return props.framebuffer->get_render_pass(); }
+
 void Pipeline::try_find_or_recreate_cache()
 {
 	const auto pipeline_name = fmt::format(

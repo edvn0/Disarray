@@ -33,7 +33,7 @@ static inline auto rect_offset(const ImRect& rect, float x, float y)
 	return result;
 }
 
-template <std::size_t Size, typename T> auto to_imgui(glm::vec<Size, T> vec) -> decltype(auto)
+template <std::int32_t Size, typename T> auto to_imgui(const glm::vec<Size, T>& vec) -> decltype(auto)
 {
 	if constexpr (Size == 2) {
 		return ImVec2(vec[0], vec[1]);
@@ -57,6 +57,8 @@ static auto add_image(VkSampler sampler, VkImageView view, VkImageLayout layout)
 }
 
 static auto add_image(VkDescriptorImageInfo info) -> ImageIdentifier { return add_image(info.sampler, info.imageView, info.imageLayout); }
+
+auto button(std::string_view label, const glm::vec2& size) -> bool { return ImGui::Button(label.data(), to_imgui(size)); }
 
 auto image_button(const Disarray::Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs) -> bool
 {

@@ -115,7 +115,7 @@ auto Camera::compute(const Disarray::Components::Transform& transform, const Dis
 {
 	static auto pre_computed_for_parameters = std::unordered_map<std::size_t, std::tuple<glm::mat4, glm::mat4, glm::mat4>> {};
 	static auto hash_this = [](auto... to_combine) {
-		std::size_t seed { 0 };
+		std::size_t seed { 0x1A16B09F };
 		hash_combine(seed, to_combine...);
 		return seed;
 	};

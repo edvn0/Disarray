@@ -20,7 +20,7 @@
 
 namespace Disarray::Client {
 
-ScenePanel::ScenePanel(Device& dev, Window&, Swapchain&, Scene* s)
+ScenePanel::ScenePanel(Device& dev, Window&, Swapchain&, Scene& s)
 	: device(dev)
 	, scene(s)
 {
@@ -79,7 +79,7 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_pa
 
 		const auto& children = entity.get_components<Components::Inheritance>();
 		for (const auto& child : children.children) {
-			auto child_entity = scene->get_by_identifier(child);
+			auto child_entity = scene.get_by_identifier(child);
 			if (!child_entity) {
 				continue;
 			}
@@ -89,7 +89,7 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_pa
 	}
 
 	if (entity_deleted) {
-		scene->delete_entity(entity);
+		scene.delete_entity(entity);
 		if (*selected_entity == entity.get_identifier()) {
 			*selected_entity = {};
 		}
@@ -99,18 +99,18 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_pa
 void ScenePanel::interface()
 {
 	UI::begin("Scene");
-	scene->for_all_entities([this](entt::entity entity_id) {
-		Entity entity { scene, entity_id };
+	scene.for_all_entities([this](entt::entity entity_id) {
+		Entity entity { &scene, entity_id };
 		draw_entity_node(entity, true);
 	});
 
 	if (ImGui::BeginPopupContextWindow("EmptyEntityId", ImGuiPopupFlags_MouseButtonRight)) {
 		if (ImGui::MenuItem("Create Empty Entity")) {
-			if (auto entity = Entity { scene, *selected_entity }; entity.is_valid()) {
-				auto child = scene->create("Parent{}-Child", static_cast<Identifier>(entity.get_identifier()));
+			if (auto entity = Entity { &scene, *selected_entity }; entity.is_valid()) {
+				auto child = scene.create("Parent{}-Child", static_cast<Identifier>(entity.get_identifier()));
 				entity.add_child(child);
 			} else {
-				scene->create("Empty Entity");
+				scene.create("Empty Entity");
 			}
 		}
 
@@ -124,15 +124,15 @@ void ScenePanel::interface()
 		return;
 	}
 
-	if (auto ent = Entity(scene, *selected_entity); ent.is_valid()) {
+	if (auto ent = Entity(&scene, *selected_entity); ent.is_valid()) {
 		for_all_components(ent);
 	}
 	UI::end();
 } // namespace Disarray::Client
 
-void Disarray::Client::ScenePanel::update(float)
+void Client::ScenePanel::update(float)
 {
-	if (const auto& selected = scene->get_selected_entity(); selected && selected->is_valid()) {
+	if (const auto& selected = scene.get_selected_entity(); selected && selected->is_valid()) {
 		*selected_entity = selected->get_identifier();
 	}
 }

@@ -193,7 +193,7 @@ auto TextRenderer::recreate(bool, const Extent&) -> void
 	for (const auto& tex : font_data) {
 		textures.at(i++) = tex.texture == nullptr ? nullptr : tex.texture.get();
 	}
-	resources.expose_to_shaders(textures, DescriptorSet { 2 }, DescriptorBinding { 2 });
+	resources.expose_to_shaders(textures, DescriptorSet { 2 }, DescriptorBinding { 0 });
 	resources.expose_to_shaders(renderer_api->glyph_framebuffer->get_image(0), DescriptorSet { 1 }, DescriptorBinding { 2 });
 }
 

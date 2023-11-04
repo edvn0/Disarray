@@ -44,6 +44,7 @@ struct Transform {
 	glm::vec3 scale { 1.0F };
 
 	Transform() = default;
+	Transform(const Transform&) = default;
 	Transform(const glm::vec3& euler, const glm::vec3& pos, const glm::vec3& scl)
 		: rotation(euler)
 		, position(pos)

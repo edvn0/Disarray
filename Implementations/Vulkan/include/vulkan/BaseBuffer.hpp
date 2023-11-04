@@ -52,7 +52,6 @@ private:
 
 	BufferType type;
 	BufferProperties props;
-	std::size_t buffer_count { 0 };
 
 	VmaAllocationInfo vma_allocation_info {};
 	VkBuffer buffer {};

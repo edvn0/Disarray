@@ -5,7 +5,7 @@ struct DirectionalLight {
     vec3 specular;
 };
 
-#define SHADOWED_AMBIENT_LIGHT 0.5
+#define SHADOWED_AMBIENT_LIGHT 0.01
 
 vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 view_direction, float shadow, uint spec_pow);
 

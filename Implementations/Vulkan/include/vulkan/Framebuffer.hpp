@@ -1,8 +1,9 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <vector>
 
-#include "Forward.hpp"
 #include "graphics/Device.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/ImageProperties.hpp"
@@ -38,9 +39,10 @@ public:
 	auto get_image(std::uint32_t index) const -> const Disarray::Image& override { return attachments.at(index)->get_image(0); }
 	auto get_depth_image() const -> const Disarray::Image& override { return depth_attachment->get_image(0); }
 
-	auto has_depth() -> bool override { return static_cast<bool>(depth_attachment); }
+	auto has_depth() const -> bool override { return static_cast<bool>(depth_attachment); }
 	auto get_colour_attachment_count() const -> std::uint32_t override { return colour_count; }
 	auto get_render_pass() -> Disarray::RenderPass& override { return *render_pass; };
+	auto get_render_pass() const -> const Disarray::RenderPass& override { return *render_pass; };
 	auto get_clear_values() const -> const auto& { return clear_values; }
 
 private:

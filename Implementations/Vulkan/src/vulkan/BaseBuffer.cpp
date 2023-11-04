@@ -28,7 +28,6 @@ BaseBuffer::BaseBuffer(const Disarray::Device& dev, BufferType buffer_type, Disa
 	: device(dev)
 	, type(buffer_type)
 	, props(properties)
-	, buffer_count(properties.count)
 {
 	if (props.data != nullptr) {
 		create_with_valid_data();

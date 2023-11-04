@@ -13,9 +13,6 @@
 
 namespace Disarray {
 
-struct FloatExtent;
-struct Extent;
-
 template <class Enum> inline auto to_enum_value(const auto& object, std::string_view key) -> decltype(auto)
 {
 	std::string value;

@@ -21,10 +21,45 @@ template <std::integral T> struct TypeSafeWrapper {
 	{
 	}
 
-	constexpr auto operator+(std::integral auto addend) { return TypeSafeWrapper { value + addend }; }
-	constexpr auto operator-(std::integral auto addend) { return TypeSafeWrapper { value - addend }; }
-	constexpr auto operator==(const TypeSafeWrapper& other) { return value == other.value; }
-	constexpr auto operator==(std::integral auto other) { return std::cmp_equal(value, other); }
+	constexpr auto operator+(std::integral auto addend) -> TypeSafeWrapper { return TypeSafeWrapper { value + addend }; }
+	constexpr auto operator-(std::integral auto addend) -> TypeSafeWrapper { return TypeSafeWrapper { value - addend }; }
+	constexpr auto operator==(const TypeSafeWrapper& other) const -> bool { return value == other.value; }
+	constexpr auto operator==(std::integral auto other) const -> bool { return std::cmp_equal(value, other); }
+	constexpr auto operator<(std::integral auto other) const -> bool { return std::cmp_less(value, other); }
+	constexpr auto operator<=(std::integral auto other) const -> bool { return std::cmp_less_equal(value, other); }
+
+	auto operator+=(std::integral auto other) -> TypeSafeWrapper&
+	{
+		value += other;
+		return *this;
+	}
+	auto operator+=(TypeSafeWrapper other) -> TypeSafeWrapper&
+	{
+		value += other.value;
+		return *this;
+	}
+	auto operator++() -> TypeSafeWrapper&
+	{
+		value++;
+		return *this;
+	}
+	auto operator++(std::integral auto) -> TypeSafeWrapper
+	{
+		TypeSafeWrapper old = *this;
+		operator++();
+		return old;
+	}
+	auto operator--() -> TypeSafeWrapper&
+	{
+		value++;
+		return *this;
+	}
+	auto operator--(std::integral auto) -> TypeSafeWrapper
+	{
+		TypeSafeWrapper old = *this;
+		operator--();
+		return old;
+	}
 
 	explicit operator T() const { return value; }
 };
@@ -97,6 +132,10 @@ template <std::integral T> struct fmt::formatter<Disarray::TypeSafeWrapper<T>> :
 	auto format(const Disarray::TypeSafeWrapper<T>& format, format_context& ctx) -> decltype(ctx.out());
 };
 
-template <> struct fmt::formatter<Disarray::TypeSafeWrapper<std::uint32_t>> : fmt::formatter<std::string_view> {
-	auto format(const Disarray::TypeSafeWrapper<std::uint32_t>& format, format_context& ctx) -> decltype(ctx.out());
+template <std::integral T> struct std::hash<Disarray::TypeSafeWrapper<T>> {
+	auto operator()(const Disarray::TypeSafeWrapper<T>& index) const -> std::size_t
+	{
+		std::hash<T> hasher {};
+		return hasher(index.value);
+	}
 };

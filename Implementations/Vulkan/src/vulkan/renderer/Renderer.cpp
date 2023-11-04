@@ -33,112 +33,15 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 	, props(properties)
 	, extent(swapchain.get_extent())
 {
-	geometry_framebuffer = Framebuffer::construct(device,
-		{
-			.extent = extent,
-			.attachments = { { ImageFormat::SBGR }, { ImageFormat::Depth } },
-			.clear_colour_on_load = false,
-			.clear_depth_on_load = false,
-			.debug_name = "RendererFramebuffer",
-		});
-	auto& resource = get_graphics_resource();
-
-	struct PointLightData {
-		std::uint32_t calculate_point_lights { 1 };
-		std::uint32_t use_gamma_correction { 0 };
-
-		[[nodiscard]] static auto get_constants() -> std::vector<SpecialisationConstant>
-		{
-			return {
-				SpecialisationConstant { ElementType::Uint },
-				SpecialisationConstant { ElementType::Uint },
-			};
-		}
-		[[nodiscard]] auto get_pointer() const -> const void* { return this; }
-	};
-
-	PointLightData point_light_data {};
-
-	SpecialisationConstantDescription specialisation_constant_description { point_light_data };
-	PipelineCacheCreationProperties pipeline_properties = {
-		.pipeline_key = "Quad",
-		.vertex_shader_key = "quad.vert",
-		.fragment_shader_key = "quad.frag",
-		.framebuffer = geometry_framebuffer,
-		.layout = { { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float3, "normals" },
-			{ ElementType::Float4, "colour" }, },
-		.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, sizeof(PushConstant) } },
-		.extent = swapchain.get_extent(),
-		.cull_mode = CullMode::None,
-		.descriptor_set_layouts = resource.get_descriptor_set_layouts(),
-		.specialisation_constant = specialisation_constant_description,
-	};
-
-	{
-		resource.get_pipeline_cache().put(pipeline_properties);
-	}
-	{
-		// Line
-		pipeline_properties.framebuffer = geometry_framebuffer;
-		pipeline_properties.pipeline_key = "Line";
-		pipeline_properties.vertex_shader_key = "line.vert";
-		pipeline_properties.fragment_shader_key = "line.frag";
-		pipeline_properties.write_depth = true;
-		pipeline_properties.test_depth = true;
-		pipeline_properties.line_width = 3.0F;
-		pipeline_properties.polygon_mode = PolygonMode::Line;
-		pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" } };
-		resource.get_pipeline_cache().put(pipeline_properties);
-	}
-
-	batch_renderer.construct(*this, device);
-	text_renderer.construct(*this, device, extent);
-
-	{
-		fullscreen_framebuffer = Framebuffer::construct(device,
-			{
-				.extent = extent,
-				.attachments = { { ImageFormat::SBGR } },
-				.debug_name = "FullscreenFramebuffer",
-			});
-		fullscreen_quad_pipeline = resource.get_pipeline_cache().put({
-			.pipeline_key = "Fullscreen",
-			.vertex_shader_key = "fullscreen_quad.vert",
-			.fragment_shader_key = "fullscreen_quad.frag",
-			.framebuffer = fullscreen_framebuffer,
-			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-			.extent = extent,
-			.cull_mode = CullMode::Front,
-			.write_depth = false,
-			.test_depth = false,
-			.descriptor_set_layouts = get_graphics_resource().get_descriptor_set_layouts(),
-		});
-	}
-
-	aabb_model = Mesh::construct_scoped(device,
-		MeshProperties {
-			.path = FS::model("cube.obj"),
-		});
-
-	aabb_pipeline = resource.get_pipeline_cache().put({
-		.pipeline_key = "AABB",
-		.vertex_shader_key = "static_mesh.vert",
-		.fragment_shader_key = "static_mesh.frag",
-		.framebuffer = geometry_framebuffer,
-		.layout = { { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float4, "colour" },
-			{ ElementType::Float3, "normals" }, { ElementType::Float3, "tangents" }, { ElementType::Float3, "bitangents" } },
-		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-		.extent = extent,
-		.polygon_mode = PolygonMode::Line,
-		.line_width = 3.0F,
-		.cull_mode = CullMode::Front,
-		.write_depth = true,
-		.test_depth = true,
-		.descriptor_set_layouts = get_graphics_resource().get_descriptor_set_layouts(),
-	});
 }
 
 Renderer::~Renderer() = default;
+
+void Renderer::construct_sub_renderers(const Disarray::Device&, Disarray::App& app)
+{
+	batch_renderer.construct(*this, device);
+	text_renderer.construct(*this, device, extent);
+}
 
 void Renderer::on_resize()
 {
@@ -151,9 +54,6 @@ void Renderer::on_resize()
 	});
 	get_pipeline_cache().force_recreation(extent);
 	text_renderer.recreate(true, extent);
-
-	geometry_framebuffer->recreate(true, extent);
-	fullscreen_framebuffer->recreate(true, extent);
 }
 
 void Renderer::begin_frame(const Camera& camera)
@@ -171,7 +71,10 @@ void Renderer::begin_frame(const glm::mat4& view, const glm::mat4& proj, const g
 	batch_renderer.reset();
 
 	auto [ubo, camera, lights, _, __, ___] = get_graphics_resource().get_editable_ubos();
-
+	// TODO(edvin): this may be incorrect!
+	const auto view_matrix = glm::inverse(view);
+	camera.position = view_matrix[3];
+	camera.direction = -view_matrix[2];
 	ubo.view = view;
 	ubo.proj = proj;
 	ubo.view_projection = view_projection;
@@ -254,7 +157,5 @@ void Renderer::add_geometry_to_batch(Disarray::Geometry geometry, const Disarray
 }
 
 void Renderer::flush_batch(Disarray::CommandExecutor& executor) { batch_renderer.flush(*this, executor); }
-
-auto Renderer::get_composite_pass_image() const -> const Disarray::Image& { return fullscreen_framebuffer->get_image(); }
 
 } // namespace Disarray::Vulkan

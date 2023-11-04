@@ -24,6 +24,8 @@ public:
 
 	auto get_framebuffer() -> Disarray::Framebuffer& override;
 	auto get_render_pass() -> Disarray::RenderPass& override;
+	auto get_framebuffer() const -> const Disarray::Framebuffer& override;
+	auto get_render_pass() const -> const Disarray::RenderPass& override;
 
 private:
 	void construct_layout(const Extent&);

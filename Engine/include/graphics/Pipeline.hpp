@@ -15,7 +15,6 @@
 #include "core/Types.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Shader.hpp"
-#include "graphics/Swapchain.hpp"
 
 using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;
 
@@ -274,6 +273,8 @@ class Pipeline : public ReferenceCountable {
 public:
 	virtual auto get_render_pass() -> Disarray::RenderPass& = 0;
 	virtual auto get_framebuffer() -> Disarray::Framebuffer& = 0;
+	virtual auto get_render_pass() const -> const Disarray::RenderPass& = 0;
+	virtual auto get_framebuffer() const -> const Disarray::Framebuffer& = 0;
 
 	[[nodiscard]] auto is_valid() const -> bool { return props.is_valid(); };
 

@@ -1,8 +1,7 @@
 #include "DisarrayPCH.hpp"
 
-#include "ui/UI.hpp"
-
 #include "core/Log.hpp"
+#include "ui/UI.hpp"
 
 namespace Disarray::UI {
 
@@ -15,7 +14,7 @@ void drag_drop(const std::filesystem::path& path)
 	}
 }
 
-std::optional<std::filesystem::path> accept_drag_drop(const std::string& payload_id, const ExtensionSet& allowed_extensions)
+auto accept_drag_drop(const std::string& payload_id, const ExtensionSet& allowed_extensions) -> std::optional<std::filesystem::path>
 {
 	std::optional<std::filesystem::path> fp {};
 	if (ImGui::BeginDragDropTarget()) {

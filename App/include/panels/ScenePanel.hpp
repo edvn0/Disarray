@@ -13,7 +13,7 @@ namespace Disarray::Client {
 
 class ScenePanel : public Disarray::Panel {
 public:
-	ScenePanel(Disarray::Device& dev, Disarray::Window&, Disarray::Swapchain&, Disarray::Scene* s);
+	ScenePanel(Disarray::Device& dev, Disarray::Window&, Disarray::Swapchain&, Disarray::Scene& s);
 
 	void update(float) override;
 	void interface() override;
@@ -24,7 +24,7 @@ private:
 	void draw_entity_node(Entity&, bool has_parent, std::uint32_t depth = 0);
 
 	Device& device;
-	Scene* scene;
+	Scene& scene;
 
 	std::unique_ptr<entt::entity> selected_entity {};
 
@@ -105,7 +105,7 @@ private:
 
 	template <ValidComponent T> void draw_add_component_entry()
 	{
-		if (auto entity = Entity { scene, *selected_entity }; entity.is_valid() && !entity.has_component<T>()) {
+		if (auto entity = Entity { &scene, *selected_entity }; entity.is_valid() && !entity.has_component<T>()) {
 			if (ImGui::MenuItem(Components::component_name<T>.data())) {
 				entity.add_component<T>();
 				ImGui::CloseCurrentPopup();

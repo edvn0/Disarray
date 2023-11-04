@@ -38,11 +38,11 @@ public:
 	}
 	[[nodiscard]] auto get_descriptor_set(FrameIndex frame_index, DescriptorSet set) const -> VkDescriptorSet override
 	{
-		return descriptor_sets.at(frame_index.value).at(set.value);
+		return descriptor_sets.at(frame_index).at(set.value);
 	}
 	[[nodiscard]] auto get_descriptor_set(DescriptorSet set) const -> VkDescriptorSet override
 	{
-		return descriptor_sets.at(swapchain.get_current_frame()).at(set.value);
+		return descriptor_sets.at(swapchain.get_current_frame_index()).at(set.value);
 	}
 	[[nodiscard]] auto get_descriptor_set() const -> VkDescriptorSet override
 	{
@@ -81,10 +81,12 @@ private:
 	ShadowPassUBO shadow_pass_ubo {};
 	DirectionalLightUBO directional_light_ubo {};
 	GlyphUBO glyph_ubo {};
-	using UBOArray = std::array<Scope<Vulkan::UniformBuffer>, 6>;
-	std::unordered_map<std::size_t, UBOArray> frame_index_ubo_map {};
 
-	std::unordered_map<std::size_t, std::vector<VkDescriptorSet>> descriptor_sets;
+	static constexpr auto ubo_count = 6U;
+	using UBOArray = std::array<Scope<Vulkan::UniformBuffer>, ubo_count>;
+	std::unordered_map<FrameIndex, UBOArray> frame_index_ubo_map {};
+
+	std::unordered_map<FrameIndex, std::vector<VkDescriptorSet>> descriptor_sets;
 	std::vector<VkDescriptorSetLayout> layouts;
 	void initialise_descriptors(bool should_clean = false);
 

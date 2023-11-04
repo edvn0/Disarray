@@ -27,31 +27,19 @@ public:
 
 private:
 	void handle_file_drop(const std::filesystem::path&);
+	void setup_filewatcher_and_threadpool(Threading::ThreadPool& pool);
 
+	Device& device;
 	Extent extent {};
+
+	SceneRenderer scene_renderer;
 
 	Scope<Scene> scene;
 	Scope<Scene> running_scene;
-	Device& device;
+	Scope<FileWatcher> file_watcher;
 
 	EditorCamera camera;
 	GizmoType gizmo_type { GizmoType::Rotate };
-
-	struct PointLightData {
-		std::uint32_t calculate_point_lights { 1 };
-		std::uint32_t use_gamma_correction { 0 };
-
-		[[nodiscard]] static auto get_constants() -> std::vector<SpecialisationConstant>
-		{
-			return {
-				SpecialisationConstant { ElementType::Uint },
-				SpecialisationConstant { ElementType::Uint },
-			};
-		}
-		[[nodiscard]] auto get_pointer() const -> const void* { return this; }
-	};
-
-	PointLightData point_light_data {};
 
 	bool viewport_panel_mouse_over { false };
 	bool viewport_panel_focused { false };

@@ -7,6 +7,7 @@
 #include <queue>
 #include <type_traits>
 
+#include "SceneRenderer.hpp"
 #include "core/Collections.hpp"
 #include "core/FileWatcher.hpp"
 #include "core/ThreadPool.hpp"
@@ -40,41 +41,21 @@ enum class GizmoType : std::uint16_t {
 	Scale = ScaleX | ScaleY | ScaleZ
 };
 
-enum class SceneFramebuffer : std::uint8_t {
-	Geometry,
-	Identity,
-	Shadow,
-};
-
-struct SceneParameters {
-	bool enable_batch_renderer { true };
-	bool enable_text_renderer { true };
-	bool draw_identifiers { true };
-};
-
 class Scene {
 public:
 	Scene(const Disarray::Device&, std::string_view);
 	~Scene();
 
-	void begin_frame(const Camera&);
-	void end_frame();
+	void begin_frame(const Camera&, SceneRenderer& scene_renderer);
+	void end_frame(SceneRenderer& renderer);
 
 	void update(float);
-	void render();
+	void render(SceneRenderer& renderer);
 	void interface();
 	void construct(Disarray::App&);
 	void destruct();
 	void on_event(Disarray::Event&);
 	void recreate(const Extent&);
-
-	void set_viewport_bounds(const glm::vec2& max, const glm::vec2& min)
-	{
-		vp_max = max;
-		vp_min = min;
-	}
-
-	auto get_viewport_bounds() const -> FloatExtent { return { vp_max.x - vp_min.x, vp_max.y - vp_min.y }; }
 
 	auto create(std::string_view = "Unnamed") -> Entity;
 
@@ -84,21 +65,6 @@ public:
 	}
 	void delete_entity(entt::entity);
 	void delete_entity(const Entity& entity);
-
-	auto get_image(std::uint32_t index) const -> const Disarray::Image&
-	{
-		if (index == 0) {
-			return framebuffers.at(SceneFramebuffer::Geometry)->get_image(0);
-		}
-		if (index == 1) {
-			return framebuffers.at(SceneFramebuffer::Identity)->get_image(0);
-		}
-		return framebuffers.at(SceneFramebuffer::Shadow)->get_depth_image();
-	}
-
-	auto get_final_image() const -> const Disarray::Image&;
-
-	auto get_command_executor() const -> const CommandExecutor& { return *command_executor; };
 
 	auto get_selected_entity() const -> const auto& { return selected_entity; }
 	auto get_registry() -> entt::registry& { return registry; };
@@ -131,7 +97,7 @@ public:
 	}
 
 	void update_picked_entity(std::uint32_t handle);
-	static void manipulate_entity_transform(Entity&, Camera&, GizmoType);
+	void manipulate_entity_transform(Entity&, Camera&, GizmoType);
 
 	template <class Func> constexpr void for_all_entities(Func&& func)
 	{
@@ -146,52 +112,23 @@ public:
 
 	void clear();
 
-	template <SceneFramebuffer Framebuffer> auto get_framebuffer() const { return framebuffers.at(Framebuffer); }
-	auto get_renderer() -> auto& { return *scene_renderer; }
-
 	static auto copy(Scene& scene) -> Scope<Scene>;
-
-	auto get_identifier_buffer() const -> const auto& { return *entity_identifiers; }
 
 private:
 	const Disarray::Device& device;
 	std::string scene_name;
-	SceneParameters parameters {};
-	Scope<Renderer> scene_renderer { nullptr };
-	Scope<FileWatcher> file_watcher { nullptr };
 
 	Scope<Entity> picked_entity { nullptr };
 	Scope<Entity> selected_entity { nullptr };
 
-	Extent extent;
-	glm::vec2 vp_max { 1 };
-	glm::vec2 vp_min { 1 };
+	Extent extent {};
 
-	Ref<Disarray::CommandExecutor> command_executor {};
-
-	std::unordered_map<SceneFramebuffer, Ref<Disarray::Framebuffer>> framebuffers {};
-
-	Scope<Disarray::StorageBuffer> point_light_transforms {};
-	Scope<Disarray::StorageBuffer> point_light_colours {};
-	Scope<Disarray::StorageBuffer> entity_identifiers {};
-	Scope<Disarray::StorageBuffer> entity_transforms {};
-
-	std::mutex registry_access;
 	entt::registry registry;
 
-	void draw_shadows();
-	void draw_identifiers();
-	void draw_geometry();
-	void draw_skybox();
-
-	auto get_pipeline(const std::string& key) -> Ref<Disarray::Pipeline>&;
-
-	void setup_filewatcher_and_threadpool(Threading::ThreadPool&);
-
-	std::future<void> final_pool_callback {};
-	std::atomic_bool should_run_callbacks { true };
-	std::condition_variable callback_cv {};
-	std::mutex callback_mutex {};
+	void draw_shadows(SceneRenderer& renderer);
+	void draw_identifiers(SceneRenderer& renderer);
+	void draw_geometry(SceneRenderer& renderer);
+	void draw_skybox(SceneRenderer& renderer);
 
 	friend class CppScript;
 };

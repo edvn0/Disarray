@@ -34,12 +34,10 @@ class PipelineCache;
 class TextureCache;
 class TextRenderer;
 struct BatchRenderer;
+struct MeshSubstructure;
 
 class CppScript;
 class Camera;
-
-struct Extent;
-struct FloatExtent;
 
 namespace Components {
 	struct Tag;

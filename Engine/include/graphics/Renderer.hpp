@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <glm/glm.hpp>
 
 #include <fmt/core.h>
@@ -8,13 +10,13 @@
 #include <span>
 #include <tuple>
 
-#include "Forward.hpp"
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/IndexBuffer.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/RenderCommandQueue.hpp"
 #include "graphics/RendererProperties.hpp"
+#include "graphics/Swapchain.hpp"
 #include "graphics/TextRenderer.hpp"
 #include "graphics/VertexBuffer.hpp"
 
@@ -25,33 +27,6 @@ namespace Disarray {
 
 struct RendererProperties {
 	std::string debug_name { "Unknown" };
-};
-
-using DescriptorSet = TypeSafeWrapper<std::uint32_t>;
-using DescriptorBinding = TypeSafeWrapper<std::uint32_t>;
-using FrameIndex = TypeSafeWrapper<std::uint32_t>;
-
-enum class UBOIdentifier : std::uint8_t {
-	Default,
-	Camera,
-	PointLight,
-	ShadowPass,
-	DirectionalLight,
-	Glyph,
-	ImageIndices,
-};
-
-enum class RenderPasses : std::uint8_t {
-	Text,
-	PlanarGeometry,
-};
-
-struct RenderAreaExtent {
-	Extent offset {};
-	Extent extent {};
-
-	explicit RenderAreaExtent(const Disarray::Framebuffer&);
-	RenderAreaExtent(const Extent& offset, const Extent& extent);
 };
 
 class IGraphicsResource {
@@ -89,7 +64,10 @@ public:
 
 class Renderer : public ReferenceCountable {
 public:
+	virtual void construct_sub_renderers(const Disarray::Device&, Disarray::App&) = 0;
+
 	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear, const RenderAreaExtent&) = 0;
+	virtual void begin_pass(Disarray::CommandExecutor&, const Disarray::Framebuffer&, bool explicit_clear, const RenderAreaExtent&) = 0;
 	virtual void begin_pass(Disarray::CommandExecutor& executor, Disarray::Framebuffer& framebuffer, bool explicit_clear)
 	{
 		begin_pass(executor, framebuffer, explicit_clear, RenderAreaExtent { framebuffer });
@@ -113,7 +91,7 @@ public:
 	/**
 	 * @brief This is an external pass, i.e. requires that the underlying implementation provides a render pass.
 	 */
-	virtual void fullscreen_quad_pass(Disarray::CommandExecutor&, const Extent& extent) = 0;
+	virtual void fullscreen_quad_pass(Disarray::CommandExecutor&, const Disarray::Pipeline& fullscreen_pipeline) = 0;
 
 	virtual void on_resize() = 0;
 	virtual void clear_pass(Disarray::CommandExecutor&, RenderPasses passes) = 0;
@@ -142,6 +120,9 @@ public:
 	virtual void draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
 		const glm::vec4& colour, const glm::mat4& transform)
 		= 0;
+	virtual void draw_mesh(Disarray::CommandExecutor& executor, const Disarray::VertexBuffer& vertices, const Disarray::IndexBuffer& indices,
+		const Disarray::Pipeline& mesh_pipeline, const glm::vec4& colour, const glm::mat4& transform)
+		= 0;
 
 	virtual void draw_mesh(
 		Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4& transform = glm::identity<glm::mat4>())
@@ -156,18 +137,9 @@ public:
 		const glm::vec4& colour, const glm::mat4& transform = glm::identity<glm::mat4>(), const std::uint32_t identifier = 0)
 		= 0;
 
-	virtual void draw_submeshes(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&,
-		const glm::vec4& colour, const glm::mat4& transform = glm::identity<glm::mat4>(), const std::uint32_t identifier = 0)
-		= 0;
-
 	virtual void draw_mesh_instanced(
 		Disarray::CommandExecutor&, std::size_t count, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&)
 		= 0;
-	virtual void draw_mesh_instanced(Disarray::CommandExecutor&, std::size_t count, const Disarray::Pipeline&) = 0;
-
-	virtual void draw_aabb(Disarray::CommandExecutor&, const Disarray::AABB&, const glm::vec4&, const glm::mat4& transform) = 0;
-
-	virtual void draw_identifier(Disarray::CommandExecutor&, const Disarray::Pipeline&, std::uint32_t identifier, const glm::mat4& transform) = 0;
 
 	virtual void draw_text(std::string_view text, const glm::uvec2& position, float size, const glm::vec4& colour) = 0;
 	virtual void draw_text(std::string_view text, const glm::vec3& position, float size, const glm::vec4& colour) = 0;
@@ -218,7 +190,6 @@ public:
 	virtual auto get_batch_renderer() -> BatchRenderer& = 0;
 
 	auto get_graphics_resource() -> IGraphicsResource& { return *graphics_resource; }
-	[[nodiscard]] virtual auto get_composite_pass_image() const -> const Disarray::Image& = 0;
 
 	static auto construct(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&) -> Ref<Disarray::Renderer>;
 	static auto construct_unique(const Disarray::Device&, const Disarray::Swapchain&, const RendererProperties&) -> Scope<Disarray::Renderer>;

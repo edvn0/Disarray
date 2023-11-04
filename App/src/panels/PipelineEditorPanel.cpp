@@ -3,8 +3,8 @@
 namespace Disarray::Client {
 
 PipelineEditorPanel::PipelineEditorPanel(Device& dev, Window&, Swapchain&, PipelineCache& cache)
-	: device(dev)
-	, pipeline_cache(cache)
+	:pipeline_cache(cache)
+	,device(dev)
 {
 }
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -9,9 +11,36 @@
 #include <cstddef>
 #include <optional>
 
+#include "core/Types.hpp"
+#include "graphics/ImageProperties.hpp"
+
 namespace Disarray {
 
-struct Extent;
+using DescriptorSet = TypeSafeWrapper<std::uint32_t>;
+using DescriptorBinding = TypeSafeWrapper<std::uint16_t>;
+
+enum class UBOIdentifier : std::uint8_t {
+	Default,
+	Camera,
+	PointLight,
+	ShadowPass,
+	DirectionalLight,
+	Glyph,
+	ImageIndices,
+};
+
+enum class RenderPasses : std::uint8_t {
+	Text,
+	PlanarGeometry,
+};
+
+struct RenderAreaExtent {
+	Extent offset {};
+	Extent extent {};
+
+	explicit RenderAreaExtent(const Disarray::Framebuffer&);
+	RenderAreaExtent(const Extent& offset, const Extent& extent);
+};
 
 enum class Geometry : std::uint8_t {
 	Circle,

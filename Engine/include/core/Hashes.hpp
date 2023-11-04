@@ -18,14 +18,14 @@ template <typename T, typename... Rest> inline void hash_combine(std::size_t& se
 
 struct StringHash {
 	using is_transparent = void;
-	[[nodiscard]] size_t operator()(const char* txt) const { return std::hash<std::string_view> {}(txt); }
-	[[nodiscard]] size_t operator()(std::string_view txt) const { return std::hash<std::string_view> {}(txt); }
-	[[nodiscard]] size_t operator()(const std::filesystem::path& txt) const { return std::hash<std::string_view> {}(txt.string()); }
-	[[nodiscard]] size_t operator()(const std::string& txt) const { return std::hash<std::string> {}(txt); }
+	[[nodiscard]] auto operator()(const char* txt) const -> size_t { return std::hash<std::string_view> {}(txt); }
+	[[nodiscard]] auto operator()(std::string_view txt) const -> size_t { return std::hash<std::string_view> {}(txt); }
+	[[nodiscard]] auto operator()(const std::filesystem::path& txt) const -> size_t { return std::hash<std::string_view> {}(txt.string()); }
+	[[nodiscard]] auto operator()(const std::string& txt) const -> size_t { return std::hash<std::string> {}(txt); }
 };
 
 struct FileSystemPathHasher {
-	std::size_t operator()(const std::filesystem::path& path) const
+	auto operator()(const std::filesystem::path& path) const -> std::size_t
 	{
 		std::hash<std::filesystem::path::string_type> hasher;
 		return hasher(path.native());

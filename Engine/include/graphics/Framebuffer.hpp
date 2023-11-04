@@ -1,10 +1,11 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <glm/glm.hpp>
 
 #include <functional>
 
-#include "Forward.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "graphics/ImageProperties.hpp"
@@ -62,9 +63,10 @@ public:
 	virtual auto get_depth_image() const -> const Disarray::Image& = 0;
 
 	virtual auto get_render_pass() -> Disarray::RenderPass& = 0;
+	virtual auto get_render_pass() const -> const Disarray::RenderPass& = 0;
 
 	virtual auto get_colour_attachment_count() const -> std::uint32_t = 0;
-	virtual auto has_depth() -> bool = 0;
+	virtual auto has_depth() const -> bool = 0;
 
 	template <class Func> void register_on_framebuffer_change(Func&& func) { change_callbacks.emplace_back(std::forward<Func>(func)); };
 

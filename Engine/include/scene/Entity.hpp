@@ -49,6 +49,17 @@ public:
 		return emplace_component<T>(std::forward<Args>(args)...);
 	}
 
+	template <ValidComponent T, typename... Args> auto put_component(Args&&... args) -> decltype(auto)
+	{
+		if (has_component<T>()) {
+			T constructed { std::forward<Args>(args)... };
+			auto& component = get_components<T>();
+			component = constructed;
+			return component;
+		}
+		return emplace_component<T>(std::forward<Args>(args)...);
+	}
+
 	template <ValidComponent T, typename... Args> auto try_add_component(Args&&... args) -> decltype(auto)
 	{
 		if (has_component<T>()) {
