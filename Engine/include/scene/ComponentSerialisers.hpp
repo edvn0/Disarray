@@ -21,16 +21,25 @@ public:
 
 enum class SerialiserType : std::uint8_t {
 	Faulty,
-	Pipeline,
-	Script,
-	Texture,
-	Mesh,
+	Tag,
 	Transform,
+	ID,
+	Inheritance,
 	LineGeometry,
 	QuadGeometry,
-	Inheritance,
+	Mesh,
+	Material,
+	Texture,
 	DirectionalLight,
 	PointLight,
+	Script,
+	Controller,
+	Camera,
+	BoxCollider,
+	SphereCollider,
+	PillCollider,
+	Skybox,
+	Text
 };
 template <class T> inline constexpr SerialiserType serialiser_type_for = SerialiserType::Faulty;
 
@@ -77,6 +86,11 @@ namespace {
 
 MAKE_SERIALISER(ScriptSerialiser, Script)
 MAKE_SERIALISER(MeshSerialiser, Mesh)
+MAKE_SERIALISER(SkyboxSerialiser, Skybox)
+MAKE_SERIALISER(TextSerialiser, Text)
+MAKE_SERIALISER(BoxColliderSerialiser, BoxCollider)
+MAKE_SERIALISER(SphereColliderSerialiser, SphereCollider)
+MAKE_SERIALISER(PillColliderSerialiser, PillCollider)
 MAKE_SERIALISER(TextureSerialiser, Texture)
 MAKE_SERIALISER(TransformSerialiser, Transform)
 MAKE_SERIALISER(LineGeometrySerialiser, LineGeometry)
@@ -87,6 +101,11 @@ MAKE_SERIALISER(InheritanceSerialiser, Inheritance)
 
 MAKE_DESERIALISER(ScriptDeserialiser, Script)
 MAKE_DESERIALISER(MeshDeserialiser, Mesh)
+MAKE_DESERIALISER(SkyboxDeserialiser, Skybox)
+MAKE_DESERIALISER(TextDeserialiser, Text)
+MAKE_DESERIALISER(BoxColliderDeserialiser, BoxCollider)
+MAKE_DESERIALISER(SphereColliderDeserialiser, SphereCollider)
+MAKE_DESERIALISER(PillColliderDeserialiser, PillCollider)
 MAKE_DESERIALISER(TextureDeserialiser, Texture)
 MAKE_DESERIALISER(TransformDeserialiser, Transform)
 MAKE_DESERIALISER(LineGeometryDeserialiser, LineGeometry)

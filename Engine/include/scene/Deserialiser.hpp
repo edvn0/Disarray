@@ -76,12 +76,18 @@ namespace {
 				auto&& [id, tag] = parse_key(key);
 				Entity entity;
 				entity = Entity::deserialise(scene, id, tag);
-				deserialise_component<Components::QuadGeometry>(components, entity);
-				deserialise_component<Components::LineGeometry>(components, entity);
+
 				deserialise_component<Components::Script>(components, entity);
-				deserialise_component<Components::Transform>(components, entity);
-				deserialise_component<Components::Texture>(components, entity);
 				deserialise_component<Components::Mesh>(components, entity);
+				deserialise_component<Components::Skybox>(components, entity);
+				deserialise_component<Components::Text>(components, entity);
+				deserialise_component<Components::BoxCollider>(components, entity);
+				deserialise_component<Components::SphereCollider>(components, entity);
+				deserialise_component<Components::PillCollider>(components, entity);
+				deserialise_component<Components::Texture>(components, entity);
+				deserialise_component<Components::Transform>(components, entity);
+				deserialise_component<Components::LineGeometry>(components, entity);
+				deserialise_component<Components::QuadGeometry>(components, entity);
 				deserialise_component<Components::DirectionalLight>(components, entity);
 				deserialise_component<Components::PointLight>(components, entity);
 				deserialise_component<Components::Inheritance>(components, entity);
@@ -125,7 +131,8 @@ namespace {
 	};
 } // namespace
 
-using SceneDeserialiser = Deserialiser<TextureDeserialiser, ScriptDeserialiser, MeshDeserialiser, TransformDeserialiser, InheritanceDeserialiser,
-	LineGeometryDeserialiser, QuadGeometryDeserialiser, DirectionalLightDeserialiser, PointLightDeserialiser>;
+using SceneDeserialiser = Deserialiser<ScriptDeserialiser, MeshDeserialiser, SkyboxDeserialiser, TextDeserialiser, BoxColliderDeserialiser,
+	SphereColliderDeserialiser, PillColliderDeserialiser, TextureDeserialiser, TransformDeserialiser, LineGeometryDeserialiser,
+	QuadGeometryDeserialiser, DirectionalLightDeserialiser, PointLightDeserialiser, InheritanceDeserialiser>;
 
 } // namespace Disarray

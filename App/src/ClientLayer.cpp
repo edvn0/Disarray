@@ -4,29 +4,25 @@
 
 #include <Disarray.hpp>
 #include <fmt/format.h>
+#include <imgui_internal.h>
 
 #include <array>
-#include <exception>
 #include <filesystem>
 #include <initializer_list>
 #include <memory>
-#include <type_traits>
 #include <utility>
 
 #include "core/Random.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/RendererProperties.hpp"
-#include "imgui_internal.h"
 #include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
-#include "panels/LogPanel.hpp"
 #include "panels/PipelineEditorPanel.hpp"
-#include "panels/ScenePanel.hpp"
 #include "panels/StatisticsPanel.hpp"
 #include "scene/Components.hpp"
 #include "scene/Scene.hpp"
-#include "util/Timer.hpp"
+#include "ui/UI.hpp"
 
 namespace {
 template <std::size_t Count>
@@ -59,26 +55,25 @@ void ClientLayer::construct(App& app)
 	scene_renderer.construct(app);
 	setup_filewatcher_and_threadpool(app.get_thread_pool());
 
-	scene = make_scope<Scene>(device, "Default scene");
+	scene = make_ref<Scene>(device, "Default scene");
 	scene->construct(app);
 	create_entities();
 
 	extent = app.get_swapchain().get_extent();
-	auto copied = Scene::copy(*scene);
-	scene = std::move(copied);
+	running_scene = scene;
 
 	auto stats_panel = app.add_panel<StatisticsPanel>(app.get_statistics());
 	auto content_panel = app.add_panel<DirectoryContentPanel>("Assets");
-	auto scene_panel = app.add_panel<ScenePanel>(*scene);
 	auto execution_stats_panel = app.add_panel<ExecutionStatisticsPanel>(scene_renderer.get_command_executor());
 	auto pipeline_editor_panel = app.add_panel<PipelineEditorPanel>(scene_renderer.get_pipeline_cache());
+	scene_panel = std::dynamic_pointer_cast<ScenePanel>(app.add_panel<ScenePanel>(running_scene.get()));
 	// auto log_panel = app.add_panel<LogPanel>("Assets/Logs/disarray_errors.log");
 
 	stats_panel->construct(app);
 	content_panel->construct(app);
-	scene_panel->construct(app);
 	execution_stats_panel->construct(app);
 	pipeline_editor_panel->construct(app);
+	scene_panel->construct(app);
 	// log_panel->construct(app);
 }
 
@@ -92,6 +87,12 @@ void ClientLayer::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
 
 void ClientLayer::create_entities()
 {
+	icon_play = scene_renderer.get_texture_cache().get("Play");
+	icon_stop = scene_renderer.get_texture_cache().get("Stop");
+	icon_pause = scene_renderer.get_texture_cache().get("Pause");
+	icon_step = scene_renderer.get_texture_cache().get("Step");
+	icon_simulate = scene_renderer.get_texture_cache().get("Simulate");
+
 	auto& graphics_resource = scene_renderer.get_graphics_resource();
 
 	const auto cube_mesh = Mesh::construct(device,
@@ -108,7 +109,6 @@ void ClientLayer::create_entities()
 		{ ElementType::Float3, "bitangents" },
 	};
 	auto& resources = graphics_resource;
-	const auto& desc_layout = resources.get_descriptor_set_layouts();
 
 	auto texture_cube = Texture::construct(device,
 		{
@@ -229,7 +229,7 @@ void ClientLayer::create_entities()
 
 	auto pl_system = scene->create("PointLightSystem");
 
-	constexpr auto create_point_light = [](Scope<Scene>& point_light_scene, auto index, auto& pl_sys, auto& cols, auto& sphere_mesh) {
+	constexpr auto create_point_light = [](Ref<Scene>& point_light_scene, auto index, auto& pl_sys, auto& cols, auto& sphere_mesh) {
 		auto point_light = point_light_scene->create("PointLight-{}", index);
 		point_light.template get_components<Components::ID>().can_interact_with = false;
 		auto& light_component = point_light.template add_component<Components::PointLight>();
@@ -261,6 +261,129 @@ void ClientLayer::create_entities()
 	auto scene_camera = scene->create("Scene Camera");
 	scene_camera.add_component<Components::Camera>();
 	scene_camera.get_components<Components::Transform>().position = { 15, -16, 16 };
+}
+
+auto ClientLayer::toolbar() -> void
+{
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 2));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+	auto& colors = ImGui::GetStyle().Colors;
+	const auto& button_hovered = colors[ImGuiCol_ButtonHovered];
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(button_hovered.x, button_hovered.y, button_hovered.z, 0.5f));
+	const auto& button_active = colors[ImGuiCol_ButtonActive];
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(button_active.x, button_active.y, button_active.z, 0.5f));
+
+	ImGui::Begin("##toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+	bool toolbar_enabled = running_scene != nullptr;
+
+	float size = ImGui::GetWindowHeight() - 4.0f;
+	ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
+
+	bool has_play_button = scene_state == SceneState::Edit || scene_state == SceneState::Play;
+	bool has_simulate_button = scene_state == SceneState::Edit || scene_state == SceneState::Simulate;
+	bool has_pause_button = scene_state != SceneState::Edit;
+
+	if (has_play_button) {
+		const auto& icon = (scene_state == SceneState::Edit || scene_state == SceneState::Simulate) ? icon_play : icon_stop;
+		if (UI::image_button(*icon, glm::vec2(size, size)) && toolbar_enabled) {
+			if (scene_state == SceneState::Edit || scene_state == SceneState::Simulate) {
+				on_scene_play();
+			} else {
+				on_scene_stop();
+			}
+		}
+	}
+
+	if (has_simulate_button) {
+		if (has_play_button) {
+			ImGui::SameLine();
+		}
+
+		const auto& icon = (scene_state == SceneState::Edit || scene_state == SceneState::Play) ? icon_simulate : icon_stop;
+		if (UI::image_button(*icon, glm::vec2(size, size)) && toolbar_enabled) {
+			if (scene_state == SceneState::Edit || scene_state == SceneState::Play) {
+				on_scene_simulate();
+			} else {
+				on_scene_stop();
+			}
+		}
+	}
+	if (has_pause_button) {
+		bool is_paused = running_scene->is_paused();
+		ImGui::SameLine();
+		const auto& pause_icon = icon_pause;
+		if (UI::image_button(*pause_icon, glm::vec2(size, size)) && toolbar_enabled) {
+			on_scene_pause();
+		}
+
+		// Step button
+		if (is_paused) {
+			ImGui::SameLine();
+			const auto& icon = icon_step;
+			if (UI::image_button(*icon, glm::vec2(size, size)) && toolbar_enabled) {
+				running_scene->step();
+			}
+		}
+	}
+	ImGui::PopStyleVar(2);
+	ImGui::PopStyleColor(3);
+	ImGui::End();
+}
+
+void ClientLayer::on_scene_play()
+{
+	if (scene_state == SceneState::Simulate) {
+		on_scene_stop();
+	}
+
+	scene_state = SceneState::Play;
+
+	running_scene = scene;
+	running_scene->on_runtime_start();
+
+	scene_panel->set_scene(running_scene.get());
+}
+
+void ClientLayer::on_scene_simulate()
+{
+	if (scene_state == SceneState::Play) {
+		on_scene_stop();
+	}
+
+	scene_state = SceneState::Simulate;
+
+	running_scene = Scene::copy(*scene);
+	running_scene->on_simulation_start();
+
+	scene_panel->set_scene(running_scene.get());
+}
+
+void ClientLayer::on_scene_stop()
+{
+	ensure(scene_state == SceneState::Play || scene_state == SceneState::Simulate);
+
+	if (scene_state == SceneState::Play) {
+		running_scene->on_runtime_stop();
+	} else if (scene_state == SceneState::Simulate) {
+		running_scene->on_simulation_stop();
+	}
+
+	scene_state = SceneState::Edit;
+
+	running_scene = Scene::copy(*scene);
+
+	scene_panel->set_scene(running_scene.get());
+}
+
+void ClientLayer::on_scene_pause()
+{
+	if (scene_state == SceneState::Edit) {
+		return;
+	}
+
+	running_scene->set_paused(true);
 }
 
 void ClientLayer::interface()
@@ -308,8 +431,8 @@ void ClientLayer::interface()
 		const auto& image = scene_renderer.get_final_image();
 		UI::image(image, { viewport_size.x, viewport_size.y });
 
-		if (const auto& entity = scene->get_selected_entity(); entity->is_valid()) {
-			scene->manipulate_entity_transform(*entity, camera, gizmo_type);
+		if (const auto& entity = running_scene->get_selected_entity(); entity->is_valid()) {
+			running_scene->manipulate_entity_transform(*entity, camera, gizmo_type);
 		}
 
 		auto window_size = ImGui::GetWindowSize();
@@ -341,18 +464,20 @@ void ClientLayer::interface()
 
 	ImGui::End();
 
+	toolbar();
+
 	scene_renderer.interface();
-	scene->interface();
+	running_scene->interface();
 }
 
 void ClientLayer::handle_swapchain_recreation(Swapchain& swapchain)
 {
 	extent = swapchain.get_extent();
-	scene->recreate(swapchain.get_extent());
+	running_scene->recreate(swapchain.get_extent());
 	scene_renderer.recreate(true, swapchain.get_extent());
 	auto& graphics_resource = scene_renderer.get_graphics_resource();
 
-	auto texture_cube = scene->get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
+	auto texture_cube = running_scene->get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
 	graphics_resource.expose_to_shaders(texture_cube->get_image(), DescriptorSet(2), DescriptorBinding(2));
 }
 
@@ -390,34 +515,59 @@ void ClientLayer::on_event(Event& event)
 			pos.y /= vp_bounds[0].y;
 
 			if (pos.x < 0 || pos.x > 1 || pos.y < 0 || pos.y > 1) {
-				scene->update_picked_entity(0);
+				running_scene->update_picked_entity(0);
 				return true;
 			}
 
 			auto pixel_data = image.read_pixel(pos);
-			std::visit(Tuple::overload { [&s = this->scene](const std::uint32_t& handle) { s->update_picked_entity(handle); },
+			std::visit(Tuple::overload { [&s = this->running_scene](const std::uint32_t& handle) { s->update_picked_entity(handle); },
 						   [](const glm::vec4& vec) {}, [](std::monostate) {} },
 				pixel_data);
 			return true;
 		}
 
-		scene->update_picked_entity(0);
+		running_scene->update_picked_entity(0);
 		return false;
 	});
 	camera.on_event(event);
-	scene->on_event(event);
+	running_scene->on_event(event);
 }
 
 void ClientLayer::update(float time_step)
 {
-	camera.on_update(time_step);
-	scene->update(time_step);
+	switch (scene_state) {
+	case SceneState::Edit: {
+		camera.on_update(time_step);
+		running_scene->on_update_editor(time_step);
+		break;
+	}
+	case SceneState::Simulate: {
+		camera.on_update(time_step);
+		running_scene->on_update_simulation(time_step);
+		break;
+	}
+	case SceneState::Play: {
+		running_scene->on_update_runtime(time_step);
+		break;
+	}
+	}
 }
 
 void ClientLayer::render()
 {
 	scene_renderer.begin_execution();
-	scene->begin_frame(camera, scene_renderer);
+	if (scene_state == SceneState::Play) {
+		auto primary_camera = scene->get_primary_camera();
+
+		if (primary_camera.has_value()) {
+			auto&& [view, projection, view_projection] = *primary_camera;
+			scene->begin_frame(view, projection, view_projection, scene_renderer);
+		} else {
+			scene->begin_frame(camera, scene_renderer);
+		}
+	} else {
+		scene->begin_frame(camera, scene_renderer);
+	}
 	scene->render(scene_renderer);
 	scene->end_frame(scene_renderer);
 	scene_renderer.submit_executed_commands();
@@ -430,124 +580,7 @@ void ClientLayer::destruct()
 	scene->destruct();
 }
 
-template <typename Child> class FileHandlerBase {
-public:
-	explicit FileHandlerBase(const Device& dev, Scene* scene, std::filesystem::path path)
-		: device(dev)
-		, base_scene(scene)
-		, file_path(std::move(path))
-	{
-		if (valid_file()) {
-			handle();
-		}
-	}
-
-protected:
-	auto child() -> auto& { return static_cast<Child&>(*this); }
-	auto get_scene() -> auto* { return base_scene; }
-	[[nodiscard]] auto get_device() const -> const auto& { return device; }
-	[[nodiscard]] auto get_path() const -> const auto& { return file_path; }
-
-private:
-	void handle() { return child().handle_impl(); }
-	auto valid_file() -> bool { return child().valid_file_impl(); }
-	const Device& device;
-	Scene* base_scene;
-	std::filesystem::path file_path {};
-	Collections::StringViewSet extensions {};
-	bool valid { false };
-};
-
-class PNGHandler : public FileHandlerBase<PNGHandler> {
-public:
-	using FileHandlerBase<PNGHandler>::FileHandlerBase;
-
-private:
-	void handle_impl()
-	{
-		auto* scene = get_scene();
-		const auto& path = get_path();
-		auto entity = scene->create(path.filename().string());
-		auto texture = Texture::construct(get_device(),
-			{
-				.path = path,
-				.debug_name = path.filename().string(),
-			});
-
-		entity.add_component<Components::Texture>(texture);
-	}
-
-	auto valid_file_impl() -> bool
-	{
-		using namespace std::string_view_literals;
-		const auto& path = get_path();
-		static std::unordered_set valid_extensions = { ".png"sv, ".jpg"sv, ".png"sv, ".jpeg"sv, ".bmp"sv };
-		return valid_extensions.contains(path.extension().string());
-	}
-
-	friend class FileHandlerBase<PNGHandler>;
-};
-
-class MeshHandler : public FileHandlerBase<MeshHandler> {
-public:
-	using FileHandlerBase<MeshHandler>::FileHandlerBase;
-
-private:
-	void handle_impl()
-	{
-		auto* scene = get_scene();
-		const auto& path = get_path();
-		auto entity = scene->create(path.filename().string());
-		MeshProperties properties {
-			.path = path,
-		};
-		auto mesh = Mesh::construct(get_device(), properties);
-
-		entity.add_component<Components::Mesh>(mesh);
-	}
-
-	auto valid_file_impl() -> bool
-	{
-		using namespace std::string_view_literals;
-		const auto& path = get_path();
-		static std::unordered_set valid_extensions = {
-			".mesh"sv,
-			".obj"sv,
-			".fbx"sv,
-		};
-		return valid_extensions.contains(path.extension().string());
-	}
-
-	friend class FileHandlerBase<MeshHandler>;
-};
-
-class SceneHandler : public FileHandlerBase<SceneHandler> {
-public:
-	using FileHandlerBase<SceneHandler>::FileHandlerBase;
-
-private:
-	void handle_impl()
-	{
-		auto& current_scene = *get_scene();
-		current_scene.clear();
-		Scene::deserialise_into(current_scene, get_device(), get_path());
-	}
-
-	auto valid_file_impl() -> bool
-	{
-		using namespace std::string_view_literals;
-		const auto& path = get_path();
-		static std::unordered_set valid_extensions = { ".scene"sv, ".json"sv };
-		return valid_extensions.contains(path.extension().string());
-	}
-
-	friend class FileHandlerBase<SceneHandler>;
-};
-
-namespace {
-	template <class... T> struct HandlerGroup { };
-
-} // namespace
+#include "handlers/file_handlers.inl"
 
 void ClientLayer::handle_file_drop(const std::filesystem::path& path)
 {
@@ -559,7 +592,6 @@ void ClientLayer::handle_file_drop(const std::filesystem::path& path)
 		(T { dev, scene_ptr, path }, ...);
 	};
 
-	using FileHandlers = HandlerGroup<PNGHandler, SceneHandler, MeshHandler>;
 	evaluate_all(FileHandlers {}, device, scene.get(), path);
 }
 

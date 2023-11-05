@@ -41,12 +41,21 @@ enum class GizmoType : std::uint16_t {
 	Scale = ScaleX | ScaleY | ScaleZ
 };
 
-class Scene {
+enum class SceneState : std::uint8_t {
+	Play,
+	Edit,
+	Simulate,
+};
+
+class Scene : public ReferenceCountable {
+	using ViewProjectionTuple = std::tuple<glm::mat4, glm::mat4, glm::mat4>;
+
 public:
 	Scene(const Disarray::Device&, std::string_view);
 	~Scene();
 
 	void begin_frame(const Camera&, SceneRenderer& scene_renderer);
+	void begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_proj, SceneRenderer& scene_renderer);
 	void end_frame(SceneRenderer& renderer);
 
 	void update(float);
@@ -57,6 +66,8 @@ public:
 	void on_event(Disarray::Event&);
 	void recreate(const Extent&);
 
+	auto get_primary_camera() -> std::optional<ViewProjectionTuple>;
+
 	auto create(std::string_view = "Unnamed") -> Entity;
 
 	template <typename... Args> auto create(fmt::format_string<Args...> format, Args&&... args) -> Entity
@@ -66,11 +77,19 @@ public:
 	void delete_entity(entt::entity);
 	void delete_entity(const Entity& entity);
 
-	auto get_selected_entity() const -> const auto& { return selected_entity; }
+	[[nodiscard]] auto get_selected_entity() const -> const auto& { return selected_entity; }
 	auto get_registry() -> entt::registry& { return registry; };
-	auto get_registry() const -> const entt::registry& { return registry; };
-	auto get_name() const -> const std::string& { return scene_name; };
-	auto get_device() const -> const Disarray::Device& { return device; };
+	[[nodiscard]] auto get_registry() const -> const entt::registry& { return registry; };
+	[[nodiscard]] auto get_name() const -> const std::string& { return scene_name; };
+	[[nodiscard]] auto get_device() const -> const Disarray::Device& { return device; };
+
+	auto on_runtime_start() -> void;
+	auto on_simulation_start() -> void;
+	auto on_runtime_stop() -> void;
+	auto on_simulation_stop() -> void;
+	auto on_update_editor(float time_step) -> void;
+	auto on_update_simulation(float time_step) -> void;
+	auto on_update_runtime(float time_step) -> void;
 
 	template <ValidComponent... T> auto entities_with() -> std::vector<Entity>
 	{
@@ -99,11 +118,11 @@ public:
 	void update_picked_entity(std::uint32_t handle);
 	void manipulate_entity_transform(Entity&, Camera&, GizmoType);
 
-	template <class Func> constexpr void for_all_entities(Func&& func)
+	constexpr void for_all_entities(auto&& func)
 	{
 		const auto view = get_registry().storage<entt::entity>().each();
 		for (const auto& [entity] : view) {
-			std::forward<Func>(func)(entity);
+			func(entity);
 		}
 	}
 
@@ -114,7 +133,12 @@ public:
 
 	void clear();
 
-	static auto copy(Scene& scene) -> Scope<Scene>;
+	[[nodiscard]] auto is_paused() const { return paused; }
+	auto set_paused(bool new_pause_status) { paused = new_pause_status; }
+
+	void step(std::uint32_t steps = 0);
+
+	static auto copy(Scene& scene) -> Ref<Scene>;
 
 private:
 	const Disarray::Device& device;
@@ -122,6 +146,10 @@ private:
 
 	Scope<Entity> picked_entity { nullptr };
 	Scope<Entity> selected_entity { nullptr };
+
+	bool paused { false };
+	bool running { false };
+	std::uint32_t step_frames { 0 };
 
 	Extent extent {};
 

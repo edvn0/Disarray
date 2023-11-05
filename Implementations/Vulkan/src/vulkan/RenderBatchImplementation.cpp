@@ -65,18 +65,12 @@ void QuadVertexBatch::create_new_impl(Geometry geometry, const GeometryPropertie
 	glm::mat4 transform
 		= glm::translate(glm::mat4 { 1.0F }, props.position) * glm::mat4_cast(props.rotation) * glm::scale(glm::mat4 { 1.0F }, props.dimensions);
 
-	auto start_index = submitted_vertices;
 	for (std::size_t i = 0; i < vertex_per_object_count<QuadVertex>; i++) {
 		QuadVertex& vertex = emplace();
 		vertex.pos = transform * quad_positions.at(i);
 		vertex.uvs = texture_coordinates.at(i);
 		vertex.colour = props.colour;
-	}
-
-	auto normals = Maths::compute_normal(vertices.at(start_index + 1).pos, vertices.at(start_index + 0).pos, vertices.at(start_index + 2).pos);
-
-	for (std::size_t i = start_index; i < start_index + vertex_per_object_count<QuadVertex>; i++) {
-		vertices.at(i).normals = normals;
+		vertex.normals = glm::vec3 { 0, -1, 0 };
 	}
 
 	submitted_indices += index_per_object_count<QuadVertex>;

@@ -49,22 +49,17 @@ Scene::~Scene() = default;
 
 void Scene::begin_frame(const Camera& camera, SceneRenderer& scene_renderer)
 {
-	auto find_one = get_by_components<Components::Camera>();
-	bool camera_component_usable = true;
-	if (find_one) {
-		auto&& [camera_component, transform] = find_one->get_components<Components::Camera, const Components::Transform>();
-		// if we have a primary camera, then camera_component_usable should be false
-		if (camera_component.is_primary) {
-			auto&& [view, projection, pre_mul] = camera_component.compute(transform, extent);
-			scene_renderer.begin_frame(view, projection, pre_mul);
-		} else {
-			camera_component_usable = false;
-		}
+	if (const auto& view_projection_tuple = get_primary_camera(); view_projection_tuple.has_value()) {
+		auto&& [view, proj, view_proj] = *view_projection_tuple;
+		begin_frame(view, proj, view_proj, scene_renderer);
+	} else {
+		begin_frame(camera.get_view_matrix(), camera.get_projection_matrix(), camera.get_view_projection(), scene_renderer);
 	}
+}
 
-	if (!camera_component_usable || !find_one) {
-		scene_renderer.begin_frame(camera.get_view_matrix(), camera.get_projection_matrix(), camera.get_view_projection());
-	}
+void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_proj, SceneRenderer& scene_renderer)
+{
+	scene_renderer.begin_frame(view, proj, view_proj);
 
 	auto [ubo, camera_ubo, light_ubos, shadow_pass, directional, glyph] = scene_renderer.get_graphics_resource().get_editable_ubos();
 	auto& push_constant = scene_renderer.get_graphics_resource().get_editable_push_constant();
@@ -93,11 +88,11 @@ void Scene::begin_frame(const Camera& camera, SceneRenderer& scene_renderer)
 				light.projection_parameters.fov, extent.aspect_ratio(), light.projection_parameters.near, light.projection_parameters.far);
 			directional.near_far = { light.projection_parameters.near, light.projection_parameters.far, 0, 0 };
 		}
-		const auto view = glm::lookAt(glm::vec3(transform.position), center, { 0.0F, 1.0F, 0.0F });
+		const auto shadow_pass_view = glm::lookAt(glm::vec3(transform.position), center, { 0.0F, 1.0F, 0.0F });
 
-		const auto view_projection = projection * view;
+		const auto view_projection = projection * shadow_pass_view;
 
-		shadow_pass.view = view;
+		shadow_pass.view = shadow_pass_view;
 		shadow_pass.projection = projection;
 		shadow_pass.view_projection = view_projection;
 	}
@@ -153,26 +148,6 @@ void Scene::update(float time_step)
 		selected_entity.swap(picked_entity);
 		picked_entity = nullptr;
 	}
-
-	auto script_view = registry.view<Components::Script>();
-	std::vector<CppScript*> deferred_scripts {};
-	deferred_scripts.reserve(script_view.size());
-	script_view.each([&](const auto entity, Components::Script& script) {
-		if (script.has_been_bound()) {
-			script.instantiate();
-		}
-
-		auto& instantiated = script.get_script();
-		instantiated.update_entity(this, entity);
-		deferred_scripts.push_back(&instantiated);
-	});
-
-	Collections::parallel_for_each(deferred_scripts, [step = time_step](auto* script) { script->on_update(step); });
-
-	auto controller_view = registry.view<Components::Controller, Components::Transform>();
-	controller_view.each([step = time_step](const auto, Components::Controller& controller, Components::Transform& transform) {
-		controller.on_update(step, transform);
-	});
 }
 
 void Scene::render(SceneRenderer& renderer)
@@ -509,17 +484,18 @@ namespace {
 	{
 		for (auto&& [_, identifier, component] : old_reg.template view<Components::ID, Component>().each()) {
 			Entity& destination_entity = identifier_map.at(identifier.get_id());
-			destination_entity.put_component<Component>(component);
+			Component copy = component;
+			destination_entity.put_component<Component>(copy);
 		}
 	};
 } // namespace
 
-auto Scene::copy(Scene& scene) -> Scope<Scene>
+auto Scene::copy(Scene& scene) -> Ref<Scene>
 {
 	static constexpr auto copy_all
 		= []<ValidComponent... C>(ComponentGroup<C...>, auto& identifier_map, auto& old_reg) { (copy_component<C>(identifier_map, old_reg), ...); };
 
-	Scope<Scene> new_scene = make_scope<Scene>(scene.get_device(), scene.get_name());
+	auto new_scene = make_ref<Scene>(scene.get_device(), scene.get_name());
 
 	auto& old_registry = scene.get_registry();
 
@@ -530,10 +506,10 @@ auto Scene::copy(Scene& scene) -> Scope<Scene>
 		identifiers.try_emplace(identifier.get_id(), std::move(created));
 	}
 
-	using CopyableComponents
-		= ComponentGroup<Components::Transform, Components::Tag, Components::Inheritance, Components::LineGeometry, Components::QuadGeometry,
-			Components::Mesh, Components::Material, Components::Texture, Components::DirectionalLight, Components::PointLight, Components::Controller,
-			Components::Camera, Components::BoxCollider, Components::SphereCollider, Components::PillCollider, Components::Skybox, Components::Text>;
+	using CopyableComponents = ComponentGroup<Components::Camera, Components::Transform, Components::Tag, Components::Inheritance,
+		Components::LineGeometry, Components::QuadGeometry, Components::Mesh, Components::Material, Components::Texture, Components::DirectionalLight,
+		Components::PointLight, Components::Controller, Components::BoxCollider, Components::SphereCollider, Components::PillCollider,
+		Components::Skybox, Components::Text>;
 	copy_all(CopyableComponents {}, identifiers, old_registry);
 
 	new_scene->sort<Components::ID>([](const Components::ID& left, const Components::ID& right) { return left.identifier < right.identifier; });
@@ -541,6 +517,102 @@ auto Scene::copy(Scene& scene) -> Scope<Scene>
 	new_scene->extent = scene.extent;
 
 	return new_scene;
+}
+
+auto Scene::step(std::uint32_t steps) -> void { step_frames = steps; }
+
+auto Scene::on_runtime_start() -> void
+{
+	running = true;
+
+	// TODO(edvin): Handle start of physics!
+
+	// TODO(edvin): Scripting start
+}
+
+auto Scene::on_simulation_start() -> void
+{
+	// TODO(edvin): Handle start of physics!
+}
+
+auto Scene::on_runtime_stop() -> void
+{
+	running = false;
+
+	// TODO(edvin): Handle end of physics!
+	// TODO(edvin): Scripting end
+}
+
+auto Scene::on_simulation_stop() -> void
+{
+	// TODO(edvin): Handle end of physics!
+}
+
+auto Scene::get_primary_camera() -> std::optional<ViewProjectionTuple>
+{
+	auto find_one = get_by_components<Components::Camera>();
+	if (find_one) {
+		auto&& [camera_component, transform] = find_one->get_components<Components::Camera, const Components::Transform>();
+		if (camera_component.is_primary) {
+			return camera_component.compute(transform, extent);
+		} else {
+			return {};
+		}
+	}
+
+	return {};
+}
+
+auto Scene::on_update_editor(float time_step) -> void { update(time_step); }
+
+auto Scene::on_update_simulation(float time_step) -> void
+{
+	if (!is_paused() || step_frames-- > 0) {
+		// Physics
+		{
+			const int32_t velocityIterations = 6;
+			const int32_t positionIterations = 2;
+			// m_PhysicsWorld->Step(ts, velocityIterations, positionIterations);
+
+			// Retrieve transform from Box2D
+			auto view = registry.view<Components::BoxCollider, Components::Transform>();
+			for (auto&& [handle, collider, transform] : view.each()) {
+				// auto& transform = entity.GetComponent<TransformComponent>();
+				// auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
+
+				// b2Body* body = (b2Body*)rb2d.RuntimeBody;
+				const auto& position = transform.position;
+				transform.position.x = position.x;
+				transform.position.y = position.y;
+				// transform.rotation.z = body->GetAngle();
+			}
+		}
+	}
+
+	update(time_step);
+}
+
+auto Scene::on_update_runtime(float time_step) -> void
+{
+	auto script_view = registry.view<Components::Script>();
+	std::vector<CppScript*> deferred_scripts {};
+	deferred_scripts.reserve(script_view.size());
+	script_view.each([&](const auto entity, Components::Script& script) {
+		if (script.has_been_bound()) {
+			script.instantiate();
+		}
+
+		auto& instantiated = script.get_script();
+		instantiated.update_entity(this, entity);
+		deferred_scripts.push_back(&instantiated);
+	});
+
+	Collections::parallel_for_each(deferred_scripts, [step = time_step](auto* script) { script->on_update(step); });
+
+	auto controller_view = registry.view<Components::Controller, Components::Transform>();
+	controller_view.each([step = time_step](const auto, Components::Controller& controller, Components::Transform& transform) {
+		controller.on_update(step, transform);
+	});
 }
 
 } // namespace Disarray

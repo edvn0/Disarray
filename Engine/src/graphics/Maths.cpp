@@ -8,7 +8,9 @@ namespace Disarray::Maths {
 
 auto compute_normal(const glm::vec3& first_vertex, const glm::vec3& second_vertex, const glm::vec3& third_vertex) -> glm::vec3
 {
-	return glm::cross(second_vertex - first_vertex, third_vertex - first_vertex);
+	const auto normalized_v1 = glm::normalize(second_vertex - first_vertex);
+	const auto normalized_v2 = glm::normalize(third_vertex - first_vertex);
+	return glm::cross(normalized_v1, normalized_v2);
 }
 
 auto rotate_by(const glm::vec3& axis_radians) -> glm::mat4

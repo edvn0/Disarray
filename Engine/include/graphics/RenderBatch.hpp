@@ -146,13 +146,6 @@ struct BatchRenderer {
 		Tuple::static_for(objects, [&](std::size_t, auto& batch) { batch.clear_pass(renderer, executor); });
 	}
 
-	auto get_pipelines()
-	{
-		std::array<Disarray::Pipeline*, std::tuple_size<BatchTuple> {}> pipelines {};
-		Tuple::static_for(objects, [&pipelines](auto index, auto& batch) { pipelines.at(index) = batch.get_pipeline(); });
-		return pipelines;
-	}
-
 	auto would_be_full() -> bool
 	{
 		bool batch_would_be_full = false;

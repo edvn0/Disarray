@@ -44,8 +44,20 @@ struct Transform {
 	glm::vec3 scale { 1.0F };
 
 	Transform() = default;
-	Transform(const Transform&) = default;
-	Transform(const glm::vec3& euler, const glm::vec3& pos, const glm::vec3& scl)
+
+	template <class T>
+		requires requires(T vector) {
+			{
+				vector.x
+			};
+			{
+				vector.y
+			};
+			{
+				vector.z
+			};
+		}
+	Transform(const T& euler, const T& pos, const T& scl)
 		: rotation(euler)
 		, position(pos)
 		, scale(scl)
@@ -224,7 +236,7 @@ struct Camera {
 	float far_perspective { 1000.F };
 	float near_orthographic { 0.1F };
 	float far_orthographic { 1000.F };
-	bool is_primary { false };
+	bool is_primary { true };
 	bool reverse { false };
 	CameraType type { CameraType::Perspective };
 

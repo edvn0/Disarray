@@ -2,10 +2,10 @@
 #include <ImGuizmo.h>
 
 #include <array>
-#include <vector>
 
 #include "core/ThreadPool.hpp"
-#include "core/UsageBadge.hpp"
+#include "panels/ScenePanel.hpp"
+#include "scene/Scene.hpp"
 
 namespace Disarray::Client {
 
@@ -29,14 +29,29 @@ private:
 	void handle_file_drop(const std::filesystem::path&);
 	void setup_filewatcher_and_threadpool(Threading::ThreadPool& pool);
 
+	auto toolbar() -> void;
+	auto on_scene_play() -> void;
+	auto on_scene_stop() -> void;
+	auto on_scene_pause() -> void;
+	auto on_scene_simulate() -> void;
+
 	Device& device;
 	Extent extent {};
 
 	SceneRenderer scene_renderer;
 
-	Scope<Scene> scene;
-	Scope<Scene> running_scene;
+	Ref<Scene> scene;
+	Ref<Scene> running_scene;
+	SceneState scene_state { SceneState::Edit };
 	Scope<FileWatcher> file_watcher;
+
+	std::shared_ptr<ScenePanel> scene_panel;
+
+	Ref<Disarray::Texture> icon_play { nullptr };
+	Ref<Disarray::Texture> icon_stop { nullptr };
+	Ref<Disarray::Texture> icon_pause { nullptr };
+	Ref<Disarray::Texture> icon_step { nullptr };
+	Ref<Disarray::Texture> icon_simulate { nullptr };
 
 	EditorCamera camera;
 	GizmoType gizmo_type { GizmoType::Rotate };

@@ -10,62 +10,49 @@ namespace Disarray {
 using json = nlohmann::json;
 using namespace std::string_view_literals;
 
-/*
-auto PipelineDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return object.contains("properties"); }
-void PipelineDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Pipeline& pipeline, const Device& device)
+auto SkyboxDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
+void SkyboxDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Skybox& skybox, const Device& device)
 {
-	auto props = object["properties"];
-	PipelineProperties properties {
-		.vertex_shader = Shader::compile(device, props["vertex_shader"].get<std::filesystem::path>()),
-		.fragment_shader = Shader::compile(device, props["fragment_shader"].get<std::filesystem::path>()),
-		// framebuffer,
-		.layout = [](const json& vertex_layout) -> VertexLayout {
-			VertexLayout layout {};
-			const auto& binding = vertex_layout["binding"];
-			layout.binding = {
-				.binding = binding["binding"],
-				.stride = binding["stride"],
-				.input_rate = to_enum_value<InputRate>(binding, "input_rate").value_or(InputRate::Vertex),
-			};
-			layout.total_size = vertex_layout["total_size"];
-
-			const auto& array = vertex_layout["elements"];
-			ensure(array.is_array());
-			for (const auto& json_layout : array) {
-				auto& element = layout.elements.emplace_back(*to_enum_value<ElementType>(json_layout, "type"), json_layout["debug_name"]);
-				element.offset = json_layout["offset"];
-				element.size = json_layout["size"];
-			}
-			return layout;
-		}(props["vertex_layout"]),
-		.push_constant_layout = [](const json& push_constant_layout) -> PushConstantLayout {
-			std::vector<PushConstantRange> layout {};
-			layout.reserve(push_constant_layout["size"]);
-
-			for (const auto& flag_size_offset_object : push_constant_layout["ranges"]) {
-				PushConstantRange& added = layout.emplace_back();
-				added.size = flag_size_offset_object["size"];
-				added.offset = flag_size_offset_object["offset"];
-				added.flags = flag_size_offset_object["flags"];
-			}
-			return PushConstantLayout { std::move(layout) };
-		}(props["push_constant_layout"]),
-		.extent = props["extent"],
-		.polygon_mode = to_enum_value<PolygonMode>(props, "polygon_mode").value_or(PolygonMode::Fill),
-		.line_width = props["line_width"],
-		.samples = to_enum_value<SampleCount>(props, "samples").value_or(SampleCount::One),
-		.depth_comparison_operator
-		= to_enum_value<DepthCompareOperator>(props, "depth_comparison_operator").value_or(DepthCompareOperator::LessOrEqual),
-		.cull_mode = to_enum_value<CullMode>(props, "cull_mode").value_or(CullMode::Back),
-		.face_mode = to_enum_value<FaceMode>(props, "face_mode").value_or(FaceMode::CounterClockwise),
-		.write_depth = props["write_depth"],
-		.test_depth = props["test_depth"],
-		.descriptor_set_layouts = {},
-	};
-
-	pipeline.pipeline = Pipeline::construct(device, properties);
+	skybox.colour = {};
+	if (object.contains("colour")) {
+		skybox.colour = object["colour"];
+	}
+	if (object.contains("texture_path")) {
+		skybox.texture = Texture::construct(device,
+			{
+				.path = object["texture_path"],
+				.dimension = TextureDimension::Three,
+				.debug_name = object["texture_path"],
+			});
+	}
 }
- */
+
+auto TextDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
+void TextDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Text& text, const Device& device)
+{
+	text.text_data = object["text_data"];
+	text.colour = object["colour"];
+	text.size = object["size"];
+	text.projection = to_enum_value<Components::TextProjection>(object, "projection").value_or(Components::TextProjection::WorldSpace);
+}
+
+auto PillColliderDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
+void PillColliderDeserialiser::deserialise_impl(const nlohmann::json& object, Components::PillCollider& pill, const Device& device)
+{
+	pill.radius = object["radius"];
+}
+
+auto BoxColliderDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
+void BoxColliderDeserialiser::deserialise_impl(const nlohmann::json& object, Components::BoxCollider& box, const Device& device)
+{
+	box.half_size = object["half_size"];
+}
+
+auto SphereColliderDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
+void SphereColliderDeserialiser::deserialise_impl(const nlohmann::json& object, Components::SphereCollider& sphere, const Device& device)
+{
+	sphere.radius = object["radius"];
+}
 
 auto ScriptDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return object.contains("identifier"); }
 void ScriptDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Script& script, const Device& device)

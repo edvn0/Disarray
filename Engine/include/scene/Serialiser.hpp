@@ -30,7 +30,17 @@ namespace Detail {
 		}
 	};
 
-	template <class... Serialisers> struct Serialiser {
+	template <class T>
+	concept SerialiserFor = requires(T t, ImmutableEntity& entity) {
+		{
+			t.can_serialise(entity)
+		} -> std::same_as<bool>;
+		{
+			t.get_component_name()
+		} -> std::convertible_to<std::string_view>;
+	};
+
+	template <SerialiserFor... Serialisers> struct Serialiser {
 	private:
 		std::tuple<Serialisers...> serialisers {};
 
@@ -74,7 +84,6 @@ namespace Detail {
 			const auto& registry = scene->get_registry();
 			const auto view = registry.template view<const Components::ID, const Components::Tag>();
 
-			MSTimer timer {};
 			std::vector<EntityAndKey> output;
 			output.reserve(view.size_hint());
 			view.each([this, &output](const auto handle, const auto& id, const auto& tag) {
@@ -85,12 +94,17 @@ namespace Detail {
 				serialise_component<Components::Texture>(entity, components);
 				serialise_component<Components::Script>(entity, components);
 				serialise_component<Components::Mesh>(entity, components);
+				serialise_component<Components::Skybox>(entity, components);
+				serialise_component<Components::Text>(entity, components);
+				serialise_component<Components::BoxCollider>(entity, components);
+				serialise_component<Components::SphereCollider>(entity, components);
+				serialise_component<Components::PillCollider>(entity, components);
 				serialise_component<Components::Transform>(entity, components);
 				serialise_component<Components::LineGeometry>(entity, components);
 				serialise_component<Components::QuadGeometry>(entity, components);
-				serialise_component<Components::Inheritance>(entity, components);
 				serialise_component<Components::DirectionalLight>(entity, components);
 				serialise_component<Components::PointLight>(entity, components);
+				serialise_component<Components::Inheritance>(entity, components);
 				entity_object["components"] = components;
 				output.push_back({ key, entity_object });
 			});
@@ -132,7 +146,8 @@ namespace Detail {
 	};
 } // namespace Detail
 
-using SceneSerialiser = Detail::Serialiser<ScriptSerialiser, TextureSerialiser, MeshSerialiser, TransformSerialiser, InheritanceSerialiser,
-	LineGeometrySerialiser, QuadGeometrySerialiser, DirectionalLightSerialiser, PointLightSerialiser>;
+using SceneSerialiser = Detail::Serialiser<ScriptSerialiser, MeshSerialiser, SkyboxSerialiser, TextSerialiser, BoxColliderSerialiser,
+	SphereColliderSerialiser, PillColliderSerialiser, TextureSerialiser, TransformSerialiser, LineGeometrySerialiser, QuadGeometrySerialiser,
+	DirectionalLightSerialiser, PointLightSerialiser, InheritanceSerialiser>;
 
 } // namespace Disarray
