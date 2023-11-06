@@ -83,7 +83,8 @@ namespace {
 				deserialise_component<Components::Text>(components, entity);
 				deserialise_component<Components::BoxCollider>(components, entity);
 				deserialise_component<Components::SphereCollider>(components, entity);
-				deserialise_component<Components::PillCollider>(components, entity);
+				deserialise_component<Components::CapsuleCollider>(components, entity);
+				deserialise_component<Components::RigidBody>(components, entity);
 				deserialise_component<Components::Texture>(components, entity);
 				deserialise_component<Components::Transform>(components, entity);
 				deserialise_component<Components::LineGeometry>(components, entity);
@@ -132,7 +133,7 @@ namespace {
 } // namespace
 
 using SceneDeserialiser = Deserialiser<ScriptDeserialiser, MeshDeserialiser, SkyboxDeserialiser, TextDeserialiser, BoxColliderDeserialiser,
-	SphereColliderDeserialiser, PillColliderDeserialiser, TextureDeserialiser, TransformDeserialiser, LineGeometryDeserialiser,
-	QuadGeometryDeserialiser, DirectionalLightDeserialiser, PointLightDeserialiser, InheritanceDeserialiser>;
+	SphereColliderDeserialiser, CapsuleColliderDeserialiser, RigidBodyDeserialiser, TextureDeserialiser, TransformDeserialiser,
+	LineGeometryDeserialiser, QuadGeometryDeserialiser, DirectionalLightDeserialiser, PointLightDeserialiser, InheritanceDeserialiser>;
 
 } // namespace Disarray

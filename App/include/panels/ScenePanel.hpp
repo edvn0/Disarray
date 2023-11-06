@@ -30,7 +30,7 @@ private:
 
 	std::unique_ptr<entt::entity> selected_entity {};
 
-	template <ValidComponent ToTest, ValidComponent... CompareWith> auto is_deletable_component(ComponentGroup<CompareWith...>)
+	template <ValidComponent ToTest, ValidComponent... CompareWith> auto is_deletable_component(Detail::ComponentGroup<CompareWith...>)
 	{
 		return (std::is_same_v<ToTest, CompareWith> || ...);
 	}
@@ -115,7 +115,7 @@ private:
 		}
 	}
 
-	template <ValidComponent... T> void draw_add_component_all(ComponentGroup<T...>) { (draw_add_component_entry<T>(), ...); }
+	template <ValidComponent... T> void draw_add_component_all(Detail::ComponentGroup<T...>) { (draw_add_component_entry<T>(), ...); }
 };
 
 } // namespace Disarray::Client

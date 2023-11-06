@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glm/ext/matrix_clip_space.hpp>
+
 #include <entt/entt.hpp>
 
 #include <concepts>
@@ -7,20 +9,20 @@
 #include <queue>
 #include <type_traits>
 
-#include "SceneRenderer.hpp"
 #include "core/Collections.hpp"
 #include "core/FileWatcher.hpp"
 #include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
 #include "core/events/Event.hpp"
-#include "glm/ext/matrix_clip_space.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Mesh.hpp"
 #include "graphics/StorageBuffer.hpp"
 #include "graphics/Texture.hpp"
+#include "physics/PhysicsEngine.hpp"
 #include "scene/Component.hpp"
 #include "scene/Entity.hpp"
+#include "scene/SceneRenderer.hpp"
 
 namespace Disarray {
 
@@ -52,7 +54,7 @@ class Scene : public ReferenceCountable {
 
 public:
 	Scene(const Disarray::Device&, std::string_view);
-	~Scene();
+	~Scene() override;
 
 	void begin_frame(const Camera&, SceneRenderer& scene_renderer);
 	void begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_proj, SceneRenderer& scene_renderer);
@@ -127,6 +129,7 @@ public:
 	}
 
 	template <ValidComponent T> void sort(auto&& sorter) { registry.sort<T>(sorter); }
+	auto sort() -> void;
 
 	static auto deserialise(const Device&, std::string_view, const std::filesystem::path&) -> Scope<Scene>;
 	static auto deserialise_into(Scene&, const Device&, const std::filesystem::path&) -> void;
@@ -141,6 +144,8 @@ public:
 	static auto copy(Scene& scene) -> Ref<Scene>;
 
 private:
+	PhysicsEngine engine;
+
 	const Disarray::Device& device;
 	std::string scene_name;
 
@@ -159,6 +164,9 @@ private:
 	void draw_identifiers(SceneRenderer& renderer);
 	void draw_geometry(SceneRenderer& renderer);
 	void draw_skybox(SceneRenderer& renderer);
+
+	auto on_physics_start() -> void;
+	auto on_physics_stop() -> void;
 
 	friend class CppScript;
 };

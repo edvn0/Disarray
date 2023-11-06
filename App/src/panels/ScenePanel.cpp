@@ -347,16 +347,29 @@ void ScenePanel::for_all_components(Entity& entity)
 		}
 	});
 
-	draw_component<Components::PillCollider>(entity, [&](Components::PillCollider& collider) {
-
+	draw_component<Components::CapsuleCollider>(entity, [&](Components::CapsuleCollider& collider) {
+		if (ImGui::DragFloat("Radius", &collider.radius)) { }
+		if (ImGui::DragFloat("Height", &collider.height)) { }
+		if (ImGui::DragFloat3("Offset", glm::value_ptr(collider.offset))) { }
 	});
 
 	draw_component<Components::BoxCollider>(entity, [&](Components::BoxCollider collider) {
-
+		if (ImGui::DragFloat3("Offset", glm::value_ptr(collider.offset))) { }
+		if (ImGui::DragFloat3("Half Extents", glm::value_ptr(collider.half_size))) { }
 	});
 
 	draw_component<Components::SphereCollider>(entity, [&](Components::SphereCollider& collider) {
+		if (ImGui::DragFloat("Radius", &collider.radius)) { }
+		if (ImGui::DragFloat3("Offset", glm::value_ptr(collider.offset))) { }
+	});
 
+	draw_component<Components::RigidBody>(entity, [&](Components::RigidBody& body) {
+		if (UI::combo_choice<BodyType>("Body Type", std::ref(body.body_type))) { }
+		if (ImGui::DragFloat("mass", &body.mass)) { }
+		if (ImGui::DragFloat("linear_drag", &body.linear_drag)) { }
+		if (ImGui::DragFloat("angular_drag", &body.angular_drag)) { }
+		if (UI::checkbox("Gravity", body.disable_gravity)) { }
+		if (UI::checkbox("Kinematic", body.is_kinematic)) { }
 	});
 }
 

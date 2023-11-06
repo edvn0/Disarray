@@ -2,6 +2,7 @@
 
 #include <optional>
 
+#include "magic_enum.hpp"
 #include "scene/ComponentSerialisers.hpp"
 #include "scene/Components.hpp"
 #include "scene/CppScript.hpp"
@@ -62,11 +63,34 @@ void TextSerialiser::serialise_impl(const Components::Text& text, nlohmann::json
 	object["projection"] = magic_enum::enum_name(text.projection);
 }
 
-void PillColliderSerialiser::serialise_impl(const Components::PillCollider& pill, nlohmann::json& object) { object["radius"] = pill.radius; }
+void CapsuleColliderSerialiser::serialise_impl(const Components::CapsuleCollider& pill, nlohmann::json& object)
+{
+	object["radius"] = pill.radius;
+	object["offset"] = pill.offset;
+	object["height"] = pill.height;
+}
 
-void SphereColliderSerialiser::serialise_impl(const Components::SphereCollider& sphere, nlohmann::json& object) { object["radius"] = sphere.radius; }
+void RigidBodySerialiser::serialise_impl(const Components::RigidBody& rigid_body, nlohmann::json& object)
+{
+	object["body_type"] = magic_enum::enum_name(rigid_body.body_type);
+	object["mass"] = rigid_body.mass;
+	object["linear_drag"] = rigid_body.linear_drag;
+	object["angular_drag"] = rigid_body.angular_drag;
+	object["disable_gravity"] = rigid_body.disable_gravity;
+	object["is_kinematic"] = rigid_body.is_kinematic;
+}
 
-void BoxColliderSerialiser::serialise_impl(const Components::BoxCollider& box, nlohmann::json& object) { object["half_size"] = box.half_size; }
+void SphereColliderSerialiser::serialise_impl(const Components::SphereCollider& sphere, nlohmann::json& object)
+{
+	object["radius"] = sphere.radius;
+	object["offset"] = sphere.offset;
+}
+
+void BoxColliderSerialiser::serialise_impl(const Components::BoxCollider& box, nlohmann::json& object)
+{
+	object["half_size"] = box.half_size;
+	object["offset"] = box.offset;
+}
 
 void TextureSerialiser::serialise_impl(const Components::Texture& texture, nlohmann::json& object)
 {

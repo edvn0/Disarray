@@ -1,5 +1,7 @@
 #include "DisarrayPCH.hpp"
 
+#include "Forward.hpp"
+
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
@@ -23,6 +25,7 @@
 #include "core/events/KeyEvent.hpp"
 #include "core/events/MouseEvent.hpp"
 #include "core/filesystem/AssetLocations.hpp"
+#include "physics/PhysicsEngine.hpp"
 #include "scene/Camera.hpp"
 #include "scene/Components.hpp"
 #include "scene/CppScript.hpp"
@@ -36,7 +39,8 @@
 namespace Disarray {
 
 Scene::Scene(const Device& dev, std::string_view name)
-	: device(dev)
+	: engine(6U, 2U)
+	, device(dev)
 	, scene_name(name)
 {
 	picked_entity = make_scope<Entity>(this);
@@ -492,8 +496,9 @@ namespace {
 
 auto Scene::copy(Scene& scene) -> Ref<Scene>
 {
-	static constexpr auto copy_all
-		= []<ValidComponent... C>(ComponentGroup<C...>, auto& identifier_map, auto& old_reg) { (copy_component<C>(identifier_map, old_reg), ...); };
+	static constexpr auto copy_all = []<ValidComponent... C>(Detail::ComponentGroup<C...>, auto& identifier_map, auto& old_reg) {
+		(copy_component<C>(identifier_map, old_reg), ...);
+	};
 
 	auto new_scene = make_ref<Scene>(scene.get_device(), scene.get_name());
 
@@ -506,10 +511,10 @@ auto Scene::copy(Scene& scene) -> Ref<Scene>
 		identifiers.try_emplace(identifier.get_id(), std::move(created));
 	}
 
-	using CopyableComponents = ComponentGroup<Components::Camera, Components::Transform, Components::Tag, Components::Inheritance,
+	using CopyableComponents = Detail::ComponentGroup<Components::Camera, Components::Transform, Components::Tag, Components::Inheritance,
 		Components::LineGeometry, Components::QuadGeometry, Components::Mesh, Components::Material, Components::Texture, Components::DirectionalLight,
-		Components::PointLight, Components::Controller, Components::BoxCollider, Components::SphereCollider, Components::PillCollider,
-		Components::Skybox, Components::Text>;
+		Components::PointLight, Components::Controller, Components::BoxCollider, Components::SphereCollider, Components::CapsuleCollider,
+		Components::Skybox, Components::Text, Components::RigidBody>;
 	copy_all(CopyableComponents {}, identifiers, old_registry);
 
 	new_scene->sort<Components::ID>([](const Components::ID& left, const Components::ID& right) { return left.identifier < right.identifier; });
@@ -526,6 +531,7 @@ auto Scene::on_runtime_start() -> void
 	running = true;
 
 	// TODO(edvin): Handle start of physics!
+	on_physics_start();
 
 	// TODO(edvin): Scripting start
 }
@@ -533,6 +539,7 @@ auto Scene::on_runtime_start() -> void
 auto Scene::on_simulation_start() -> void
 {
 	// TODO(edvin): Handle start of physics!
+	on_physics_start();
 }
 
 auto Scene::on_runtime_stop() -> void
@@ -540,12 +547,15 @@ auto Scene::on_runtime_stop() -> void
 	running = false;
 
 	// TODO(edvin): Handle end of physics!
+	on_physics_stop();
+
 	// TODO(edvin): Scripting end
 }
 
 auto Scene::on_simulation_stop() -> void
 {
 	// TODO(edvin): Handle end of physics!
+	on_physics_stop();
 }
 
 auto Scene::get_primary_camera() -> std::optional<ViewProjectionTuple>
@@ -555,9 +565,8 @@ auto Scene::get_primary_camera() -> std::optional<ViewProjectionTuple>
 		auto&& [camera_component, transform] = find_one->get_components<Components::Camera, const Components::Transform>();
 		if (camera_component.is_primary) {
 			return camera_component.compute(transform, extent);
-		} else {
-			return {};
 		}
+		return {};
 	}
 
 	return {};
@@ -568,24 +577,21 @@ auto Scene::on_update_editor(float time_step) -> void { update(time_step); }
 auto Scene::on_update_simulation(float time_step) -> void
 {
 	if (!is_paused() || step_frames-- > 0) {
-		// Physics
-		{
-			const int32_t velocityIterations = 6;
-			const int32_t positionIterations = 2;
-			// m_PhysicsWorld->Step(ts, velocityIterations, positionIterations);
+		engine.step(time_step);
+		// m_PhysicsWorld->Step(time_step, velocityIterations, positionIterations);
 
-			// Retrieve transform from Box2D
-			auto view = registry.view<Components::BoxCollider, Components::Transform>();
-			for (auto&& [handle, collider, transform] : view.each()) {
-				// auto& transform = entity.GetComponent<TransformComponent>();
-				// auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
+		// Retrieve transform from Box2D
+		auto view = registry.view<Components::RigidBody, Components::Transform>();
+		for (auto&& [handle, rigid_body, transform] : view.each()) {
+			// auto& rb2d = entity.get_components<Rigidbody2DComponent>();
 
-				// b2Body* body = (b2Body*)rb2d.RuntimeBody;
-				const auto& position = transform.position;
-				transform.position.x = position.x;
-				transform.position.y = position.y;
-				// transform.rotation.z = body->GetAngle();
-			}
+			const auto new_transform = engine.get_transform(rigid_body.engine_body_storage);
+			transform.position.x = new_transform.position.x;
+			transform.position.y = new_transform.position.y;
+			transform.position.z = new_transform.position.z;
+
+			transform.rotation = new_transform.rotation;
+			// transform.rotation.z = body->GetAngle();
 		}
 	}
 
@@ -613,6 +619,62 @@ auto Scene::on_update_runtime(float time_step) -> void
 	controller_view.each([step = time_step](const auto, Components::Controller& controller, Components::Transform& transform) {
 		controller.on_update(step, transform);
 	});
+
+	on_update_simulation(time_step);
+}
+
+auto Scene::on_physics_start() -> void
+{
+	auto view = registry.view<Components::RigidBody>();
+	for (auto e : view) {
+		Entity entity { this, e };
+		auto& transform = entity.get_components<Components::Transform>();
+		auto& rigid_body = entity.get_components<Components::RigidBody>();
+		auto* body = engine.create_rigid_body({
+			.position = transform.position,
+			.rotation = transform.rotation,
+			.linear_drag = rigid_body.linear_drag,
+			.angular_drag = rigid_body.angular_drag,
+			.type = rigid_body.body_type,
+			.mass = rigid_body.mass,
+			.disable_gravity = rigid_body.disable_gravity,
+			.is_kinematic = rigid_body.is_kinematic,
+		});
+
+		if (entity.has_component<Components::CapsuleCollider>()) {
+			auto& collider = entity.get_components<Components::CapsuleCollider>();
+			engine.add_capsule_collider(body,
+				{
+					.radius = collider.radius,
+					.height = collider.height,
+					.offset = collider.offset,
+				});
+		}
+		if (entity.has_component<Components::BoxCollider>()) {
+			auto& collider = entity.get_components<Components::BoxCollider>();
+			engine.add_box_collider(body,
+				{
+					.offset = collider.offset,
+					.half_size = collider.half_size,
+				});
+		}
+		if (entity.has_component<Components::SphereCollider>()) {
+			auto& collider = entity.get_components<Components::SphereCollider>();
+			engine.add_sphere_collider(body,
+				{
+					.radius = collider.radius,
+					.offset = collider.offset,
+				});
+		}
+		rigid_body.engine_body_storage = body;
+	}
+}
+
+auto Scene::on_physics_stop() -> void { engine.restart(); }
+
+auto Scene::sort() -> void
+{
+	sort<Components::ID>([](const auto& left, const auto& right) { return left.identifier < right.identifier; });
 }
 
 } // namespace Disarray

@@ -35,9 +35,10 @@ enum class SerialiserType : std::uint8_t {
 	Script,
 	Controller,
 	Camera,
+	RigidBody,
 	BoxCollider,
 	SphereCollider,
-	PillCollider,
+	CapsuleCollider,
 	Skybox,
 	Text
 };
@@ -67,7 +68,6 @@ template <ValidComponent T, class Child> struct ComponentDeserialiser {
 	};
 };
 
-namespace {
 #define MAKE_SERIALISER(Name, ComponentType)                                                                                                         \
 	struct Name : public ComponentSerialiser<Components::ComponentType, Name> {                                                                      \
 		static constexpr SerialiserType type = SerialiserType::ComponentType;                                                                        \
@@ -82,15 +82,14 @@ namespace {
 		auto should_add_component_impl(const nlohmann::json& object_for_the_component) -> bool;                                                      \
 	};
 
-} // namespace
-
 MAKE_SERIALISER(ScriptSerialiser, Script)
 MAKE_SERIALISER(MeshSerialiser, Mesh)
 MAKE_SERIALISER(SkyboxSerialiser, Skybox)
 MAKE_SERIALISER(TextSerialiser, Text)
 MAKE_SERIALISER(BoxColliderSerialiser, BoxCollider)
 MAKE_SERIALISER(SphereColliderSerialiser, SphereCollider)
-MAKE_SERIALISER(PillColliderSerialiser, PillCollider)
+MAKE_SERIALISER(CapsuleColliderSerialiser, CapsuleCollider)
+MAKE_SERIALISER(RigidBodySerialiser, RigidBody)
 MAKE_SERIALISER(TextureSerialiser, Texture)
 MAKE_SERIALISER(TransformSerialiser, Transform)
 MAKE_SERIALISER(LineGeometrySerialiser, LineGeometry)
@@ -105,7 +104,8 @@ MAKE_DESERIALISER(SkyboxDeserialiser, Skybox)
 MAKE_DESERIALISER(TextDeserialiser, Text)
 MAKE_DESERIALISER(BoxColliderDeserialiser, BoxCollider)
 MAKE_DESERIALISER(SphereColliderDeserialiser, SphereCollider)
-MAKE_DESERIALISER(PillColliderDeserialiser, PillCollider)
+MAKE_DESERIALISER(CapsuleColliderDeserialiser, CapsuleCollider)
+MAKE_DESERIALISER(RigidBodyDeserialiser, RigidBody)
 MAKE_DESERIALISER(TextureDeserialiser, Texture)
 MAKE_DESERIALISER(TransformDeserialiser, Transform)
 MAKE_DESERIALISER(LineGeometryDeserialiser, LineGeometry)

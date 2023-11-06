@@ -113,7 +113,7 @@ public:
 	ImmutableEntity(const Scene*, entt::entity);
 	ImmutableEntity(const Scene* input_scene, entt::id_type input_id)
 		: ImmutableEntity(input_scene, static_cast<entt::entity>(input_id)) {};
-	ImmutableEntity(const Scene*);
+	explicit ImmutableEntity(const Scene*);
 
 	[[nodiscard]] auto get_registry() const -> const entt::registry&;
 

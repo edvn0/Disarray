@@ -11,6 +11,7 @@ class Layer;
 class Entity;
 class Framebuffer;
 class Image;
+class PhysicsEngine;
 class IndexBuffer;
 class StorageBuffer;
 class Instance;

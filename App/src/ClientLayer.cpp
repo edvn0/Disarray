@@ -261,6 +261,8 @@ void ClientLayer::create_entities()
 	auto scene_camera = scene->create("Scene Camera");
 	scene_camera.add_component<Components::Camera>();
 	scene_camera.get_components<Components::Transform>().position = { 15, -16, 16 };
+
+	scene->sort();
 }
 
 auto ClientLayer::toolbar() -> void
@@ -340,7 +342,7 @@ void ClientLayer::on_scene_play()
 
 	scene_state = SceneState::Play;
 
-	running_scene = scene;
+	running_scene = Scene::copy(*scene);
 	running_scene->on_runtime_start();
 
 	scene_panel->set_scene(running_scene.get());
@@ -372,7 +374,7 @@ void ClientLayer::on_scene_stop()
 
 	scene_state = SceneState::Edit;
 
-	running_scene = Scene::copy(*scene);
+	running_scene = scene;
 
 	scene_panel->set_scene(running_scene.get());
 }

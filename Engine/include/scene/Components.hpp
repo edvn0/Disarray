@@ -24,6 +24,7 @@
 #include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "graphics/Texture.hpp"
+#include "physics/PhysicsProperties.hpp"
 #include "scene/Camera.hpp"
 #include "scene/CppScript.hpp"
 
@@ -236,7 +237,7 @@ struct Camera {
 	float far_perspective { 1000.F };
 	float near_orthographic { 0.1F };
 	float far_orthographic { 1000.F };
-	bool is_primary { true };
+	bool is_primary { false };
 	bool reverse { false };
 	CameraType type { CameraType::Perspective };
 
@@ -244,23 +245,36 @@ struct Camera {
 };
 template <> inline constexpr std::string_view component_name<Camera> = "Camera";
 
+struct RigidBody {
+	void* engine_body_storage { nullptr };
+
+	BodyType body_type { BodyType::Static };
+	float mass { 1.0F };
+	float linear_drag { 0.01F };
+	float angular_drag { 0.05F };
+	bool disable_gravity { false };
+	bool is_kinematic { false };
+};
+template <> inline constexpr std::string_view component_name<RigidBody> = "RigidBody";
+
 struct BoxCollider {
-	BoxCollider() = default;
-	float half_size { 1.0F };
+	glm::vec3 half_size { 0.5F, 0.5F, 0.5F };
+	glm::vec3 offset { 0.0F, 0.0F, 0.0F };
 };
 template <> inline constexpr std::string_view component_name<BoxCollider> = "BoxCollider";
 
 struct SphereCollider {
-	SphereCollider() = default;
-	float radius { 1.0F };
+	float radius { 0.5F };
+	glm::vec3 offset { 0.0F, 0.0F, 0.0F };
 };
 template <> inline constexpr std::string_view component_name<SphereCollider> = "SphereCollider";
 
-struct PillCollider {
-	PillCollider() = default;
-	float radius { 1.0F };
+struct CapsuleCollider {
+	float radius { 0.5F };
+	float height { 1.0F };
+	glm::vec3 offset { 0.0F, 0.0F, 0.0F };
 };
-template <> inline constexpr std::string_view component_name<PillCollider> = "PillCollider";
+template <> inline constexpr std::string_view component_name<CapsuleCollider> = "CapsuleCollider";
 
 struct Skybox {
 	Skybox() = default;

@@ -1,7 +1,9 @@
 #include "core/Collections.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PushConstantLayout.hpp"
+#include "physics/PhysicsProperties.hpp"
 #include "scene/ComponentSerialisers.hpp"
+#include "scene/Components.hpp"
 #include "scene/Scripts.hpp"
 #include "scene/SerialisationTypeConversions.hpp"
 
@@ -36,22 +38,37 @@ void TextDeserialiser::deserialise_impl(const nlohmann::json& object, Components
 	text.projection = to_enum_value<Components::TextProjection>(object, "projection").value_or(Components::TextProjection::WorldSpace);
 }
 
-auto PillColliderDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
-void PillColliderDeserialiser::deserialise_impl(const nlohmann::json& object, Components::PillCollider& pill, const Device& device)
+auto CapsuleColliderDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
+void CapsuleColliderDeserialiser::deserialise_impl(const nlohmann::json& object, Components::CapsuleCollider& pill, const Device& device)
 {
 	pill.radius = object["radius"];
+	pill.height = object["height"];
+	pill.offset = object["offset"];
 }
 
 auto BoxColliderDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
 void BoxColliderDeserialiser::deserialise_impl(const nlohmann::json& object, Components::BoxCollider& box, const Device& device)
 {
 	box.half_size = object["half_size"];
+	box.offset = object["offset"];
 }
 
 auto SphereColliderDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
 void SphereColliderDeserialiser::deserialise_impl(const nlohmann::json& object, Components::SphereCollider& sphere, const Device& device)
 {
 	sphere.radius = object["radius"];
+	sphere.offset = object["offset"];
+}
+
+auto RigidBodyDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
+void RigidBodyDeserialiser::deserialise_impl(const nlohmann::json& object, Components::RigidBody& rigid_body, const Device& device)
+{
+	rigid_body.body_type = to_enum_value<BodyType>(object, "body_type").value_or(BodyType::Static);
+	rigid_body.mass = object["mass"];
+	rigid_body.linear_drag = object["linear_drag"];
+	rigid_body.angular_drag = object["angular_drag"];
+	rigid_body.disable_gravity = object["disable_gravity"];
+	rigid_body.is_kinematic = object["is_kinematic"];
 }
 
 auto ScriptDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return object.contains("identifier"); }

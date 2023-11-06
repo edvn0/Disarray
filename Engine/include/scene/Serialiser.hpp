@@ -98,7 +98,8 @@ namespace Detail {
 				serialise_component<Components::Text>(entity, components);
 				serialise_component<Components::BoxCollider>(entity, components);
 				serialise_component<Components::SphereCollider>(entity, components);
-				serialise_component<Components::PillCollider>(entity, components);
+				serialise_component<Components::CapsuleCollider>(entity, components);
+				serialise_component<Components::RigidBody>(entity, components);
 				serialise_component<Components::Transform>(entity, components);
 				serialise_component<Components::LineGeometry>(entity, components);
 				serialise_component<Components::QuadGeometry>(entity, components);
@@ -147,7 +148,7 @@ namespace Detail {
 } // namespace Detail
 
 using SceneSerialiser = Detail::Serialiser<ScriptSerialiser, MeshSerialiser, SkyboxSerialiser, TextSerialiser, BoxColliderSerialiser,
-	SphereColliderSerialiser, PillColliderSerialiser, TextureSerialiser, TransformSerialiser, LineGeometrySerialiser, QuadGeometrySerialiser,
-	DirectionalLightSerialiser, PointLightSerialiser, InheritanceSerialiser>;
+	SphereColliderSerialiser, CapsuleColliderSerialiser, RigidBodySerialiser, TextureSerialiser, TransformSerialiser, LineGeometrySerialiser,
+	QuadGeometrySerialiser, DirectionalLightSerialiser, PointLightSerialiser, InheritanceSerialiser>;
 
 } // namespace Disarray
