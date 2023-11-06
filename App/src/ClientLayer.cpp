@@ -250,8 +250,6 @@ void ClientLayer::create_entities()
 		point_light.template add_component<Components::Texture>(cols.at(index).at(0));
 		Components::RigidBody& rigid = point_light.template add_component<Components::RigidBody>();
 		rigid.body_type = BodyType::Dynamic;
-		rigid.angular_drag = Random::as_double(0.5, 3.0);
-		rigid.linear_drag = Random::as_double(0.5, 3.0);
 		point_light.template add_component<Components::SphereCollider>();
 		pl_sys.add_child(point_light);
 	};

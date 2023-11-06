@@ -99,6 +99,13 @@ private:
 		auto& current_scene = *get_scene();
 		current_scene.clear();
 		Scene::deserialise_into(current_scene, get_device(), get_path());
+
+		current_scene.submit_preframe_work([](Scene& this_scene, SceneRenderer& renderer) {
+			auto texture_cube = this_scene.get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
+
+			auto& graphics_resource = renderer.get_graphics_resource();
+			graphics_resource.expose_to_shaders(texture_cube->get_image(), DescriptorSet(2), DescriptorBinding(2));
+		});
 	}
 
 	auto valid_file_impl() -> bool

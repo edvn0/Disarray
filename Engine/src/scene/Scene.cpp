@@ -51,6 +51,16 @@ void Scene::construct(Disarray::App& app) { extent = app.get_swapchain().get_ext
 
 Scene::~Scene() = default;
 
+void Scene::execute_callbacks(SceneRenderer& renderer)
+{
+	while (!frame_start_callbacks.empty()) {
+		auto&& front = frame_start_callbacks.front();
+		frame_start_callbacks.pop();
+
+		front(*this, renderer);
+	}
+}
+
 void Scene::begin_frame(const Camera& camera, SceneRenderer& scene_renderer)
 {
 	if (const auto& view_projection_tuple = get_primary_camera(); view_projection_tuple.has_value()) {
@@ -63,6 +73,8 @@ void Scene::begin_frame(const Camera& camera, SceneRenderer& scene_renderer)
 
 void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_proj, SceneRenderer& scene_renderer)
 {
+	execute_callbacks(scene_renderer);
+
 	scene_renderer.begin_frame(view, proj, view_proj);
 
 	auto [ubo, camera_ubo, light_ubos, shadow_pass, directional, glyph] = scene_renderer.get_graphics_resource().get_editable_ubos();

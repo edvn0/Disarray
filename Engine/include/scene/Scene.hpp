@@ -143,6 +143,8 @@ public:
 
 	static auto copy(Scene& scene) -> Ref<Scene>;
 
+	template <class Func> auto submit_preframe_work(Func&& func) { frame_start_callbacks.emplace(std::forward<Func>(func)); }
+
 private:
 	PhysicsEngine engine;
 	void physics_update(float time_step);
@@ -168,6 +170,10 @@ private:
 
 	auto on_physics_start() -> void;
 	auto on_physics_stop() -> void;
+
+	using FrameStartCallback = decltype(+[](Scene&, SceneRenderer&) {});
+	std::queue<FrameStartCallback> frame_start_callbacks {};
+	void execute_callbacks(SceneRenderer& renderer);
 
 	friend class CppScript;
 };

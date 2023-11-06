@@ -14,6 +14,7 @@
 #include "core/Hashes.hpp"
 #include "core/Log.hpp"
 #include "core/Tuple.hpp"
+#include "scene/Component.hpp"
 #include "scene/ComponentSerialisers.hpp"
 #include "scene/Components.hpp"
 #include "scene/Scene.hpp"
@@ -84,6 +85,10 @@ namespace Detail {
 			const auto& registry = scene->get_registry();
 			const auto view = registry.template view<const Components::ID, const Components::Tag>();
 
+			static auto serialise_all = [&]<class... C>(Detail::ComponentGroup<C...>, const auto& entity, auto& components) {
+				(serialise_component<C>(entity, components), ...);
+			};
+
 			std::vector<EntityAndKey> output;
 			output.reserve(view.size_hint());
 			view.each([this, &output](const auto handle, const auto& id, const auto& tag) {
@@ -91,21 +96,9 @@ namespace Detail {
 				auto key = fmt::format("{}__disarray__{}", id.identifier, tag.name);
 				json entity_object;
 				json components;
-				serialise_component<Components::Texture>(entity, components);
-				serialise_component<Components::Script>(entity, components);
-				serialise_component<Components::Mesh>(entity, components);
-				serialise_component<Components::Skybox>(entity, components);
-				serialise_component<Components::Text>(entity, components);
-				serialise_component<Components::BoxCollider>(entity, components);
-				serialise_component<Components::SphereCollider>(entity, components);
-				serialise_component<Components::CapsuleCollider>(entity, components);
-				serialise_component<Components::RigidBody>(entity, components);
-				serialise_component<Components::Transform>(entity, components);
-				serialise_component<Components::LineGeometry>(entity, components);
-				serialise_component<Components::QuadGeometry>(entity, components);
-				serialise_component<Components::DirectionalLight>(entity, components);
-				serialise_component<Components::PointLight>(entity, components);
-				serialise_component<Components::Inheritance>(entity, components);
+
+				serialise_all(AllComponents {}, entity, components);
+
 				entity_object["components"] = components;
 				output.push_back({ key, entity_object });
 			});

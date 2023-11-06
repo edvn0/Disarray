@@ -44,6 +44,7 @@ struct PipelineCacheCreationProperties {
 class PipelineCache : public ResourceCache<Ref<Disarray::Pipeline>, PipelineCacheCreationProperties, PipelineCache, std::string, StringHash> {
 public:
 	PipelineCache(const Disarray::Device& device, const std::filesystem::path&);
+	~PipelineCache() { clear_storage(); };
 
 	void force_recreation_impl(const Extent& extent)
 	{

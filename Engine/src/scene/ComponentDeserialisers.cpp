@@ -109,7 +109,7 @@ auto MeshDeserialiser::should_add_component_impl(const nlohmann::json& object) -
 void MeshDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Mesh& mesh, const Device& device)
 {
 
-	auto props = object["properties"];
+	const auto& props = object["properties"];
 	MeshProperties properties {
 		.path = props["path"],
 		.initial_rotation = props["initial_rotation"],
@@ -118,18 +118,20 @@ void MeshDeserialiser::deserialise_impl(const nlohmann::json& object, Components
 	mesh.mesh = Mesh::construct(device, properties);
 }
 
-auto TextureDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return object.contains("properties"); }
+auto TextureDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
 void TextureDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Texture& texture, const Device& device)
 {
-	auto props = object["properties"];
-	TextureProperties properties {
-		.extent = props["extent"],
-		.format = to_enum_value<ImageFormat>(props, "format").value_or(ImageFormat::SBGR),
-		.mips = props["mips"],
-		.path = props["path"],
-		.debug_name = props["debug_name"],
-	};
-	texture.texture = Texture::construct(device, properties);
+	if (object.contains("properties")) {
+		const auto& props = object["properties"];
+		TextureProperties properties {
+			.extent = props["extent"],
+			.format = to_enum_value<ImageFormat>(props, "format").value_or(ImageFormat::SBGR),
+			.mips = props["mips"],
+			.path = props["path"],
+			.debug_name = props["debug_name"],
+		};
+		texture.texture = Texture::construct(device, properties);
+	}
 	texture.colour = object["colour"];
 }
 
@@ -181,7 +183,7 @@ void QuadGeometryDeserialiser::deserialise_impl(const nlohmann::json& object, Co
 
 auto DirectionalLightDeserialiser::should_add_component_impl(const nlohmann::json& object_for_the_component) -> bool
 {
-	return object_for_the_component.contains("factor");
+	return object_for_the_component.contains("projection_parameters");
 }
 void DirectionalLightDeserialiser::deserialise_impl(const nlohmann::json& object, Components::DirectionalLight& light, const Device& /*unused*/)
 {
@@ -199,7 +201,7 @@ void DirectionalLightDeserialiser::deserialise_impl(const nlohmann::json& object
 	light.use_direction_vector = object["use_direction_vector"];
 }
 
-auto PointLightDeserialiser::should_add_component_impl(const nlohmann::json& object_for_the_component) -> bool { return true; }
+auto PointLightDeserialiser::should_add_component_impl(const nlohmann::json&) -> bool { return true; }
 void PointLightDeserialiser::deserialise_impl(const nlohmann::json& object, Components::PointLight& light, const Device& /*unused*/)
 {
 	light.ambient = object["ambient"];

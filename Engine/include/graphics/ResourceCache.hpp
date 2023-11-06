@@ -25,7 +25,9 @@ template <CacheableResource Resource, class Props, class Child, class Key = std:
 	using UniquePathSet = std::unordered_set<std::filesystem::path, FileSystemPathHasher>;
 
 public:
-	~ResourceCache() { storage.clear(); };
+	~ResourceCache() { clear_storage(); };
+
+	void clear_storage() { storage.clear(); }
 
 	auto get(const Key& key) -> Resource&
 	{

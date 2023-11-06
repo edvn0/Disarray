@@ -34,7 +34,7 @@ auto ModelLoader::import_model(const std::filesystem::path& path, ImportFlag fla
 
 auto ModelLoader::construct_textures(const Disarray::Device& device) -> std::vector<Ref<Disarray::Texture>>
 {
-	TextureCache cache { device, mesh_path.parent_path() };
+	TextureCache cache = TextureCache::construct(device, mesh_path.parent_path());
 	Timer<float> texture_timer;
 	std::size_t saved_iterations = 0;
 	for (auto& [key, value] : mesh_data) {
