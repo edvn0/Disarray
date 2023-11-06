@@ -132,8 +132,9 @@ namespace {
 	};
 } // namespace
 
-using SceneDeserialiser = Deserialiser<ScriptDeserialiser, MeshDeserialiser, SkyboxDeserialiser, TextDeserialiser, BoxColliderDeserialiser,
-	SphereColliderDeserialiser, CapsuleColliderDeserialiser, RigidBodyDeserialiser, TextureDeserialiser, TransformDeserialiser,
-	LineGeometryDeserialiser, QuadGeometryDeserialiser, DirectionalLightDeserialiser, PointLightDeserialiser, InheritanceDeserialiser>;
+using SceneDeserialiser
+	= Deserialiser<ScriptDeserialiser, MeshDeserialiser, SkyboxDeserialiser, TextDeserialiser, BoxColliderDeserialiser, SphereColliderDeserialiser,
+		CapsuleColliderDeserialiser, ColliderMaterialDeserialiser, RigidBodyDeserialiser, TextureDeserialiser, TransformDeserialiser,
+		LineGeometryDeserialiser, QuadGeometryDeserialiser, DirectionalLightDeserialiser, PointLightDeserialiser, InheritanceDeserialiser>;
 
 } // namespace Disarray

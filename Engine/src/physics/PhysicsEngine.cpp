@@ -26,11 +26,33 @@ namespace {
 		}
 	}
 
+	template <class Vector>
+		requires(std::is_same_v<Vector, rp3d::Vector2> || std::is_same_v<Vector, rp3d::Vector3>)
+	constexpr auto to_glm_from_react(const Vector& vector)
+	{
+		if constexpr (std::is_same_v<Vector, rp3d::Vector2>) {
+			return glm::vec2(vector.x, vector.y);
+		}
+		if constexpr (std::is_same_v<Vector, rp3d::Vector3>) {
+			return glm::vec3(vector.x, vector.y, vector.z);
+		}
+	}
+
 	auto to_react_from_glm(const glm::quat& quaternion)
 	{
 		const auto rotation_matrix = glm::mat4_cast(quaternion);
-		const auto rot3d = glm::mat3(rotation_matrix);
+		const auto rot3d = glm::transpose(glm::mat3(rotation_matrix));
 		return rp3d::Matrix3x3(rot3d[0][0], rot3d[0][1], rot3d[0][2], rot3d[1][0], rot3d[1][1], rot3d[1][2], rot3d[2][0], rot3d[2][1], rot3d[2][2]);
+	}
+
+	auto to_glm_from_react(const rp3d::Quaternion& quaternion)
+	{
+		return glm::quat {
+			quaternion.w,
+			quaternion.x,
+			quaternion.y,
+			quaternion.z,
+		};
 	}
 
 	template <class Parameters>
@@ -81,6 +103,9 @@ auto PhysicsEngine::restart() -> void
 	engine = make_scope<PhysicsEngine::EngineImpl, PimplDeleter<PhysicsEngine::EngineImpl>>();
 
 	engine->world = engine->common.createPhysicsWorld();
+	engine->world->setNbIterationsVelocitySolver(velocity_iterations);
+	engine->world->setNbIterationsPositionSolver(position_iterations);
+	engine->world->setGravity({ 0.F, 9.82F, 0.F });
 }
 
 auto PhysicsEngine::step(float time_step) -> void { engine->world->update(time_step); }
@@ -92,7 +117,7 @@ auto PhysicsEngine::step(float time_step, std::uint32_t velocity_its, std::uint3
 	engine->world->update(time_step);
 }
 
-auto PhysicsEngine::create_rigid_body(const RigidBodyParameters& parameters) -> void*
+auto PhysicsEngine::create_rigid_body(const RigidBodyParameters& parameters) -> EngineRigidBody
 {
 	auto transform = to_react_transform_from_parameters<RigidBodyParameters>(parameters);
 	auto* rigid_body = engine->world->createRigidBody(transform);
@@ -103,7 +128,7 @@ auto PhysicsEngine::create_rigid_body(const RigidBodyParameters& parameters) -> 
 	return rigid_body;
 }
 
-auto PhysicsEngine::add_box_collider(void* rigid_body, const ColliderParameters& parameters) -> void
+auto PhysicsEngine::add_box_collider(EngineRigidBody rigid_body, const ColliderParameters& parameters) -> void
 {
 	rp3d::BoxShape* shape = engine->common.createBoxShape(to_react_from_glm(parameters.half_size));
 	auto* rp3d_body = static_cast<rp3d::RigidBody*>(rigid_body);
@@ -111,10 +136,15 @@ auto PhysicsEngine::add_box_collider(void* rigid_body, const ColliderParameters&
 
 	transform.setPosition(transform.getPosition() + to_react_from_glm(parameters.offset));
 
-	rp3d_body->addCollider(shape, transform);
+	auto* collider = rp3d_body->addCollider(shape, transform);
+	collider->setIsTrigger(parameters.is_trigger);
+	auto& material = collider->getMaterial();
+	material.setMassDensity(parameters.collision_material.mass_density);
+	material.setBounciness(parameters.collision_material.bounciness);
+	material.setFrictionCoefficient(parameters.collision_material.friction_coefficient);
 }
 
-auto PhysicsEngine::add_sphere_collider(void* rigid_body, const ColliderParameters& parameters) -> void
+auto PhysicsEngine::add_sphere_collider(EngineRigidBody rigid_body, const ColliderParameters& parameters) -> void
 {
 	auto* rp3d_body = static_cast<rp3d::RigidBody*>(rigid_body);
 
@@ -126,7 +156,7 @@ auto PhysicsEngine::add_sphere_collider(void* rigid_body, const ColliderParamete
 	rp3d_body->addCollider(shape, transform);
 }
 
-auto PhysicsEngine::add_capsule_collider(void* rigid_body, const ColliderParameters& parameters) -> void
+auto PhysicsEngine::add_capsule_collider(EngineRigidBody rigid_body, const ColliderParameters& parameters) -> void
 {
 	auto* rp3d_body = static_cast<rp3d::RigidBody*>(rigid_body);
 
@@ -136,6 +166,15 @@ auto PhysicsEngine::add_capsule_collider(void* rigid_body, const ColliderParamet
 	transform.setPosition(transform.getPosition() + to_react_from_glm(parameters.offset));
 
 	rp3d_body->addCollider(shape, transform);
+}
+
+auto PhysicsEngine::get_transform(EngineRigidBody rigid_body) -> std::tuple<glm::vec3, glm::quat>
+{
+	auto* rp3d_body = static_cast<rp3d::RigidBody*>(rigid_body);
+	const auto& transform = rp3d_body->getTransform();
+	auto quat = to_glm_from_react(transform.getOrientation());
+	auto pos = to_glm_from_react(transform.getPosition());
+	return { pos, quat };
 }
 
 } // namespace Disarray

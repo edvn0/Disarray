@@ -2,6 +2,6 @@
 
 namespace Disarray {
 
-enum class BodyType { None, Static, Dynamic };
+enum class BodyType { Static, Dynamic };
 
 }

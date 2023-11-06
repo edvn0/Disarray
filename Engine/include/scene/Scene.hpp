@@ -139,12 +139,13 @@ public:
 	[[nodiscard]] auto is_paused() const { return paused; }
 	auto set_paused(bool new_pause_status) { paused = new_pause_status; }
 
-	void step(std::uint32_t steps = 0);
+	void step(std::int32_t steps = 0);
 
 	static auto copy(Scene& scene) -> Ref<Scene>;
 
 private:
 	PhysicsEngine engine;
+	void physics_update(float time_step);
 
 	const Disarray::Device& device;
 	std::string scene_name;
@@ -154,7 +155,7 @@ private:
 
 	bool paused { false };
 	bool running { false };
-	std::uint32_t step_frames { 0 };
+	std::int32_t step_frames { 0 };
 
 	Extent extent {};
 

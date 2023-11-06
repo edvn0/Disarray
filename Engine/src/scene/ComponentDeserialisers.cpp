@@ -46,6 +46,14 @@ void CapsuleColliderDeserialiser::deserialise_impl(const nlohmann::json& object,
 	pill.offset = object["offset"];
 }
 
+auto ColliderMaterialDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
+void ColliderMaterialDeserialiser::deserialise_impl(const nlohmann::json& object, Components::ColliderMaterial& material, const Device& device)
+{
+	material.bounciness = object["bounciness"];
+	material.friction_coefficient = object["friction_coefficient"];
+	material.mass_density = object["mass_density"];
+}
+
 auto BoxColliderDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
 void BoxColliderDeserialiser::deserialise_impl(const nlohmann::json& object, Components::BoxCollider& box, const Device& device)
 {

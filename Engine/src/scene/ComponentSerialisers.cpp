@@ -63,11 +63,19 @@ void TextSerialiser::serialise_impl(const Components::Text& text, nlohmann::json
 	object["projection"] = magic_enum::enum_name(text.projection);
 }
 
-void CapsuleColliderSerialiser::serialise_impl(const Components::CapsuleCollider& pill, nlohmann::json& object)
+void CapsuleColliderSerialiser::serialise_impl(const Components::CapsuleCollider& collider, nlohmann::json& object)
 {
-	object["radius"] = pill.radius;
-	object["offset"] = pill.offset;
-	object["height"] = pill.height;
+	object["radius"] = collider.radius;
+	object["offset"] = collider.offset;
+	object["height"] = collider.height;
+	object["is_trigger"] = collider.is_trigger;
+}
+
+void ColliderMaterialSerialiser::serialise_impl(const Components::ColliderMaterial& collider, nlohmann::json& object)
+{
+	object["bounciness"] = collider.bounciness;
+	object["friction_coefficient"] = collider.friction_coefficient;
+	object["mass_density"] = collider.mass_density;
 }
 
 void RigidBodySerialiser::serialise_impl(const Components::RigidBody& rigid_body, nlohmann::json& object)
@@ -80,16 +88,18 @@ void RigidBodySerialiser::serialise_impl(const Components::RigidBody& rigid_body
 	object["is_kinematic"] = rigid_body.is_kinematic;
 }
 
-void SphereColliderSerialiser::serialise_impl(const Components::SphereCollider& sphere, nlohmann::json& object)
+void SphereColliderSerialiser::serialise_impl(const Components::SphereCollider& collider, nlohmann::json& object)
 {
-	object["radius"] = sphere.radius;
-	object["offset"] = sphere.offset;
+	object["radius"] = collider.radius;
+	object["offset"] = collider.offset;
+	object["is_trigger"] = collider.is_trigger;
 }
 
-void BoxColliderSerialiser::serialise_impl(const Components::BoxCollider& box, nlohmann::json& object)
+void BoxColliderSerialiser::serialise_impl(const Components::BoxCollider& collider, nlohmann::json& object)
 {
-	object["half_size"] = box.half_size;
-	object["offset"] = box.offset;
+	object["half_size"] = collider.half_size;
+	object["offset"] = collider.offset;
+	object["is_trigger"] = collider.is_trigger;
 }
 
 void TextureSerialiser::serialise_impl(const Components::Texture& texture, nlohmann::json& object)

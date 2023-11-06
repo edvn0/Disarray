@@ -39,6 +39,7 @@ enum class SerialiserType : std::uint8_t {
 	BoxCollider,
 	SphereCollider,
 	CapsuleCollider,
+	ColliderMaterial,
 	Skybox,
 	Text
 };
@@ -89,6 +90,7 @@ MAKE_SERIALISER(TextSerialiser, Text)
 MAKE_SERIALISER(BoxColliderSerialiser, BoxCollider)
 MAKE_SERIALISER(SphereColliderSerialiser, SphereCollider)
 MAKE_SERIALISER(CapsuleColliderSerialiser, CapsuleCollider)
+MAKE_SERIALISER(ColliderMaterialSerialiser, ColliderMaterial)
 MAKE_SERIALISER(RigidBodySerialiser, RigidBody)
 MAKE_SERIALISER(TextureSerialiser, Texture)
 MAKE_SERIALISER(TransformSerialiser, Transform)
@@ -105,6 +107,7 @@ MAKE_DESERIALISER(TextDeserialiser, Text)
 MAKE_DESERIALISER(BoxColliderDeserialiser, BoxCollider)
 MAKE_DESERIALISER(SphereColliderDeserialiser, SphereCollider)
 MAKE_DESERIALISER(CapsuleColliderDeserialiser, CapsuleCollider)
+MAKE_DESERIALISER(ColliderMaterialDeserialiser, ColliderMaterial)
 MAKE_DESERIALISER(RigidBodyDeserialiser, RigidBody)
 MAKE_DESERIALISER(TextureDeserialiser, Texture)
 MAKE_DESERIALISER(TransformDeserialiser, Transform)

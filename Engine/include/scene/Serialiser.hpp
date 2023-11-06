@@ -148,7 +148,7 @@ namespace Detail {
 } // namespace Detail
 
 using SceneSerialiser = Detail::Serialiser<ScriptSerialiser, MeshSerialiser, SkyboxSerialiser, TextSerialiser, BoxColliderSerialiser,
-	SphereColliderSerialiser, CapsuleColliderSerialiser, RigidBodySerialiser, TextureSerialiser, TransformSerialiser, LineGeometrySerialiser,
-	QuadGeometrySerialiser, DirectionalLightSerialiser, PointLightSerialiser, InheritanceSerialiser>;
+	SphereColliderSerialiser, CapsuleColliderSerialiser, ColliderMaterialSerialiser, RigidBodySerialiser, TextureSerialiser, TransformSerialiser,
+	LineGeometrySerialiser, QuadGeometrySerialiser, DirectionalLightSerialiser, PointLightSerialiser, InheritanceSerialiser>;
 
 } // namespace Disarray

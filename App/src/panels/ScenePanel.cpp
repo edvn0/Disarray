@@ -353,7 +353,13 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (ImGui::DragFloat3("Offset", glm::value_ptr(collider.offset))) { }
 	});
 
-	draw_component<Components::BoxCollider>(entity, [&](Components::BoxCollider collider) {
+	draw_component<Components::ColliderMaterial>(entity, [&](Components::ColliderMaterial& material) {
+		if (ImGui::DragFloat("Bounciness", &material.bounciness, 0.05F, 0.0F, 1.0F)) { }
+		if (ImGui::DragFloat("Mass Density", &material.mass_density, 0.05F, 0.0F, 1.0F)) { }
+		if (ImGui::DragFloat("Friction coefficient", &material.friction_coefficient, 0.05F, 0.0F, 1.0F)) { }
+	});
+
+	draw_component<Components::BoxCollider>(entity, [&](Components::BoxCollider& collider) {
 		if (ImGui::DragFloat3("Offset", glm::value_ptr(collider.offset))) { }
 		if (ImGui::DragFloat3("Half Extents", glm::value_ptr(collider.half_size))) { }
 	});

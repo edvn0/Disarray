@@ -94,7 +94,7 @@ template <std::integral Out = std::uint32_t> inline constexpr auto to_component_
 	}
 }
 
-inline constexpr auto to_size(ImageFormat format)
+inline constexpr auto to_size(ImageFormat format) -> std::size_t
 {
 	switch (format) {
 	case ImageFormat::SRGB:
@@ -108,7 +108,7 @@ inline constexpr auto to_size(ImageFormat format)
 		return sizeof(float);
 	case ImageFormat::RGB32:
 	case ImageFormat::SRGB32:
-		return 4ULL * sizeof(float);
+		return 4 * sizeof(float);
 	default:
 		unreachable();
 	}

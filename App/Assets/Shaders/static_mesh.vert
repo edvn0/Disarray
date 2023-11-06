@@ -30,7 +30,7 @@ void main()
 
     frag_pos = vec3(model_position);
     gl_Position = ubo.view_projection * model_position;
-    light_space_frag_pos = bias_matrix() * spu.view_projection * pc.object_transform * vec4(pos, 1.0);
+    light_space_frag_pos = bias_matrix() * spu.view_projection * model_position;
     fragment_colour = colour;
     uvs = uv;
     out_normals = correct_normals(pc.object_transform, normals);

@@ -39,7 +39,7 @@
 namespace Disarray {
 
 Scene::Scene(const Device& dev, std::string_view name)
-	: engine(6U, 2U)
+	: engine(6, 3)
 	, device(dev)
 	, scene_name(name)
 {
@@ -146,7 +146,7 @@ void Scene::interface()
 	}
 }
 
-void Scene::update(float time_step)
+void Scene::update(float)
 {
 	if (picked_entity) {
 		selected_entity.swap(picked_entity);
@@ -514,7 +514,7 @@ auto Scene::copy(Scene& scene) -> Ref<Scene>
 	using CopyableComponents = Detail::ComponentGroup<Components::Camera, Components::Transform, Components::Tag, Components::Inheritance,
 		Components::LineGeometry, Components::QuadGeometry, Components::Mesh, Components::Material, Components::Texture, Components::DirectionalLight,
 		Components::PointLight, Components::Controller, Components::BoxCollider, Components::SphereCollider, Components::CapsuleCollider,
-		Components::Skybox, Components::Text, Components::RigidBody>;
+		Components::ColliderMaterial, Components::Skybox, Components::Text, Components::RigidBody>;
 	copy_all(CopyableComponents {}, identifiers, old_registry);
 
 	new_scene->sort<Components::ID>([](const Components::ID& left, const Components::ID& right) { return left.identifier < right.identifier; });
@@ -524,39 +524,29 @@ auto Scene::copy(Scene& scene) -> Ref<Scene>
 	return new_scene;
 }
 
-auto Scene::step(std::uint32_t steps) -> void { step_frames = steps; }
+auto Scene::step(std::int32_t steps) -> void { step_frames = steps; }
 
 auto Scene::on_runtime_start() -> void
 {
 	running = true;
 
-	// TODO(edvin): Handle start of physics!
 	on_physics_start();
 
 	// TODO(edvin): Scripting start
 }
 
-auto Scene::on_simulation_start() -> void
-{
-	// TODO(edvin): Handle start of physics!
-	on_physics_start();
-}
+auto Scene::on_simulation_start() -> void { on_physics_start(); }
 
 auto Scene::on_runtime_stop() -> void
 {
 	running = false;
 
-	// TODO(edvin): Handle end of physics!
 	on_physics_stop();
 
 	// TODO(edvin): Scripting end
 }
 
-auto Scene::on_simulation_stop() -> void
-{
-	// TODO(edvin): Handle end of physics!
-	on_physics_stop();
-}
+auto Scene::on_simulation_stop() -> void { on_physics_stop(); }
 
 auto Scene::get_primary_camera() -> std::optional<ViewProjectionTuple>
 {
@@ -574,27 +564,11 @@ auto Scene::get_primary_camera() -> std::optional<ViewProjectionTuple>
 
 auto Scene::on_update_editor(float time_step) -> void { update(time_step); }
 
+static constexpr auto fixed_time_step = 1.0F / 60.F;
+
 auto Scene::on_update_simulation(float time_step) -> void
 {
-	if (!is_paused() || step_frames-- > 0) {
-		engine.step(time_step);
-		// m_PhysicsWorld->Step(time_step, velocityIterations, positionIterations);
-
-		// Retrieve transform from Box2D
-		auto view = registry.view<Components::RigidBody, Components::Transform>();
-		for (auto&& [handle, rigid_body, transform] : view.each()) {
-			// auto& rb2d = entity.get_components<Rigidbody2DComponent>();
-
-			const auto new_transform = engine.get_transform(rigid_body.engine_body_storage);
-			transform.position.x = new_transform.position.x;
-			transform.position.y = new_transform.position.y;
-			transform.position.z = new_transform.position.z;
-
-			transform.rotation = new_transform.rotation;
-			// transform.rotation.z = body->GetAngle();
-		}
-	}
-
+	physics_update(fixed_time_step);
 	update(time_step);
 }
 
@@ -620,7 +594,7 @@ auto Scene::on_update_runtime(float time_step) -> void
 		controller.on_update(step, transform);
 	});
 
-	on_update_simulation(time_step);
+	physics_update(fixed_time_step);
 }
 
 auto Scene::on_physics_start() -> void
@@ -641,6 +615,15 @@ auto Scene::on_physics_start() -> void
 			.is_kinematic = rigid_body.is_kinematic,
 		});
 
+		CollisionMaterial collision_material {};
+
+		if (entity.has_component<Components::ColliderMaterial>()) {
+			auto& material = entity.get_components<Components::ColliderMaterial>();
+			collision_material.mass_density = material.mass_density;
+			collision_material.friction_coefficient = material.friction_coefficient;
+			collision_material.bounciness = material.bounciness;
+		}
+
 		if (entity.has_component<Components::CapsuleCollider>()) {
 			auto& collider = entity.get_components<Components::CapsuleCollider>();
 			engine.add_capsule_collider(body,
@@ -648,14 +631,16 @@ auto Scene::on_physics_start() -> void
 					.radius = collider.radius,
 					.height = collider.height,
 					.offset = collider.offset,
+					.collision_material = collision_material,
 				});
 		}
 		if (entity.has_component<Components::BoxCollider>()) {
 			auto& collider = entity.get_components<Components::BoxCollider>();
 			engine.add_box_collider(body,
 				{
+					.half_size = transform.scale * 2.0F * collider.half_size,
 					.offset = collider.offset,
-					.half_size = collider.half_size,
+					.collision_material = collision_material,
 				});
 		}
 		if (entity.has_component<Components::SphereCollider>()) {
@@ -664,17 +649,46 @@ auto Scene::on_physics_start() -> void
 				{
 					.radius = collider.radius,
 					.offset = collider.offset,
+					.collision_material = collision_material,
 				});
 		}
 		rigid_body.engine_body_storage = body;
 	}
 }
 
-auto Scene::on_physics_stop() -> void { engine.restart(); }
+auto Scene::on_physics_stop() -> void
+{
+	for (auto&& [entity, rigid] : registry.view<Components::RigidBody>().each()) {
+		rigid.engine_body_storage = nullptr;
+	}
+	engine.restart();
+}
 
 auto Scene::sort() -> void
 {
 	sort<Components::ID>([](const auto& left, const auto& right) { return left.identifier < right.identifier; });
+}
+
+void Scene::physics_update(float time_step)
+{
+	if (!is_paused() || step_frames <= 0) {
+		engine.step(time_step);
+		auto view = registry.view<Components::RigidBody, Components::Transform>();
+		for (auto&& [handle, rigid_body, transform] : view.each()) {
+
+			auto&& [new_position, new_rotation] = engine.get_transform(rigid_body.engine_body_storage);
+			transform.position.x = new_position.x;
+			transform.position.y = new_position.y;
+			transform.position.z = new_position.z;
+
+			transform.rotation = new_rotation;
+		}
+
+		step_frames--;
+		if (step_frames < 0) {
+			step_frames = 0;
+		}
+	}
 }
 
 } // namespace Disarray

@@ -131,8 +131,9 @@ void ClientLayer::create_entities()
 
 	auto floor = scene->create("Floor");
 	floor.get_transform().scale = { 70, 1, 70 };
-	floor.get_transform().position = { 0, 7, 0 };
+	floor.get_transform().position = { 0, 45, 0 };
 	floor.add_component<Components::BoxCollider>();
+	floor.add_component<Components::RigidBody>();
 
 	floor.get_components<Components::ID>().can_interact_with = false;
 	floor.add_component<Components::Texture>(nullptr, glm::vec4 { .1, .1, .9, 1.0 });
@@ -194,6 +195,8 @@ void ClientLayer::create_entities()
 		});
 	v_mesh.get_components<Components::Transform>().position.y = -2;
 	v_mesh.add_component<Components::Mesh>(viking);
+	v_mesh.add_component<Components::BoxCollider>();
+	v_mesh.add_component<Components::RigidBody>().body_type = BodyType::Dynamic;
 	v_mesh.add_component<Components::Texture>(scene_renderer.get_texture_cache().get("viking_room"));
 
 	auto viking_room_texture = Texture::construct(device,
@@ -245,6 +248,11 @@ void ClientLayer::create_entities()
 
 		point_light.template add_component<Components::Mesh>(sphere_mesh);
 		point_light.template add_component<Components::Texture>(cols.at(index).at(0));
+		Components::RigidBody& rigid = point_light.template add_component<Components::RigidBody>();
+		rigid.body_type = BodyType::Dynamic;
+		rigid.angular_drag = Random::as_double(0.5, 3.0);
+		rigid.linear_drag = Random::as_double(0.5, 3.0);
+		point_light.template add_component<Components::SphereCollider>();
 		pl_sys.add_child(point_light);
 	};
 
@@ -563,15 +571,15 @@ void ClientLayer::render()
 
 		if (primary_camera.has_value()) {
 			auto&& [view, projection, view_projection] = *primary_camera;
-			scene->begin_frame(view, projection, view_projection, scene_renderer);
+			running_scene->begin_frame(view, projection, view_projection, scene_renderer);
 		} else {
-			scene->begin_frame(camera, scene_renderer);
+			running_scene->begin_frame(camera, scene_renderer);
 		}
 	} else {
-		scene->begin_frame(camera, scene_renderer);
+		running_scene->begin_frame(camera, scene_renderer);
 	}
-	scene->render(scene_renderer);
-	scene->end_frame(scene_renderer);
+	running_scene->render(scene_renderer);
+	running_scene->end_frame(scene_renderer);
 	scene_renderer.submit_executed_commands();
 }
 

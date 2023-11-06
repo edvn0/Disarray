@@ -260,12 +260,14 @@ template <> inline constexpr std::string_view component_name<RigidBody> = "Rigid
 struct BoxCollider {
 	glm::vec3 half_size { 0.5F, 0.5F, 0.5F };
 	glm::vec3 offset { 0.0F, 0.0F, 0.0F };
+	bool is_trigger { false };
 };
 template <> inline constexpr std::string_view component_name<BoxCollider> = "BoxCollider";
 
 struct SphereCollider {
 	float radius { 0.5F };
 	glm::vec3 offset { 0.0F, 0.0F, 0.0F };
+	bool is_trigger { false };
 };
 template <> inline constexpr std::string_view component_name<SphereCollider> = "SphereCollider";
 
@@ -273,8 +275,16 @@ struct CapsuleCollider {
 	float radius { 0.5F };
 	float height { 1.0F };
 	glm::vec3 offset { 0.0F, 0.0F, 0.0F };
+	bool is_trigger { false };
 };
 template <> inline constexpr std::string_view component_name<CapsuleCollider> = "CapsuleCollider";
+
+struct ColliderMaterial {
+	float friction_coefficient { 0.2F };
+	float bounciness { 0.2F };
+	float mass_density { 1.0F };
+};
+template <> inline constexpr std::string_view component_name<ColliderMaterial> = "ColliderMaterial";
 
 struct Skybox {
 	Skybox() = default;
