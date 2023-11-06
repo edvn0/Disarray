@@ -287,7 +287,6 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 			continue;
 		}
 
-		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *scene_renderer.get_pipeline("StaticMesh");
 		const auto computed_transform = transform.compute();
 		if (mesh.draw_aabb) {
@@ -309,7 +308,6 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 			continue;
 		}
 
-		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *scene_renderer.get_pipeline("StaticMesh");
 		const auto transform_computed = transform.compute();
 		scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
@@ -325,8 +323,9 @@ void Scene::draw_shadows(SceneRenderer& scene_renderer)
 		auto point_light_view = registry.view<const Components::PointLight, const Components::Mesh>();
 		Ref<Disarray::Mesh> point_light_ptr = nullptr;
 		for (auto&& [entity, point_light, mesh] : point_light_view.each()) {
-			if (mesh.mesh->invalid())
+			if (mesh.mesh->invalid()) {
 				continue;
+			}
 			point_light_ptr = mesh.mesh;
 			break;
 		}
@@ -344,7 +343,6 @@ void Scene::draw_shadows(SceneRenderer& scene_renderer)
 			continue;
 		}
 
-		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *scene_renderer.get_pipeline("Shadow");
 		if (mesh.mesh->has_children()) {
 			scene_renderer.draw_static_submeshes(mesh.mesh->get_submeshes(), actual_pipeline, transform.compute(), texture.colour);
@@ -362,7 +360,6 @@ void Scene::draw_shadows(SceneRenderer& scene_renderer)
 			continue;
 		}
 
-		const auto identifier = static_cast<std::uint32_t>(entity);
 		const auto& actual_pipeline = *scene_renderer.get_pipeline("Shadow");
 		const auto transform_computed = transform.compute();
 		scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });

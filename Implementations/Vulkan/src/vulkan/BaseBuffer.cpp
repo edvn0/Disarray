@@ -36,6 +36,8 @@ BaseBuffer::BaseBuffer(const Disarray::Device& dev, BufferType buffer_type, Disa
 	}
 }
 
+BaseBuffer::~BaseBuffer() { destroy_buffer(); }
+
 void BaseBuffer::create_with_valid_data()
 {
 	Allocator allocator { fmt::format("{}Buffer", magic_enum::enum_name(type)) };

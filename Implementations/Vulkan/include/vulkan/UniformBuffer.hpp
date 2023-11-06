@@ -7,17 +7,26 @@
 
 namespace Disarray::Vulkan {
 
-class UniformBuffer : public Disarray::UniformBuffer, public Vulkan::BaseBuffer {
-	MAKE_SUB_BUFFER(UniformBuffer)
+class UniformBuffer : public Disarray::UniformBuffer {
 public:
 	UniformBuffer(const Disarray::Device&, BufferProperties);
+	~UniformBuffer() override = default;
+
+	auto size() const -> std::size_t override;
+	void set_data(const void*, std::size_t size, std::size_t offset) override;
+	void set_data(const void*, std::size_t size) override;
+
+	auto supply() const -> VkBuffer;
+	auto count() const -> std::size_t override;
+	auto get_raw() -> void* override;
+	auto get_raw() const -> void* override;
 
 	auto get_buffer_info() const -> const auto& { return buffer_info; }
 
 private:
-	void create_buffer_info();
-
+	Vulkan::BaseBuffer base_buffer;
 	VkDescriptorBufferInfo buffer_info {};
+	void create_buffer_info();
 };
 
 } // namespace Disarray::Vulkan
