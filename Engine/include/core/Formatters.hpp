@@ -39,6 +39,14 @@ template <> struct fmt::formatter<glm::mat<4, 4, float, glm::defaultp>> : fmt::f
 	auto format(const glm::mat<4, 4, float>& mat, format_context& ctx) -> decltype(ctx.out());
 };
 
+template <> struct fmt::formatter<Disarray::Extent> : fmt::formatter<std::string_view> {
+	auto format(const Disarray::Extent& vec, format_context& ctx) -> decltype(ctx.out());
+};
+
+template <> struct fmt::formatter<Disarray::FloatExtent> : fmt::formatter<std::string_view> {
+	auto format(const Disarray::FloatExtent& vec, format_context& ctx) -> decltype(ctx.out());
+};
+
 template <> struct fmt::formatter<glm::quat> : fmt::formatter<std::string_view> {
 	auto format(const glm::quat& vec, format_context& ctx) -> decltype(ctx.out());
 };
