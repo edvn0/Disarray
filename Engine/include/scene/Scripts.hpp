@@ -42,6 +42,11 @@ public:
 	LinearMovementScript(float min, float max, Axis);
 	LinearMovementScript(float min, float max)
 		: LinearMovementScript(min, max, Axis::X) {};
+
+	LinearMovementScript(std::integral auto min, std::integral auto max)
+		: LinearMovementScript(static_cast<float>(min), static_cast<float>(max), Axis::X) {};
+	LinearMovementScript(std::integral auto min, std::integral auto max, Axis axis)
+		: LinearMovementScript(static_cast<float>(min), static_cast<float>(max), axis) {};
 	LinearMovementScript(const Collections::StringViewMap<Parameter>& parameters);
 
 	void on_create() override;

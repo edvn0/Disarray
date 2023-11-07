@@ -4,40 +4,46 @@
 
 #include <Disarray.hpp>
 #include <fmt/format.h>
+#include <imgui_internal.h>
 
 #include <array>
-#include <exception>
 #include <filesystem>
 #include <initializer_list>
 #include <memory>
-#include <type_traits>
 #include <utility>
 
-#include "core/Collections.hpp"
-#include "core/Log.hpp"
 #include "core/Random.hpp"
-#include "graphics/Renderer.hpp"
+#include "graphics/Pipeline.hpp"
+#include "graphics/PipelineCache.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
-#include "panels/ScenePanel.hpp"
+#include "panels/PipelineEditorPanel.hpp"
 #include "panels/StatisticsPanel.hpp"
+#include "scene/Components.hpp"
+#include "scene/Scene.hpp"
 #include "ui/UI.hpp"
 
-namespace Disarray::Client {
-
-template <std::size_t Count> static consteval auto generate_angles_client() -> std::array<float, Count>
+namespace {
+template <std::size_t Count>
+	requires(Count <= Disarray::max_point_lights)
+auto generate_colours() -> std::array<std::array<glm::vec4, 4>, Count>
 {
-	std::array<float, Count> angles {};
-	constexpr auto division = 1.F / static_cast<float>(Count);
+	std::array<std::array<glm::vec4, 4>, Count> colours {};
 	for (std::size_t i = 0; i < Count; i++) {
-		angles.at(i) = glm::two_pi<float>() * static_cast<float>(i) * division;
+		colours.at(i).at(0) = Disarray::Random::colour();
+		colours.at(i).at(1) = Disarray::Random::colour();
+		colours.at(i).at(2) = Disarray::Random::colour();
+		colours.at(i).at(3) = Disarray::Random::colour();
 	}
-	return angles;
+	return colours;
 }
+} // namespace
+namespace Disarray::Client {
 
 ClientLayer::ClientLayer(Device& device, Window& win, Swapchain& swapchain)
 	: device(device)
+	, scene_renderer(device)
 	, camera(60.F, static_cast<float>(swapchain.get_extent().width), static_cast<float>(swapchain.get_extent().height), 0.1F, 1000.F, nullptr)
 {
 }
@@ -46,26 +52,352 @@ ClientLayer::~ClientLayer() = default;
 
 void ClientLayer::construct(App& app)
 {
-	scene = make_scope<Scene>(device, "Default scene");
+	scene_renderer.construct(app);
+	setup_filewatcher_and_threadpool(app.get_thread_pool());
+
+	scene = make_ref<Scene>(device, "Default scene");
 	scene->construct(app);
+	icon_play = scene_renderer.get_texture_cache().get("Play");
+	icon_stop = scene_renderer.get_texture_cache().get("Stop");
+	icon_pause = scene_renderer.get_texture_cache().get("Pause");
+	icon_step = scene_renderer.get_texture_cache().get("Step");
+	icon_simulate = scene_renderer.get_texture_cache().get("Simulate");
+	// create_entities();
+
+	extent = app.get_swapchain().get_extent();
+	running_scene = scene;
 
 	auto stats_panel = app.add_panel<StatisticsPanel>(app.get_statistics());
 	auto content_panel = app.add_panel<DirectoryContentPanel>("Assets");
-	auto scene_panel = app.add_panel<ScenePanel>(scene.get());
-	auto execution_stats_panel = app.add_panel<ExecutionStatisticsPanel>(scene->get_command_executor());
+	auto execution_stats_panel = app.add_panel<ExecutionStatisticsPanel>(scene_renderer.get_command_executor());
+	auto pipeline_editor_panel = app.add_panel<PipelineEditorPanel>(scene_renderer.get_pipeline_cache());
+	scene_panel = std::dynamic_pointer_cast<ScenePanel>(app.add_panel<ScenePanel>(running_scene.get()));
+	// auto log_panel = app.add_panel<LogPanel>("Assets/Logs/disarray_errors.log");
 
 	stats_panel->construct(app);
 	content_panel->construct(app);
-	scene_panel->construct(app);
 	execution_stats_panel->construct(app);
-};
+	pipeline_editor_panel->construct(app);
+	scene_panel->construct(app);
+	// log_panel->construct(app);
+}
+
+void ClientLayer::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
+{
+	static constexpr auto tick_time = std::chrono::milliseconds(3000);
+	file_watcher = make_scope<FileWatcher>(pool, "Assets/Shaders", Collections::StringSet { ".vert", ".frag", ".glsl" }, tick_time);
+	auto& pipeline_cache = scene_renderer.get_pipeline_cache();
+	file_watcher->on_modified([&ext = extent, &pipeline_cache](const FileInformation& entry) { pipeline_cache.force_recreation(ext); });
+}
+
+void ClientLayer::create_entities()
+{
+	auto& graphics_resource = scene_renderer.get_graphics_resource();
+
+	const auto cube_mesh = Mesh::construct(device,
+		MeshProperties {
+			.path = FS::model("cube.obj"),
+		});
+
+	const VertexLayout layout {
+		{ ElementType::Float3, "position" },
+		{ ElementType::Float2, "uv" },
+		{ ElementType::Float4, "colour" },
+		{ ElementType::Float3, "normals" },
+		{ ElementType::Float3, "tangents" },
+		{ ElementType::Float3, "bitangents" },
+	};
+	auto& resources = graphics_resource;
+
+	auto texture_cube = Texture::construct(device,
+		{
+			.path = FS::texture("cubemap_yokohama_rgba.ktx"),
+			.dimension = TextureDimension::Three,
+			.debug_name = "Skybox",
+		});
+	auto skybox_material = Material::construct(device,
+		{
+			.vertex_shader = scene_renderer.get_pipeline_cache().get_shader("skybox.vert"),
+			.fragment_shader = scene_renderer.get_pipeline_cache().get_shader("skybox.frag"),
+			.textures = { texture_cube },
+		});
+
+	auto environment = scene->create("Environment");
+	environment.add_component<Components::Material>(skybox_material);
+	environment.add_component<Components::Skybox>(texture_cube);
+	environment.add_component<Components::Mesh>(cube_mesh);
+
+	auto floor = scene->create("Floor");
+	floor.get_transform().scale = { 70, 1, 70 };
+	floor.get_transform().position = { 0, 45, 0 };
+	floor.add_component<Components::BoxCollider>();
+	floor.add_component<Components::RigidBody>();
+
+	floor.get_components<Components::ID>().can_interact_with = false;
+	floor.add_component<Components::Texture>(nullptr, glm::vec4 { .1, .1, .9, 1.0 });
+	floor.add_component<Components::Mesh>(cube_mesh);
+	auto unit_vectors = scene->create("UnitVectors");
+	const glm::vec3 base_pos { 0, 0, 0 };
+	{
+		auto axis = scene->create("XAxis");
+		axis.get_components<Components::ID>().can_interact_with = false;
+		auto& transform = axis.get_components<Components::Transform>();
+		transform.position = base_pos;
+		axis.add_component<Components::LineGeometry>(base_pos + glm::vec3 { 10.0, 0, 0 });
+		axis.add_component<Components::Texture>(glm::vec4 { 1, 0, 0, 1 });
+		unit_vectors.add_child(axis);
+	}
+	{
+		auto axis = scene->create("YAxis");
+		axis.get_components<Components::ID>().can_interact_with = false;
+		auto& transform = axis.get_components<Components::Transform>();
+		transform.position = base_pos;
+		axis.add_component<Components::LineGeometry>(base_pos + glm::vec3 { 0, -10.0, 0 });
+		axis.add_component<Components::Texture>(glm::vec4 { 0, 1, 0, 1 });
+		unit_vectors.add_child(axis);
+	}
+	{
+		auto axis = scene->create("ZAxis");
+		axis.get_components<Components::ID>().can_interact_with = false;
+		auto& transform = axis.get_components<Components::Transform>();
+		transform.position = base_pos;
+		axis.add_component<Components::LineGeometry>(base_pos + glm::vec3 { 0, 0, -10.0 });
+		axis.add_component<Components::Texture>(glm::vec4 { 0, 0, 1, 1 });
+		unit_vectors.add_child(axis);
+	}
+
+	auto unit_squares = scene->create("UnitSquares");
+
+	static constexpr auto offset = glm::vec3(3, 3, 1);
+	static constexpr auto squares = 10;
+	static constexpr auto half_extent = (squares / 2) - 1;
+	for (auto i = -squares / 2; i < half_extent; i++) {
+		for (auto j = -squares / 2; j < half_extent; j++) {
+			auto axis = scene->create("Square-x{}y{}", i, j);
+			auto& transform = axis.add_component<Components::Transform>();
+			transform.position = glm::vec3 { i, -7, j };
+			transform.scale /= offset;
+			transform.rotation = glm::angleAxis(glm::radians(90.0F), glm::vec3 { 1, 0, 0 });
+			axis.add_component<Components::QuadGeometry>();
+			axis.add_component<Components::Texture>(Random::strong_colour());
+			unit_squares.add_child(axis);
+		}
+	}
+
+	auto viking_rotation = Maths::rotate_by(glm::radians(glm::vec3 { 0, 0, 0 }));
+	auto v_mesh = scene->create("Viking");
+	const auto viking = Mesh::construct(device,
+		{
+			.path = FS::model("viking.obj"),
+			.initial_rotation = viking_rotation,
+		});
+	v_mesh.get_components<Components::Transform>().position.y = -2;
+	v_mesh.add_component<Components::Mesh>(viking);
+	v_mesh.add_component<Components::BoxCollider>();
+	v_mesh.add_component<Components::RigidBody>().body_type = BodyType::Dynamic;
+	v_mesh.add_component<Components::Texture>(scene_renderer.get_texture_cache().get("viking_room"));
+
+	auto viking_room_texture = Texture::construct(device,
+		{
+			.extent = extent,
+			.format = ImageFormat::SBGR,
+			.path = FS::texture("viking_room.png"),
+			.debug_name = "viking",
+		});
+	v_mesh.add_component<Components::Texture>(viking_room_texture);
+	static constexpr auto val = 10.0F;
+	v_mesh.add_script<Scripts::LinearMovementScript>(-val, val);
+
+	auto colours = generate_colours<500>();
+	const auto sphere = Mesh::construct(device,
+		{
+			.path = FS::model("sphere.fbx"),
+		});
+
+	auto sun = scene->create("Sun");
+	auto& directional_sun = sun.add_component<Components::DirectionalLight>(glm::vec4 { 255, 255, 255, 8 },
+		Components::DirectionalLight::ProjectionParameters {
+			.factor = 145.F,
+			.near = -190.F,
+			.far = 90.F,
+			.fov = 60.F,
+		});
+	directional_sun.diffuse = Maths::scale_colour({ 49, 22, 22, 255 });
+	directional_sun.specular = Maths::scale_colour({ 181, 255, 0, 255 });
+	sun.add_component<Components::Mesh>(sphere);
+	sun.add_component<Components::Transform>().position = { -15, -15, -16 };
+	sun.add_component<Components::Controller>();
+
+	auto pl_system = scene->create("PointLightSystem");
+
+	constexpr auto create_point_light = [](Ref<Scene>& point_light_scene, auto index, auto& pl_sys, auto& cols, auto& sphere_mesh) {
+		auto point_light = point_light_scene->create("PointLight-{}", index);
+		point_light.template get_components<Components::ID>().can_interact_with = false;
+		auto& light_component = point_light.template add_component<Components::PointLight>();
+		light_component.ambient = cols.at(index).at(0);
+		light_component.diffuse = cols.at(index).at(1);
+		light_component.specular = cols.at(index).at(2);
+
+		constexpr auto float_radius = static_cast<float>(point_light_radius);
+		const auto point_in_sphere = Random::on_sphere(3.0F * float_radius);
+		auto& transform = point_light.template get_components<Components::Transform>();
+		transform.position = point_in_sphere;
+		// transform.scale *= 2;
+
+		point_light.template add_component<Components::Mesh>(sphere_mesh);
+		point_light.template add_component<Components::Texture>(cols.at(index).at(0));
+		Components::RigidBody& rigid = point_light.template add_component<Components::RigidBody>();
+		rigid.body_type = BodyType::Dynamic;
+		point_light.template add_component<Components::SphereCollider>();
+		pl_sys.add_child(point_light);
+	};
+
+	for (std::uint32_t i = 0; i < colours.size(); i++) {
+		create_point_light(scene, i, pl_system, colours, sphere);
+	}
+	// sponza
+	auto sponza = scene->create("Sponza");
+	// Text
+	auto text_hello = scene->create("Hello Text");
+	auto& component = text_hello.add_component<Components::Text>();
+	component.set_text("{}", "Hello world!");
+
+	auto scene_camera = scene->create("Scene Camera");
+	scene_camera.add_component<Components::Camera>();
+	scene_camera.get_components<Components::Transform>().position = { 15, -16, 16 };
+
+	scene->sort();
+}
+
+auto ClientLayer::toolbar() -> void
+{
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 2));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+	auto& colors = ImGui::GetStyle().Colors;
+	const auto& button_hovered = colors[ImGuiCol_ButtonHovered];
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(button_hovered.x, button_hovered.y, button_hovered.z, 0.5f));
+	const auto& button_active = colors[ImGuiCol_ButtonActive];
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(button_active.x, button_active.y, button_active.z, 0.5f));
+
+	ImGui::Begin("##toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+	bool toolbar_enabled = running_scene != nullptr;
+
+	float size = ImGui::GetWindowHeight() - 4.0f;
+	ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
+
+	bool has_play_button = scene_state == SceneState::Edit || scene_state == SceneState::Play;
+	bool has_simulate_button = scene_state == SceneState::Edit || scene_state == SceneState::Simulate;
+	bool has_pause_button = scene_state != SceneState::Edit;
+
+	if (has_play_button) {
+		const auto& icon = (scene_state == SceneState::Edit || scene_state == SceneState::Simulate) ? icon_play : icon_stop;
+		if (UI::image_button(*icon, glm::vec2(size, size)) && toolbar_enabled) {
+			if (scene_state == SceneState::Edit || scene_state == SceneState::Simulate) {
+				on_scene_play();
+			} else {
+				on_scene_stop();
+			}
+		}
+	}
+
+	if (has_simulate_button) {
+		if (has_play_button) {
+			ImGui::SameLine();
+		}
+
+		const auto& icon = (scene_state == SceneState::Edit || scene_state == SceneState::Play) ? icon_simulate : icon_stop;
+		if (UI::image_button(*icon, glm::vec2(size, size)) && toolbar_enabled) {
+			if (scene_state == SceneState::Edit || scene_state == SceneState::Play) {
+				on_scene_simulate();
+			} else {
+				on_scene_stop();
+			}
+		}
+	}
+	if (has_pause_button) {
+		bool is_paused = running_scene->is_paused();
+		ImGui::SameLine();
+		const auto& pause_icon = icon_pause;
+		if (UI::image_button(*pause_icon, glm::vec2(size, size)) && toolbar_enabled) {
+			on_scene_pause();
+		}
+
+		// Step button
+		if (is_paused) {
+			ImGui::SameLine();
+			const auto& icon = icon_step;
+			if (UI::image_button(*icon, glm::vec2(size, size)) && toolbar_enabled) {
+				running_scene->step();
+			}
+		}
+	}
+	ImGui::PopStyleVar(2);
+	ImGui::PopStyleColor(3);
+	ImGui::End();
+}
+
+void ClientLayer::on_scene_play()
+{
+	if (scene_state == SceneState::Simulate) {
+		on_scene_stop();
+	}
+
+	scene_state = SceneState::Play;
+
+	running_scene = Scene::copy(*scene);
+	running_scene->on_runtime_start();
+
+	scene_panel->set_scene(running_scene.get());
+}
+
+void ClientLayer::on_scene_simulate()
+{
+	if (scene_state == SceneState::Play) {
+		on_scene_stop();
+	}
+
+	scene_state = SceneState::Simulate;
+
+	running_scene = Scene::copy(*scene);
+	running_scene->on_simulation_start();
+
+	scene_panel->set_scene(running_scene.get());
+}
+
+void ClientLayer::on_scene_stop()
+{
+	ensure(scene_state == SceneState::Play || scene_state == SceneState::Simulate);
+
+	if (scene_state == SceneState::Play) {
+		running_scene->on_runtime_stop();
+	} else if (scene_state == SceneState::Simulate) {
+		running_scene->on_simulation_stop();
+	}
+
+	scene_state = SceneState::Edit;
+
+	running_scene = scene;
+
+	scene_panel->set_scene(running_scene.get());
+}
+
+void ClientLayer::on_scene_pause()
+{
+	if (scene_state == SceneState::Edit) {
+		return;
+	}
+
+	running_scene->set_paused(true);
+}
 
 void ClientLayer::interface()
 {
-	ImGuiIO& io = ImGui::GetIO();
+	ImGuiIO& imgui_io = ImGui::GetIO();
 	ImGuiStyle& style = ImGui::GetStyle();
 
-	io.ConfigWindowsResizeFromEdges = ((io.BackendFlags & ImGuiBackendFlags_HasMouseCursors) != 0);
+	imgui_io.ConfigWindowsResizeFromEdges = ((imgui_io.BackendFlags & ImGuiBackendFlags_HasMouseCursors) != 0);
 
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
 
@@ -87,7 +419,7 @@ void ClientLayer::interface()
 
 	ImGui::PopStyleVar(2);
 
-	float min_win_size_x = style.WindowMinSize.x;
+	const float min_win_size_x = style.WindowMinSize.x;
 	style.WindowMinSize.x = 370.0F;
 	ImGui::DockSpace(ImGui::GetID("Dockspace"));
 	style.WindowMinSize.x = min_win_size_x;
@@ -100,13 +432,13 @@ void ClientLayer::interface()
 
 		auto viewport_offset = ImGui::GetCursorPos();
 		auto viewport_size = ImGui::GetContentRegionAvail();
-		camera.set_viewport_size<FloatExtent>({ viewport_size.x, viewport_size.y });
+		camera.set_viewport_size(FloatExtent { viewport_size.x, viewport_size.y });
 
-		const auto& image = scene->get_final_image();
+		const auto& image = scene_renderer.get_final_image();
 		UI::image(image, { viewport_size.x, viewport_size.y });
 
-		if (const auto& entity = scene->get_selected_entity(); entity->is_valid()) {
-			scene->manipulate_entity_transform(*entity, camera, gizmo_type);
+		if (const auto& entity = running_scene->get_selected_entity(); entity->is_valid()) {
+			running_scene->manipulate_entity_transform(*entity, camera, gizmo_type);
 		}
 
 		auto window_size = ImGui::GetWindowSize();
@@ -120,42 +452,40 @@ void ClientLayer::interface()
 		min_bound.x -= viewport_offset.x;
 		min_bound.y -= viewport_offset.y;
 
-		ImVec2 max_bound = { min_bound.x + window_size.x, min_bound.y + window_size.y };
+		const ImVec2 max_bound = { min_bound.x + window_size.x, min_bound.y + window_size.y };
 		viewport_bounds[0] = { min_bound.x, min_bound.y };
 		viewport_bounds[1] = { max_bound.x, max_bound.y };
 
 		vp_bounds = { glm::vec2 { viewport_bounds[1].x - viewport->Pos.x, viewport_bounds[1].y - viewport->Pos.y },
 			{ viewport_bounds[0].x - viewport->Pos.x, viewport_bounds[0].y - viewport->Pos.y } };
-
-		scene->set_viewport_bounds(vp_bounds[0], vp_bounds[1]);
 	}
 	ImGui::End();
 	ImGui::PopStyleVar();
 
-	const auto& depth_image = scene->get_image(2);
+	const auto& depth_image = scene_renderer.get_framebuffer<SceneFramebuffer::Shadow>()->get_depth_image();
 	UI::scope("Depth"sv, [&depth_image]() {
 		auto viewport_size = ImGui::GetContentRegionAvail();
 		UI::image(depth_image, { viewport_size.x, viewport_size.y });
 	});
 
-	UI::scope("Camera Settings", [&cam = camera]() {
-		auto near_clip = cam.get_near_clip();
-		auto far_clip = cam.get_far_clip();
-		bool any_changed = false;
-		any_changed |= UI::Input::input("Near", &near_clip);
-		any_changed |= UI::Input::input("Far", &far_clip);
-		if (any_changed) {
-			cam.set_near_clip(near_clip);
-			cam.set_far_clip(far_clip);
-		}
-	});
-
 	ImGui::End();
 
-	scene->interface();
+	toolbar();
+
+	scene_renderer.interface();
+	running_scene->interface();
 }
 
-void ClientLayer::handle_swapchain_recreation(Swapchain& swapchain) { scene->recreate(swapchain.get_extent()); }
+void ClientLayer::handle_swapchain_recreation(Swapchain& swapchain)
+{
+	extent = swapchain.get_extent();
+	running_scene->recreate(swapchain.get_extent());
+	scene_renderer.recreate(true, swapchain.get_extent());
+	auto& graphics_resource = scene_renderer.get_graphics_resource();
+
+	auto texture_cube = running_scene->get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
+	graphics_resource.expose_to_shaders(texture_cube->get_image(), DescriptorSet(2), DescriptorBinding(2));
+}
 
 void ClientLayer::on_event(Event& event)
 {
@@ -170,6 +500,7 @@ void ClientLayer::on_event(Event& event)
 			} else {
 				gizmo_type = GizmoType::Translate;
 			}
+			return;
 		}
 		default:
 			return;
@@ -180,13 +511,9 @@ void ClientLayer::on_event(Event& event)
 			return true;
 		}
 
-#ifndef DISARRAY_DRAW_IDENTIFIERS
-		return false;
-#endif
-
 		const auto vp_is_focused = viewport_panel_focused && viewport_panel_mouse_over;
 		if (pressed.get_mouse_button() == MouseCode::Left && vp_is_focused) {
-			const auto& image = scene->get_image(1);
+			const auto& image = scene_renderer.get_framebuffer<SceneFramebuffer::Identity>()->get_image(0);
 			auto pos = Input::mouse_position();
 			pos -= vp_bounds[1];
 
@@ -194,117 +521,84 @@ void ClientLayer::on_event(Event& event)
 			pos.y /= vp_bounds[0].y;
 
 			if (pos.x < 0 || pos.x > 1 || pos.y < 0 || pos.y > 1) {
-				scene->update_picked_entity(0);
+				running_scene->update_picked_entity(0);
 				return true;
 			}
 
 			auto pixel_data = image.read_pixel(pos);
-			std::visit(Tuple::overload { [&s = this->scene](const std::uint32_t& handle) { s->update_picked_entity(handle); },
+			std::visit(Tuple::overload { [&s = this->running_scene](const std::uint32_t& handle) { s->update_picked_entity(handle); },
 						   [](const glm::vec4& vec) {}, [](std::monostate) {} },
 				pixel_data);
 			return true;
 		}
 
-		scene->update_picked_entity(0);
+		running_scene->update_picked_entity(0);
 		return false;
 	});
 	camera.on_event(event);
-	scene->on_event(event);
+	running_scene->on_event(event);
 }
 
 void ClientLayer::update(float time_step)
 {
-	camera.on_update(time_step);
-	scene->update(time_step);
+	switch (scene_state) {
+	case SceneState::Edit: {
+		camera.on_update(time_step);
+		running_scene->on_update_editor(time_step);
+		break;
+	}
+	case SceneState::Simulate: {
+		camera.on_update(time_step);
+		running_scene->on_update_simulation(time_step);
+		break;
+	}
+	case SceneState::Play: {
+		running_scene->on_update_runtime(time_step);
+		break;
+	}
+	}
 }
 
 void ClientLayer::render()
 {
-	scene->begin_frame(camera);
-	scene->render();
-	scene->end_frame();
+	scene_renderer.begin_execution();
+	if (scene_state == SceneState::Play) {
+		auto primary_camera = scene->get_primary_camera();
+
+		if (primary_camera.has_value()) {
+			auto&& [view, projection, view_projection] = *primary_camera;
+			running_scene->begin_frame(view, projection, view_projection, scene_renderer);
+		} else {
+			running_scene->begin_frame(camera, scene_renderer);
+		}
+	} else {
+		running_scene->begin_frame(camera, scene_renderer);
+	}
+	running_scene->render(scene_renderer);
+	running_scene->end_frame(scene_renderer);
+	scene_renderer.submit_executed_commands();
 }
 
-void ClientLayer::destruct() { scene->destruct(); }
+void ClientLayer::destruct()
+{
+	scene_renderer.destruct();
+	file_watcher.reset();
+	scene->destruct();
+}
 
-template <typename Child> class FileHandlerBase {
-protected:
-	explicit FileHandlerBase(const Device& dev, Scene* scene, std::filesystem::path path, std::initializer_list<std::string_view> exts)
-		: device(dev)
-		, base_scene(scene)
-		, file_path(std::move(path))
-		, extensions(exts)
-	{
-		valid = extensions.contains(file_path.extension().string());
-		if (valid) {
-			handle();
-		}
-	}
-	auto child() -> auto& { return static_cast<Child&>(*this); }
-	auto get_scene() -> auto* { return base_scene; }
-	[[nodiscard]] auto get_device() const -> const auto& { return device; }
-	[[nodiscard]] auto get_path() const -> const auto& { return file_path; }
+#include "handlers/file_handlers.inl"
 
-private:
-	void handle() { return child().handle_impl(); }
-	const Device& device;
-	Scene* base_scene;
-	std::filesystem::path file_path {};
-	Collections::StringViewSet extensions {};
-	bool valid { false };
-};
-
-class PNGHandler : public FileHandlerBase<PNGHandler> {
-public:
-	explicit PNGHandler(const Device& device, Scene* scene, const std::filesystem::path& path)
-		: FileHandlerBase(device, scene, path, { ".png" })
-	{
-	}
-
-private:
-	void handle_impl()
-	{
-		auto* scene = get_scene();
-		const auto& path = get_path();
-		auto entity = scene->create(path.filename().string());
-		auto texture = Texture::construct(get_device(),
-			{
-				.path = path,
-				.debug_name = path.filename().string(),
-			});
-
-		entity.add_component<Components::Texture>(texture);
-	}
-
-	friend class FileHandlerBase<PNGHandler>;
-};
-
-class SceneHandler : public FileHandlerBase<SceneHandler> {
-public:
-	explicit SceneHandler(const Device& device, Scene* scene, const std::filesystem::path& path)
-		: FileHandlerBase(device, scene, path, { ".scene", ".json" })
-	{
-	}
-
-private:
-	void handle_impl()
-	{
-		auto& current_scene = *get_scene();
-		current_scene.clear();
-		Scene::deserialise_into(current_scene, get_device(), get_path());
-	}
-
-	friend class FileHandlerBase<SceneHandler>;
-};
-
-using FileHandlers = std::tuple<PNGHandler, SceneHandler>;
 void ClientLayer::handle_file_drop(const std::filesystem::path& path)
 {
 	if (!std::filesystem::exists(path)) {
 		return;
 	}
-	PNGHandler { device, scene.get(), path };
-	SceneHandler { device, scene.get(), path };
+
+	static constexpr auto evaluate_all = []<class... T>(HandlerGroup<T...>, const auto& dev, auto* scene_ptr, const auto& path) {
+		(T { dev, scene_ptr, path }, ...);
+	};
+
+	evaluate_all(FileHandlers {}, device, scene.get(), path);
 }
 
 } // namespace Disarray::Client

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <glm/common.hpp>
 #include <glm/detail/qualifier.hpp>
 #include <glm/glm.hpp>
@@ -16,7 +18,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "Forward.hpp"
 #include "core/Collections.hpp"
 #include "core/Concepts.hpp"
 #include "core/Hashes.hpp"
@@ -26,6 +27,10 @@
 #include "graphics/Image.hpp"
 #include "graphics/Shader.hpp"
 #include "graphics/Texture.hpp"
+
+extern "C" {
+struct ImRect;
+}
 
 namespace Disarray::UI {
 
@@ -60,6 +65,14 @@ private:
 	static inline Collections::StringMap<ImFont*> font_map {};
 };
 
+class Scope {
+	DISARRAY_MAKE_NONCOPYABLE(Scope);
+
+public:
+	explicit Scope(std::string_view name);
+	~Scope();
+};
+
 static constexpr std::array<glm::vec2, 2> default_uvs = { glm::vec2 { 0.f, 0.f }, glm::vec2 { 1.f, 1.f } };
 
 using UIFunction = std::function<void(void)>;
@@ -82,10 +95,10 @@ template <typename... Args> void text_wrapped(fmt::format_string<Args...> fmt_st
 }
 
 static constexpr inline auto button_size = 64;
-
-void image_button(const Disarray::Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+bool button(std::string_view label, const glm::vec2& size = { button_size, button_size });
+bool image_button(const Disarray::Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
 void image(const Disarray::Image&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
-void image_button(const Disarray::Texture&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
+bool image_button(const Disarray::Texture&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
 void image(const Disarray::Texture&, glm::vec2 size = { button_size, button_size }, const std::array<glm::vec2, 2>& uvs = default_uvs);
 
 namespace Tabular {
@@ -155,6 +168,23 @@ namespace Input {
 	template <std::floating_point T, int N> auto input(std::string_view name, glm::vec<N, T>& vec, T velocity = T { 1 }, T min = 0, T max = 1) -> bool
 	{
 		return general_input(name, N, glm::value_ptr(vec), velocity, min, max);
+	}
+
+	auto general_input(std::string_view name, int count, std::uint32_t* base, std::uint32_t min, std::uint32_t max) -> bool;
+	auto general_input(std::string_view name, int count, std::uint64_t* base, std::uint64_t min, std::uint64_t max) -> bool;
+	auto general_input(std::string_view name, int count, std::int32_t* base, std::int32_t min, std::int32_t max) -> bool;
+	auto general_input(std::string_view name, int count, std::int64_t* base, std::int64_t min, std::int64_t max) -> bool;
+
+	template <std::size_t N = 1, std::integral T = std::uint32_t>
+		requires(N >= 0 && N <= 4)
+	auto input(std::string_view name, T* base, T min = 0, T max = 1) -> bool
+	{
+		return general_input(name, N, base, min, max);
+	}
+
+	template <std::integral T, int N> auto input(std::string_view name, glm::vec<N, T>& vec, T min = 0, T max = 1) -> bool
+	{
+		return general_input(name, N, glm::value_ptr(vec), min, max);
 	}
 
 } // namespace Input
@@ -246,6 +276,9 @@ template <IsEnum T> auto combo_choice(std::string_view name, std::reference_wrap
 }
 
 auto checkbox(const std::string&, bool&) -> bool;
+
+auto begin_menu_bar(const ImRect&) -> bool;
+auto end_menu_bar() -> void;
 
 auto shader_drop_button(Device&, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader) -> bool;
 auto texture_drop_button(Device&, const Texture& texture) -> Ref<Disarray::Texture>;

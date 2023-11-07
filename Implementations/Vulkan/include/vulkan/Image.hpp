@@ -60,7 +60,6 @@ constexpr auto to_vulkan_layout(ImageFormat format) -> VkImageLayout
 	case ImageFormat::Red:
 		return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	case ImageFormat::Depth:
-		return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 	case ImageFormat::DepthStencil:
 		return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 	default:
@@ -120,12 +119,9 @@ public:
 	auto supply() const -> VkImage override { return get_image(); }
 	auto get_descriptor_info() const -> const VkDescriptorImageInfo& { return descriptor_info; }
 
-	auto hash() const -> Identifier override
-	{
-		return bit_cast<std::uint64_t>(descriptor_info.imageView) ^ bit_cast<std::uint64_t>(descriptor_info.sampler);
-	};
+	auto hash() const -> Identifier override;
 
-	void construct_using(CommandExecutor&) override {};
+	void construct_using(Disarray::CommandExecutor&) override {};
 
 private:
 	void recreate_image(bool should_clean, const Disarray::CommandExecutor* = nullptr);
@@ -138,6 +134,8 @@ private:
 	VkDescriptorSetLayout layout {};
 
 	const Disarray::Device& device;
+	void create_image_view(VkFormat vulkan_format, VkImageAspectFlags aspect_mask);
+	void create_sampler();
 };
 
 } // namespace Disarray::Vulkan

@@ -1,10 +1,12 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <glm/glm.hpp>
 
 #include <array>
 
-#include "Forward.hpp"
+#include "graphics/CommandExecutor.hpp"
 #include "graphics/Pipeline.hpp"
 
 namespace Disarray {
@@ -18,9 +20,12 @@ public:
 
 	void construct(Disarray::Renderer& renderer, const Disarray::Device& device, const Extent& extent);
 
-	void submit_text(std::string_view text, const glm::uvec2& position, float scale = 1.0F);
-	void submit_text(std::string_view text, const glm::vec3& position, float scale = 1.0F);
+	void submit_text(std::string_view text, const glm::uvec2& position, float scale = 1.0F, const glm::vec4& colour = { 1, 1, 1, 1 });
+	void submit_text(std::string_view text, const glm::vec3& position, float scale = 1.0F, const glm::vec4& colour = { 1, 1, 1, 1 });
+	void submit_text(std::string_view text, const glm::mat4& transform, float scale = 1.0F, const glm::vec4& colour = { 1, 1, 1, 1 });
 	void render(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor);
+	void clear_pass(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor);
+	auto recreate(bool should_clean, const Extent& extent) -> void;
 
 	auto get_pipelines() -> std::array<Disarray::Pipeline*, 2>;
 
@@ -42,12 +47,14 @@ private:
 	};
 	std::array<ScreenSpaceTextData, 4 * glyph_count> screen_space_text_data {};
 	std::array<std::uint32_t, glyph_count> screen_space_text_character_texture_data {};
+	std::array<glm::vec4, glyph_count> screen_space_text_character_colour_data {};
 	struct WorldSpaceTextData {
 		glm::vec3 pos;
 		glm::vec2 tex_coords;
 	};
 	std::array<WorldSpaceTextData, 4 * glyph_count> world_space_text_data {};
 	std::array<std::uint32_t, glyph_count> world_space_text_character_texture_data {};
+	std::array<glm::vec4, glyph_count> world_space_text_character_colour_data {};
 
 	std::uint32_t screen_space_text_data_index { 0 };
 	std::uint32_t screen_space_vertex_data_index { 0 };

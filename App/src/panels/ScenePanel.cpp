@@ -32,7 +32,7 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_pa
 {
 	static constexpr auto max_recursion = 4;
 	const auto has_inheritance = entity.has_component<Components::Inheritance>();
-	const auto has_children = has_inheritance ? entity.get_components<Components::Inheritance>().has_children() : false;
+	const auto has_children = has_inheritance && entity.get_components<Components::Inheritance>().has_children();
 	const auto has_hit_max_recursion = depth >= max_recursion;
 	if (!has_hit_max_recursion && check_if_has_parent && has_inheritance) {
 		const auto& inheritance = entity.get_components<Components::Inheritance>();
@@ -40,24 +40,32 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_pa
 			return;
 		}
 	}
+	if (has_hit_max_recursion) {
+		UI::text_wrapped("There are more children, but we only support {} children levels for now.", max_recursion);
+		return;
+	}
+
 	const auto& tag = entity.get_components<Components::Tag>().name;
 
-	const auto is_same = (*selected_entity == entity.get_identifier());
-	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | (is_same ? ImGuiTreeNodeFlags_Selected : 0);
+	const auto is_same = selected_entity && (*selected_entity == entity.get_identifier());
+	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_OpenOnArrow | (is_same ? ImGuiTreeNodeFlags_Selected : 0);
 	if (!has_children) {
 		flags |= ImGuiTreeNodeFlags_Leaf;
 	}
 
 	flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
 	const auto& id_component = entity.get_components<Components::ID>();
-	bool opened = ImGui::TreeNodeEx(Disarray::bit_cast<const void*>(id_component.identifier), flags, "%s", tag.c_str());
+	bool opened = ImGui::TreeNodeEx(Disarray::bit_cast<const void*>(&id_component.identifier), flags, "%s", tag.c_str());
 	if (ImGui::IsItemClicked()) {
 		*selected_entity = entity.get_identifier();
 	}
 
 	bool entity_deleted = false;
-	if (ImGui::BeginPopupContextWindow("##DeleteEntityPopup")) {
+	if (ImGui::BeginPopupContextWindow("DeleteEntityPopup", ImGuiPopupFlags_MouseButtonRight)) {
 		if (ImGui::MenuItem("Delete Entity")) {
+			entity_deleted = true;
+		}
+		if (ImGui::MenuItem("Add Component")) {
 			entity_deleted = true;
 		}
 		ImGui::EndPopup();
@@ -90,6 +98,12 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_pa
 
 void ScenePanel::interface()
 {
+	if (scene == nullptr) {
+		UI::Scope empty("Scene");
+		UI::text_wrapped("Currently empty scene!");
+		return;
+	};
+
 	UI::begin("Scene");
 	scene->for_all_entities([this](entt::entity entity_id) {
 		Entity entity { scene, entity_id };
@@ -98,7 +112,18 @@ void ScenePanel::interface()
 
 	if (ImGui::BeginPopupContextWindow("EmptyEntityId", ImGuiPopupFlags_MouseButtonRight)) {
 		if (ImGui::MenuItem("Create Empty Entity")) {
-			scene->create("Empty Entity");
+			if (auto entity = Entity { scene, *selected_entity }; entity.is_valid()) {
+				auto child = scene->create("Parent{}-Child", static_cast<Identifier>(entity.get_identifier()));
+				entity.add_child(child);
+			} else {
+				scene->create("Empty Entity");
+			}
+		}
+
+		if (ImGui::MenuItem("Copy Entity")) {
+			if (auto entity = Entity { scene, *selected_entity }; entity.is_valid()) {
+				Scene::copy_entity(*scene, entity);
+			}
 		}
 
 		ImGui::EndPopup();
@@ -117,8 +142,12 @@ void ScenePanel::interface()
 	UI::end();
 } // namespace Disarray::Client
 
-void Disarray::Client::ScenePanel::update(float)
+void Client::ScenePanel::update(float)
 {
+	if (scene == nullptr) {
+		return;
+	}
+
 	if (const auto& selected = scene->get_selected_entity(); selected && selected->is_valid()) {
 		*selected_entity = selected->get_identifier();
 	}
@@ -126,7 +155,8 @@ void Disarray::Client::ScenePanel::update(float)
 
 void ScenePanel::for_all_components(Entity& entity)
 {
-	draw_component<Components::Tag>(entity, "Tag", [](Components::Tag& tag) {
+	if (entity.has_component<Components::Tag>()) {
+		auto& tag = entity.get_components<Components::Tag>();
 		std::string buffer = tag.name;
 		buffer.resize(256);
 
@@ -137,9 +167,23 @@ void ScenePanel::for_all_components(Entity& entity)
 				tag.name = buffer;
 			}
 		}
-	});
+	}
 
-	draw_component<Components::Transform>(entity, "Transform", [](Components::Transform& transform) {
+	ImGui::SameLine();
+	ImGui::PushItemWidth(-1);
+
+	if (ImGui::Button("Add Component"))
+		ImGui::OpenPopup("AddComponent");
+
+	if (ImGui::BeginPopup("AddComponent")) {
+		draw_add_component_all(AllComponents {});
+
+		ImGui::EndPopup();
+	}
+
+	ImGui::PopItemWidth();
+
+	draw_component<Components::Transform>(entity, [](Components::Transform& transform) {
 		bool any_changed = false;
 
 		any_changed |= ImGui::DragFloat3("Position", glm::value_ptr(transform.position));
@@ -152,7 +196,13 @@ void ScenePanel::for_all_components(Entity& entity)
 		}
 	});
 
-	draw_component<Components::Texture>(entity, "Texture", [&dev = device](Components::Texture& tex) {
+	draw_component<Components::LineGeometry>(entity, [](Components::LineGeometry& line_geometry) {
+		UI::text_wrapped("Line Geometry");
+		std::ignore = ImGui::DragFloat3("To Position", glm::value_ptr(line_geometry.to_position));
+	});
+	draw_component<Components::QuadGeometry>(entity, [](Components::QuadGeometry& quad_geometry) { UI::text_wrapped("Quad Geometry"); });
+
+	draw_component<Components::Texture>(entity, [&dev = device](Components::Texture& tex) {
 		auto& [texture, colour] = tex;
 		Ref<Texture> new_texture { nullptr };
 		if (texture) {
@@ -171,12 +221,11 @@ void ScenePanel::for_all_components(Entity& entity)
 		}
 	});
 
-	draw_component<Components::DirectionalLight>(entity, "Directional Light", [](Components::DirectionalLight& directional) {
+	draw_component<Components::DirectionalLight>(entity, [](Components::DirectionalLight& directional) {
 		if (ImGui::ColorEdit4("Ambient", glm::value_ptr(directional.ambient))) { }
 		if (ImGui::ColorEdit4("Diffuse", glm::value_ptr(directional.diffuse))) { }
 		if (ImGui::ColorEdit4("Specular", glm::value_ptr(directional.specular))) { }
 		if (ImGui::DragFloat3("Direction", glm::value_ptr(directional.direction), 0.1F, -glm::pi<float>(), glm::pi<float>())) { }
-		if (ImGui::DragFloat3("Position", glm::value_ptr(directional.position))) { }
 		if (ImGui::DragFloat("Factor", &directional.projection_parameters.factor)) { }
 		if (ImGui::DragFloat("Near", &directional.projection_parameters.near)) { }
 		if (ImGui::DragFloat("Far", &directional.projection_parameters.far)) { }
@@ -185,14 +234,42 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (ImGui::Checkbox("Direction Vector", &directional.use_direction_vector)) { }
 	});
 
-	draw_component<Components::PointLight>(entity, "Point Light", [](Components::PointLight& point) {
+	draw_component<Components::PointLight>(entity, [](Components::PointLight& point) {
 		if (UI::Input::drag("Factors", point.factors, 0.1F, 0.F, 10.F)) { }
 		if (ImGui::ColorEdit4("Ambient", glm::value_ptr(point.ambient))) { }
 		if (ImGui::ColorEdit4("Diffuse", glm::value_ptr(point.diffuse))) { }
 		if (ImGui::ColorEdit4("Specular", glm::value_ptr(point.specular))) { }
 	});
 
-	draw_component<Components::Camera>(entity, "Camera", [](Components::Camera& cam) {
+	draw_component<Components::Text>(entity, [](Components::Text& text) {
+		std::string buffer = text.text_data;
+		buffer.resize(256);
+
+		if (ImGui::InputText("Text", buffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+			buffer.shrink_to_fit();
+
+			if (!buffer.empty() && text.text_data != buffer) {
+				text.text_data = buffer;
+			}
+		}
+		if (ImGui::ColorEdit4("Colour", glm::value_ptr(text.colour))) { }
+		if (ImGui::DragFloat("Size", &text.size, 0.1F, 0.2F, 5.0F)) { }
+		if (UI::combo_choice<Components::TextProjection>("Space Choice", std::ref(text.projection))) { }
+	});
+
+	draw_component<Components::Material>(entity, [](Components::Material& mat) {
+		const auto& props = mat.material->get_properties();
+		UI::text_wrapped("VS: {}", props.vertex_shader->get_properties().identifier.string());
+		UI::text_wrapped("FS: {}", props.fragment_shader->get_properties().identifier.string());
+		for (const auto& text : props.textures) {
+			UI::text("{}", text->get_properties().debug_name);
+			UI::image(text->get_image());
+		}
+	});
+
+	draw_component<Components::Skybox>(entity, [](Components::Skybox& skybox) { UI::image(skybox.texture->get_image()); });
+
+	draw_component<Components::Camera>(entity, [](Components::Camera& cam) {
 		std::ignore = UI::combo_choice<CameraType>("Type", std::ref(cam.type));
 
 		if (cam.type == CameraType::Perspective) {
@@ -207,26 +284,36 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (ImGui::Checkbox("Reverse", &cam.reverse)) { }
 	});
 
-	draw_component<Components::Mesh>(entity, "Mesh", [](Components::Mesh& mesh_component) {
-		auto& [path, pipeline, _] = mesh_component.mesh->get_properties();
+	draw_component<Components::Mesh>(entity, [&dev = device](Components::Mesh& mesh_component) {
+		auto& [path, _, flags, inputs] = mesh_component.mesh->get_properties();
 
 		bool any_changed = false;
 		std::optional<std::filesystem::path> selected { std::nullopt };
 		if (ImGui::Button("Choose path", { 80, 30 })) {
-			selected = UI::Popup::select_file({ "*.mesh" });
+			selected = UI::Popup::select_file({ "*.mesh", "*.obj", "*.fbx" });
 			any_changed |= selected.has_value();
 		}
 		if (ImGui::Checkbox("Draw AABB", &mesh_component.draw_aabb)) { };
 
 		if (any_changed) {
+			std::filesystem::path new_path {};
 			if (selected.has_value()) {
-				path = *selected;
+				new_path = *selected;
 			}
-			mesh_component.mesh->force_recreation();
+			if (mesh_component.mesh != nullptr) {
+				path = new_path;
+				mesh_component.mesh->force_recreation();
+
+			} else {
+				mesh_component.mesh = Mesh::construct(dev,
+					{
+						.path = new_path,
+					});
+			}
 		}
 	});
 
-	draw_component<Components::Script>(entity, "Script", [](Components::Script& script_component) {
+	draw_component<Components::Script>(entity, [](Components::Script& script_component) {
 		UI::text("Script name: {}", script_component.get_script().identifier());
 		auto& parameters = script_component.get_script().get_parameters();
 		bool any_changed = false;
@@ -234,10 +321,26 @@ void ScenePanel::for_all_components(Entity& entity)
 			any_changed |= switch_parameter<glm::vec2>(value, [key](glm::vec2& vector) { return UI::Input::slider(key, vector, 0.1F); });
 			any_changed |= switch_parameter<glm::vec3>(value, [key](glm::vec3& vector) { return UI::Input::slider(key, vector, 0.1F); });
 			any_changed |= switch_parameter<glm::vec4>(value, [key](glm::vec4& vector) { return UI::Input::slider(key, vector, 0.1F); });
+			any_changed |= switch_parameter<std::uint32_t>(value, [key](std::uint32_t& vector) {
+				auto as_int = static_cast<std::int32_t>(vector);
+				const bool changed = ImGui::DragInt(key.data(), &as_int);
+				if (changed) {
+					vector = static_cast<std::uint32_t>(as_int);
+				}
+				return changed;
+			});
+			any_changed |= switch_parameter<std::uint8_t>(value, [key](std::uint8_t& vector) {
+				auto as_int = static_cast<std::int32_t>(vector);
+				const bool changed = ImGui::DragInt(key.data(), &as_int);
+				if (changed) {
+					vector = static_cast<std::uint8_t>(as_int);
+				}
+				return changed;
+			});
 			any_changed |= switch_parameter<float>(value, [key](float& vector) { return UI::Input::slider<1>(key, &vector, 0.1F); });
 			any_changed |= switch_parameter<double>(value, [key](double& vector) {
 				auto as_float = static_cast<float>(vector);
-				bool changed = ImGui::DragFloat(key.data(), &as_float, 0.1f);
+				bool changed = ImGui::DragFloat(key.data(), &as_float, 0.1F);
 				if (changed) {
 					vector = static_cast<double>(as_float);
 				}
@@ -250,22 +353,35 @@ void ScenePanel::for_all_components(Entity& entity)
 		}
 	});
 
-	draw_component<Components::Pipeline>(entity, "Pipeline", [&dev = device](Components::Pipeline& pipeline) {
-		auto& [pipe] = pipeline;
-		auto& props = pipe->get_properties();
-		bool any_changed = false;
-		any_changed |= UI::combo_choice<DepthCompareOperator>("Compare operator", std::ref(props.depth_comparison_operator));
-		any_changed |= UI::combo_choice<CullMode>("Cull mode", std::ref(props.cull_mode));
-		any_changed |= UI::combo_choice<FaceMode>("Face mode", std::ref(props.face_mode));
-		any_changed |= UI::combo_choice<PolygonMode>("Polygon mode", std::ref(props.polygon_mode));
-		any_changed |= UI::shader_drop_button(dev, "Vertex Shader", ShaderType::Vertex, std::ref(props.vertex_shader));
-		any_changed |= UI::shader_drop_button(dev, "Fragment Shader", ShaderType::Fragment, std::ref(props.fragment_shader));
-		any_changed |= UI::checkbox("Depth test", props.test_depth);
-		any_changed |= UI::checkbox("Depth write", props.write_depth);
+	draw_component<Components::CapsuleCollider>(entity, [&](Components::CapsuleCollider& collider) {
+		if (ImGui::DragFloat("Radius", &collider.radius)) { }
+		if (ImGui::DragFloat("Height", &collider.height)) { }
+		if (ImGui::DragFloat3("Offset", glm::value_ptr(collider.offset))) { }
+	});
 
-		if (any_changed) {
-			pipe->recreate(true, {});
-		}
+	draw_component<Components::ColliderMaterial>(entity, [&](Components::ColliderMaterial& material) {
+		if (ImGui::DragFloat("Bounciness", &material.bounciness, 0.05F, 0.0F, 1.0F)) { }
+		if (ImGui::DragFloat("Mass Density", &material.mass_density, 0.05F, 0.0F, 1.0F)) { }
+		if (ImGui::DragFloat("Friction coefficient", &material.friction_coefficient, 0.05F, 0.0F, 1.0F)) { }
+	});
+
+	draw_component<Components::BoxCollider>(entity, [&](Components::BoxCollider& collider) {
+		if (ImGui::DragFloat3("Offset", glm::value_ptr(collider.offset))) { }
+		if (ImGui::DragFloat3("Half Extents", glm::value_ptr(collider.half_size))) { }
+	});
+
+	draw_component<Components::SphereCollider>(entity, [&](Components::SphereCollider& collider) {
+		if (ImGui::DragFloat("Radius", &collider.radius)) { }
+		if (ImGui::DragFloat3("Offset", glm::value_ptr(collider.offset))) { }
+	});
+
+	draw_component<Components::RigidBody>(entity, [&](Components::RigidBody& body) {
+		if (UI::combo_choice<BodyType>("Body Type", std::ref(body.body_type))) { }
+		if (ImGui::DragFloat("mass", &body.mass)) { }
+		if (ImGui::DragFloat("linear_drag", &body.linear_drag)) { }
+		if (ImGui::DragFloat("angular_drag", &body.angular_drag)) { }
+		if (UI::checkbox("Gravity", body.disable_gravity)) { }
+		if (UI::checkbox("Kinematic", body.is_kinematic)) { }
 	});
 }
 

@@ -1,12 +1,13 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <algorithm>
 #include <filesystem>
 #include <set>
 #include <unordered_map>
 #include <utility>
 
-#include "Forward.hpp"
 #include "core/Types.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PushConstantLayout.hpp"
@@ -25,24 +26,25 @@ struct PipelineCacheCreationProperties {
 	std::string vertex_shader_key;
 	std::string fragment_shader_key;
 	Ref<Framebuffer> framebuffer { nullptr };
-	Ref<RenderPass> render_pass { nullptr };
-	VertexLayout layout;
-	PushConstantLayout push_constant_layout;
+	VertexLayout layout {};
+	PushConstantLayout push_constant_layout {};
 	Extent extent { 0, 0 };
 	PolygonMode polygon_mode { PolygonMode::Fill };
-	float line_width { 1.0f };
+	float line_width { 1.0F };
 	SampleCount samples { SampleCount::One };
-	DepthCompareOperator depth_comparison_operator { DepthCompareOperator::LessOrEqual };
-	CullMode cull_mode { CullMode::Front };
+	DepthCompareOperator depth_comparison_operator { DepthCompareOperator::Less };
+	CullMode cull_mode { CullMode::Back };
 	FaceMode face_mode { FaceMode::CounterClockwise };
 	bool write_depth { true };
 	bool test_depth { true };
-	std::vector<VkDescriptorSetLayout> descriptor_set_layouts;
+	std::vector<VkDescriptorSetLayout> descriptor_set_layouts {};
+	SpecialisationConstantDescription specialisation_constant {};
 };
 
 class PipelineCache : public ResourceCache<Ref<Disarray::Pipeline>, PipelineCacheCreationProperties, PipelineCache, std::string, StringHash> {
 public:
 	PipelineCache(const Disarray::Device& device, const std::filesystem::path&);
+	~PipelineCache() { clear_storage(); };
 
 	void force_recreation_impl(const Extent& extent)
 	{
@@ -70,6 +72,7 @@ public:
 			.write_depth = props.write_depth,
 			.test_depth = props.test_depth,
 			.descriptor_set_layouts = props.descriptor_set_layouts,
+			.specialisation_constants = props.specialisation_constant,
 		};
 
 		return Pipeline::construct(get_device(), properties);

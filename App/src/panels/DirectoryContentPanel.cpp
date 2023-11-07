@@ -174,7 +174,7 @@ void DirectoryContentPanel::construct(App&)
 
 	auto& pool = App::get_thread_pool();
 
-	file_watcher = make_scope<FileWatcher>(pool, "Assets", 3000ms);
+	file_watcher = make_scope<FileWatcher>(pool, "Assets", 200ms);
 	path_and_content_cache[current] = get_files_in_directory(current);
 	current_directory_content = path_and_content_cache[current];
 	directory_icon = Texture::construct(device,

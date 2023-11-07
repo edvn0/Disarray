@@ -14,12 +14,24 @@ public:
 
 	const auto& get_extent() const { return extent; }
 
+	auto get_channels() const { return channels; }
+
 private:
 	void free();
 
 	Extent extent;
 	void* data;
 	std::uint64_t size;
+	int channels { 0 };
+};
+
+class TextureCubeLoader {
+public:
+	explicit TextureCubeLoader(const std::filesystem::path&, DataBuffer&);
+	~TextureCubeLoader();
+
+private:
+	std::array<Scope<std::byte[]>, 6> temporary_storage;
 };
 
 } // namespace Disarray

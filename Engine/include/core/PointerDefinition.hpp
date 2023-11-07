@@ -28,7 +28,7 @@ template <class T> struct DefaultDelete {
 
 	constexpr void operator()(T* ptr) const noexcept
 	{
-		static_assert(0 < sizeof(T), "can't delete an incomplete type");
+		static_assert(sizeof(T) > 0, "can't delete an incomplete type");
 		delete ptr;
 	}
 };

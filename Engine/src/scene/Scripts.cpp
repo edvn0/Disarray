@@ -119,18 +119,18 @@ void LinearMovementScript::on_update(float time_step)
 		}
 		break;
 	case Axis::Y:
-		if (pos.y >= max) {
+		if (pos.y <= min) {
 			direction = glm::vec3 { 0, 1, 0 };
 		}
-		if (pos.y <= min) {
+		if (pos.y >= max) {
 			direction = glm::vec3 { 0, -1, 0 };
 		}
 		break;
 	case Axis::Z:
-		if (pos.z >= max) {
+		if (pos.z <= min) {
 			direction = glm::vec3 { 0, 0, 1 };
 		}
-		if (pos.z <= min) {
+		if (pos.z >= max) {
 			direction = glm::vec3 { 0, 0, -1 };
 		}
 		break;

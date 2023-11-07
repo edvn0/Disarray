@@ -82,7 +82,9 @@ void Framebuffer::recreate_framebuffer(bool should_clean)
 		for (auto& image : attachments) {
 			image->force_recreation();
 		}
-		depth_attachment->force_recreation();
+		if (depth_attachment) {
+			depth_attachment->force_recreation();
+		}
 	}
 
 	std::vector<VkAttachmentDescription> attachment_descriptions;
@@ -207,12 +209,12 @@ void Framebuffer::recreate_framebuffer(bool should_clean)
 	std::vector<VkImageView> attachment_views;
 	for (auto& image : attachments) {
 		auto& view = attachment_views.emplace_back();
-		view = cast_to<Vulkan::Image>(image->get_image()).get_descriptor_info().imageView;
+		view = cast_to<Vulkan::Image>(image->get_image(0)).get_descriptor_info().imageView;
 	}
 
 	if (depth_attachment) {
 		auto& depth_view = attachment_views.emplace_back();
-		depth_view = cast_to<Vulkan::Image>(depth_attachment->get_image()).get_descriptor_info().imageView;
+		depth_view = cast_to<Vulkan::Image>(depth_attachment->get_image(0)).get_descriptor_info().imageView;
 	}
 
 	auto framebuffer_create_info = vk_structures<VkFramebufferCreateInfo>()();

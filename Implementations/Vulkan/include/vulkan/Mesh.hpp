@@ -24,6 +24,8 @@ public:
 	auto get_vertices() const -> Disarray::VertexBuffer& override;
 	auto get_aabb() const -> const AABB& override;
 
+	[[nodiscard]] auto invalid() const -> bool override;
+
 	auto get_submeshes() const -> const Collections::ScopedStringMap<Disarray::MeshSubstructure>& override;
 	auto get_textures() const -> const RefVector<Disarray::Texture>& override;
 	auto has_children() const -> bool override;

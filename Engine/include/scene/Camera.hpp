@@ -82,7 +82,10 @@ public:
 
 	[[nodiscard]] auto get_focal_point() const -> const glm::vec3& { return focal_point; }
 
-	void set_viewport_size(const Extent& extent)
+	void on_event(Event& event);
+	auto on_mouse_scroll(MouseScrolledEvent& e) -> bool;
+
+	template <IsNumber T> void set_viewport_size(const IExtent<T>& extent)
 	{
 		if (viewport == extent) {
 			return;
@@ -91,32 +94,6 @@ public:
 		aspect_ratio = glm::radians(static_cast<float>(viewport.width) / static_cast<float>(viewport.height));
 		set_perspective_projection_matrix(vertical_fov, static_cast<float>(viewport.width), static_cast<float>(viewport.height), far_clip, near_clip);
 		update_camera_view();
-	}
-
-	void set_viewport_size(const FloatExtent& extent)
-	{
-		if (viewport == extent) {
-			return;
-		}
-		viewport.width = extent.as<std::uint32_t>().width;
-		viewport.height = extent.as<std::uint32_t>().height;
-		aspect_ratio = glm::radians(static_cast<float>(viewport.width) / static_cast<float>(viewport.height));
-		set_perspective_projection_matrix(vertical_fov, viewport.width, viewport.height, far_clip, near_clip);
-		update_camera_view();
-	}
-
-	void on_event(Event& event);
-	auto on_mouse_scroll(MouseScrolledEvent& e) -> bool;
-
-	template <class Ex>
-		requires(std::is_same_v<Ex, Extent> || std::is_same_v<Ex, FloatExtent>)
-	void set_viewport_size(const Ex& ex)
-	{
-		if constexpr (std::is_same_v<Ex, Extent>) {
-			set_viewport_size(Extent { ex.width, ex.height });
-		} else if constexpr (std::is_same_v<Ex, FloatExtent>) {
-			set_viewport_size(FloatExtent { ex.width, ex.height });
-		}
 	}
 
 	[[nodiscard]] auto get_view_matrix() const -> const glm::mat4& override { return view_matrix; }

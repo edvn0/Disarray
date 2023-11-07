@@ -32,6 +32,7 @@ void ExecutionStatisticsPanel::interface()
 		UI::scope("ExecutionStatisticsPanel"sv, []() { UI::text("{}", "No GPU stats collected."); });
 	}
 
+	UI::Scope scope("ExecutionStatisticsPanel");
 	UI::Tabular::table<float>("ExecutionStatisticsPanel"sv,
 		{
 			{ "GPU Time"sv, float(gpu_execution_time) },

@@ -28,7 +28,6 @@ BaseBuffer::BaseBuffer(const Disarray::Device& dev, BufferType buffer_type, Disa
 	: device(dev)
 	, type(buffer_type)
 	, props(properties)
-	, buffer_count(properties.count)
 {
 	if (props.data != nullptr) {
 		create_with_valid_data();
@@ -36,6 +35,8 @@ BaseBuffer::BaseBuffer(const Disarray::Device& dev, BufferType buffer_type, Disa
 		create_with_empty_data();
 	}
 }
+
+BaseBuffer::~BaseBuffer() { destroy_buffer(); }
 
 void BaseBuffer::create_with_valid_data()
 {
@@ -60,9 +61,9 @@ void BaseBuffer::create_with_valid_data()
 	if (!props.always_mapped) {
 		usage = Usage::AUTO_PREFER_DEVICE;
 	}
-	auto creation = Creation::MAPPED_BIT;
+	auto creation = Creation::HOST_ACCESS_RANDOM_BIT;
 	if (const auto is_uniform = type == BufferType::Uniform) {
-		creation |= Creation::HOST_ACCESS_RANDOM_BIT;
+		creation |= Creation::MAPPED_BIT;
 	}
 
 	allocation = allocator.allocate_buffer(buffer, typed_create_info,
@@ -136,6 +137,15 @@ auto BaseBuffer::size() const -> std::size_t
 auto BaseBuffer::count() const -> std::size_t { return props.count; }
 
 auto BaseBuffer::get_raw() -> void*
+{
+	if (props.always_mapped) {
+		return vma_allocation_info.pMappedData;
+	}
+
+	ensure(false, "Never here");
+	return nullptr;
+}
+auto BaseBuffer::get_raw() const -> void*
 {
 	if (props.always_mapped) {
 		return vma_allocation_info.pMappedData;

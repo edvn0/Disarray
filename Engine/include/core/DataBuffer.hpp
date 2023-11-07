@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <span>
 #include <vector>
 
 #include "util/BitCast.hpp"
@@ -34,6 +35,8 @@ public:
 
 	explicit(false) operator bool() const { return is_valid(); }
 	[[nodiscard]] auto is_valid() const -> bool { return size != 0 && data != nullptr; }
+
+	auto as_span() -> std::span<std::byte> { return { data.get(), size }; }
 
 private:
 	std::unique_ptr<std::byte[]> data { nullptr };

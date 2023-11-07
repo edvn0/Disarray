@@ -21,16 +21,27 @@ public:
 
 enum class SerialiserType : std::uint8_t {
 	Faulty,
-	Pipeline,
-	Script,
-	Texture,
-	Mesh,
+	Tag,
 	Transform,
+	ID,
+	Inheritance,
 	LineGeometry,
 	QuadGeometry,
-	Inheritance,
+	Mesh,
+	Material,
+	Texture,
 	DirectionalLight,
 	PointLight,
+	Script,
+	Controller,
+	Camera,
+	RigidBody,
+	BoxCollider,
+	SphereCollider,
+	CapsuleCollider,
+	ColliderMaterial,
+	Skybox,
+	Text
 };
 template <class T> inline constexpr SerialiserType serialiser_type_for = SerialiserType::Faulty;
 
@@ -58,7 +69,6 @@ template <ValidComponent T, class Child> struct ComponentDeserialiser {
 	};
 };
 
-namespace {
 #define MAKE_SERIALISER(Name, ComponentType)                                                                                                         \
 	struct Name : public ComponentSerialiser<Components::ComponentType, Name> {                                                                      \
 		static constexpr SerialiserType type = SerialiserType::ComponentType;                                                                        \
@@ -73,11 +83,15 @@ namespace {
 		auto should_add_component_impl(const nlohmann::json& object_for_the_component) -> bool;                                                      \
 	};
 
-} // namespace
-
-MAKE_SERIALISER(PipelineSerialiser, Pipeline)
 MAKE_SERIALISER(ScriptSerialiser, Script)
 MAKE_SERIALISER(MeshSerialiser, Mesh)
+MAKE_SERIALISER(SkyboxSerialiser, Skybox)
+MAKE_SERIALISER(TextSerialiser, Text)
+MAKE_SERIALISER(BoxColliderSerialiser, BoxCollider)
+MAKE_SERIALISER(SphereColliderSerialiser, SphereCollider)
+MAKE_SERIALISER(CapsuleColliderSerialiser, CapsuleCollider)
+MAKE_SERIALISER(ColliderMaterialSerialiser, ColliderMaterial)
+MAKE_SERIALISER(RigidBodySerialiser, RigidBody)
 MAKE_SERIALISER(TextureSerialiser, Texture)
 MAKE_SERIALISER(TransformSerialiser, Transform)
 MAKE_SERIALISER(LineGeometrySerialiser, LineGeometry)
@@ -86,9 +100,15 @@ MAKE_SERIALISER(DirectionalLightSerialiser, DirectionalLight)
 MAKE_SERIALISER(PointLightSerialiser, PointLight)
 MAKE_SERIALISER(InheritanceSerialiser, Inheritance)
 
-MAKE_DESERIALISER(PipelineDeserialiser, Pipeline)
 MAKE_DESERIALISER(ScriptDeserialiser, Script)
 MAKE_DESERIALISER(MeshDeserialiser, Mesh)
+MAKE_DESERIALISER(SkyboxDeserialiser, Skybox)
+MAKE_DESERIALISER(TextDeserialiser, Text)
+MAKE_DESERIALISER(BoxColliderDeserialiser, BoxCollider)
+MAKE_DESERIALISER(SphereColliderDeserialiser, SphereCollider)
+MAKE_DESERIALISER(CapsuleColliderDeserialiser, CapsuleCollider)
+MAKE_DESERIALISER(ColliderMaterialDeserialiser, ColliderMaterial)
+MAKE_DESERIALISER(RigidBodyDeserialiser, RigidBody)
 MAKE_DESERIALISER(TextureDeserialiser, Texture)
 MAKE_DESERIALISER(TransformDeserialiser, Transform)
 MAKE_DESERIALISER(LineGeometryDeserialiser, LineGeometry)

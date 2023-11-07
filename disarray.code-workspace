@@ -20,7 +20,8 @@
   },
   "settings": {
     "githubPullRequests.ignoredPullRequestBranches": [
-      "dev"
+      "dev",
+      "master"
     ],
     "github-actions.workflows.pinned.workflows": [
       ".github/workflows/lint.yml",
@@ -233,6 +234,7 @@
       "Multisample",
       "normalised",
       "Pathlike",
+      "PLBO",
       "quat",
       "renderable",
       "renderables",
@@ -240,6 +242,7 @@
       "repr",
       "Serialiser",
       "Serialisers",
+      "Skybox",
       "spdlog",
       "spirv",
       "sponza",

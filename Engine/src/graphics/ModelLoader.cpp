@@ -1,13 +1,12 @@
 #include "DisarrayPCH.hpp"
 
-#include "graphics/ModelLoader.hpp"
-
 #include <mutex>
 
 #include "core/Collections.hpp"
 #include "core/Log.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Device.hpp"
+#include "graphics/ModelLoader.hpp"
 #include "graphics/TextureCache.hpp"
 #include "util/Timer.hpp"
 #include "vulkan/CommandExecutor.hpp"
@@ -20,22 +19,22 @@ ModelLoader::ModelLoader(Scope<IModelImporter> input)
 
 	};
 
-ModelLoader::ModelLoader(Scope<IModelImporter> input, const std::filesystem::path& path)
+ModelLoader::ModelLoader(Scope<IModelImporter> input, const std::filesystem::path& path, ImportFlag flags)
 	: importer(std::move(input))
 	, mesh_path(path)
 {
-	import_model(path);
+	import_model(mesh_path, flags);
 };
 
-auto ModelLoader::import_model(const std::filesystem::path& path) -> void
+auto ModelLoader::import_model(const std::filesystem::path& path, ImportFlag flags) -> void
 {
-	auto&& meshes = importer->import(path);
+	auto&& meshes = importer->import_model(path, flags);
 	mesh_data = meshes;
 }
 
 auto ModelLoader::construct_textures(const Disarray::Device& device) -> std::vector<Ref<Disarray::Texture>>
 {
-	TextureCache cache { device, mesh_path.parent_path() };
+	TextureCache cache = TextureCache::construct(device, mesh_path.parent_path());
 	Timer<float> texture_timer;
 	std::size_t saved_iterations = 0;
 	for (auto& [key, value] : mesh_data) {

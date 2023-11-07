@@ -18,23 +18,23 @@ ColourSSBO;
 
 #include "DefaultInput.glsl"
 
-layout(location = 0) out vec4 fragColor;
+layout(location = 0) out vec4 fragment_colour;
 layout(location = 1) out vec2 uvs;
 layout(location = 2) out vec3 outNormals;
 
 void main()
 {
-	Uniform ubo = UBO.ubo;
-	ShadowPassUBO spu = SPU.spu;
+    Uniform ubo = UBO.ubo;
+    ShadowPassUBO spu = SPU.spu;
 
-	mat4 vp = spu.view_projection;
+    mat4 vp = spu.view_projection;
 
-	mat4 object_matrix = TransformSSBO.ssbo_objects[gl_InstanceIndex].transform;
-	vec4 object_colour = ColourSSBO.ssbo_objects[gl_InstanceIndex].colour;
+    mat4 object_matrix = TransformSSBO.ssbo_objects[gl_InstanceIndex].transform;
+    vec4 object_colour = ColourSSBO.ssbo_objects[gl_InstanceIndex].colour;
 
-	vec4 model_matrix = object_matrix * vec4(pos, 1.0);
-	gl_Position = vp * model_matrix;
-	fragColor = object_colour;
-	uvs = uv;
-	outNormals = correct_normals(object_matrix, normals);
+    vec4 model_matrix = object_matrix * vec4(pos, 1.0);
+    gl_Position = vp * model_matrix;
+    fragment_colour = object_colour;
+    uvs = uv;
+    outNormals = correct_normals(object_matrix, normals);
 }

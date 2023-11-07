@@ -42,7 +42,7 @@ auto load_texture(aiMaterial* mat, const std::filesystem::path& base_directory, 
 	return properties;
 }
 
-auto process_mesh(aiMesh* mesh, const std::filesystem::path& base_directory, const aiScene* scene) -> Submesh
+auto AssimpModelLoader::process_mesh(aiMesh* mesh, const std::filesystem::path& base_directory, const aiScene* scene) -> Submesh
 {
 	std::span mesh_vertices { mesh->mVertices, mesh->mNumVertices };
 	std::span mesh_normals { mesh->mNormals, mesh->mNumVertices };
@@ -52,6 +52,7 @@ auto process_mesh(aiMesh* mesh, const std::filesystem::path& base_directory, con
 	std::span mesh_bitangents { mesh->mBitangents, mesh->mNumVertices };
 
 	const auto has_colours = !mesh_colours.empty() && mesh_colours.data() != nullptr;
+	const auto has_uvs = !mesh_uvs.empty() && mesh_uvs.data() != nullptr;
 	const auto has_normals = !mesh_normals.empty() && mesh_normals.data() != nullptr;
 	const auto has_tangents = !mesh_tangents.empty() && mesh_tangents.data() != nullptr;
 	const auto has_bitangents = !mesh_bitangents.empty() && mesh_bitangents.data() != nullptr;
@@ -64,7 +65,14 @@ auto process_mesh(aiMesh* mesh, const std::filesystem::path& base_directory, con
 	for (std::size_t i = 0; i < mesh->mNumVertices; i++) {
 		ModelVertex model_vertex {};
 		model_vertex.pos = { mesh_vertices[i].x, mesh_vertices[i].y, mesh_vertices[i].z };
-		model_vertex.uvs = { mesh_uvs[i].x, mesh_uvs[i].y };
+
+		model_vertex.uvs = glm::vec2 {};
+		if (has_uvs) {
+			model_vertex.uvs = glm::vec2 {
+				mesh_uvs[i].x,
+				mesh_uvs[i].y,
+			};
+		}
 
 		model_vertex.normals = glm::vec3 {};
 		if (has_normals) {
@@ -135,7 +143,8 @@ inline auto get_mutex() -> std::mutex&
 	return mutex;
 }
 
-auto process_current_node(ImportedMesh& mesh_map, const std::filesystem::path& base_directory, aiNode* current_node, const aiScene* scene)
+auto AssimpModelLoader::process_current_node(
+	ImportedMesh& mesh_map, const std::filesystem::path& base_directory, aiNode* current_node, const aiScene* scene)
 {
 	if (scene == nullptr) {
 		return;
@@ -146,36 +155,33 @@ auto process_current_node(ImportedMesh& mesh_map, const std::filesystem::path& b
 	std::span children { current_node->mChildren, current_node->mNumChildren };
 
 	auto& mutex = get_mutex();
-	Collections::parallel_for_each(node_meshes, [&mutex, &scene_meshes, &mesh_map, &base_directory, &scene](const auto& mesh_index) {
+	Collections::parallel_for_each(node_meshes, [&](const auto& mesh_index) {
 		std::scoped_lock lock { mutex };
 		aiMesh* ai_mesh = scene_meshes[mesh_index];
 		const aiString mesh_name = ai_mesh->mName;
 		std::string name(mesh_name.length, '\0');
 		std::memcpy(name.data(), mesh_name.C_Str(), mesh_name.length);
 		name.resize(mesh_name.length);
+		const auto& aabb = ai_mesh->mAABB;
 
 		mesh_map.try_emplace(name, process_mesh(ai_mesh, base_directory, scene));
 	});
 
-	Collections::parallel_for_each(
-		children, [&scene, &mesh_map, &base_directory](auto* child) { process_current_node(mesh_map, base_directory, child, scene); });
+	Collections::parallel_for_each(children, [&](auto* child) { process_current_node(mesh_map, base_directory, child, scene); });
 }
 
-auto AssimpModelLoader::import(const std::filesystem::path& path) -> ImportedMesh
+auto AssimpModelLoader::import_model(const std::filesystem::path& path, ImportFlag flags) -> ImportedMesh
 {
 	MSTimer timer;
 	ImportedMesh output {};
 
 	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile(path.string().c_str(),
-		aiProcess_OptimizeGraph | aiProcess_CalcTangentSpace | aiProcess_SplitLargeMeshes | aiProcess_Triangulate | aiProcess_FlipUVs);
+	const aiScene* scene = importer.ReadFile(path.string().c_str(), Disarray::bit_cast<aiPostProcessSteps>(flags));
 
 	if ((scene == nullptr) || ((scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) != 0U) || (scene->mRootNode == nullptr)) {
 		throw CouldNotLoadModelException(fmt::format("Error: {}", importer.GetErrorString()));
 	}
 	const auto base_directory = path.parent_path();
-
-	std::vector<aiNode*> children {};
 
 	process_current_node(output, base_directory, scene->mRootNode, scene);
 

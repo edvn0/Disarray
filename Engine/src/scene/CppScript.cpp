@@ -25,6 +25,4 @@ CppScript::CppScript(const Collections::StringViewMap<Parameter>& params)
 	current_entity = make_scope<Entity, PimplDeleter<Entity>>();
 }
 
-void CppScript::reload() { }
-
 } // namespace Disarray

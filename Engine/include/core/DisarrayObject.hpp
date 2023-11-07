@@ -1,7 +1,10 @@
 #pragma once
 
 #include "Forward.hpp"
+
 #include "core/Types.hpp"
+#include "graphics/Extent.hpp"
+
 namespace Disarray {
 
 #define DISARRAY_MAKE_NONCOPYABLE(Type)                                                                                                              \
@@ -32,7 +35,7 @@ public:                                                                         
                                                                                                                                                      \
 protected:                                                                                                                                           \
 	Type() = default;                                                                                                                                \
-	Type(PropertiesType properties)                                                                                                                  \
+	explicit Type(PropertiesType properties)                                                                                                         \
 		: props(std::move(properties))                                                                                                               \
 	{                                                                                                                                                \
 	}                                                                                                                                                \

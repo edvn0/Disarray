@@ -1,7 +1,7 @@
 function(default_compile_flags)
 	if(DISARRAY_COMPILER MATCHES "Clang")
 		target_compile_options(
-			${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness
+			${PROJECT_NAME} PRIVATE -Werror -Wno-defaulted-function-deleted -Wall -Wno-nullability-completeness
 			-Wno-unused-variable -Wno-unknown-attributes -Wno-deprecated-declarations)
 
 		if(DISARRAY_OS STREQUAL "Linux")
@@ -21,7 +21,7 @@ function(default_compile_flags)
 		find_package(TBB REQUIRED)
 
 		target_compile_options(
-			${PROJECT_NAME} PRIVATE -Werror -Wall -Wno-nullability-completeness
+			${PROJECT_NAME} PRIVATE -Werror -Wno-defaulted-function-deleted -Wall -Wno-nullability-completeness
 			-Wno-unused-variable -Wno-unknown-attributes -Wno-deprecated-declarations)
 		target_link_libraries(${PROJECT_NAME} PRIVATE tbb)
 		target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_LINUX)

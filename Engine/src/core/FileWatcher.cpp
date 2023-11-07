@@ -1,6 +1,7 @@
 #include "core/FileWatcher.hpp"
 
 #include <core/Ensure.hpp>
+#include <magic_enum.hpp>
 
 #include <algorithm>
 
@@ -8,30 +9,40 @@ namespace Disarray {
 
 constexpr auto to_filetype(const auto& extension) -> FileType
 {
-	if (extension == ".txt")
+	if (extension == ".txt") {
 		return FileType::TXT;
-	else if (extension == ".png")
+	}
+	if (extension == ".png") {
 		return FileType::PNG;
-	else if (extension == ".ttf")
+	}
+	if (extension == ".ttf") {
 		return FileType::TTF;
-	else if (extension == ".jpeg")
+	}
+	if (extension == ".jpeg") {
 		return FileType::JPEG;
-	else if (extension == ".jpg")
+	}
+	if (extension == ".jpg") {
 		return FileType::JPG;
-	else if (extension == ".spv")
+	}
+	if (extension == ".spv") {
 		return FileType::SPV;
-	else if (extension == ".vert")
+	}
+	if (extension == ".vert") {
 		return FileType::VERT;
-	else if (extension == ".frag")
+	}
+	if (extension == ".frag") {
 		return FileType::FRAG;
-	else if (extension == ".obj")
+	}
+	if (extension == ".obj") {
 		return FileType::OBJ;
-	else if (extension == ".json")
+	}
+	if (extension == ".json") {
 		return FileType::JSON;
-	else if (extension == ".scene")
+	}
+	if (extension == ".scene") {
 		return FileType::SCENE;
-	else
-		return FileType::UNKNOWN;
+	}
+	return FileType::UNKNOWN;
 }
 
 FileWatcher::FileWatcher(Threading::ThreadPool& pool, const std::filesystem::path& in_path, std::chrono::duration<int, std::milli> in_delay)
@@ -71,20 +82,36 @@ void FileWatcher::loop_until()
 	}
 }
 
-static auto check_for_delete(auto& paths, auto& activations, auto* func)
-{
-	auto path_iterator = paths.begin();
-	while (path_iterator != paths.end()) {
-		if (!std::filesystem::exists(path_iterator->first)) {
-			path_iterator->second.status = FileStatus::Deleted;
-			const auto& current = path_iterator->second;
-			func(current, activations);
-			path_iterator = paths.erase(path_iterator);
-		} else {
-			path_iterator++;
+namespace {
+	auto check_for_delete(auto& paths, auto& activations, auto* func)
+	{
+		auto path_iterator = paths.begin();
+		while (path_iterator != paths.end()) {
+			if (!std::filesystem::exists(path_iterator->first)) {
+				path_iterator->second.status = FileStatus::Deleted;
+				const auto& current = path_iterator->second;
+				func(current, activations);
+				path_iterator = paths.erase(path_iterator);
+			} else {
+				path_iterator++;
+			}
 		}
 	}
-}
+
+	auto register_callback(FileStatus status, auto& activations, auto&& function)
+	{
+		auto func = [activation = function, status = status](const FileInformation& file) {
+			const auto is_given_status = (file.status & status) != FileStatus {};
+			if (is_given_status) {
+				Log::info("FileWatcher", "Status for file '{}': Old status: '{}', New status: '{}'", file.path, magic_enum::enum_name(file.status),
+					magic_enum::enum_name(status));
+				activation(file);
+			}
+		};
+		activations.push_back(func);
+	}
+
+} // namespace
 
 void FileWatcher::update()
 {
@@ -119,35 +146,36 @@ void FileWatcher::update()
 	}
 }
 
-void FileWatcher::start(const std::function<void(const FileInformation&)>& in) { activations.push_back(in); }
+void FileWatcher::start(const std::function<void(const FileInformation&)>& activation_function) { activations.push_back(activation_function); }
 
-static constexpr auto register_callback(FileStatus status, auto& activations, auto&& function)
+void FileWatcher::on_created(const std::function<void(const FileInformation&)>& activation_function)
 {
-	auto func = [activation = function, status = status](const auto& file) {
-		const auto is_given_status = static_cast<bool>(file.status & status);
-		if (is_given_status) {
-			activation(file);
-		}
-	};
-	activations.push_back(func);
+	register_callback(FileStatus::Created, activations, activation_function);
 }
 
-void FileWatcher::on_created(const std::function<void(const FileInformation&)>& in) { register_callback(FileStatus::Created, activations, in); }
-
-void FileWatcher::on_modified(const std::function<void(const FileInformation&)>& in) { register_callback(FileStatus::Modified, activations, in); }
-void FileWatcher::on_created_or_modified(const std::function<void(const FileInformation&)>& in)
+void FileWatcher::on_modified(const std::function<void(const FileInformation&)>& activation_function)
 {
-	register_callback(FileStatus::Modified | FileStatus::Created, activations, in);
+	register_callback(FileStatus::Modified, activations, activation_function);
+}
+void FileWatcher::on_created_or_modified(const std::function<void(const FileInformation&)>& activation_function)
+{
+	register_callback(FileStatus::Modified | FileStatus::Created, activations, activation_function);
 }
 
-void FileWatcher::on_deleted(const std::function<void(const FileInformation&)>& in) { register_callback(FileStatus::Deleted, activations, in); }
-
-void FileWatcher::on_created_or_deleted(const std::function<void(const FileInformation&)>& in)
+void FileWatcher::on_deleted(const std::function<void(const FileInformation&)>& activation_function)
 {
-	register_callback(FileStatus::Deleted | FileStatus::Created, activations, in);
+	register_callback(FileStatus::Deleted, activations, activation_function);
 }
 
-void FileWatcher::on(FileStatus status, const std::function<void(const FileInformation&)>& in) { register_callback(status, activations, in); }
+void FileWatcher::on_created_or_deleted(const std::function<void(const FileInformation&)>& activation_function)
+{
+	register_callback(FileStatus::Deleted | FileStatus::Created, activations, activation_function);
+}
+
+void FileWatcher::on(FileStatus info, const std::function<void(const FileInformation&)>& activation_function)
+{
+	register_callback(info, activations, activation_function);
+}
 
 FileWatcher::~FileWatcher() { stop(); }
 

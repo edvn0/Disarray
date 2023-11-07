@@ -6,6 +6,7 @@
 #include "vulkan/Image.hpp"
 #include "vulkan/Material.hpp"
 #include "vulkan/Renderer.hpp"
+#include "vulkan/Shader.hpp"
 #include "vulkan/Structures.hpp"
 #include "vulkan/Texture.hpp"
 #include "vulkan/UniformBuffer.hpp"
@@ -54,6 +55,8 @@ void Material::update_material(Disarray::Renderer& renderer)
 
 void Material::recreate_material(bool should_clean)
 {
+	// auto vertex_shader_information = props.vertex_shader.as<Vulkan::Shader>()->get_descriptors();
+
 	std::array<VkDescriptorSetLayoutBinding, 2> binds {};
 	binds[0].binding = 0;
 	binds[0].stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;

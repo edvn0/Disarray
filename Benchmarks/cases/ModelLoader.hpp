@@ -18,7 +18,7 @@ inline void benchmark_model_loader(benchmark::State& state)
 	AssimpModelLoader loader {};
 	for (auto value : state) {
 		try {
-			auto loaded = loader.import("Assets/Models/sponza/sponza.obj");
+			auto loaded = loader.import_model("Assets/Models/sponza/sponza.obj", default_import_flags);
 		} catch (const CouldNotLoadModelException& exc) {
 			Log::info("Benchmark", "{}", exc.what());
 		}

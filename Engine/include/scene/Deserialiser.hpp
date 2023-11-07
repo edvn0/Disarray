@@ -17,7 +17,7 @@
 
 namespace Disarray {
 
-namespace {
+namespace Detail {
 
 	class CouldNotDeserialiseException : public BaseException { };
 
@@ -69,23 +69,18 @@ namespace {
 		{
 			auto&& entities = root["entities"];
 
+			static auto deserialise_all = [&]<class... C>(Detail::ComponentGroup<C...>, const auto& components, auto& entity) {
+				(deserialise_component<C>(components, entity), ...);
+			};
+
 			for (const auto& json_entity : entities.items()) {
 				auto&& key = json_entity.key();
 
 				auto&& components = json_entity.value()["components"];
 				auto&& [id, tag] = parse_key(key);
-				Entity entity;
-				entity = Entity::deserialise(scene, id, tag);
-				deserialise_component<Components::QuadGeometry>(components, entity);
-				deserialise_component<Components::LineGeometry>(components, entity);
-				deserialise_component<Components::Script>(components, entity);
-				deserialise_component<Components::Transform>(components, entity);
-				deserialise_component<Components::Pipeline>(components, entity);
-				deserialise_component<Components::Texture>(components, entity);
-				deserialise_component<Components::Mesh>(components, entity);
-				deserialise_component<Components::DirectionalLight>(components, entity);
-				deserialise_component<Components::PointLight>(components, entity);
-				deserialise_component<Components::Inheritance>(components, entity);
+				Entity entity = Entity::deserialise(scene, id, tag);
+
+				deserialise_all(AllComponents {}, components, entity);
 			}
 
 			return true;
@@ -124,9 +119,11 @@ namespace {
 		const Disarray::Device& device;
 		std::filesystem::path path;
 	};
-} // namespace
+} // namespace Detail
 
-using SceneDeserialiser = Deserialiser<TextureDeserialiser, ScriptDeserialiser, MeshDeserialiser, TransformDeserialiser, InheritanceDeserialiser,
-	LineGeometryDeserialiser, QuadGeometryDeserialiser, PipelineDeserialiser, DirectionalLightDeserialiser, PointLightDeserialiser>;
+using SceneDeserialiser = Detail::Deserialiser<ScriptDeserialiser, MeshDeserialiser, SkyboxDeserialiser, TextDeserialiser, BoxColliderDeserialiser,
+	SphereColliderDeserialiser, CapsuleColliderDeserialiser, ColliderMaterialDeserialiser, RigidBodyDeserialiser, TextureDeserialiser,
+	TransformDeserialiser, LineGeometryDeserialiser, QuadGeometryDeserialiser, DirectionalLightDeserialiser, PointLightDeserialiser,
+	InheritanceDeserialiser>;
 
 } // namespace Disarray

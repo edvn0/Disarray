@@ -1,11 +1,11 @@
 #include "DisarrayPCH.hpp"
 
-#include "core/App.hpp"
-
 #include <filesystem>
 #include <memory>
+#include <thread>
 
 #include "core/AllocatorConfigurator.hpp"
+#include "core/App.hpp"
 #include "core/Clock.hpp"
 #include "core/DebugConfigurator.hpp"
 #include "core/Formatters.hpp"
@@ -68,18 +68,24 @@ void App::run()
 		layer->construct(*this);
 	}
 
+	static constexpr float minimum_time_step = 1000.0F * 0.0333F;
+	static constexpr auto minimum_hertz = 1000.0F / minimum_time_step;
 	static auto current_time = Clock::ms();
+	static float step = minimum_time_step;
 	while (!window->should_close()) {
 		const auto could_prepare = could_prepare_frame();
-		if (!could_prepare) [[unlikely]] {
-			continue;
-		}
 
-		const auto step = Clock::ms() - current_time;
+#ifdef DISARRAY_VSYNC
+		if (step < 16.0) {
+			const auto sleep_time = std::chrono::duration<double, std::milli>(16.0 - step);
+			std::this_thread::sleep_for(sleep_time);
+		}
+#endif
 
 		window->handle_input(step);
 		update_layers(step, could_prepare);
 		render_layers();
+		Renderer::execute_queue();
 		statistics.cpu_time = step;
 		render_ui(ui_layer);
 
@@ -92,6 +98,8 @@ void App::run()
 		window->update();
 		statistics.frame_time = Clock::ms() - current_time;
 		current_time = Clock::ms();
+
+		step = glm::min<float>(statistics.frame_time, minimum_time_step);
 	}
 
 	wait_for_idle(*device);
@@ -108,7 +116,7 @@ void App::run()
 void App::update_layers(float time_step, bool could_prepare)
 {
 	for (auto& layer : layers) {
-		if (!could_prepare) {
+		if (swapchain->needs_recreation() || !could_prepare) {
 			layer->handle_swapchain_recreation(*swapchain);
 		}
 		layer->update(time_step);

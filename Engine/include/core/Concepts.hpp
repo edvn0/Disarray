@@ -28,6 +28,8 @@ concept IsEnum = std::is_enum_v<T> || std::is_enum_v<std::remove_reference_t<T>>
 template <typename T, typename... U>
 concept AnyOf = (std::same_as<T, U> || ...);
 
+template <typename T, typename... U> constexpr bool EvaluatedAnyOf = (std::is_same_v<T, U> || ...);
+
 template <class T>
 concept Pathlike = AnyOf<T, std::string, std::string_view, std::filesystem::path, const char*>;
 

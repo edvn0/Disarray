@@ -11,6 +11,7 @@ class Layer;
 class Entity;
 class Framebuffer;
 class Image;
+class PhysicsEngine;
 class IndexBuffer;
 class StorageBuffer;
 class Instance;
@@ -34,12 +35,10 @@ class PipelineCache;
 class TextureCache;
 class TextRenderer;
 struct BatchRenderer;
+struct MeshSubstructure;
 
 class CppScript;
 class Camera;
-
-struct Extent;
-struct FloatExtent;
 
 namespace Components {
 	struct Tag;
@@ -50,12 +49,15 @@ namespace Components {
 	struct QuadGeometry;
 	struct Mesh;
 	struct Material;
-	struct Pipeline;
 	struct Texture;
 	struct DirectionalLight;
 	struct PointLight;
 	struct Script;
 	struct Controller;
+	struct PillCollider;
+	struct BoxCollider;
+	struct SphereCollider;
+	struct Skybox;
 } // namespace Components
 
 } // namespace Disarray

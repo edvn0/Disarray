@@ -50,4 +50,9 @@ auto compute_normal(const glm::vec3& first_vertex, const glm::vec3& second_verte
 auto rotate_by(const glm::vec3& axis_radians) -> glm::mat4;
 auto ortho(float left_plane, float right_plane, float bottom_plane, float top_plane, float near_plane, float far_plane) -> glm::mat4;
 
+constexpr auto scale_colour(const glm::vec4& maybe_8_bits)
+{
+	return glm::dot(maybe_8_bits, maybe_8_bits) >= 4.0F ? glm::abs(maybe_8_bits) / 255.0F : glm::abs(maybe_8_bits);
+}
+
 } // namespace Disarray::Maths

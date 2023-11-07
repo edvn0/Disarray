@@ -1,35 +1,36 @@
 #pragma once
 
 #include "Forward.hpp"
+
 #include "ImageProperties.hpp"
-#include "core/Types.hpp"
 #include "core/Window.hpp"
 #include "graphics/Device.hpp"
 #include "graphics/RenderPass.hpp"
 
 namespace Disarray {
 
-class Framebuffer;
+using FrameIndex = TypeSafeWrapper<std::uint32_t>;
 
 class Swapchain {
 public:
-	static Scope<Disarray::Swapchain> construct(Disarray::Window&, Disarray::Device&, Disarray::Swapchain* = nullptr);
+	static auto construct(Disarray::Window&, Disarray::Device&, Disarray::Swapchain* = nullptr) -> Scope<Disarray::Swapchain>;
 
-	virtual std::uint32_t image_count() const = 0;
-	virtual Extent get_extent() const = 0;
-	virtual SampleCount get_samples() const = 0;
+	[[nodiscard]] virtual auto image_count() const -> std::uint32_t = 0;
+	[[nodiscard]] virtual auto get_extent() const -> Extent = 0;
+	[[nodiscard]] virtual auto get_samples() const -> SampleCount = 0;
 
-	virtual std::uint32_t get_current_frame() const = 0;
-	virtual std::uint32_t advance_frame() = 0;
-	virtual std::uint32_t get_image_index() const = 0;
+	[[nodiscard]] virtual auto get_current_frame() const -> std::uint32_t = 0;
+	[[nodiscard]] auto get_current_frame_index() const -> FrameIndex { return FrameIndex { get_current_frame() }; };
+	[[nodiscard]] virtual auto get_image_index() const -> std::uint32_t = 0;
+	virtual auto advance_frame() -> std::uint32_t = 0;
 
-	virtual bool prepare_frame() = 0;
+	virtual auto prepare_frame() -> bool = 0;
 	virtual void present() = 0;
 
-	virtual bool needs_recreation() const = 0;
+	[[nodiscard]] virtual auto needs_recreation() const -> bool = 0;
 	virtual void reset_recreation_status() = 0;
 
-	virtual Disarray::RenderPass& get_render_pass() = 0;
+	virtual auto get_render_pass() -> Disarray::RenderPass& = 0;
 
 	virtual ~Swapchain() = default;
 };

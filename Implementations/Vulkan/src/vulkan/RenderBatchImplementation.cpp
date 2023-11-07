@@ -26,7 +26,7 @@ void QuadVertexBatch::construct_impl(Renderer& renderer, const Device& dev)
 {
 	reset();
 
-	pipeline = renderer.get_pipeline_cache().get("quad");
+	pipeline = renderer.get_pipeline_cache().get("Quad");
 	std::array<std::uint32_t, BatchRenderer::Objects * IndexCount> quad_indices {};
 	std::uint32_t offset = 0;
 	for (std::size_t i = 0; i < quad_indices.size(); i += index_per_object_count<QuadVertex>) {
@@ -58,25 +58,19 @@ void QuadVertexBatch::create_new_impl(Geometry geometry, const GeometryPropertie
 		return;
 	}
 
-	static constexpr std::array<glm::vec2, 4> texture_coordinates = { glm::vec2 { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 1.0f } };
+	static constexpr std::array<glm::vec2, 4> texture_coordinates = { glm::vec2 { 0.0F, 0.0F }, { 1.0F, 0.0F }, { 1.0F, 1.0F }, { 0.0F, 1.0F } };
 	static constexpr std::array<glm::vec4, 4> quad_positions
-		= { glm::vec4 { -0.5f, -0.5f, 0.0f, 1.0f }, { 0.5f, -0.5f, 0.0f, 1.0f }, { 0.5f, 0.5f, 0.0f, 1.0f }, { -0.5f, 0.5f, 0.0f, 1.0f } };
+		= { glm::vec4 { -0.5F, -0.5F, 0.0F, 1.0F }, { 0.5F, -0.5F, 0.0F, 1.0F }, { 0.5F, 0.5F, 0.0F, 1.0F }, { -0.5F, 0.5F, 0.0F, 1.0F } };
 
 	glm::mat4 transform
-		= glm::translate(glm::mat4 { 1.0f }, props.position) * glm::mat4_cast(props.rotation) * glm::scale(glm::mat4 { 1.0f }, props.dimensions);
+		= glm::translate(glm::mat4 { 1.0F }, props.position) * glm::mat4_cast(props.rotation) * glm::scale(glm::mat4 { 1.0F }, props.dimensions);
 
-	auto start_index = submitted_vertices;
 	for (std::size_t i = 0; i < vertex_per_object_count<QuadVertex>; i++) {
 		QuadVertex& vertex = emplace();
 		vertex.pos = transform * quad_positions.at(i);
 		vertex.uvs = texture_coordinates.at(i);
 		vertex.colour = props.colour;
-	}
-
-	auto normals = Maths::compute_normal(vertices.at(start_index + 1).pos, vertices.at(start_index + 0).pos, vertices.at(start_index + 2).pos);
-
-	for (std::size_t i = start_index; i < start_index + vertex_per_object_count<QuadVertex>; i++) {
-		vertices.at(i).normals = normals;
+		vertex.normals = glm::vec3 { 0, -1, 0 };
 	}
 
 	submitted_indices += index_per_object_count<QuadVertex>;
@@ -127,11 +121,17 @@ void QuadVertexBatch::flush_impl(Renderer& renderer, CommandExecutor& executor)
 	// flush_vertex_buffer();
 }
 
+void QuadVertexBatch::clear_pass_impl(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
+{
+	renderer.begin_pass(executor, pipeline->get_framebuffer(), true);
+	renderer.end_pass(executor);
+}
+
 void LineVertexBatch::construct_impl(Disarray::Renderer& renderer, const Disarray::Device& dev)
 {
 	reset();
 
-	pipeline = renderer.get_pipeline_cache().get("line");
+	pipeline = renderer.get_pipeline_cache().get("Line");
 
 	std::vector<std::uint32_t> line_indices;
 	line_indices.resize(BatchRenderer::Objects * IndexCount);
@@ -218,6 +218,12 @@ void LineVertexBatch::flush_impl(Disarray::Renderer& renderer, Disarray::Command
 	submit_impl(renderer, executor);
 	reset();
 	// flush_vertex_buffer();
+}
+
+void LineVertexBatch::clear_pass_impl(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
+{
+	renderer.begin_pass(executor, pipeline->get_framebuffer(), true);
+	renderer.end_pass(executor);
 }
 
 } // namespace Disarray

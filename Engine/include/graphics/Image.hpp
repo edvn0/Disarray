@@ -1,11 +1,12 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <glm/glm.hpp>
 
 #include <array>
 #include <variant>
 
-#include "Forward.hpp"
 #include "core/Concepts.hpp"
 #include "core/DataBuffer.hpp"
 #include "core/DisarrayObject.hpp"
@@ -17,12 +18,10 @@
 namespace Disarray {
 
 struct ImageProperties {
-
 	Extent extent;
 	ImageFormat format;
 	DataBuffer data;
 	std::uint32_t mips { static_cast<std::uint32_t>(std::floor(std::log2(std::max(extent.width, extent.height)))) + 1 };
-	bool should_present { false };
 	SampleCount samples { SampleCount::One };
 	Tiling tiling { Tiling::DeviceOptimal };
 	bool locked_extent { false };
@@ -30,13 +29,12 @@ struct ImageProperties {
 		SamplerMode u = SamplerMode::Repeat;
 		SamplerMode v = SamplerMode::Repeat;
 		SamplerMode w = SamplerMode::Repeat;
-	} sampler_modes {
-		.u = SamplerMode::Repeat,
-		.v = SamplerMode::Repeat,
-		.w = SamplerMode::Repeat,
-	};
+	} sampler_modes {};
+	std::vector<CopyRegion> copy_regions {};
+	SamplerFilter filter { SamplerFilter::Linear };
 	BorderColour border_colour { BorderColour::FloatOpaqueWhite };
-	bool should_initialise_directly { true };
+	std::uint32_t layers { 1 };
+	ImageDimension dimension { ImageDimension::Two };
 	std::string debug_name;
 };
 

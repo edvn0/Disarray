@@ -48,7 +48,7 @@ struct Detail::CompilerIntrinsics {
 	}
 };
 
-static constexpr auto default_resources = []() {
+static constexpr auto DEFAULT_RESOURCES = []() {
 	return TBuiltInResource { .maxLights = 32,
 		.maxClipPlanes = 6,
 		.maxTextureUnits = 32,
@@ -171,7 +171,7 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	Log::info("ShaderCompiler", "Compiling {}", path_to_shader);
 	ensure(was_initialised(), "Compiler was not initialised");
 
-	auto resources = default_resources();
+	auto resources = DEFAULT_RESOURCES();
 	auto& custom = resources;
 	custom.maxCombinedTextureImageUnits = 2000;
 	custom.maxTextureImageUnits = 2000;
@@ -317,7 +317,7 @@ void BasicIncluder::replace_all_includes(std::string& io_string)
 void ShaderCompiler::add_include_extension(std::string& glsl_code)
 {
 	ensure(glsl_code.find("#version") == std::string::npos, "Shader already has a #version directive");
-	static constexpr std::string_view extension = "#version 460\n";
+	static constexpr std::string_view extension = "#version 460\n#extension GL_EXT_control_flow_attributes : require\n";
 	glsl_code.insert(0, extension);
 
 	using namespace std::string_view_literals;

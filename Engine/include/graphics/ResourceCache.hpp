@@ -25,12 +25,14 @@ template <CacheableResource Resource, class Props, class Child, class Key = std:
 	using UniquePathSet = std::unordered_set<std::filesystem::path, FileSystemPathHasher>;
 
 public:
-	~ResourceCache() { storage.clear(); };
+	~ResourceCache() { clear_storage(); };
 
-	auto get(const Key& key) -> const Resource&
+	void clear_storage() { storage.clear(); }
+
+	auto get(const Key& key) -> Resource&
 	{
-		ensure(storage.contains(key), "Key missing from the resource cache.");
-		return storage[key];
+		ensure(storage.contains(key), "Key '{}' missing from the resource cache.", key);
+		return storage.at(key);
 	}
 
 	auto size() const { return storage.size(); }
@@ -94,7 +96,7 @@ protected:
 	{
 	}
 
-	[[nodiscard]] auto get_unique_files_recursively() const -> UniquePathSet
+	[[nodiscard]] auto get_unique_files_recursively(const std::vector<std::filesystem::path>& extra_paths = {}) const -> UniquePathSet
 	{
 		UniquePathSet paths;
 		if (!std::filesystem::exists(path)) {
@@ -108,6 +110,17 @@ protected:
 			}
 
 			paths.insert(current.path());
+		}
+
+		for (const auto& extra_path : extra_paths) {
+			for (const auto& current : std::filesystem::recursive_directory_iterator { extra_path }) {
+				const auto has_correct_extension = extensions.contains(current.path().extension().string());
+				if (!current.is_regular_file() || !has_correct_extension) {
+					continue;
+				}
+
+				paths.insert(current.path());
+			}
 		}
 		return paths;
 	}

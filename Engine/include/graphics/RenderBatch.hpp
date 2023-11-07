@@ -41,7 +41,10 @@ struct RenderBatchFor {
 	void submit(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor) { static_cast<Child&>(*this).submit_impl(renderer, executor); }
 	void create_new(Geometry geometry, const GeometryProperties& properties) { static_cast<Child&>(*this).create_new_impl(geometry, properties); }
 	void flush(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor) { static_cast<Child&>(*this).flush_impl(renderer, executor); }
-
+	void clear_pass(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
+	{
+		static_cast<Child&>(*this).clear_pass_impl(renderer, executor);
+	}
 	void reset()
 	{
 		vertices.fill({});
@@ -81,6 +84,7 @@ struct LineVertexBatch final : public RenderBatchFor<LineVertex, LineVertexBatch
 	using Current::VertexCount;
 	using Current::vertices;
 
+	void clear_pass_impl(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor);
 	void construct_impl(Disarray::Renderer&, const Disarray::Device&);
 	void submit_impl(Disarray::Renderer&, Disarray::CommandExecutor&);
 	void create_new_impl(Geometry, const GeometryProperties&);
@@ -105,6 +109,7 @@ struct QuadVertexBatch final : public RenderBatchFor<QuadVertex, QuadVertexBatch
 	using Current::VertexCount;
 	using Current::vertices;
 
+	void clear_pass_impl(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor);
 	void construct_impl(Disarray::Renderer&, const Disarray::Device&);
 	void submit_impl(Disarray::Renderer&, Disarray::CommandExecutor&);
 	void create_new_impl(Geometry, const GeometryProperties&);
@@ -128,25 +133,23 @@ struct BatchRenderer {
 	constexpr void reset()
 	{
 		submitted_geometries = 0;
-		Tuple::static_for(objects, [](std::size_t index, auto& batch) { batch.reset(); });
+		Tuple::static_for(objects, [](std::size_t, auto& batch) { batch.reset(); });
 	}
 
 	constexpr void construct(Disarray::Renderer& renderer, const Disarray::Device& device)
 	{
-		Tuple::static_for(objects, [&renderer, &device](std::size_t index, auto& batch) { batch.construct(renderer, device); });
+		Tuple::static_for(objects, [&renderer, &device](std::size_t, auto& batch) { batch.construct(renderer, device); });
 	}
 
-	auto get_pipelines()
+	void clear_pass(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
 	{
-		std::array<Disarray::Pipeline*, std::tuple_size<BatchTuple> {}> pipelines {};
-		Tuple::static_for(objects, [&pipelines](auto index, auto& batch) { pipelines.at(index) = batch.get_pipeline(); });
-		return pipelines;
+		Tuple::static_for(objects, [&](std::size_t, auto& batch) { batch.clear_pass(renderer, executor); });
 	}
 
 	auto would_be_full() -> bool
 	{
 		bool batch_would_be_full = false;
-		Tuple::static_for(objects, [&batch_would_be_full](std::size_t index, auto& batch) {
+		Tuple::static_for(objects, [&batch_would_be_full](std::size_t, auto& batch) {
 			const auto more_than_max = batch.submitted_objects + 1 >= Objects;
 			batch_would_be_full |= more_than_max;
 		});
@@ -156,7 +159,7 @@ struct BatchRenderer {
 	auto is_full() -> bool
 	{
 		bool batch_would_be_full = false;
-		Tuple::static_for(objects, [&batch_would_be_full](std::size_t index, auto& batch) {
+		Tuple::static_for(objects, [&batch_would_be_full](std::size_t, auto& batch) {
 			const auto more_than_max = batch.submitted_objects >= Objects;
 			batch_would_be_full |= more_than_max;
 		});
@@ -166,7 +169,7 @@ struct BatchRenderer {
 	auto should_submit() -> bool
 	{
 		bool should_submit_batch = false;
-		Tuple::static_for(objects, [&should_submit_batch](std::size_t index, auto& batch) {
+		Tuple::static_for(objects, [&should_submit_batch](std::size_t, auto& batch) {
 			const auto predicate = batch.submitted_objects > 0 && batch.submitted_objects < Objects;
 			should_submit_batch |= predicate;
 		});
@@ -176,18 +179,17 @@ struct BatchRenderer {
 	void flush(Renderer& renderer, CommandExecutor& executor)
 	{
 		submitted_geometries = 0;
-		Tuple::static_for(objects, [&ren = renderer, &ce = executor](std::size_t index, auto& batch) mutable { batch.flush(ren, ce); });
+		Tuple::static_for(objects, [&](std::size_t, auto& batch) mutable { batch.flush(renderer, executor); });
 	}
 
 	constexpr void create_new(Geometry geometry, const GeometryProperties& properties)
 	{
-		Tuple::static_for(objects, [geometry, &properties](std::size_t index, auto& batch) mutable { batch.create_new(geometry, properties); });
+		Tuple::static_for(objects, [geometry, &properties](std::size_t, auto& batch) mutable { batch.create_new(geometry, properties); });
 	}
 
 	constexpr void submit(Disarray::Renderer& renderer, Disarray::CommandExecutor& command_executor)
 	{
-		Tuple::static_for(
-			objects, [&renderer, &command_executor](std::size_t index, auto& batch) mutable { batch.submit(renderer, command_executor); });
+		Tuple::static_for(objects, [&renderer, &command_executor](std::size_t, auto& batch) mutable { batch.submit(renderer, command_executor); });
 	}
 };
 

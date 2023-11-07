@@ -25,6 +25,7 @@ public:
 	[[nodiscard]] virtual auto should_close() const -> bool = 0;
 	virtual void update() = 0;
 	virtual void handle_input(float time_step) = 0;
+	virtual void handle_input(double time_step) { handle_input(static_cast<float>(time_step)); };
 	virtual auto get_surface() -> Surface& = 0;
 	virtual auto get_instance() -> Instance& = 0;
 

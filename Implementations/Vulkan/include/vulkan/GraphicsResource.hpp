@@ -36,15 +36,18 @@ public:
 	{
 		return expose_to_shaders(image.get_image(), set, binding);
 	}
-	[[nodiscard]] auto get_descriptor_set(std::uint32_t frame_index, std::uint32_t set) const -> VkDescriptorSet override
+	[[nodiscard]] auto get_descriptor_set(FrameIndex frame_index, DescriptorSet set) const -> VkDescriptorSet override
 	{
-		return descriptor_sets.at(frame_index).at(set);
+		return descriptor_sets.at(frame_index).at(set.value);
 	}
-	[[nodiscard]] auto get_descriptor_set(std::uint32_t set) const -> VkDescriptorSet override
+	[[nodiscard]] auto get_descriptor_set(DescriptorSet set) const -> VkDescriptorSet override
 	{
-		return descriptor_sets.at(swapchain.get_current_frame()).at(set);
+		return descriptor_sets.at(swapchain.get_current_frame_index()).at(set.value);
 	}
-	[[nodiscard]] auto get_descriptor_set() const -> VkDescriptorSet override { return get_descriptor_set(swapchain.get_current_frame(), 0); };
+	[[nodiscard]] auto get_descriptor_set() const -> VkDescriptorSet override
+	{
+		return get_descriptor_set(FrameIndex(swapchain.get_current_frame()), DescriptorSet(0));
+	};
 	[[nodiscard]] auto get_descriptor_set_layouts() const -> const std::vector<VkDescriptorSetLayout>& override { return layouts; }
 	[[nodiscard]] auto get_push_constant() const -> const PushConstant* override { return &pc; }
 	auto get_editable_push_constant() -> PushConstant& override { return pc; }
@@ -60,7 +63,7 @@ public:
 
 private:
 	void cleanup_graphics_resource();
-	auto descriptor_write_sets_per_frame(std::size_t descriptor_set) -> std::vector<VkWriteDescriptorSet>;
+	auto descriptor_write_sets_per_frame(DescriptorSet descriptor_set) -> std::vector<VkWriteDescriptorSet>;
 
 	const Disarray::Device& device;
 	const Disarray::Swapchain& swapchain;
@@ -78,10 +81,12 @@ private:
 	ShadowPassUBO shadow_pass_ubo {};
 	DirectionalLightUBO directional_light_ubo {};
 	GlyphUBO glyph_ubo {};
-	using UBOArray = std::array<Scope<Vulkan::UniformBuffer>, 6>;
-	std::unordered_map<std::size_t, UBOArray> frame_index_ubo_map {};
 
-	std::unordered_map<std::size_t, std::vector<VkDescriptorSet>> descriptor_sets;
+	static constexpr auto ubo_count = 6U;
+	using UBOArray = std::array<Scope<Vulkan::UniformBuffer>, ubo_count>;
+	std::unordered_map<FrameIndex, UBOArray> frame_index_ubo_map {};
+
+	std::unordered_map<FrameIndex, std::vector<VkDescriptorSet>> descriptor_sets;
 	std::vector<VkDescriptorSetLayout> layouts;
 	void initialise_descriptors(bool should_clean = false);
 

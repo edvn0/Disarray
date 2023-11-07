@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glm/ext/matrix_clip_space.hpp>
+
 #include <entt/entt.hpp>
 
 #include <concepts>
@@ -7,24 +9,26 @@
 #include <queue>
 #include <type_traits>
 
+#include "core/Collections.hpp"
 #include "core/FileWatcher.hpp"
 #include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
 #include "core/events/Event.hpp"
-#include "glm/ext/matrix_clip_space.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Mesh.hpp"
 #include "graphics/StorageBuffer.hpp"
 #include "graphics/Texture.hpp"
+#include "physics/PhysicsEngine.hpp"
 #include "scene/Component.hpp"
 #include "scene/Entity.hpp"
+#include "scene/SceneRenderer.hpp"
 
 namespace Disarray {
 
 enum class GizmoType : std::uint16_t {
 	TranslateX = (1U << 0),
-	Translate_Y = (1U << 1),
+	TranslateY = (1U << 1),
 	TranslateZ = (1U << 2),
 	RotateX = (1U << 3),
 	RotateY = (1U << 4),
@@ -34,34 +38,37 @@ enum class GizmoType : std::uint16_t {
 	ScaleY = (1U << 8),
 	ScaleZ = (1U << 9),
 	Bounds = (1U << 10),
-	Translate = TranslateX | Translate_Y | TranslateZ,
+	Translate = TranslateX | TranslateY | TranslateZ,
 	Rotate = RotateX | RotateY | RotateZ | RotateScreen,
 	Scale = ScaleX | ScaleY | ScaleZ
 };
 
-class Scene {
+enum class SceneState : std::uint8_t {
+	Play,
+	Edit,
+	Simulate,
+};
+
+class Scene : public ReferenceCountable {
+	using ViewProjectionTuple = std::tuple<glm::mat4, glm::mat4, glm::mat4>;
+
 public:
 	Scene(const Disarray::Device&, std::string_view);
-	~Scene();
+	~Scene() override;
 
-	void begin_frame(const Camera&);
-	void end_frame();
+	void begin_frame(const Camera&, SceneRenderer& scene_renderer);
+	void begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_proj, SceneRenderer& scene_renderer);
+	void end_frame(SceneRenderer& renderer);
 
 	void update(float);
-	void render();
+	void render(SceneRenderer& renderer);
 	void interface();
 	void construct(Disarray::App&);
 	void destruct();
 	void on_event(Disarray::Event&);
-	void recreate(const Extent& extent);
+	void recreate(const Extent&);
 
-	void set_viewport_bounds(const glm::vec2& max, const glm::vec2& min)
-	{
-		vp_max = max;
-		vp_min = min;
-	}
-
-	auto get_viewport_bounds() const -> FloatExtent { return { vp_max.x - vp_min.x, vp_max.y - vp_min.y }; }
+	auto get_primary_camera() -> std::optional<ViewProjectionTuple>;
 
 	auto create(std::string_view = "Unnamed") -> Entity;
 
@@ -72,25 +79,19 @@ public:
 	void delete_entity(entt::entity);
 	void delete_entity(const Entity& entity);
 
-	auto get_image(std::uint32_t index) const -> const Disarray::Image&
-	{
-		if (index == 0) {
-			return geometry_framebuffer->get_image(0);
-		}
-		if (index == 1) {
-			return identity_framebuffer->get_image(0);
-		}
-		return shadow_framebuffer->get_depth_image();
-	}
-
-	auto get_final_image() const -> const Disarray::Image&;
-
-	auto get_command_executor() const -> const CommandExecutor& { return *command_executor; };
-
-	auto get_selected_entity() const -> const auto& { return selected_entity; }
+	[[nodiscard]] auto get_selected_entity() const -> const auto& { return selected_entity; }
 	auto get_registry() -> entt::registry& { return registry; };
-	auto get_registry() const -> const entt::registry& { return registry; };
-	auto get_name() const -> const std::string& { return scene_name; };
+	[[nodiscard]] auto get_registry() const -> const entt::registry& { return registry; };
+	[[nodiscard]] auto get_name() const -> const std::string& { return scene_name; };
+	[[nodiscard]] auto get_device() const -> const Disarray::Device& { return device; };
+
+	auto on_runtime_start() -> void;
+	auto on_simulation_start() -> void;
+	auto on_runtime_stop() -> void;
+	auto on_simulation_stop() -> void;
+	auto on_update_editor(float time_step) -> void;
+	auto on_update_simulation(float time_step) -> void;
+	auto on_update_runtime(float time_step) -> void;
 
 	template <ValidComponent... T> auto entities_with() -> std::vector<Entity>
 	{
@@ -101,7 +102,7 @@ public:
 		} else {
 			out.reserve(view_for.size_hint());
 		}
-		view_for.each([this, &out](auto entity, auto... other_ts) { out.push_back(Entity { this, entity }); });
+		view_for.each([this, &out](auto entity, auto...) { out.push_back(Entity { this, entity }); });
 		return out;
 	}
 
@@ -117,62 +118,64 @@ public:
 	}
 
 	void update_picked_entity(std::uint32_t handle);
-	static void manipulate_entity_transform(Entity&, Camera&, GizmoType);
+	void manipulate_entity_transform(Entity&, Camera&, GizmoType);
 
-	template <class Func> constexpr void for_all_entities(Func&& func)
+	constexpr void for_all_entities(auto&& func)
 	{
 		const auto view = get_registry().storage<entt::entity>().each();
 		for (const auto& [entity] : view) {
-			std::forward<Func>(func)(entity);
+			func(entity);
 		}
 	}
+
+	template <ValidComponent T> void sort(auto&& sorter) { registry.sort<T>(sorter); }
+	auto sort() -> void;
 
 	static auto deserialise(const Device&, std::string_view, const std::filesystem::path&) -> Scope<Scene>;
 	static auto deserialise_into(Scene&, const Device&, const std::filesystem::path&) -> void;
 
 	void clear();
 
+	[[nodiscard]] auto is_paused() const { return paused; }
+	auto set_paused(bool new_pause_status) { paused = new_pause_status; }
+
+	void step(std::int32_t steps = 0);
+
+	static auto copy(Scene& scene) -> Ref<Scene>;
+	static auto copy_entity(Scene& scene, Entity& entity, std::string_view new_name) -> void;
+	static auto copy_entity(Scene& scene, Entity& entity) -> void;
+
+	template <class Func> auto submit_preframe_work(Func&& func) { frame_start_callbacks.emplace(std::forward<Func>(func)); }
+
 private:
+	PhysicsEngine engine;
+	void physics_update(float time_step);
+
 	const Disarray::Device& device;
 	std::string scene_name;
-	Scope<Renderer> scene_renderer { nullptr };
-	Scope<FileWatcher> file_watcher { nullptr };
 
 	Scope<Entity> picked_entity { nullptr };
 	Scope<Entity> selected_entity { nullptr };
 
-	Extent extent;
-	glm::vec2 vp_max { 1 };
-	glm::vec2 vp_min { 1 };
+	bool paused { false };
+	bool running { false };
+	std::int32_t step_frames { 0 };
 
-	Ref<Disarray::CommandExecutor> command_executor {};
+	Extent extent {};
 
-	Ref<Disarray::Framebuffer> shadow_framebuffer {};
-	Ref<Disarray::Pipeline> shadow_pipeline {};
-	Ref<Disarray::Pipeline> shadow_instances_pipeline {};
-
-	Ref<Disarray::Framebuffer> identity_framebuffer {};
-	Ref<Disarray::Pipeline> identity_pipeline {};
-
-	Ref<Disarray::Framebuffer> geometry_framebuffer {};
-
-	Scope<Disarray::StorageBuffer> point_light_transforms {};
-	Scope<Disarray::StorageBuffer> point_light_colours {};
-
-	std::mutex registry_access;
 	entt::registry registry;
-	void create_entities();
 
-	void draw_shadows();
-	void draw_identifiers();
-	void draw_geometry();
+	void draw_shadows(SceneRenderer& renderer);
+	void draw_identifiers(SceneRenderer& renderer);
+	void draw_geometry(SceneRenderer& renderer);
+	void draw_skybox(SceneRenderer& renderer);
 
-	void setup_filewatcher_and_threadpool(Threading::ThreadPool&);
+	auto on_physics_start() -> void;
+	auto on_physics_stop() -> void;
 
-	std::future<void> final_pool_callback {};
-	std::atomic_bool should_run_callbacks { true };
-	std::condition_variable callback_cv {};
-	std::mutex callback_mutex {};
+	using FrameStartCallback = decltype(+[](Scene&, SceneRenderer&) {});
+	std::queue<FrameStartCallback> frame_start_callbacks {};
+	void execute_callbacks(SceneRenderer& renderer);
 
 	friend class CppScript;
 };

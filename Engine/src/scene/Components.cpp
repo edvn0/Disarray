@@ -1,18 +1,19 @@
 #include "DisarrayPCH.hpp"
 
-#include "scene/Components.hpp"
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/quaternion_transform.hpp>
 
 #include <graphics/Maths.hpp>
 
 #include <string>
 #include <utility>
 
+#include "core/Formatters.hpp"
 #include "core/Input.hpp"
 #include "core/Log.hpp"
-#include "glm/ext/matrix_clip_space.hpp"
-#include "glm/ext/quaternion_transform.hpp"
 #include "graphics/Mesh.hpp"
 #include "scene/Camera.hpp"
+#include "scene/Components.hpp"
 #include "scene/CppScript.hpp"
 #include "scene/Entity.hpp"
 #include "scene/Scene.hpp"
@@ -51,13 +52,8 @@ Material::Material(Device& device, std::string_view vertex, std::string_view fra
 {
 }
 
-Material::Material(Ref<Disarray::Material> m)
-	: material(std::move(m))
-{
-}
-
-Pipeline::Pipeline(Ref<Disarray::Pipeline> p)
-	: pipeline(std::move(p))
+Material::Material(Ref<Disarray::Material> input)
+	: material(std::move(input))
 {
 }
 
@@ -70,8 +66,8 @@ Texture::Texture(Device& device, std::string_view path)
 {
 }
 
-Texture::Texture(Ref<Disarray::Texture> m, const glm::vec4& colour)
-	: texture(std::move(m))
+Texture::Texture(Ref<Disarray::Texture> input, const glm::vec4& colour)
+	: texture(std::move(input))
 	, colour(colour)
 {
 }
@@ -94,11 +90,8 @@ void Script::setup_entity_destruction()
 void Script::setup_entity_creation() { get_script().on_create(); }
 
 void Script::destroy() { destroy_script_functor(*this); }
-void Script::instantiate()
-{
-	// create_script_functor(*this);
-	instantiated = true;
-}
+
+void Script::instantiate() { instantiated = true; }
 
 auto Script::get_script() -> CppScript& { return *instance_slot; }
 
@@ -122,13 +115,13 @@ auto Camera::compute(const Disarray::Components::Transform& transform, const Dis
 {
 	static auto pre_computed_for_parameters = std::unordered_map<std::size_t, std::tuple<glm::mat4, glm::mat4, glm::mat4>> {};
 	static auto hash_this = [](auto... to_combine) {
-		std::size_t seed { 0 };
+		std::size_t seed { 0x1A16B09F };
 		hash_combine(seed, to_combine...);
 		return seed;
 	};
 
-	const auto hash = hash_this(
-		fov_degrees, static_cast<std::uint8_t>(type), transform.position, extent.width, extent.height, near_perspective, far_perspective, reverse);
+	const auto hash = hash_this(fov_degrees, static_cast<std::uint8_t>(type), transform.position, transform.rotation, extent.width, extent.height,
+		near_perspective, far_perspective, reverse);
 
 	bool should_skip = false;
 	if (Input::all<KeyCode::R, KeyCode::LeftShift>()) {
@@ -140,7 +133,10 @@ auto Camera::compute(const Disarray::Components::Transform& transform, const Dis
 		return pre_computed_for_parameters.at(hash);
 	}
 
-	auto view = glm::lookAt(transform.position, { 0, 0, 0 }, { 0, 1, 0 });
+	const auto rotation = glm::mat4_cast(transform.rotation);
+	const auto position = rotation * glm::vec4 { transform.position, 1.0F };
+
+	auto view = glm::lookAt(glm::vec3(position), { 0, 0, 0 }, { 0, 1, 0 });
 	const auto as_float = extent.as<float>();
 	glm::mat4 projection;
 	if (type == CameraType::Perspective) {
@@ -158,6 +154,19 @@ auto Camera::compute(const Disarray::Components::Transform& transform, const Dis
 		pre_computed_for_parameters.try_emplace(hash, view, projection, projection * view);
 	}
 	return pre_computed_for_parameters.at(hash);
+}
+
+Skybox::Skybox(Ref<Disarray::Texture> tex, const glm::vec4& col)
+	: texture(std::move(tex))
+	, colour(col)
+{
+}
+
+DirectionalLight::DirectionalLight(const glm::vec4& ambience, ProjectionParameters params)
+	: projection_parameters(params)
+	, ambient(Maths::scale_colour(ambience))
+{
+	Log::info("Components", "Ambience: {}", ambient);
 }
 
 } // namespace Disarray::Components

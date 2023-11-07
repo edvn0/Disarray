@@ -8,11 +8,13 @@
 #include <fstream>
 #include <sstream>
 #include <tuple>
+#include <utility>
 
 #include "core/Collections.hpp"
 #include "core/Hashes.hpp"
 #include "core/Log.hpp"
 #include "core/Tuple.hpp"
+#include "scene/Component.hpp"
 #include "scene/ComponentSerialisers.hpp"
 #include "scene/Components.hpp"
 #include "scene/Scene.hpp"
@@ -20,7 +22,7 @@
 
 namespace Disarray {
 
-namespace {
+namespace Detail {
 	class CouldNotSerialiseException : public std::runtime_error {
 	public:
 		explicit CouldNotSerialiseException(const std::string& message)
@@ -29,16 +31,26 @@ namespace {
 		}
 	};
 
-	template <class... Serialisers> struct Serialiser {
+	template <class T>
+	concept SerialiserFor = requires(T t, ImmutableEntity& entity) {
+		{
+			t.can_serialise(entity)
+		} -> std::same_as<bool>;
+		{
+			t.get_component_name()
+		} -> std::convertible_to<std::string_view>;
+	};
+
+	template <SerialiserFor... Serialisers> struct Serialiser {
 	private:
 		std::tuple<Serialisers...> serialisers {};
 
 	public:
 		using json = nlohmann::json;
 
-		explicit Serialiser(const Scene* input_scene, const std::filesystem::path& output_path = "Assets/Scene")
+		explicit Serialiser(const Scene* input_scene, std::filesystem::path output_path = "Assets/Scene")
 			: scene(input_scene)
-			, path(output_path)
+			, path(std::move(output_path))
 		{
 			try {
 				serialised_object = serialise();
@@ -46,7 +58,6 @@ namespace {
 				return;
 			}
 
-			namespace ch = std::chrono;
 			auto name = scene->get_name();
 			std::replace(name.begin(), name.end(), ' ', '_');
 			std::replace(name.begin(), name.end(), '+', '_');
@@ -74,7 +85,10 @@ namespace {
 			const auto& registry = scene->get_registry();
 			const auto view = registry.template view<const Components::ID, const Components::Tag>();
 
-			MSTimer timer {};
+			static auto serialise_all = [&]<class... C>(Detail::ComponentGroup<C...>, const auto& entity, auto& components) {
+				(serialise_component<C>(entity, components), ...);
+			};
+
 			std::vector<EntityAndKey> output;
 			output.reserve(view.size_hint());
 			view.each([this, &output](const auto handle, const auto& id, const auto& tag) {
@@ -82,16 +96,9 @@ namespace {
 				auto key = fmt::format("{}__disarray__{}", id.identifier, tag.name);
 				json entity_object;
 				json components;
-				serialise_component<Components::Pipeline>(entity, components);
-				serialise_component<Components::Texture>(entity, components);
-				serialise_component<Components::Script>(entity, components);
-				serialise_component<Components::Mesh>(entity, components);
-				serialise_component<Components::Transform>(entity, components);
-				serialise_component<Components::LineGeometry>(entity, components);
-				serialise_component<Components::QuadGeometry>(entity, components);
-				serialise_component<Components::Inheritance>(entity, components);
-				serialise_component<Components::DirectionalLight>(entity, components);
-				serialise_component<Components::PointLight>(entity, components);
+
+				serialise_all(AllComponents {}, entity, components);
+
 				entity_object["components"] = components;
 				output.push_back({ key, entity_object });
 			});
@@ -131,9 +138,10 @@ namespace {
 		std::filesystem::path path;
 		json serialised_object;
 	};
-} // namespace
+} // namespace Detail
 
-using SceneSerialiser = Serialiser<PipelineSerialiser, ScriptSerialiser, TextureSerialiser, MeshSerialiser, TransformSerialiser,
-	InheritanceSerialiser, LineGeometrySerialiser, QuadGeometrySerialiser, DirectionalLightSerialiser, PointLightSerialiser>;
+using SceneSerialiser = Detail::Serialiser<ScriptSerialiser, MeshSerialiser, SkyboxSerialiser, TextSerialiser, BoxColliderSerialiser,
+	SphereColliderSerialiser, CapsuleColliderSerialiser, ColliderMaterialSerialiser, RigidBodySerialiser, TextureSerialiser, TransformSerialiser,
+	LineGeometrySerialiser, QuadGeometrySerialiser, DirectionalLightSerialiser, PointLightSerialiser, InheritanceSerialiser>;
 
 } // namespace Disarray

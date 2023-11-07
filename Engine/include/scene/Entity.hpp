@@ -23,7 +23,7 @@ public:
 	Entity(Scene*, entt::entity);
 	Entity(Scene* input_scene, entt::id_type input_id)
 		: Entity(input_scene, static_cast<entt::entity>(input_id)) {};
-	Entity(Scene*);
+	explicit Entity(Scene*);
 
 	static auto deserialise(Scene&, Identifier, std::string_view = "Empty") -> Entity;
 
@@ -47,6 +47,15 @@ public:
 			return get_components<T>();
 		}
 		return emplace_component<T>(std::forward<Args>(args)...);
+	}
+
+	template <ValidComponent T> auto put_component(const T& component) -> decltype(auto)
+	{
+		if (has_component<T>()) {
+			remove_component<T>();
+		}
+		auto& created = get_registry().emplace_or_replace<T>(identifier);
+		created = component;
 	}
 
 	template <ValidComponent T, typename... Args> auto try_add_component(Args&&... args) -> decltype(auto)
@@ -104,7 +113,7 @@ public:
 	ImmutableEntity(const Scene*, entt::entity);
 	ImmutableEntity(const Scene* input_scene, entt::id_type input_id)
 		: ImmutableEntity(input_scene, static_cast<entt::entity>(input_id)) {};
-	ImmutableEntity(const Scene*);
+	explicit ImmutableEntity(const Scene*);
 
 	[[nodiscard]] auto get_registry() const -> const entt::registry&;
 
