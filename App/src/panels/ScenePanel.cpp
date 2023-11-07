@@ -120,6 +120,12 @@ void ScenePanel::interface()
 			}
 		}
 
+		if (ImGui::MenuItem("Copy Entity")) {
+			if (auto entity = Entity { scene, *selected_entity }; entity.is_valid()) {
+				Scene::copy_entity(*scene, entity);
+			}
+		}
+
 		ImGui::EndPopup();
 	}
 	UI::end();

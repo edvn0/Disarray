@@ -258,6 +258,14 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 	get_graphics_resource().expose_to_shaders(*entity_identifiers, DescriptorSet { 3 }, DescriptorBinding { 2 });
 	get_graphics_resource().expose_to_shaders(*entity_transforms, DescriptorSet { 3 }, DescriptorBinding { 3 });
 
+	auto texture_cube = Texture::construct(device,
+		{
+			.path = FS::texture("cubemap_yokohama_rgba.ktx"),
+			.dimension = TextureDimension::Three,
+			.debug_name = "Skybox",
+		});
+	get_graphics_resource().expose_to_shaders(*texture_cube, DescriptorSet { 2 }, DescriptorBinding { 2 });
+
 	framebuffers.try_emplace(SceneFramebuffer::FullScreen,
 		Framebuffer::construct(device,
 			{

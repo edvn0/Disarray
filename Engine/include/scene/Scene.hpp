@@ -142,6 +142,8 @@ public:
 	void step(std::int32_t steps = 0);
 
 	static auto copy(Scene& scene) -> Ref<Scene>;
+	static auto copy_entity(Scene& scene, Entity& entity, std::string_view new_name) -> void;
+	static auto copy_entity(Scene& scene, Entity& entity) -> void;
 
 	template <class Func> auto submit_preframe_work(Func&& func) { frame_start_callbacks.emplace(std::forward<Func>(func)); }
 

@@ -57,7 +57,12 @@ void ClientLayer::construct(App& app)
 
 	scene = make_ref<Scene>(device, "Default scene");
 	scene->construct(app);
-	create_entities();
+	icon_play = scene_renderer.get_texture_cache().get("Play");
+	icon_stop = scene_renderer.get_texture_cache().get("Stop");
+	icon_pause = scene_renderer.get_texture_cache().get("Pause");
+	icon_step = scene_renderer.get_texture_cache().get("Step");
+	icon_simulate = scene_renderer.get_texture_cache().get("Simulate");
+	// create_entities();
 
 	extent = app.get_swapchain().get_extent();
 	running_scene = scene;
@@ -87,12 +92,6 @@ void ClientLayer::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
 
 void ClientLayer::create_entities()
 {
-	icon_play = scene_renderer.get_texture_cache().get("Play");
-	icon_stop = scene_renderer.get_texture_cache().get("Stop");
-	icon_pause = scene_renderer.get_texture_cache().get("Pause");
-	icon_step = scene_renderer.get_texture_cache().get("Step");
-	icon_simulate = scene_renderer.get_texture_cache().get("Simulate");
-
 	auto& graphics_resource = scene_renderer.get_graphics_resource();
 
 	const auto cube_mesh = Mesh::construct(device,
@@ -116,7 +115,6 @@ void ClientLayer::create_entities()
 			.dimension = TextureDimension::Three,
 			.debug_name = "Skybox",
 		});
-	resources.expose_to_shaders(texture_cube->get_image(), DescriptorSet(2), DescriptorBinding(2));
 	auto skybox_material = Material::construct(device,
 		{
 			.vertex_shader = scene_renderer.get_pipeline_cache().get_shader("skybox.vert"),

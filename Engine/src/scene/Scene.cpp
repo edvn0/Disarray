@@ -238,6 +238,10 @@ void Scene::draw_skybox(SceneRenderer& scene_renderer)
 		}
 		skybox_ptr = mesh.mesh;
 	}
+	if (skybox_ptr == nullptr) {
+		return;
+	}
+
 	scene_renderer.draw_skybox(*skybox_ptr);
 }
 
@@ -253,8 +257,10 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 		}
 
 		auto point_light_view_for_count = registry.view<const Components::PointLight>().size();
-		const auto& pipeline = *scene_renderer.get_pipeline("PointLight");
-		scene_renderer.draw_point_lights(*point_light_mesh, point_light_view_for_count, pipeline);
+		if (point_light_view_for_count > 0) {
+			const auto& pipeline = *scene_renderer.get_pipeline("PointLight");
+			scene_renderer.draw_point_lights(*point_light_mesh, point_light_view_for_count, pipeline);
+		}
 	}
 
 	for (auto line_view = registry.view<const Components::LineGeometry, const Components::Texture, const Components::Transform>();
@@ -343,8 +349,10 @@ void Scene::draw_shadows(SceneRenderer& scene_renderer)
 		}
 
 		auto point_light_view_for_count = registry.view<const Components::PointLight>().size();
-		const auto& shadow_pipeline = *scene_renderer.get_pipeline("ShadowInstances");
-		scene_renderer.draw_point_lights(*point_light_ptr, point_light_view_for_count, shadow_pipeline);
+		if (point_light_view_for_count > 0) {
+			const auto& shadow_pipeline = *scene_renderer.get_pipeline("ShadowInstances");
+			scene_renderer.draw_point_lights(*point_light_ptr, point_light_view_for_count, shadow_pipeline);
+		}
 	}
 
 	for (auto&& [entity, mesh, texture, transform] :
@@ -384,8 +392,19 @@ void Scene::on_event(Event& event)
 	dispatcher.dispatch<KeyPressedEvent>([scene = this](KeyPressedEvent&) {
 		if (Input::all<KeyCode::LeftControl, KeyCode::LeftShift, KeyCode::S>()) {
 			SceneSerialiser scene_serialiser(scene);
+			return true;
 		}
-		return true;
+
+		if (Input::all<KeyCode::LeftControl, KeyCode::D>()) {
+			if (const auto& selected = scene->get_selected_entity(); selected != nullptr && !selected->is_valid()) {
+				return false;
+			}
+
+			Scene::copy_entity(*scene, *scene->selected_entity);
+			return true;
+		}
+
+		return false;
 	});
 }
 
@@ -393,7 +412,6 @@ void Scene::recreate(const Extent& new_ex) { extent = new_ex; }
 
 void Scene::destruct()
 {
-	SceneSerialiser scene_serialiser(this);
 	for (auto&& [entity, script] : registry.view<Components::Script>().each()) {
 		script.destroy();
 	}
@@ -493,6 +511,13 @@ auto Scene::get_by_identifier(Identifier identifier) -> std::optional<Entity>
 void Scene::clear() { registry.clear(); }
 
 namespace {
+	template <ValidComponent C> constexpr auto copy_one(auto& copy_from, auto& copy_to)
+	{
+		if (copy_from.template has_component<C>()) {
+			copy_to.template put_component<C>(copy_from.template get_components<C>());
+		}
+	}
+
 	template <ValidComponent Component> constexpr auto copy_component(auto& identifier_map, auto& old_reg)
 	{
 		for (auto&& [_, identifier, component] : old_reg.template view<Components::ID, Component>().each()) {
@@ -500,7 +525,7 @@ namespace {
 			Component copy = component;
 			destination_entity.put_component<Component>(copy);
 		}
-	};
+	}
 } // namespace
 
 auto Scene::copy(Scene& scene) -> Ref<Scene>
@@ -531,6 +556,34 @@ auto Scene::copy(Scene& scene) -> Ref<Scene>
 	new_scene->extent = scene.extent;
 
 	return new_scene;
+}
+
+auto Scene::copy_entity(Scene& scene, Entity& entity) -> void
+{
+	static std::unordered_map<Identifier, std::uint64_t> copies_of {};
+	const auto& identifier = entity.get_components<Components::ID>().get_id();
+	if (copies_of.contains(identifier)) {
+		auto& count = copies_of.at(identifier);
+		count++;
+	} else {
+		copies_of[identifier] = 1;
+	}
+	const auto& tag = entity.get_components<Components::Tag>().name;
+	Scene::copy_entity(scene, entity, fmt::format("{}-Copy-{}", tag, copies_of.at(identifier)));
+}
+
+auto Scene::copy_entity(Scene& scene, Entity& to_copy_from_entity, std::string_view new_name) -> void
+{
+	static constexpr auto copy_all
+		= []<ValidComponent... C>(Detail::ComponentGroup<C...>, auto& copy_from, auto& copy_to) { (copy_one<C>(copy_from, copy_to), ...); };
+
+	auto new_entity = scene.create(new_name);
+	using CopyableComponents = Detail::ComponentGroup<Components::Camera, Components::Transform, Components::Inheritance, Components::LineGeometry,
+		Components::QuadGeometry, Components::Mesh, Components::Material, Components::Texture, Components::DirectionalLight, Components::PointLight,
+		Components::Controller, Components::BoxCollider, Components::SphereCollider, Components::CapsuleCollider, Components::ColliderMaterial,
+		Components::Skybox, Components::Text, Components::RigidBody>;
+
+	copy_all(CopyableComponents {}, to_copy_from_entity, new_entity);
 }
 
 auto Scene::step(std::int32_t steps) -> void { step_frames = steps; }

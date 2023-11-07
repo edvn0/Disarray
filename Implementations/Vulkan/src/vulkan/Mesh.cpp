@@ -48,6 +48,7 @@ void Mesh::load_and_initialise_model()
 		return std::optional<std::int32_t> { std::nullopt };
 	};
 
+	mesh_name = props.path.filename().replace_extension().string();
 	ModelLoader loader;
 	try {
 		loader = ModelLoader(make_scope<AssimpModelLoader>(props.initial_rotation), props.path, props.flags);
@@ -82,8 +83,6 @@ void Mesh::load_and_initialise_model()
 		auto substructure = make_scope<MeshSubstructure>(std::move(vertex_buffer), std::move(index_buffer), std::move(image_indices));
 		submeshes.try_emplace(key, std::move(substructure));
 	}
-
-	mesh_name = props.path.filename().replace_extension().string();
 }
 
 auto Mesh::get_indices() const -> Disarray::IndexBuffer&
