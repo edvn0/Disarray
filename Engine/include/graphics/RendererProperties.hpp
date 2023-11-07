@@ -111,7 +111,7 @@ namespace Detail {
 
 static constexpr auto max_point_lights = 1000;
 static constexpr auto count_point_lights = 1000;
-static constexpr auto point_light_radius = 15;
+static constexpr auto point_light_radius = 7;
 using PointLights = Detail::PointLights<max_point_lights>;
 
 struct UBO : Resettable<UBO> {

@@ -210,7 +210,7 @@ void ClientLayer::create_entities()
 	static constexpr auto val = 10.0F;
 	v_mesh.add_script<Scripts::LinearMovementScript>(-val, val);
 
-	auto colours = generate_colours<50>();
+	auto colours = generate_colours<500>();
 	const auto sphere = Mesh::construct(device,
 		{
 			.path = FS::model("sphere.fbx"),
