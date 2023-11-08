@@ -77,8 +77,7 @@ public:
 	auto get_batch_renderer() -> BatchRenderer& override { return batch_renderer; }
 	auto get_text_renderer() -> TextRenderer& override { return text_renderer; }
 
-	void begin_frame(const Camera& /*camera*/) override;
-	void begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_projection) override;
+	void begin_frame() override;
 	void end_frame() override;
 
 	void force_recreation() override;

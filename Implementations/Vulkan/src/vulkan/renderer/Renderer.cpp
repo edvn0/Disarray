@@ -37,7 +37,7 @@ Renderer::Renderer(const Disarray::Device& dev, const Disarray::Swapchain& sc, c
 
 Renderer::~Renderer() = default;
 
-void Renderer::construct_sub_renderers(const Disarray::Device&, Disarray::App& app)
+void Renderer::construct_sub_renderers(const Disarray::Device&, Disarray::App&)
 {
 	batch_renderer.construct(*this, device);
 	text_renderer.construct(*this, device, extent);
@@ -56,47 +56,16 @@ void Renderer::on_resize()
 	text_renderer.recreate(true, extent);
 }
 
-void Renderer::begin_frame(const Camera& camera)
+void Renderer::begin_frame()
 {
-	auto [ubo, camera_ubo, lights, _, __, ___] = get_graphics_resource().get_editable_ubos();
-	camera_ubo.position = glm::vec4 { camera.get_position(), 1.0F };
-	camera_ubo.direction = glm::vec4 { camera.get_direction(), 1.0F };
-
-	begin_frame(camera.get_view_matrix(), camera.get_projection_matrix(), camera.get_view_projection());
-}
-
-void Renderer::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_projection)
-{
-	// TODO(edvin): Move to some kind of scene scope?
 	batch_renderer.reset();
-
-	auto [ubo, camera, lights, _, __, ___] = get_graphics_resource().get_editable_ubos();
-	// TODO(edvin): this may be incorrect!
-	const auto view_matrix = glm::inverse(view);
-	camera.position = view_matrix[3];
-	camera.direction = -view_matrix[2];
-	ubo.view = view;
-	ubo.proj = proj;
-	ubo.view_projection = view_projection;
-
-	camera.view = view;
 
 	if (swapchain.needs_recreation()) {
 		force_recreation();
 	}
 }
 
-void Renderer::end_frame()
-{
-	auto [ubo, camera_ubo, lights, shadow_pass, directional, glyph] = get_graphics_resource().get_editable_ubos();
-
-	ubo.reset();
-	camera_ubo.reset();
-	lights.reset();
-	shadow_pass.reset();
-	directional.reset();
-	glyph.reset();
-}
+void Renderer::end_frame() { }
 
 void Renderer::force_recreation() { on_resize(); }
 

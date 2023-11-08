@@ -28,6 +28,7 @@ public:
 	[[nodiscard]] auto get_pipeline_cache() const -> const PipelineCache& override { return pipeline_cache; }
 	[[nodiscard]] auto get_texture_cache() const -> const TextureCache& override { return texture_cache; }
 
+	void expose_to_shaders(const Disarray::UniformBuffer& uniform_buffer, DescriptorSet set, DescriptorBinding binding) override;
 	void expose_to_shaders(std::span<const Ref<Disarray::Texture>> textures, DescriptorSet set, DescriptorBinding binding) override;
 	void expose_to_shaders(std::span<const Disarray::Texture*> textures, DescriptorSet set, DescriptorBinding binding) override;
 	void expose_to_shaders(const Disarray::StorageBuffer& buffer, DescriptorSet set, DescriptorBinding binding) override;
@@ -52,15 +53,6 @@ public:
 	[[nodiscard]] auto get_push_constant() const -> const PushConstant* override { return &pc; }
 	auto get_editable_push_constant() -> PushConstant& override { return pc; }
 
-	auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&, ShadowPassUBO&, DirectionalLightUBO&, GlyphUBO&> override
-	{
-		return { uniform, camera_ubo, lights, shadow_pass_ubo, directional_light_ubo, glyph_ubo };
-	}
-
-	void update_ubo() override;
-	void update_ubo(std::size_t) override;
-	void update_ubo(UBOIdentifier identifier) override;
-
 private:
 	void cleanup_graphics_resource();
 	auto descriptor_write_sets_per_frame(DescriptorSet descriptor_set) -> std::vector<VkWriteDescriptorSet>;
@@ -74,17 +66,6 @@ private:
 
 	VkDescriptorPool pool { nullptr };
 	PushConstant pc {};
-
-	UBO uniform {};
-	CameraUBO camera_ubo {};
-	PointLights lights {};
-	ShadowPassUBO shadow_pass_ubo {};
-	DirectionalLightUBO directional_light_ubo {};
-	GlyphUBO glyph_ubo {};
-
-	static constexpr auto ubo_count = 6U;
-	using UBOArray = std::array<Scope<Vulkan::UniformBuffer>, ubo_count>;
-	std::unordered_map<FrameIndex, UBOArray> frame_index_ubo_map {};
 
 	std::unordered_map<FrameIndex, std::vector<VkDescriptorSet>> descriptor_sets;
 	std::vector<VkDescriptorSetLayout> layouts;

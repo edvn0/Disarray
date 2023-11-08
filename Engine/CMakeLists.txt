@@ -107,6 +107,7 @@ set(ENGINE_SOURCES
         src/graphics/Swapchain.cpp
         src/graphics/QueueFamilyIndex.cpp
         src/graphics/UniformBuffer.cpp
+        src/graphics/UniformBufferSet.cpp
         src/graphics/PipelineCache.cpp
         src/graphics/Renderer.cpp
         src/graphics/RenderCommandQueue.cpp
@@ -127,6 +128,7 @@ set(ENGINE_SOURCES
         src/scene/Components.cpp
         src/scene/Entity.cpp
         src/scene/Scene.cpp
+		src/scene/Deserialiser.cpp
         src/scene/SceneRenderer.cpp
         src/scene/Camera.cpp
         src/scene/CppScript.cpp

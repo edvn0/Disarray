@@ -5,8 +5,10 @@
 #include <exception>
 #include <fstream>
 #include <sstream>
+#include <type_traits>
 #include <utility>
 
+#include "core/Collections.hpp"
 #include "core/Formatters.hpp"
 #include "core/Tuple.hpp"
 #include "core/exceptions/BaseException.hpp"
@@ -19,7 +21,84 @@ namespace Disarray {
 
 namespace Detail {
 
-	class CouldNotDeserialiseException : public BaseException { };
+	class CouldNotDeserialiseException : public BaseException {
+		using BaseException::BaseException;
+	};
+
+	template <class C> class DeserialiserCache {
+	public:
+		DeserialiserCache() = default;
+
+		auto get_cached(const std::string& key) -> const Ref<C>&
+		{
+			if (cache.contains(key)) {
+				return cache.at(key);
+			}
+
+			throw CouldNotDeserialiseException { "DeserialiserCache", "Could not load object" };
+		}
+
+		auto cache_object(const std::string& key, const Ref<C>& mesh) -> void { cache[key] = mesh; }
+
+		auto clear_cache() -> void { cache.clear(); }
+
+	private:
+		Collections::ReferencedStringMap<C> cache {};
+	};
+
+	using MeshCache = DeserialiserCache<Components::Mesh>;
+	using TextureCache = DeserialiserCache<Components::Texture>;
+
+	template <ValidComponent C> struct DeserialiseComponent {
+		auto operator()(auto& serialisers, const auto& device, const nlohmann::json& components, Entity& entity)
+		{
+			static constexpr auto type = serialiser_type_for<C>;
+			auto result = std::apply(
+				[](auto... types) {
+					return std::tuple_cat(std::conditional_t<(decltype(types)::type == type), std::tuple<decltype(types)>, std::tuple<>> {}...);
+				},
+				serialisers);
+			Tuple::static_for(result, [&entity, &components, &dev = device](auto, auto& deserialiser) {
+				const auto key = deserialiser.get_component_name();
+				if (components.contains(key) && deserialiser.should_add_component(components[key])) {
+					auto& component = entity.add_component<C>();
+					deserialiser.deserialise(components[key], component, dev);
+				}
+			});
+		}
+	};
+
+	template <> struct DeserialiseComponent<Components::Mesh> {
+		auto operator()(auto& serialisers, const auto& device, const nlohmann::json& components, Entity& entity)
+		{
+			static constexpr auto type = serialiser_type_for<Components::Mesh>;
+			auto result = std::apply(
+				[](auto... types) {
+					return std::tuple_cat(std::conditional_t<(decltype(types)::type == type), std::tuple<decltype(types)>, std::tuple<>> {}...);
+				},
+				serialisers);
+			Tuple::static_for(result, [&entity, &components, &dev = device, &cache = mesh_cache](auto, auto& deserialiser) {
+				const auto key = deserialiser.get_component_name();
+				if (components.contains(key) && deserialiser.should_add_component(components[key])) {
+					auto& component = entity.add_component<Components::Mesh>();
+					const std::filesystem::path& path = components[key]["properties"]["path"];
+					const auto& as_string = path.filename().string();
+					auto maybe_mesh = cache.get_cached(as_string);
+					const auto contained = maybe_mesh != nullptr;
+
+					if (!contained) {
+						deserialiser.deserialise(components[key], component, dev);
+						cache.cache_object(as_string, component.mesh);
+					} else {
+						component.mesh = maybe_mesh;
+					}
+				}
+			});
+		}
+
+	private:
+		DeserialiserCache<Disarray::Mesh> mesh_cache;
+	};
 
 	template <class... Deserialisers> struct Deserialiser {
 		using json = nlohmann::json;
@@ -73,12 +152,21 @@ namespace Detail {
 				(deserialise_component<C>(components, entity), ...);
 			};
 
+			static constexpr auto all_deserialisers = []<ValidComponent... C>(auto& serialisers) {
+				return std::apply([](auto...) { return std::tuple_cat(DeserialiseComponent<C> {}...); }, serialisers);
+			};
+
+			auto deserialisers = all_deserialisers(serialisers);
 			for (const auto& json_entity : entities.items()) {
 				auto&& key = json_entity.key();
 
 				auto&& components = json_entity.value()["components"];
 				auto&& [id, tag] = parse_key(key);
 				Entity entity = Entity::deserialise(scene, id, tag);
+
+				Tuple::static_for(deserialisers, [](auto, auto& serialiser) {
+
+				});
 
 				deserialise_all(AllComponents {}, components, entity);
 			}
@@ -99,19 +187,8 @@ namespace Detail {
 
 		template <class T> void deserialise_component(const json& components, Entity& entity)
 		{
-			static constexpr auto type = serialiser_type_for<T>;
-			auto result = std::apply(
-				[](auto... types) {
-					return std::tuple_cat(std::conditional_t<(decltype(types)::type == type), std::tuple<decltype(types)>, std::tuple<>> {}...);
-				},
-				serialisers);
-			Tuple::static_for(result, [&entity, &components, &dev = device](auto, auto& deserialiser) {
-				const auto key = deserialiser.get_component_name();
-				if (components.contains(key) && deserialiser.should_add_component(components[key])) {
-					auto& component = entity.add_component<T>();
-					deserialiser.deserialise(components[key], component, dev);
-				}
-			});
+			DeserialiseComponent<T> component_deserialiser {};
+			component_deserialiser(serialisers, device, components, entity);
 		}
 
 	private:

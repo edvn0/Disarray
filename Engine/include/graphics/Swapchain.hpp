@@ -2,9 +2,9 @@
 
 #include "Forward.hpp"
 
-#include "ImageProperties.hpp"
 #include "core/Window.hpp"
 #include "graphics/Device.hpp"
+#include "graphics/ImageProperties.hpp"
 #include "graphics/RenderPass.hpp"
 
 namespace Disarray {

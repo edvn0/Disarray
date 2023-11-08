@@ -4,8 +4,13 @@
 
 #include <glm/fwd.hpp>
 
+#include "core/Collections.hpp"
 #include "core/PointerDefinition.hpp"
+#include "core/Types.hpp"
+#include "graphics/CommandExecutor.hpp"
+#include "graphics/Pipeline.hpp"
 #include "graphics/RendererProperties.hpp"
+#include "graphics/UniformBufferSet.hpp"
 
 namespace Disarray {
 
@@ -18,7 +23,7 @@ enum class SceneFramebuffer : std::uint8_t {
 
 class SceneRenderer {
 public:
-	SceneRenderer(const Disarray::Device&);
+	explicit SceneRenderer(const Disarray::Device&);
 	auto construct(Disarray::App&) -> void;
 	auto destruct() -> void;
 
@@ -84,11 +89,33 @@ public:
 
 	template <SceneFramebuffer Framebuffer> auto get_framebuffer() const { return framebuffers.at(Framebuffer); }
 
-	auto get_final_image() -> const Disarray::Image&;
-
 	void begin_execution();
-
 	void submit_executed_commands();
+
+	template <class Buffer> auto begin_uniform_transaction() -> decltype(auto)
+	{
+		constexpr auto identifier = identifier_for<Buffer>;
+
+		if constexpr (identifier == UBOIdentifier::Default) {
+			return uniform->transaction();
+		} else if constexpr (identifier == UBOIdentifier::Camera) {
+			return camera_ubo->transaction();
+		} else if constexpr (identifier == UBOIdentifier::PointLight) {
+			return lights->transaction();
+		} else if constexpr (identifier == UBOIdentifier::ShadowPass) {
+			return shadow_pass_ubo->transaction();
+		} else if constexpr (identifier == UBOIdentifier::DirectionalLight) {
+			return directional_light_ubo->transaction();
+		} else if constexpr (identifier == UBOIdentifier::Glyph) {
+			return glyph_ubo->transaction();
+		} else if constexpr (identifier == UBOIdentifier::SpotLight) {
+			return spot_light_data->transaction();
+		} else {
+			static_assert(identifier_for<Buffer> == UBOIdentifier::Missing, "What???");
+		}
+	}
+
+	auto get_final_image() -> const Disarray::Image&;
 
 private:
 	const Disarray::Device& device;
@@ -118,6 +145,14 @@ private:
 		}
 		[[nodiscard]] auto get_pointer() const -> const void* { return this; }
 	};
+
+	Scope<UniformBufferSet<UBO>> uniform {};
+	Scope<UniformBufferSet<CameraUBO>> camera_ubo {};
+	Scope<UniformBufferSet<PointLights>> lights {};
+	Scope<UniformBufferSet<ShadowPassUBO>> shadow_pass_ubo {};
+	Scope<UniformBufferSet<DirectionalLightUBO>> directional_light_ubo {};
+	Scope<UniformBufferSet<GlyphUBO>> glyph_ubo {};
+	Scope<UniformBufferSet<SpotLights>> spot_light_data {};
 
 	PointLightData point_light_data {};
 

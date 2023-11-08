@@ -33,6 +33,7 @@ class VertexBuffer;
 class Window;
 class PipelineCache;
 class TextureCache;
+class IGraphicsResource;
 class TextRenderer;
 struct BatchRenderer;
 struct MeshSubstructure;

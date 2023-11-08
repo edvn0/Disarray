@@ -358,16 +358,8 @@ void TextRenderer::clear_pass(Disarray::Renderer& renderer, Disarray::CommandExe
 void TextRenderer::render(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
 {
 	renderer.begin_pass(executor, *renderer_api->glyph_framebuffer);
-	auto&& ubos = renderer.get_graphics_resource().get_editable_ubos();
 
 	{
-		static auto extent = renderer_api->screen_space_glyph_pipeline->get_properties().extent.as<float>();
-		static auto ortho = glm::ortho(0.F, extent.width, 0.F, extent.height);
-		auto& glyph_ubo = std::get<GlyphUBO&>(ubos);
-		glyph_ubo.projection = ortho;
-		glyph_ubo.view = std::get<UBO&>(ubos).view;
-		renderer.get_graphics_resource().update_ubo(UBOIdentifier::Glyph);
-
 		renderer_api->screen_space_glyph_vb->set_data(screen_space_text_data.data(), screen_space_vertex_data_index * sizeof(ScreenSpaceTextData));
 		auto* cmd = supply_cast<Vulkan::CommandExecutor>(executor);
 		const auto& vertex_buffer = renderer_api->screen_space_glyph_vb;

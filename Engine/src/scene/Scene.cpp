@@ -25,6 +25,7 @@
 #include "core/events/KeyEvent.hpp"
 #include "core/events/MouseEvent.hpp"
 #include "core/filesystem/AssetLocations.hpp"
+#include "graphics/RendererProperties.hpp"
 #include "physics/PhysicsEngine.hpp"
 #include "scene/Camera.hpp"
 #include "scene/Components.hpp"
@@ -77,18 +78,27 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 
 	scene_renderer.begin_frame(view, proj, view_proj);
 
-	auto [ubo, camera_ubo, light_ubos, shadow_pass, directional, glyph] = scene_renderer.get_graphics_resource().get_editable_ubos();
+	auto directional_transaction = scene_renderer.begin_uniform_transaction<DirectionalLightUBO>();
+	auto point_lights_transaction = scene_renderer.begin_uniform_transaction<PointLights>();
+	auto shadow_pass_transaction = scene_renderer.begin_uniform_transaction<ShadowPassUBO>();
+
+	auto& shadow_pass = shadow_pass_transaction.get_buffer();
+	auto& directional = directional_transaction.get_buffer();
+	auto& point_lights = point_lights_transaction.get_buffer();
+
 	auto& push_constant = scene_renderer.get_graphics_resource().get_editable_push_constant();
 
-	for (auto sun_component_view = registry.view<const Components::Transform, Components::DirectionalLight>();
-		 auto&& [entity, transform, sun] : sun_component_view.each()) {
-		directional.position = { transform.position, 1.0F };
-		sun.direction = glm::normalize(-directional.position); // Lookat {0,0,0};
-		directional.direction = sun.direction;
-		directional.ambient = sun.ambient;
-		directional.diffuse = sun.diffuse;
-		directional.specular = sun.specular;
-		directional.near_far = glm::vec4 { 0 };
+	{
+		for (auto sun_component_view = registry.view<const Components::Transform, Components::DirectionalLight>();
+			 auto&& [entity, transform, sun] : sun_component_view.each()) {
+			directional.position = { transform.position, 1.0F };
+			sun.direction = glm::normalize(-directional.position); // Lookat {0,0,0};
+			directional.direction = sun.direction;
+			directional.ambient = sun.ambient;
+			directional.diffuse = sun.diffuse;
+			directional.specular = sun.specular;
+			directional.near_far = glm::vec4 { 0 };
+		}
 	}
 
 	auto maybe_directional = get_by_components<Components::DirectionalLight, Components::Transform>();
@@ -114,7 +124,7 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 	}
 
 	std::size_t light_index { 0 };
-	auto& lights = light_ubos.lights;
+	auto& lights = point_lights.lights;
 	auto point_light_ssbo = scene_renderer.get_point_light_transforms().get_mutable<glm::mat4>();
 	auto point_light_ssbo_colour = scene_renderer.get_point_light_colours().get_mutable<glm::vec4>();
 	for (auto&& [entity, point_light, pos, texture] :
@@ -131,6 +141,7 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 		point_light_ssbo_colour[light_index] = texture.colour;
 		light_index++;
 	}
+	push_constant.max_point_lights = static_cast<std::uint32_t>(light_index);
 
 	std::size_t identifier_index { 0 };
 	auto ssbo_identifiers = scene_renderer.get_entity_identifiers().get_mutable<std::uint32_t>();
@@ -143,9 +154,6 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 		identifiers_transforms[identifier_index] = transform.compute();
 		identifier_index++;
 	}
-	push_constant.max_point_lights = static_cast<std::uint32_t>(light_index);
-
-	scene_renderer.get_graphics_resource().update_ubo();
 }
 
 void Scene::end_frame(SceneRenderer& renderer) { renderer.end_frame(); }
@@ -227,9 +235,6 @@ void Scene::draw_identifiers(SceneRenderer& scene_renderer)
 
 void Scene::draw_skybox(SceneRenderer& scene_renderer)
 {
-	auto [ubo, camera_ubo, light_ubos, shadow_pass, directional, glyph] = scene_renderer.get_graphics_resource().get_editable_ubos();
-	camera_ubo.view = glm::mat3 { ubo.view };
-	scene_renderer.get_graphics_resource().update_ubo(UBOIdentifier::Camera);
 	auto skybox_view = registry.view<const Components::Skybox, const Components::Mesh>();
 	Ref<Disarray::Mesh> skybox_ptr = nullptr;
 	for (auto&& [entity, skybox, mesh] : skybox_view.each()) {

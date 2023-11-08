@@ -20,6 +20,7 @@ template <std::integral T> struct TypeSafeWrapper {
 		: value(static_cast<T>(input))
 	{
 	}
+	constexpr TypeSafeWrapper() = default;
 
 	constexpr auto operator+(std::integral auto addend) -> TypeSafeWrapper { return TypeSafeWrapper { value + addend }; }
 	constexpr auto operator-(std::integral auto addend) -> TypeSafeWrapper { return TypeSafeWrapper { value - addend }; }
@@ -27,6 +28,8 @@ template <std::integral T> struct TypeSafeWrapper {
 	constexpr auto operator==(std::integral auto other) const -> bool { return std::cmp_equal(value, other); }
 	constexpr auto operator<(std::integral auto other) const -> bool { return std::cmp_less(value, other); }
 	constexpr auto operator<=(std::integral auto other) const -> bool { return std::cmp_less_equal(value, other); }
+	constexpr auto operator<(const TypeSafeWrapper& other) const -> bool { return std::cmp_less(value, other.value); }
+	constexpr auto operator<=(const TypeSafeWrapper& other) const -> bool { return std::cmp_less_equal(value, other.value); }
 
 	auto operator+=(std::integral auto other) -> TypeSafeWrapper&
 	{

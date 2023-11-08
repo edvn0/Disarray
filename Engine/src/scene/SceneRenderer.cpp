@@ -5,6 +5,7 @@
 #include <ui/UI.hpp>
 
 #include "core/App.hpp"
+#include "graphics/BufferProperties.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/GLM.hpp"
@@ -21,6 +22,8 @@
 #include "graphics/Swapchain.hpp"
 #include "graphics/Texture.hpp"
 #include "graphics/TextureCache.hpp"
+#include "graphics/UniformBufferSet.hpp"
+#include "magic_enum_switch.hpp"
 #include "scene/SceneRenderer.hpp"
 
 namespace Disarray {
@@ -258,6 +261,43 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 	get_graphics_resource().expose_to_shaders(*entity_identifiers, DescriptorSet { 3 }, DescriptorBinding { 2 });
 	get_graphics_resource().expose_to_shaders(*entity_transforms, DescriptorSet { 3 }, DescriptorBinding { 3 });
 
+	uniform = make_scope<UniformBufferSet<UBO>>(device, FrameIndex(app.get_swapchain().image_count()),
+		BufferProperties {
+			.size = sizeof(UBO),
+		});
+	camera_ubo = make_scope<UniformBufferSet<CameraUBO>>(device, FrameIndex(app.get_swapchain().image_count()),
+		BufferProperties {
+			.size = sizeof(CameraUBO),
+		});
+	lights = make_scope<UniformBufferSet<PointLights>>(device, FrameIndex(app.get_swapchain().image_count()),
+		BufferProperties {
+			.size = max_point_lights * sizeof(PointLight),
+		});
+	shadow_pass_ubo = make_scope<UniformBufferSet<ShadowPassUBO>>(device, FrameIndex(app.get_swapchain().image_count()),
+		BufferProperties {
+			.size = sizeof(ShadowPassUBO),
+		});
+	directional_light_ubo = make_scope<UniformBufferSet<DirectionalLightUBO>>(device, FrameIndex(app.get_swapchain().image_count()),
+		BufferProperties {
+			.size = sizeof(DirectionalLightUBO),
+		});
+	glyph_ubo = make_scope<UniformBufferSet<GlyphUBO>>(device, FrameIndex(app.get_swapchain().image_count()),
+		BufferProperties {
+			.size = sizeof(GlyphUBO),
+		});
+	spot_light_data = make_scope<UniformBufferSet<SpotLights>>(device, FrameIndex(app.get_swapchain().image_count()),
+		BufferProperties {
+			.size = max_spot_lights * sizeof(SpotLight),
+		});
+
+	get_graphics_resource().expose_to_shaders(*uniform, DescriptorSet(0), DescriptorBinding(0));
+	get_graphics_resource().expose_to_shaders(*camera_ubo, DescriptorSet(0), DescriptorBinding(1));
+	get_graphics_resource().expose_to_shaders(*lights, DescriptorSet(0), DescriptorBinding(2));
+	get_graphics_resource().expose_to_shaders(*shadow_pass_ubo, DescriptorSet(0), DescriptorBinding(3));
+	get_graphics_resource().expose_to_shaders(*directional_light_ubo, DescriptorSet(0), DescriptorBinding(4));
+	get_graphics_resource().expose_to_shaders(*glyph_ubo, DescriptorSet(0), DescriptorBinding(5));
+	get_graphics_resource().expose_to_shaders(*spot_light_data, DescriptorSet(0), DescriptorBinding(6));
+
 	auto texture_cube = Texture::construct(device,
 		{
 			.path = FS::texture("cubemap_yokohama_rgba.ktx"),
@@ -401,13 +441,39 @@ auto SceneRenderer::get_command_executor() -> CommandExecutor& { return *command
 
 auto SceneRenderer::fullscreen_quad_pass() -> void { renderer->fullscreen_quad_pass(*command_executor, *get_pipeline("FullScreen")); }
 
-auto SceneRenderer::text_rendering_pass() -> void { renderer->text_rendering_pass(*command_executor); }
+auto SceneRenderer::text_rendering_pass() -> void
+{
+	{
+		auto transaction = glyph_ubo->transaction();
+		auto& buffer = transaction.get_buffer();
+		const auto float_extent = renderer_extent.as<float>();
+		buffer.projection = Maths::ortho(0.F, float_extent.width, 0.F, float_extent.height, -1.0F, 1.0F);
+		buffer.view = uniform->read().view;
+	}
+
+	renderer->text_rendering_pass(*command_executor);
+}
 
 auto SceneRenderer::planar_geometry_pass() -> void { renderer->planar_geometry_pass(*command_executor); }
 
 auto SceneRenderer::begin_frame(const glm::mat4& view, const glm::mat4& projection, const glm::mat4& view_projection) -> void
 {
-	renderer->begin_frame(view, projection, view_projection);
+	auto camera_ubo_transaction = begin_uniform_transaction<CameraUBO>();
+	auto& camera = camera_ubo_transaction.get_buffer();
+
+	auto default_ubo_transaction = begin_uniform_transaction<UBO>();
+	auto& default_ubo = default_ubo_transaction.get_buffer();
+
+	const auto view_matrix = glm::inverse(view);
+	camera.position = view_matrix[3];
+	camera.direction = -view_matrix[2];
+	default_ubo.view = view;
+	default_ubo.proj = projection;
+	default_ubo.view_projection = view_projection;
+
+	camera.view = view;
+
+	renderer->begin_frame();
 }
 
 auto SceneRenderer::end_frame() -> void { renderer->end_frame(); }

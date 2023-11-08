@@ -16,6 +16,8 @@
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
+#include "graphics/Swapchain.hpp"
+#include "graphics/UniformBuffer.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/GraphicsResource.hpp"
@@ -38,36 +40,6 @@ GraphicsResource::GraphicsResource(const Disarray::Device& dev, const Disarray::
 	, pipeline_cache(dev, FS::shader_directory())
 	, texture_cache(dev, FS::texture_directory())
 {
-	frame_index_ubo_map.reserve(swapchain_image_count);
-	for (auto i = FrameIndex { 0 }; i < swapchain_image_count; i++) {
-		UBOArray current_frame_ubos {};
-		current_frame_ubos[0] = make_scope<Vulkan::UniformBuffer>(device,
-			BufferProperties {
-				.size = sizeof(UBO),
-			});
-		current_frame_ubos[1] = make_scope<Vulkan::UniformBuffer>(device,
-			BufferProperties {
-				.size = sizeof(CameraUBO),
-			});
-		current_frame_ubos[2] = make_scope<Vulkan::UniformBuffer>(device,
-			BufferProperties {
-				.size = sizeof(PointLights),
-			});
-		current_frame_ubos[3] = make_scope<Vulkan::UniformBuffer>(device,
-			BufferProperties {
-				.size = sizeof(ShadowPassUBO),
-			});
-		current_frame_ubos[4] = make_scope<Vulkan::UniformBuffer>(device,
-			BufferProperties {
-				.size = sizeof(DirectionalLightUBO),
-			});
-		current_frame_ubos[5] = make_scope<Vulkan::UniformBuffer>(device,
-			BufferProperties {
-				.size = sizeof(GlyphUBO),
-			});
-		frame_index_ubo_map.try_emplace(i, std::move(current_frame_ubos));
-	}
-
 	initialise_descriptors();
 }
 
@@ -112,6 +84,12 @@ namespace {
 		glyph_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		glyph_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
 
+		auto spot_light_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		spot_light_binding.descriptorCount = 1;
+		spot_light_binding.binding = 6;
+		spot_light_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		spot_light_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+
 		return std::array {
 			default_binding,
 			camera_binding,
@@ -119,6 +97,7 @@ namespace {
 			shadow_pass_binding,
 			directional_light_binding,
 			glyph_binding,
+			spot_light_binding,
 		};
 	}
 
@@ -271,25 +250,23 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 		vkAllocateDescriptorSets(vk_device, &alloc_info, desc_sets.data());
 		descriptor_sets.try_emplace(i, std::move(desc_sets));
 	}
+}
 
-	static constexpr auto get_buffer_info
-		= [](const Scope<Vulkan::UniformBuffer>& buffer) { return &cast_to<Vulkan::UniformBuffer>(*buffer).get_buffer_info(); };
+void GraphicsResource::expose_to_shaders(const Disarray::UniformBuffer& uniform_buffer, DescriptorSet set, DescriptorBinding binding)
+{
+	auto* vk_device = supply_cast<Vulkan::Device>(device);
 
 	for (auto i = FrameIndex { 0 }; i < swapchain_image_count; i++) {
-		const auto& ubos = frame_index_ubo_map.at(i);
 		auto& frame_descriptor_sets = descriptor_sets.at(i);
+		auto write_set = vk_structures<VkWriteDescriptorSet>()();
+		write_set.dstSet = frame_descriptor_sets.at(set.value);
+		write_set.dstBinding = binding.value;
+		const auto& cast = cast_to<Vulkan::UniformBuffer>(uniform_buffer);
+		write_set.pBufferInfo = &cast.get_buffer_info();
+		write_set.descriptorType = Vulkan::UniformBuffer::get_descriptor_type();
+		write_set.descriptorCount = 1;
 
-		auto write_sets = vk_structures<VkWriteDescriptorSet, std::tuple_size<UBOArray> {}> {}.multiple();
-		for (auto write_set_index = 0ULL; write_set_index < write_sets.size(); write_set_index++) {
-			auto& write_set = write_sets.at(write_set_index);
-			write_set.dstSet = frame_descriptor_sets.at(0);
-			write_set.dstBinding = write_set_index;
-			write_set.descriptorCount = 1;
-			write_set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			write_set.pBufferInfo = get_buffer_info(ubos.at(write_set_index));
-		}
-
-		vkUpdateDescriptorSets(vk_device, static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
+		vkUpdateDescriptorSets(vk_device, 1, &write_set, 0, nullptr);
 	}
 }
 
@@ -353,60 +330,6 @@ void GraphicsResource::expose_to_shaders(std::span<const Disarray::Texture*> tex
 	});
 
 	internal_expose_to_shaders(cast_to<Vulkan::Image>(textures[0]->get_image()).get_descriptor_info().sampler, image_infos, set, binding);
-}
-
-void GraphicsResource::update_ubo()
-{
-	auto& current_uniform = frame_index_ubo_map.at(swapchain.get_current_frame_index());
-	current_uniform.at(0)->set_data(&uniform, sizeof(UBO));
-	current_uniform.at(1)->set_data(&camera_ubo, sizeof(CameraUBO));
-	current_uniform.at(2)->set_data(&lights, sizeof(PointLights));
-	current_uniform.at(3)->set_data(&shadow_pass_ubo, sizeof(ShadowPassUBO));
-	current_uniform.at(4)->set_data(&directional_light_ubo, sizeof(DirectionalLightUBO));
-	current_uniform.at(5)->set_data(&glyph_ubo, sizeof(GlyphUBO));
-}
-
-void GraphicsResource::update_ubo(UBOIdentifier identifier)
-{
-	magic_enum::enum_switch(
-		[this](auto val) {
-			constexpr UBOIdentifier identifier = val;
-			update_ubo(static_cast<std::size_t>(identifier));
-		},
-		identifier);
-}
-
-void GraphicsResource::update_ubo(std::size_t index)
-{
-	auto& current_uniform = frame_index_ubo_map.at(swapchain.get_current_frame_index());
-	switch (index) {
-	case 0: {
-		current_uniform.at(0)->set_data(&uniform, sizeof(UBO));
-		return;
-	}
-	case 1: {
-		current_uniform.at(1)->set_data(&camera_ubo, sizeof(CameraUBO));
-		return;
-	}
-	case 2: {
-		current_uniform.at(2)->set_data(&lights, sizeof(PointLights));
-		return;
-	}
-	case 3: {
-		current_uniform.at(3)->set_data(&shadow_pass_ubo, sizeof(ShadowPassUBO));
-		return;
-	}
-	case 4: {
-		current_uniform.at(4)->set_data(&directional_light_ubo, sizeof(DirectionalLightUBO));
-		return;
-	}
-	case 5: {
-		current_uniform.at(5)->set_data(&glyph_ubo, sizeof(GlyphUBO));
-		return;
-	}
-	default:
-		unreachable("Invalid UBO index");
-	}
 }
 
 void GraphicsResource::cleanup_graphics_resource()
