@@ -159,6 +159,16 @@ struct PointLight {
 };
 template <> inline constexpr std::string_view component_name<PointLight> = "PointLight";
 
+struct SpotLight {
+	glm::vec3 direction {};
+	float cutoff_angle_degrees {};
+	glm::vec4 diffuse { 0.F };
+	glm::vec4 specular { 0.F };
+	glm::vec4 ambient { 0.F };
+	glm::vec4 factors { 1, 0.09F, 0.032F, 0 };
+};
+template <> inline constexpr std::string_view component_name<SpotLight> = "SpotLight";
+
 struct Script {
 	Script() = default;
 

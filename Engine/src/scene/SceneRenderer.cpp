@@ -167,6 +167,26 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.specialisation_constant = specialisation_constant_description,
 	});
 
+	resources.get_pipeline_cache().put({
+		.pipeline_key = "SpotLight",
+		.vertex_shader_key = "spot_light.vert",
+		.fragment_shader_key = "point_light.frag",
+		.framebuffer = get_framebuffer<SceneFramebuffer::Geometry>(),
+		.layout = {
+			{ ElementType::Float3, "position" },
+			{ ElementType::Float2, "uv" },
+			{ ElementType::Float4, "colour" },
+			{ ElementType::Float3, "normals" },
+			{ ElementType::Float3, "tangents" },
+			{ ElementType::Float3, "bitangents" },
+		},
+		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+		.extent = renderer_extent,
+		.cull_mode = CullMode::Front,
+		.descriptor_set_layouts = desc_layout,
+		.specialisation_constant = specialisation_constant_description,
+	});
+
 	resources.get_pipeline_cache().put(PipelineCacheCreationProperties {
 		.pipeline_key = "Skybox",
 		.vertex_shader_key = "skybox.vert",
@@ -242,6 +262,18 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 			.count = count_point_lights,
 			.always_mapped = true,
 		});
+	spot_light_transforms = StorageBuffer::construct_scoped(device,
+		{
+			.size = count_spot_lights * sizeof(glm::mat4),
+			.count = count_spot_lights,
+			.always_mapped = true,
+		});
+	spot_light_colours = StorageBuffer::construct_scoped(device,
+		{
+			.size = count_spot_lights * sizeof(glm::vec4),
+			.count = count_spot_lights,
+			.always_mapped = true,
+		});
 
 	static constexpr auto max_identifier_objects = 2000;
 	entity_identifiers = StorageBuffer::construct_scoped(device,
@@ -260,6 +292,8 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 	get_graphics_resource().expose_to_shaders(*point_light_colours, DescriptorSet { 3 }, DescriptorBinding { 1 });
 	get_graphics_resource().expose_to_shaders(*entity_identifiers, DescriptorSet { 3 }, DescriptorBinding { 2 });
 	get_graphics_resource().expose_to_shaders(*entity_transforms, DescriptorSet { 3 }, DescriptorBinding { 3 });
+	get_graphics_resource().expose_to_shaders(*spot_light_transforms, DescriptorSet { 3 }, DescriptorBinding { 4 });
+	get_graphics_resource().expose_to_shaders(*spot_light_colours, DescriptorSet { 3 }, DescriptorBinding { 5 });
 
 	uniform = make_scope<UniformBufferSet<UBO>>(device, FrameIndex(app.get_swapchain().image_count()),
 		BufferProperties {

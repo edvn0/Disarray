@@ -173,6 +173,16 @@ void PointLightSerialiser::serialise_impl(const Components::PointLight& light, n
 	object["specular"] = light.specular;
 }
 
+void SpotLightSerialiser::serialise_impl(const Components::SpotLight& light, nlohmann::json& object)
+{
+	object["cutoff_angle_degrees"] = light.cutoff_angle_degrees;
+	object["factors"] = light.factors;
+	object["direction"] = light.direction;
+	object["ambient"] = light.ambient;
+	object["diffuse"] = light.diffuse;
+	object["specular"] = light.specular;
+}
+
 void LineGeometrySerialiser::serialise_impl(const Components::LineGeometry& geom, nlohmann::json& object)
 {
 	object["to_position"] = geom.to_position;

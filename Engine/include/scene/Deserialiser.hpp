@@ -29,13 +29,13 @@ namespace Detail {
 	public:
 		DeserialiserCache() = default;
 
-		auto get_cached(const std::string& key) -> const Ref<C>&
+		auto get_cached(const std::string& key) -> Ref<C>
 		{
 			if (cache.contains(key)) {
 				return cache.at(key);
 			}
 
-			throw CouldNotDeserialiseException { "DeserialiserCache", "Could not load object" };
+			return nullptr;
 		}
 
 		auto cache_object(const std::string& key, const Ref<C>& mesh) -> void { cache[key] = mesh; }
@@ -100,6 +100,15 @@ namespace Detail {
 		DeserialiserCache<Disarray::Mesh> mesh_cache;
 	};
 
+	using SpecialisedDeserialisers = std::tuple<DeserialiseComponent<Components::Transform>, DeserialiseComponent<Components::Inheritance>,
+		DeserialiseComponent<Components::LineGeometry>, DeserialiseComponent<Components::QuadGeometry>, DeserialiseComponent<Components::Mesh>,
+		DeserialiseComponent<Components::Material>, DeserialiseComponent<Components::Texture>, DeserialiseComponent<Components::DirectionalLight>,
+		DeserialiseComponent<Components::PointLight>, DeserialiseComponent<Components::SpotLight>, DeserialiseComponent<Components::Script>,
+		DeserialiseComponent<Components::Controller>, DeserialiseComponent<Components::Camera>, DeserialiseComponent<Components::BoxCollider>,
+		DeserialiseComponent<Components::SphereCollider>, DeserialiseComponent<Components::CapsuleCollider>,
+		DeserialiseComponent<Components::ColliderMaterial>, DeserialiseComponent<Components::RigidBody>, DeserialiseComponent<Components::Skybox>,
+		DeserialiseComponent<Components::Text>>;
+
 	template <class... Deserialisers> struct Deserialiser {
 		using json = nlohmann::json;
 
@@ -148,15 +157,7 @@ namespace Detail {
 		{
 			auto&& entities = root["entities"];
 
-			static auto deserialise_all = [&]<class... C>(Detail::ComponentGroup<C...>, const auto& components, auto& entity) {
-				(deserialise_component<C>(components, entity), ...);
-			};
-
-			static constexpr auto all_deserialisers = []<ValidComponent... C>(auto& serialisers) {
-				return std::apply([](auto...) { return std::tuple_cat(DeserialiseComponent<C> {}...); }, serialisers);
-			};
-
-			auto deserialisers = all_deserialisers(serialisers);
+			SpecialisedDeserialisers deserialisers {};
 			for (const auto& json_entity : entities.items()) {
 				auto&& key = json_entity.key();
 
@@ -164,11 +165,7 @@ namespace Detail {
 				auto&& [id, tag] = parse_key(key);
 				Entity entity = Entity::deserialise(scene, id, tag);
 
-				Tuple::static_for(deserialisers, [](auto, auto& serialiser) {
-
-				});
-
-				deserialise_all(AllComponents {}, components, entity);
+				Tuple::static_for(deserialisers, [&](auto, auto& specialised) { specialised(serialisers, device, components, entity); });
 			}
 
 			return true;
@@ -183,12 +180,6 @@ namespace Detail {
 			std::string identifier { key.begin(), key.begin() + found };
 			std::string tag { key.begin() + found + split.size(), key.end() };
 			return { std::stoull(identifier), tag };
-		}
-
-		template <class T> void deserialise_component(const json& components, Entity& entity)
-		{
-			DeserialiseComponent<T> component_deserialiser {};
-			component_deserialiser(serialisers, device, components, entity);
 		}
 
 	private:

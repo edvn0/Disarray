@@ -32,6 +32,7 @@ enum class SerialiserType : std::uint8_t {
 	Texture,
 	DirectionalLight,
 	PointLight,
+	SpotLight,
 	Script,
 	Controller,
 	Camera,
@@ -98,6 +99,7 @@ MAKE_SERIALISER(LineGeometrySerialiser, LineGeometry)
 MAKE_SERIALISER(QuadGeometrySerialiser, QuadGeometry)
 MAKE_SERIALISER(DirectionalLightSerialiser, DirectionalLight)
 MAKE_SERIALISER(PointLightSerialiser, PointLight)
+MAKE_SERIALISER(SpotLightSerialiser, SpotLight)
 MAKE_SERIALISER(InheritanceSerialiser, Inheritance)
 
 MAKE_DESERIALISER(ScriptDeserialiser, Script)
@@ -115,6 +117,7 @@ MAKE_DESERIALISER(LineGeometryDeserialiser, LineGeometry)
 MAKE_DESERIALISER(QuadGeometryDeserialiser, QuadGeometry)
 MAKE_DESERIALISER(DirectionalLightDeserialiser, DirectionalLight)
 MAKE_DESERIALISER(PointLightDeserialiser, PointLight)
+MAKE_DESERIALISER(SpotLightDeserialiser, SpotLight)
 MAKE_DESERIALISER(InheritanceDeserialiser, Inheritance)
 
 } // namespace Disarray

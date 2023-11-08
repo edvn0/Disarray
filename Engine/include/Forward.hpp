@@ -53,6 +53,7 @@ namespace Components {
 	struct Texture;
 	struct DirectionalLight;
 	struct PointLight;
+	struct SpotLight;
 	struct Script;
 	struct Controller;
 	struct PillCollider;

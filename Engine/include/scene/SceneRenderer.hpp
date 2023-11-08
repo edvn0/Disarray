@@ -53,6 +53,14 @@ public:
 	{
 		draw_point_lights(point_light_mesh, static_cast<std::uint32_t>(count), *get_pipeline("PointLight"));
 	}
+	auto draw_spot_light(const Disarray::Mesh& point_light_mesh, std::integral auto count, const Disarray::Pipeline& pipeline) -> void
+	{
+		draw_spot_light(point_light_mesh, static_cast<std::uint32_t>(count), pipeline);
+	}
+	auto draw_spot_light(const Disarray::Mesh& point_light_mesh, std::integral auto count) -> void
+	{
+		draw_spot_light(point_light_mesh, static_cast<std::uint32_t>(count), *get_pipeline("SpotLight"));
+	}
 	auto draw_point_lights(const Disarray::Mesh& point_light_mesh, std::uint32_t count, const Disarray::Pipeline& pipeline) -> void;
 	auto draw_planar_geometry(Geometry, const GeometryProperties&) -> void;
 	auto draw_aabb(const AABB& aabb, const glm::vec4& colour, const glm::mat4& transform) -> void;
@@ -84,6 +92,8 @@ public:
 
 	auto get_point_light_transforms() -> auto& { return *point_light_transforms; }
 	auto get_point_light_colours() -> auto& { return *point_light_colours; }
+	auto get_spot_light_transforms() -> auto& { return *spot_light_transforms; }
+	auto get_spot_light_colours() -> auto& { return *spot_light_colours; }
 	auto get_entity_identifiers() -> auto& { return *entity_identifiers; }
 	auto get_entity_transforms() -> auto& { return *entity_transforms; }
 
@@ -129,6 +139,8 @@ private:
 
 	Scope<Disarray::StorageBuffer> point_light_transforms {};
 	Scope<Disarray::StorageBuffer> point_light_colours {};
+	Scope<Disarray::StorageBuffer> spot_light_transforms {};
+	Scope<Disarray::StorageBuffer> spot_light_colours {};
 	Scope<Disarray::StorageBuffer> entity_identifiers {};
 	Scope<Disarray::StorageBuffer> entity_transforms {};
 

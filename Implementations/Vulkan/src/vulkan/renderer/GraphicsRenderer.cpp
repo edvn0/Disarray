@@ -82,7 +82,6 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 	auto& push_constant = get_graphics_resource().get_editable_push_constant();
 
 	push_constant.object_transform = transform;
-	push_constant.current_identifier = identifier;
 	push_constant.colour = { 1, 1, 1, 1 };
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &push_constant);
@@ -150,7 +149,6 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 
 	push_constant.object_transform = transform;
 	push_constant.colour = colour;
-	push_constant.current_identifier = identifier;
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &push_constant);
 
@@ -188,7 +186,6 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Ve
 
 	push_constant.object_transform = transform;
 	push_constant.colour = colour;
-	push_constant.current_identifier = 0;
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &push_constant);
 

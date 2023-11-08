@@ -241,6 +241,15 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (ImGui::ColorEdit4("Specular", glm::value_ptr(point.specular))) { }
 	});
 
+	draw_component<Components::SpotLight>(entity, [](Components::SpotLight& spot) {
+		if (ImGui::DragFloat3("Direction", glm::value_ptr(spot.direction), 0.1F, -glm::pi<float>(), glm::pi<float>())) { }
+		if (ImGui::DragFloat("Cutoff Angle", &spot.cutoff_angle_degrees, 2.F, -90.F, 90.F)) { }
+		if (UI::Input::drag("Factors", spot.factors, 0.1F, 0.F, 10.F)) { }
+		if (ImGui::ColorEdit4("Ambient", glm::value_ptr(spot.ambient))) { }
+		if (ImGui::ColorEdit4("Diffuse", glm::value_ptr(spot.diffuse))) { }
+		if (ImGui::ColorEdit4("Specular", glm::value_ptr(spot.specular))) { }
+	});
+
 	draw_component<Components::Text>(entity, [](Components::Text& text) {
 		std::string buffer = text.text_data;
 		buffer.resize(256);

@@ -89,7 +89,7 @@ struct PushConstant : Resettable<PushConstant> {
 	glm::mat4 object_transform { 1.0F };
 	glm::vec4 colour { 1.0F };
 	std::uint32_t max_identifiers {};
-	std::uint32_t current_identifier {};
+	std::uint32_t max_spot_lights {};
 	std::uint32_t max_point_lights {};
 	std::uint32_t bound_textures { 0 };
 	std::array<std::int32_t, max_image_indices> image_indices { -1 };
@@ -112,7 +112,9 @@ struct SpotLight {
 	glm::vec4 ambient;
 	glm::vec4 diffuse;
 	glm::vec4 specular;
+	glm::vec4 factors { 1, 0.09F, 0.032F, 0 };
 };
+template <> inline constexpr UBOIdentifier identifier_for<SpotLight> = UBOIdentifier::SpotLight;
 
 namespace Detail {
 	template <std::size_t N> struct PointLights : Resettable<PointLights<N>> {

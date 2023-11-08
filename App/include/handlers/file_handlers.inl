@@ -100,6 +100,10 @@ private:
 		current_scene.clear();
 		Scene::deserialise_into(current_scene, get_device(), get_path());
 
+		if (!current_scene.get_by_components<Components::Skybox>().has_value()) {
+			return;
+		}
+
 		current_scene.submit_preframe_work([](Scene& this_scene, SceneRenderer& renderer) {
 			auto texture_cube = this_scene.get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
 
