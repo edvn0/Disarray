@@ -461,12 +461,14 @@ auto Scene::deserialise(const Device& device, std::string_view name, const std::
 {
 	Scope<Scene> created = make_scope<Scene>(device, name);
 	SceneDeserialiser deserialiser { *created, device, filename };
+	created->sort();
 	return created;
 }
 
 auto Scene::deserialise_into(Scene& output_scene, const Device& device, const std::filesystem::path& filename) -> void
 {
 	SceneDeserialiser deserialiser { output_scene, device, filename };
+	output_scene.sort();
 }
 
 void Scene::update_picked_entity(std::uint32_t handle) { picked_entity = make_scope<Entity>(this, handle == 0 ? entt::null : handle); }
@@ -581,7 +583,7 @@ auto Scene::copy(Scene& scene) -> Ref<Scene>
 		Components::ColliderMaterial, Components::Skybox, Components::Text, Components::RigidBody>;
 	copy_all(CopyableComponents {}, identifiers, old_registry);
 
-	new_scene->sort<Components::ID>([](const Components::ID& left, const Components::ID& right) { return left.identifier < right.identifier; });
+	new_scene->sort();
 
 	new_scene->extent = scene.extent;
 

@@ -20,7 +20,11 @@ public:
 	void for_all_components(Entity& entity);
 	void on_event(Event&) override;
 
-	void set_scene(Scene* new_scene) { scene = new_scene; }
+	void set_scene(Scene* new_scene)
+	{
+		scene = new_scene;
+		scene->sort();
+	}
 
 private:
 	void draw_entity_node(Entity&, bool has_parent, std::uint32_t depth = 0);
