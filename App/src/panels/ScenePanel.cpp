@@ -57,15 +57,12 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_pa
 	const auto& id_component = entity.get_components<Components::ID>();
 	bool opened = ImGui::TreeNodeEx(Disarray::bit_cast<const void*>(&id_component.identifier), flags, "%s", tag.c_str());
 	if (ImGui::IsItemClicked()) {
-		*selected_entity = entity.get_identifier();
+		scene->update_picked_entity(entity.get_identifier());
 	}
 
 	bool entity_deleted = false;
-	if (ImGui::BeginPopupContextWindow("DeleteEntityPopup", ImGuiPopupFlags_MouseButtonRight)) {
+	if (ImGui::BeginPopup("DeleteEntityPopup", ImGuiPopupFlags_MouseButtonRight)) {
 		if (ImGui::MenuItem("Delete Entity")) {
-			entity_deleted = true;
-		}
-		if (ImGui::MenuItem("Add Component")) {
 			entity_deleted = true;
 		}
 		ImGui::EndPopup();
@@ -105,6 +102,18 @@ void ScenePanel::interface()
 	};
 
 	UI::begin("Scene");
+	auto& tag = scene->get_name();
+	std::string buffer = tag;
+	buffer.resize(256);
+
+	if (ImGui::InputText("Scene name", buffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+		buffer.shrink_to_fit();
+
+		if (!buffer.empty() && tag != buffer) {
+			scene->set_name(buffer);
+		}
+	}
+
 	scene->for_all_entities([this](entt::entity entity_id) {
 		Entity entity { scene, entity_id };
 		draw_entity_node(entity, true);
@@ -112,12 +121,7 @@ void ScenePanel::interface()
 
 	if (ImGui::BeginPopupContextWindow("EmptyEntityId", ImGuiPopupFlags_MouseButtonRight)) {
 		if (ImGui::MenuItem("Create Empty Entity")) {
-			if (auto entity = Entity { scene, *selected_entity }; entity.is_valid()) {
-				auto child = scene->create("Parent{}-Child", static_cast<Identifier>(entity.get_identifier()));
-				entity.add_child(child);
-			} else {
-				scene->create("Empty Entity");
-			}
+			scene->create("Empty Entity");
 		}
 
 		if (ImGui::MenuItem("Copy Entity")) {
@@ -164,7 +168,7 @@ void ScenePanel::for_all_components(Entity& entity)
 			buffer.shrink_to_fit();
 
 			if (!buffer.empty() && tag.name != buffer) {
-				tag.name = buffer;
+				tag.name = buffer.c_str();
 			}
 		}
 	}
@@ -276,7 +280,34 @@ void ScenePanel::for_all_components(Entity& entity)
 		}
 	});
 
-	draw_component<Components::Skybox>(entity, [](Components::Skybox& skybox) { UI::image(skybox.texture->get_image()); });
+	draw_component<Components::Skybox>(entity, [&current = scene, &dev = device](Components::Skybox& skybox) {
+		bool any_changed = false;
+		std::optional<std::filesystem::path> selected { std::nullopt };
+		if (ImGui::Button("Choose path", { 80, 30 })) {
+			selected = UI::Popup::select_file(
+				{
+					"*.ktx",
+				},
+				"Assets/Textures");
+			any_changed |= selected.has_value();
+		}
+
+		if (any_changed && selected.has_value()) {
+			const auto value = *selected;
+			skybox.texture = Texture::construct(dev,
+				{
+					.path = value,
+					.dimension = TextureDimension::Three,
+					.debug_name = value.string(),
+				});
+			current->submit_preframe_work([](Scene& this_scene, SceneRenderer& renderer) {
+				auto texture_cube = this_scene.get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
+
+				auto& graphics_resource = renderer.get_graphics_resource();
+				graphics_resource.expose_to_shaders(texture_cube->get_image(), DescriptorSet(2), DescriptorBinding(2));
+			});
+		}
+	});
 
 	draw_component<Components::Camera>(entity, [](Components::Camera& cam) {
 		std::ignore = UI::combo_choice<CameraType>("Type", std::ref(cam.type));
@@ -299,7 +330,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		bool any_changed = false;
 		std::optional<std::filesystem::path> selected { std::nullopt };
 		if (ImGui::Button("Choose path", { 80, 30 })) {
-			selected = UI::Popup::select_file({ "*.mesh", "*.obj", "*.fbx" });
+			selected = UI::Popup::select_file({ "*.mesh", "*.obj", "*.fbx" }, "Assets/Models");
 			any_changed |= selected.has_value();
 		}
 		if (ImGui::Checkbox("Draw AABB", &mesh_component.draw_aabb)) { };

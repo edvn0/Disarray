@@ -37,7 +37,7 @@ void StatisticsPanel::interface()
 				ImGui::TableNextColumn();
 				UI::text("{}", "FPS");
 				ImGui::TableNextColumn();
-				UI::text("{:.3f}ms", double(1000.0 * frame_time_average.inverse()));
+				UI::text("{:.3f}", double(1000.0 * frame_time_average.inverse()));
 			}
 			{
 				ImGui::TableNextRow();

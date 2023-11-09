@@ -62,7 +62,8 @@ namespace Detail {
 			std::replace(name.begin(), name.end(), ' ', '_');
 			std::replace(name.begin(), name.end(), '+', '_');
 
-			auto scene_name = fmt::format("{}-{}.json", name, std::chrono::system_clock::now().time_since_epoch().count());
+			const auto epoch_count = std::chrono::system_clock::now().time_since_epoch().count();
+			auto scene_name = fmt::format("{}-{}.json", name, epoch_count);
 			auto full_path = path / scene_name;
 			std::ofstream output { full_path };
 			if (!output) {
@@ -80,7 +81,7 @@ namespace Detail {
 		auto serialise() -> json
 		{
 			json root;
-			root["name"] = "Scene";
+			root["name"] = scene->get_name();
 
 			const auto& registry = scene->get_registry();
 			const auto view = registry.template view<const Components::ID, const Components::Tag>();

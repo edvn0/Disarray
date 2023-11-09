@@ -304,6 +304,7 @@ struct Skybox {
 	explicit Skybox(const Device&, std::string_view path);
 	Ref<Disarray::Texture> texture { nullptr };
 	glm::vec4 colour { 1.0F };
+	bool needs_update { false };
 };
 template <> inline constexpr std::string_view component_name<Skybox> = "Skybox";
 

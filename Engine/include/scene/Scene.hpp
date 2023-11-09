@@ -83,6 +83,8 @@ public:
 	auto get_registry() -> entt::registry& { return registry; };
 	[[nodiscard]] auto get_registry() const -> const entt::registry& { return registry; };
 	[[nodiscard]] auto get_name() const -> const std::string& { return scene_name; };
+	auto set_name(std::string_view name) -> void;
+
 	[[nodiscard]] auto get_device() const -> const Disarray::Device& { return device; };
 
 	auto on_runtime_start() -> void;
@@ -118,6 +120,7 @@ public:
 	}
 
 	void update_picked_entity(std::uint32_t handle);
+	void update_picked_entity(entt::entity handle);
 	void manipulate_entity_transform(Entity&, Camera&, GizmoType);
 
 	constexpr void for_all_entities(auto&& func)

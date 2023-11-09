@@ -19,6 +19,8 @@
 
 namespace Disarray {
 
+void set_name_for_scene(Scene& scene, std::string_view name);
+
 namespace Detail {
 
 	class CouldNotDeserialiseException : public BaseException {
@@ -156,6 +158,9 @@ namespace Detail {
 		auto try_deserialise(const json& root) -> bool
 		{
 			auto&& entities = root["entities"];
+
+			const std::string& scene_name = root["name"];
+			set_name_for_scene(scene, scene_name);
 
 			SpecialisedDeserialisers deserialisers {};
 			for (const auto& json_entity : entities.items()) {

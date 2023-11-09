@@ -33,6 +33,7 @@ private:
 	auto on_scene_play() -> void;
 	auto on_scene_stop() -> void;
 	auto on_scene_pause() -> void;
+	auto on_scene_unpause() -> void;
 	auto on_scene_simulate() -> void;
 
 	Device& device;

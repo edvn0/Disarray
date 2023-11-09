@@ -334,7 +334,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 
 	auto texture_cube = Texture::construct(device,
 		{
-			.path = FS::texture("cubemap_yokohama_rgba.ktx"),
+			.path = FS::texture("cubemap_default.ktx"),
 			.dimension = TextureDimension::Three,
 			.debug_name = "Skybox",
 		});

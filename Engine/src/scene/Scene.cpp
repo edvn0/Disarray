@@ -195,7 +195,7 @@ void Scene::interface()
 
 void Scene::update(float)
 {
-	if (picked_entity) {
+	if (picked_entity && picked_entity->is_valid()) {
 		selected_entity.swap(picked_entity);
 		picked_entity = nullptr;
 	}
@@ -420,7 +420,7 @@ void Scene::on_event(Event& event)
 {
 	EventDispatcher dispatcher { event };
 	dispatcher.dispatch<KeyPressedEvent>([scene = this](KeyPressedEvent&) {
-		if (Input::all<KeyCode::LeftControl, KeyCode::LeftShift, KeyCode::S>()) {
+		if (Input::all<KeyCode::LeftControl, KeyCode::S>()) {
 			SceneSerialiser scene_serialiser(scene);
 			return true;
 		}
@@ -472,6 +472,7 @@ auto Scene::deserialise_into(Scene& output_scene, const Device& device, const st
 }
 
 void Scene::update_picked_entity(std::uint32_t handle) { picked_entity = make_scope<Entity>(this, handle == 0 ? entt::null : handle); }
+void Scene::update_picked_entity(entt::entity handle) { picked_entity = make_scope<Entity>(this, handle); }
 
 void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoType gizmo_type)
 {
@@ -765,7 +766,7 @@ auto Scene::sort() -> void
 
 void Scene::physics_update(float time_step)
 {
-	if (!is_paused() || step_frames <= 0) {
+	if (!is_paused() || step_frames >= 0) {
 		engine.step(time_step);
 		auto view = registry.view<Components::RigidBody, Components::Transform>();
 		for (auto&& [handle, rigid_body, transform] : view.each()) {
@@ -779,9 +780,13 @@ void Scene::physics_update(float time_step)
 		}
 
 		step_frames--;
-		if (step_frames < 0) {
-			step_frames = 0;
-		}
+	}
+}
+auto Scene::set_name(std::string_view name) -> void
+{
+	{
+		scene_name = name;
+		scene_name = scene_name.c_str();
 	}
 }
 
