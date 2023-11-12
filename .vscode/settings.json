@@ -1,4 +1,6 @@
 {
 	"C_Cpp.default.compilerPath": "cl.exe",
-	"C_Cpp.intelliSenseEngine": "default"
+	"C_Cpp.intelliSenseEngine": "default",
+	"python.analysis.autoImportCompletions": true,
+	"python.analysis.typeCheckingMode": "basic"
 }

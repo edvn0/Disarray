@@ -156,17 +156,17 @@ namespace {
 
 	template <std::size_t Count> auto create_set_three_bindings()
 	{
-		std::array<VkDescriptorSetLayoutBinding, Count> transform_data_ssbo_bindings {};
+		std::array<VkDescriptorSetLayoutBinding, Count> ssbo_bindings {};
 		std::uint32_t i = 0;
-		for (auto& binding : transform_data_ssbo_bindings) {
+		for (auto& binding : ssbo_bindings) {
 			binding.descriptorCount = 1;
 			binding.binding = i++;
 			binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+			binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
 			binding.pImmutableSamplers = nullptr;
 		}
 
-		return transform_data_ssbo_bindings;
+		return ssbo_bindings;
 	}
 } // namespace
 
@@ -181,7 +181,7 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 	auto set_zero_bindings = create_set_zero_bindings();
 	auto set_one_bindings = create_set_one_bindings();
 	auto set_two_bindings = create_set_two_bindings();
-	auto set_three_bindings = create_set_three_bindings<6>();
+	auto set_three_bindings = create_set_three_bindings<7>();
 
 	auto layout_create_info = vk_structures<VkDescriptorSetLayoutCreateInfo> {}();
 

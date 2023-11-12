@@ -212,7 +212,7 @@ void DirectoryContentPanel::destruct()
 	path_and_content_cache.clear();
 }
 
-std::vector<std::filesystem::path> DirectoryContentPanel::get_files_in_directory(const std::filesystem::path& for_path) const
+auto DirectoryContentPanel::get_files_in_directory(const std::filesystem::path& for_path) const -> std::vector<std::filesystem::path>
 {
 	std::vector<std::filesystem::path> found;
 	for (const auto& entry : std::filesystem::directory_iterator { for_path }) {

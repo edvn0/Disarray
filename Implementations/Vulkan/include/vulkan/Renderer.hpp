@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 
 #include <array>
+#include <span>
 
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/IndexBuffer.hpp"
@@ -21,6 +22,7 @@
 
 using VkPipelineLayout = struct VkPipelineLayout_T*;
 using VkDevice = struct VkDevice_T*;
+using VkDescriptorSet = struct VkDescriptorSet_T*;
 
 namespace Disarray::Vulkan {
 
@@ -93,6 +95,7 @@ public:
 private:
 	void add_geometry_to_batch(Geometry, const GeometryProperties&);
 	void draw_billboard_quad(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline);
+	void bind_descriptor_sets(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const std::span<const VkDescriptorSet>& span);
 
 	const Disarray::Device& device;
 	const Disarray::Swapchain& swapchain;
@@ -101,6 +104,7 @@ private:
 	TextRenderer text_renderer;
 
 	mutable const Disarray::Pipeline* bound_pipeline { nullptr };
+	mutable std::size_t bound_descriptor_set_hash { 0 };
 	std::function<void(Disarray::Renderer&)> on_batch_full_func = [](auto&) {};
 
 	RendererProperties props;

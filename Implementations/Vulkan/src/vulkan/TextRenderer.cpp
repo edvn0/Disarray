@@ -15,6 +15,7 @@
 #include "core/filesystem/FileIO.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Renderer.hpp"
+#include "graphics/StorageBuffer.hpp"
 #include "graphics/Texture.hpp"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/IndexBuffer.hpp"
@@ -22,6 +23,13 @@
 #include "vulkan/VertexBuffer.hpp"
 
 namespace Disarray {
+
+struct TextColourAndImage {
+	glm::vec4 colour;
+	alignas(16) std::uint32_t index;
+};
+static_assert(alignof(TextColourAndImage) == 16);
+static_assert(sizeof(TextColourAndImage) == 32);
 
 struct TextRenderer::TextRenderingAPI {
 	FT_Library library;
@@ -33,6 +41,8 @@ struct TextRenderer::TextRenderingAPI {
 	Ref<Disarray::Pipeline> screen_space_glyph_pipeline;
 	Ref<Disarray::Pipeline> world_space_glyph_pipeline;
 	Ref<Disarray::Framebuffer> glyph_framebuffer;
+
+	Scope<Disarray::StorageBuffer> colour_image_data;
 
 	Disarray::Renderer* renderer { nullptr };
 };
@@ -123,12 +133,23 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 		BufferProperties {
 			.size = screen_space_text_data.size() * sizeof(ScreenSpaceTextData),
 			.count = screen_space_text_data.size(),
+			.always_mapped = true,
 		});
 	renderer_api->world_space_glyph_vb = make_scope<Vulkan::VertexBuffer>(device,
 		BufferProperties {
 			.size = world_space_text_data.size() * sizeof(WorldSpaceTextData),
 			.count = world_space_text_data.size(),
+			.always_mapped = true,
 		});
+
+	renderer_api->colour_image_data = StorageBuffer::construct_scoped(device,
+		{
+			.size = world_space_text_data.size() * sizeof(TextColourAndImage),
+			.count = world_space_text_data.size(),
+			.always_mapped = true,
+		});
+
+	renderer.get_graphics_resource().expose_to_shaders(*renderer_api->colour_image_data, DescriptorSet { 3 }, DescriptorBinding { 6 });
 
 	renderer_api->glyph_framebuffer = Framebuffer::construct(device,
 		{
@@ -358,20 +379,22 @@ void TextRenderer::clear_pass(Disarray::Renderer& renderer, Disarray::CommandExe
 void TextRenderer::render(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
 {
 	renderer.begin_pass(executor, *renderer_api->glyph_framebuffer);
-
 	{
+		auto raw_pointer = renderer_api->colour_image_data->get_mutable<TextColourAndImage>();
+		for (auto i = 0ULL; i < world_space_text_data_index; i++) {
+			auto& current = raw_pointer[i];
+
+			current.colour = world_space_text_character_colour_data.at(i);
+			current.index = world_space_text_character_texture_data.at(i);
+		}
+
 		renderer_api->screen_space_glyph_vb->set_data(screen_space_text_data.data(), screen_space_vertex_data_index * sizeof(ScreenSpaceTextData));
 		auto* cmd = supply_cast<Vulkan::CommandExecutor>(executor);
 		const auto& vertex_buffer = renderer_api->screen_space_glyph_vb;
 
 		const auto& vk_pipeline = cast_to<Vulkan::Pipeline>(*renderer_api->screen_space_glyph_pipeline);
 		renderer.bind_pipeline(executor, *renderer_api->screen_space_glyph_pipeline);
-
-		const std::array desc { renderer.get_graphics_resource().get_descriptor_set(DescriptorSet(0)),
-			renderer.get_graphics_resource().get_descriptor_set(DescriptorSet(1)),
-			renderer.get_graphics_resource().get_descriptor_set(DescriptorSet(2)) };
-		vkCmdBindDescriptorSets(
-			cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
+		renderer.bind_descriptor_sets(executor, *renderer_api->screen_space_glyph_pipeline);
 
 		const auto& index_buffer = renderer_api->glyph_ib;
 		vkCmdBindIndexBuffer(cmd, supply_cast<Vulkan::IndexBuffer>(*index_buffer), 0, VK_INDEX_TYPE_UINT32);
@@ -380,30 +403,25 @@ void TextRenderer::render(Disarray::Renderer& renderer, Disarray::CommandExecuto
 		VkDeviceSize offsets { 0 };
 		vkCmdBindVertexBuffers(cmd, 0, 1, vbs.data(), &offsets);
 
-		auto& push_constant = renderer.get_graphics_resource().get_editable_push_constant();
-		for (auto i = 0U; i < screen_space_text_data_index; i++) {
-			push_constant.image_indices[0] = static_cast<std::int32_t>(screen_space_text_character_texture_data.at(i));
-			push_constant.colour = screen_space_text_character_colour_data.at(i);
-			vkCmdPushConstants(cmd, vk_pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),
-				renderer.get_graphics_resource().get_push_constant());
-
-			vkCmdDrawIndexed(cmd, 6, 1, i * 6, 0, 0);
-		}
+		vkCmdDrawIndexed(cmd, screen_space_text_data_index * 6, 1, 0, 0, 0);
 	}
 
 	{
+		auto raw_pointer = renderer_api->colour_image_data->get_mutable<TextColourAndImage>();
+		for (auto i = 0ULL; i < world_space_text_data_index; i++) {
+			auto& current = raw_pointer[i];
+
+			current.colour = world_space_text_character_colour_data.at(i);
+			current.index = world_space_text_character_texture_data.at(i);
+		}
+
 		renderer_api->world_space_glyph_vb->set_data(world_space_text_data.data(), world_space_vertex_data_index * sizeof(WorldSpaceTextData));
 		auto* cmd = supply_cast<Vulkan::CommandExecutor>(executor);
 		const auto& vertex_buffer = renderer_api->world_space_glyph_vb;
 
 		const auto& vk_pipeline = cast_to<Vulkan::Pipeline>(*renderer_api->world_space_glyph_pipeline);
 		renderer.bind_pipeline(executor, *renderer_api->world_space_glyph_pipeline);
-
-		const std::array desc { renderer.get_graphics_resource().get_descriptor_set(DescriptorSet(0)),
-			renderer.get_graphics_resource().get_descriptor_set(DescriptorSet(1)),
-			renderer.get_graphics_resource().get_descriptor_set(DescriptorSet(2)) };
-		vkCmdBindDescriptorSets(
-			cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.get_layout(), 0, static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
+		renderer.bind_descriptor_sets(executor, *renderer_api->world_space_glyph_pipeline);
 
 		const auto& index_buffer = renderer_api->glyph_ib;
 		vkCmdBindIndexBuffer(cmd, supply_cast<Vulkan::IndexBuffer>(*index_buffer), 0, VK_INDEX_TYPE_UINT32);
@@ -413,27 +431,15 @@ void TextRenderer::render(Disarray::Renderer& renderer, Disarray::CommandExecuto
 		vkCmdBindVertexBuffers(cmd, 0, 1, vbs.data(), &offsets);
 
 		auto& push_constant = renderer.get_graphics_resource().get_editable_push_constant();
-		for (auto i = 0U; i < world_space_text_data_index; i++) {
-			push_constant.image_indices[0] = static_cast<std::int32_t>(world_space_text_character_texture_data.at(i));
-			push_constant.colour = world_space_text_character_colour_data.at(i);
-			vkCmdPushConstants(cmd, vk_pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant),
-				renderer.get_graphics_resource().get_push_constant());
-
-			vkCmdDrawIndexed(cmd, 6, 1, i * 6, 0, 0);
-		}
+		vkCmdDrawIndexed(cmd, world_space_text_data_index * 6, 1, 0, 0, 0);
 	}
 
 	screen_space_text_data_index = 0;
 	screen_space_vertex_data_index = 0;
 	screen_space_submitted_vertices = 0;
-	screen_space_text_data.fill({});
-	screen_space_text_character_texture_data.fill({});
-
 	world_space_text_data_index = 0;
 	world_space_vertex_data_index = 0;
 	world_space_submitted_vertices = 0;
-	world_space_text_data.fill({});
-	world_space_text_character_texture_data.fill({});
 
 	renderer.end_pass(executor);
 }

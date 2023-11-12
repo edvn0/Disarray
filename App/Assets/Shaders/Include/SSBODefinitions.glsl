@@ -12,3 +12,8 @@ struct ColourObject {
 struct IdentifierObject {
 	uint identifier;
 };
+
+struct ColourImage {
+	vec4 colour;
+	uint identifier;
+};

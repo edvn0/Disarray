@@ -13,6 +13,7 @@
 #include "graphics/Framebuffer.hpp"
 #include "graphics/ImageProperties.hpp"
 #include "graphics/Pipeline.hpp"
+#include "graphics/Texture.hpp"
 #include "scene/Camera.hpp"
 #include "scene/Components.hpp"
 #include "ui/InterfaceLayer.hpp"
@@ -102,7 +103,7 @@ void ScenePanel::interface()
 	};
 
 	UI::begin("Scene");
-	auto& tag = scene->get_name();
+	const auto& tag = scene->get_name();
 	std::string buffer = tag;
 	buffer.resize(256);
 
@@ -168,7 +169,7 @@ void ScenePanel::for_all_components(Entity& entity)
 			buffer.shrink_to_fit();
 
 			if (!buffer.empty() && tag.name != buffer) {
-				tag.name = buffer.c_str();
+				tag.name = std::string { buffer.c_str() };
 			}
 		}
 	}
@@ -176,8 +177,9 @@ void ScenePanel::for_all_components(Entity& entity)
 	ImGui::SameLine();
 	ImGui::PushItemWidth(-1);
 
-	if (ImGui::Button("Add Component"))
+	if (ImGui::Button("Add Component")) {
 		ImGui::OpenPopup("AddComponent");
+	}
 
 	if (ImGui::BeginPopup("AddComponent")) {
 		draw_add_component_all(AllComponents {});
@@ -262,7 +264,7 @@ void ScenePanel::for_all_components(Entity& entity)
 			buffer.shrink_to_fit();
 
 			if (!buffer.empty() && text.text_data != buffer) {
-				text.text_data = buffer;
+				text.text_data = buffer.c_str();
 			}
 		}
 		if (ImGui::ColorEdit4("Colour", glm::value_ptr(text.colour))) { }
@@ -299,6 +301,27 @@ void ScenePanel::for_all_components(Entity& entity)
 					.path = value,
 					.dimension = TextureDimension::Three,
 					.debug_name = value.string(),
+				});
+			current->submit_preframe_work([](Scene& this_scene, SceneRenderer& renderer) {
+				auto texture_cube = this_scene.get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
+
+				auto& graphics_resource = renderer.get_graphics_resource();
+				graphics_resource.expose_to_shaders(texture_cube->get_image(), DescriptorSet(2), DescriptorBinding(2));
+			});
+		}
+
+		ImGui::SameLine();
+		std::ignore = UI::button("Drop texture", { 80, 30 });
+		if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem",
+				{
+					".ktx",
+				})) {
+			const auto& texture_path = *dropped;
+			skybox.texture = Texture::construct(dev,
+				{
+					.path = texture_path,
+					.dimension = TextureDimension::Three,
+					.debug_name = texture_path.string(),
 				});
 			current->submit_preframe_work([](Scene& this_scene, SceneRenderer& renderer) {
 				auto texture_cube = this_scene.get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;

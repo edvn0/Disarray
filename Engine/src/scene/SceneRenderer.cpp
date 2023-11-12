@@ -418,12 +418,13 @@ auto SceneRenderer::interface() -> void
 		any_changed_spec |= UI::Input::input("Point Light", &point_light_data.calculate_point_lights);
 		any_changed_spec |= UI::Input::input("Gamma correct", &point_light_data.use_gamma_correction);
 
-		if (UI::button("Clear Batch")) {
+		if (UI::button("Clear Batch", { 80, 30 })) {
 			command_executor->begin();
 			clear_pass<RenderPasses::PlanarGeometry>();
 			command_executor->submit_and_end();
 		}
-		if (UI::button("Clear Text")) {
+		ImGui::SameLine();
+		if (UI::button("Clear Text", { 80, 30 })) {
 			command_executor->begin();
 			clear_pass<RenderPasses::Text>();
 			command_executor->submit_and_end();

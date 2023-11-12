@@ -321,8 +321,10 @@ void ClientLayer::handle_swapchain_recreation(Swapchain& swapchain)
 	scene_renderer.recreate(true, swapchain.get_extent());
 	auto& graphics_resource = scene_renderer.get_graphics_resource();
 
-	auto texture_cube = running_scene->get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
-	graphics_resource.expose_to_shaders(texture_cube->get_image(), DescriptorSet(2), DescriptorBinding(2));
+	if (const auto cube = running_scene->get_by_components<Components::Skybox>()) {
+		auto texture_cube = cube->get_components<Components::Skybox>().texture;
+		graphics_resource.expose_to_shaders(texture_cube->get_image(), DescriptorSet(2), DescriptorBinding(2));
+	}
 }
 
 void ClientLayer::on_event(Event& event)

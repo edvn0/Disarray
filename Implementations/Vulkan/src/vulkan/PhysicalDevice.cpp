@@ -1,13 +1,15 @@
 #include "DisarrayPCH.hpp"
 
-#include "graphics/PhysicalDevice.hpp"
-
 #include <vulkan/vulkan.h>
+
+#include <span>
 
 #include "core/Log.hpp"
 #include "graphics/Instance.hpp"
+#include "graphics/PhysicalDevice.hpp"
 #include "graphics/QueueFamilyIndex.hpp"
 #include "graphics/Surface.hpp"
+#include "magic_enum.hpp"
 #include "vulkan/ExtensionSupport.hpp"
 #include "vulkan/Instance.hpp"
 #include "vulkan/PhysicalDevice.hpp"
@@ -81,6 +83,9 @@ PhysicalDevice::PhysicalDevice(Disarray::Instance& inst, Disarray::Surface& surf
 	const auto&& [capabilities, formats, modes, msaa] = resolve_swapchain_support(physical_device, surf);
 	samples = to_disarray_samples(msaa);
 	queue_family_index = make_ref<Vulkan::QueueFamilyIndex>(physical_device, surf);
+
+	const auto device_name = std::string { device_properties.deviceName };
+	Log::info("PhysicalDevice", "Chose {} as physical device. Provides {} samples.", device_name, magic_enum::enum_name(samples));
 }
 
 PhysicalDevice::~PhysicalDevice() = default;
