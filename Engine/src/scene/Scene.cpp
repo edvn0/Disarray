@@ -205,16 +205,17 @@ void Scene::render(SceneRenderer& renderer)
 {
 	auto render_planar_geometry = [](auto& ren) { ren.planar_geometry_pass(); };
 
-	auto render_text = [](auto& ren, auto& reg) {
+	auto render_text = [](auto& scene_renderer, entt::registry& reg) {
 		for (auto&& [entity, text, transform] : reg.template view<const Components::Text, const Components::Transform>().each()) {
-			if (text.projection == Components::TextProjection::ScreenSpace) {
-				ren.draw_text(text.text_data, glm::uvec2(transform.position), text.size, text.colour);
-			} else {
-				ren.draw_text(text.text_data, transform.compute(), text.size, text.colour);
+			auto colour = text.colour;
+			if (reg.any_of<Components::Texture>(entity)) {
+				colour = reg.get<Components::Texture>(entity).colour;
 			}
+
+			scene_renderer.draw_text(transform, text, colour);
 		}
 
-		ren.text_rendering_pass();
+		scene_renderer.text_rendering_pass();
 	};
 
 	{
@@ -346,7 +347,7 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 	}
 
 	for (auto mesh_view = registry.view<const Components::Mesh, const Components::Texture, const Components::Transform>(
-			 entt::exclude<Components::PointLight, Components::DirectionalLight, Components::Skybox>);
+			 entt::exclude<Components::PointLight, Components::SpotLight, Components::DirectionalLight, Components::Skybox>);
 		 auto&& [entity, mesh, texture, transform] : mesh_view.each()) {
 
 		if (mesh.mesh == nullptr) {
@@ -368,7 +369,7 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 	for (auto&& [entity, mesh, transform] :
 		registry
 			.view<const Components::Mesh, const Components::Transform>(
-				entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight, Components::Skybox>)
+				entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight, Components::SpotLight, Components::Skybox>)
 			.each()) {
 		if (mesh.mesh == nullptr) {
 			continue;
@@ -432,6 +433,11 @@ void Scene::on_event(Event& event)
 
 			Scene::copy_entity(*scene, *scene->selected_entity);
 			return true;
+		}
+
+		if (Input::all<KeyCode::LeftControl, KeyCode::N>()) {
+			scene->clear();
+			scene->set_name("New scene");
 		}
 
 		return false;
@@ -581,7 +587,7 @@ auto Scene::copy(Scene& scene) -> Ref<Scene>
 	using CopyableComponents = Detail::ComponentGroup<Components::Camera, Components::Transform, Components::Tag, Components::Inheritance,
 		Components::LineGeometry, Components::QuadGeometry, Components::Mesh, Components::Material, Components::Texture, Components::DirectionalLight,
 		Components::PointLight, Components::Controller, Components::BoxCollider, Components::SphereCollider, Components::CapsuleCollider,
-		Components::ColliderMaterial, Components::Skybox, Components::Text, Components::RigidBody>;
+		Components::ColliderMaterial, Components::Skybox, Components::Text, Components::RigidBody, Components::SpotLight>;
 	copy_all(CopyableComponents {}, identifiers, old_registry);
 
 	new_scene->sort();
@@ -614,7 +620,7 @@ auto Scene::copy_entity(Scene& scene, Entity& to_copy_from_entity, std::string_v
 	using CopyableComponents = Detail::ComponentGroup<Components::Camera, Components::Transform, Components::Inheritance, Components::LineGeometry,
 		Components::QuadGeometry, Components::Mesh, Components::Material, Components::Texture, Components::DirectionalLight, Components::PointLight,
 		Components::Controller, Components::BoxCollider, Components::SphereCollider, Components::CapsuleCollider, Components::ColliderMaterial,
-		Components::Skybox, Components::Text, Components::RigidBody>;
+		Components::Skybox, Components::Text, Components::RigidBody, Components::SpotLight>;
 
 	copy_all(CopyableComponents {}, to_copy_from_entity, new_entity);
 }

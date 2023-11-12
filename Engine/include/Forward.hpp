@@ -60,6 +60,7 @@ namespace Components {
 	struct BoxCollider;
 	struct SphereCollider;
 	struct Skybox;
+	struct Text;
 } // namespace Components
 
 } // namespace Disarray

@@ -38,8 +38,10 @@ struct TextRenderer::TextRenderingAPI {
 	Scope<Vulkan::IndexBuffer> glyph_ib;
 	Scope<Vulkan::VertexBuffer> screen_space_glyph_vb;
 	Scope<Vulkan::VertexBuffer> world_space_glyph_vb;
+	Scope<Vulkan::VertexBuffer> billboard_space_glyph_vb;
 	Ref<Disarray::Pipeline> screen_space_glyph_pipeline;
 	Ref<Disarray::Pipeline> world_space_glyph_pipeline;
+	Ref<Disarray::Pipeline> billboard_space_glyph_pipeline;
 	Ref<Disarray::Framebuffer> glyph_framebuffer;
 
 	Scope<Disarray::StorageBuffer> colour_image_data;
@@ -131,21 +133,26 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 		});
 	renderer_api->screen_space_glyph_vb = make_scope<Vulkan::VertexBuffer>(device,
 		BufferProperties {
-			.size = screen_space_text_data.size() * sizeof(ScreenSpaceTextData),
-			.count = screen_space_text_data.size(),
+			.size = screen_space.text_data_buffer.size() * sizeof(ScreenSpaceTextData),
+			.count = screen_space.text_data_buffer.size(),
 			.always_mapped = true,
 		});
 	renderer_api->world_space_glyph_vb = make_scope<Vulkan::VertexBuffer>(device,
 		BufferProperties {
-			.size = world_space_text_data.size() * sizeof(WorldSpaceTextData),
-			.count = world_space_text_data.size(),
+			.size = world_space.text_data_buffer.size() * sizeof(WorldSpaceTextData),
+			.count = world_space.text_data_buffer.size(),
 			.always_mapped = true,
 		});
-
+	renderer_api->billboard_space_glyph_vb = make_scope<Vulkan::VertexBuffer>(device,
+		BufferProperties {
+			.size = billboard_space.text_data_buffer.size() * sizeof(WorldSpaceTextData),
+			.count = billboard_space.text_data_buffer.size(),
+			.always_mapped = true,
+		});
 	renderer_api->colour_image_data = StorageBuffer::construct_scoped(device,
 		{
-			.size = world_space_text_data.size() * sizeof(TextColourAndImage),
-			.count = world_space_text_data.size(),
+			.size = world_space.text_data_buffer.size() * sizeof(TextColourAndImage),
+			.count = world_space.text_data_buffer.size(),
 			.always_mapped = true,
 		});
 
@@ -165,10 +172,11 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 	auto& resources = renderer.get_graphics_resource();
 	const auto& desc_layout = resources.get_descriptor_set_layouts();
 
-	renderer_api->screen_space_glyph_pipeline = Pipeline::construct(device,
+	renderer_api->screen_space_glyph_pipeline = resources.get_pipeline_cache().put(
 		{
-			.vertex_shader = renderer.get_pipeline_cache().get_shader("glyph_ss.vert"),
-			.fragment_shader = renderer.get_pipeline_cache().get_shader("glyph_ss.frag"),
+			.pipeline_key = "GlyphScreenSpace",
+			.vertex_shader_key = "glyph_ss.vert",
+			.fragment_shader_key = "glyph.frag",
 			.framebuffer = renderer_api->glyph_framebuffer,
 			.layout = {
 				{ ElementType::Float2, "position" },
@@ -183,10 +191,30 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 			.descriptor_set_layouts = desc_layout,
 		});
 
-	renderer_api->world_space_glyph_pipeline = Pipeline::construct(device,
+	renderer_api->world_space_glyph_pipeline = resources.get_pipeline_cache().put(
 		{
-			.vertex_shader = renderer.get_pipeline_cache().get_shader("glyph_ws.vert"),
-			.fragment_shader = renderer.get_pipeline_cache().get_shader("glyph_ws.frag"),
+			.pipeline_key = "GlyphWorldSpace",
+			.vertex_shader_key = "glyph_ws.vert",
+			.fragment_shader_key = "glyph.frag",
+			.framebuffer = renderer_api->glyph_framebuffer,
+			.layout = {
+				{ ElementType::Float3, "position" },
+				{ ElementType::Float2, "tex_coords" },
+			},
+			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+			.extent = extent,
+			.cull_mode = CullMode::Back,
+			.face_mode = FaceMode::CounterClockwise,
+			.write_depth = false,
+			.test_depth = false,
+			.descriptor_set_layouts = desc_layout,
+		});
+
+	renderer_api->billboard_space_glyph_pipeline = resources.get_pipeline_cache().put(
+		{
+			.pipeline_key = "GlyphBillboard",
+			.vertex_shader_key = "glyph_billboard.vert",
+			.fragment_shader_key = "glyph.frag",
 			.framebuffer = renderer_api->glyph_framebuffer,
 			.layout = {
 				{ ElementType::Float3, "position" },
@@ -225,7 +253,7 @@ auto TextRenderer::get_pipelines() -> std::array<Disarray::Pipeline*, 2>
 
 void TextRenderer::submit_text(std::string_view text, const glm::uvec2& position, float scale, const glm::vec4& colour)
 {
-	ensure(screen_space_text_data_index < screen_space_text_data.size());
+	ensure(screen_space.text_data_index < screen_space.text_data_buffer.size());
 	auto x_position = static_cast<float>(position.x);
 	static auto max_h = static_cast<float>(max_height);
 	auto y_position = static_cast<float>(position.y) + max_h;
@@ -244,32 +272,32 @@ void TextRenderer::submit_text(std::string_view text, const glm::uvec2& position
 		auto scaled_advance = static_cast<float>((character_font_data.advance >> 6)) * scale;
 		x_position += scaled_advance;
 
-		screen_space_text_character_texture_data.at(screen_space_text_data_index) = static_cast<std::uint32_t>(character);
-		screen_space_text_character_colour_data.at(screen_space_text_data_index) = colour;
-		screen_space_text_data.at(screen_space_vertex_data_index++) = {
+		screen_space.character_texture_data.at(screen_space.text_data_index) = static_cast<std::uint32_t>(character);
+		screen_space.character_colour_data.at(screen_space.text_data_index) = colour;
+		screen_space.text_data_buffer.at(screen_space.vertex_data_index++) = {
 			.pos = { xpos, ypos },
 			.tex_coords = { 0, 0 },
 		};
-		screen_space_text_data.at(screen_space_vertex_data_index++) = {
+		screen_space.text_data_buffer.at(screen_space.vertex_data_index++) = {
 			.pos = { xpos, ypos + height },
 			.tex_coords = { 0, 1 },
 		};
-		screen_space_text_data.at(screen_space_vertex_data_index++) = {
+		screen_space.text_data_buffer.at(screen_space.vertex_data_index++) = {
 			.pos = { xpos + width, ypos + height },
 			.tex_coords = { 1, 1 },
 		};
-		screen_space_text_data.at(screen_space_vertex_data_index++) = {
+		screen_space.text_data_buffer.at(screen_space.vertex_data_index++) = {
 			.pos = { xpos + width, ypos },
 			.tex_coords = { 1, 0 },
 		};
-		screen_space_text_data_index++;
-		screen_space_submitted_vertices += 4;
+		screen_space.text_data_index++;
+		screen_space.submitted_vertices += 4;
 	};
 }
 
 void TextRenderer::submit_text(std::string_view text, const glm::vec3& position, float scale, const glm::vec4& colour)
 {
-	ensure(world_space_text_data_index < world_space_text_data.size());
+	ensure(world_space.text_data_index < world_space.text_data_buffer.size());
 	auto x_position = static_cast<float>(position.x);
 	static auto max_h = static_cast<float>(max_height);
 	auto y_position = static_cast<float>(position.y) + max_h;
@@ -288,26 +316,26 @@ void TextRenderer::submit_text(std::string_view text, const glm::vec3& position,
 		auto scaled_advance = static_cast<float>((character_font_data.advance >> 6)) * scale;
 		x_position += scaled_advance;
 
-		world_space_text_character_texture_data.at(world_space_text_data_index) = static_cast<std::uint32_t>(character);
-		world_space_text_character_colour_data.at(world_space_text_data_index) = colour;
-		world_space_text_data.at(world_space_vertex_data_index++) = {
+		world_space.character_texture_data.at(world_space.text_data_index) = static_cast<std::uint32_t>(character);
+		world_space.character_colour_data.at(world_space.text_data_index) = colour;
+		world_space.text_data_buffer.at(world_space.vertex_data_index++) = {
 			.pos = { xpos, ypos, position.z },
 			.tex_coords = { 0, 0 },
 		};
-		world_space_text_data.at(world_space_vertex_data_index++) = {
+		world_space.text_data_buffer.at(world_space.vertex_data_index++) = {
 			.pos = { xpos, ypos + height, position.z },
 			.tex_coords = { 0, 1 },
 		};
-		world_space_text_data.at(world_space_vertex_data_index++) = {
+		world_space.text_data_buffer.at(world_space.vertex_data_index++) = {
 			.pos = { xpos + width, ypos + height, position.z },
 			.tex_coords = { 1, 1 },
 		};
-		world_space_text_data.at(world_space_vertex_data_index++) = {
+		world_space.text_data_buffer.at(world_space.vertex_data_index++) = {
 			.pos = { xpos + width, ypos, position.z },
 			.tex_coords = { 1, 0 },
 		};
-		world_space_text_data_index++;
-		world_space_submitted_vertices += 4;
+		world_space.text_data_index++;
+		world_space.submitted_vertices += 4;
 	};
 }
 
@@ -326,7 +354,7 @@ void TextRenderer::submit_text(std::string_view text, const glm::mat4& transform
 		return glm::vec3(copied * glm::vec4(vector, 1.0F));
 	};
 
-	ensure(world_space_text_data_index < world_space_text_data.size());
+	ensure(world_space.text_data_index < world_space.text_data_buffer.size());
 	const auto& position = transform[3];
 
 	auto x_position = static_cast<float>(position.x);
@@ -347,26 +375,85 @@ void TextRenderer::submit_text(std::string_view text, const glm::mat4& transform
 		auto scaled_advance = static_cast<float>((character_font_data.advance >> 6)) * scale;
 		x_position += scaled_advance;
 
-		world_space_text_character_texture_data.at(world_space_text_data_index) = static_cast<std::uint32_t>(character);
-		world_space_text_character_colour_data.at(world_space_text_data_index) = colour;
-		world_space_text_data.at(world_space_vertex_data_index++) = {
+		world_space.character_texture_data.at(world_space.text_data_index) = static_cast<std::uint32_t>(character);
+		world_space.character_colour_data.at(world_space.text_data_index) = colour;
+		world_space.text_data_buffer.at(world_space.vertex_data_index++) = {
 			.pos = rotate_3d_by_transform({ xpos, ypos, position.z }, transform),
 			.tex_coords = { 0, 0 },
 		};
-		world_space_text_data.at(world_space_vertex_data_index++) = {
+		world_space.text_data_buffer.at(world_space.vertex_data_index++) = {
 			.pos = rotate_3d_by_transform({ xpos, ypos + height, position.z }, transform),
 			.tex_coords = { 0, 1 },
 		};
-		world_space_text_data.at(world_space_vertex_data_index++) = {
+		world_space.text_data_buffer.at(world_space.vertex_data_index++) = {
 			.pos = rotate_3d_by_transform({ xpos + width, ypos + height, position.z }, transform),
 			.tex_coords = { 1, 1 },
 		};
-		world_space_text_data.at(world_space_vertex_data_index++) = {
+		world_space.text_data_buffer.at(world_space.vertex_data_index++) = {
 			.pos = rotate_3d_by_transform({ xpos + width, ypos, position.z }, transform),
 			.tex_coords = { 1, 0 },
 		};
-		world_space_text_data_index++;
-		world_space_submitted_vertices += 4;
+		world_space.text_data_index++;
+		world_space.submitted_vertices += 4;
+	};
+}
+
+void TextRenderer::submit_billboarded_text(std::string_view text, const glm::mat4& transform, float scale, const glm::vec4& colour)
+{
+	static constexpr auto rotate_3d_by_transform = [](const glm::vec3& vector, const glm::mat4& transform) {
+		// Extract the rotation and scale components from the full matrix
+		glm::mat4 copied = transform;
+
+		// Set the translation components to identity (or zeros, depending on your convention)
+		copied[3][0] = 0;
+		copied[3][1] = 0;
+		copied[3][2] = 0;
+		copied[3][3] = 1;
+
+		return glm::vec3(copied * glm::vec4(vector, 1.0F));
+	};
+
+	ensure(billboard_space.text_data_index < billboard_space.text_data_buffer.size());
+	const auto& position = transform[3];
+
+	auto x_position = static_cast<float>(position.x);
+	static auto max_h = static_cast<float>(max_height);
+	auto y_position = static_cast<float>(position.y) + max_h;
+	for (const auto& character : text) {
+		if (character == '\n' || character == '\r') {
+			y_position += max_h;
+			x_position = static_cast<float>(position.x);
+			continue;
+		}
+		auto& character_font_data = font_data.at(static_cast<std::size_t>(character));
+		float xpos = x_position + static_cast<float>(character_font_data.bearing.x) * scale;
+		float ypos = y_position - static_cast<float>(character_font_data.bearing.y) * scale;
+
+		float width = static_cast<float>(character_font_data.size.x) * scale;
+		float height = static_cast<float>(character_font_data.size.y) * scale;
+		auto scaled_advance = static_cast<float>((character_font_data.advance >> 6)) * scale;
+		x_position += scaled_advance;
+
+		billboard_space.character_texture_data.at(billboard_space.text_data_index) = static_cast<std::uint32_t>(character);
+		billboard_space.character_colour_data.at(billboard_space.text_data_index) = colour;
+		billboard_space.text_data_buffer.at(billboard_space.vertex_data_index++) = {
+			.pos = rotate_3d_by_transform({ xpos, ypos, position.z }, transform),
+			.tex_coords = { 0, 0 },
+		};
+		billboard_space.text_data_buffer.at(billboard_space.vertex_data_index++) = {
+			.pos = rotate_3d_by_transform({ xpos, ypos + height, position.z }, transform),
+			.tex_coords = { 0, 1 },
+		};
+		billboard_space.text_data_buffer.at(billboard_space.vertex_data_index++) = {
+			.pos = rotate_3d_by_transform({ xpos + width, ypos + height, position.z }, transform),
+			.tex_coords = { 1, 1 },
+		};
+		billboard_space.text_data_buffer.at(billboard_space.vertex_data_index++) = {
+			.pos = rotate_3d_by_transform({ xpos + width, ypos, position.z }, transform),
+			.tex_coords = { 1, 0 },
+		};
+		billboard_space.text_data_index++;
+		billboard_space.submitted_vertices += 4;
 	};
 }
 
@@ -376,70 +463,106 @@ void TextRenderer::clear_pass(Disarray::Renderer& renderer, Disarray::CommandExe
 	renderer.end_pass(executor);
 }
 
+void TextRenderer::draw_screen_space(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
+{
+	auto raw_pointer = renderer_api->colour_image_data->get_mutable<TextColourAndImage>();
+	for (auto i = 0ULL; i < screen_space.text_data_index; i++) {
+		auto& current = raw_pointer[i];
+
+		current.colour = screen_space.character_colour_data.at(i);
+		current.index = screen_space.character_texture_data.at(i);
+	}
+
+	renderer_api->screen_space_glyph_vb->set_data(screen_space.text_data_buffer.data(), screen_space.vertex_data_index * sizeof(ScreenSpaceTextData));
+	auto* cmd = supply_cast<Vulkan::CommandExecutor>(executor);
+	const auto& vertex_buffer = renderer_api->screen_space_glyph_vb;
+
+	renderer.bind_pipeline(executor, *renderer_api->screen_space_glyph_pipeline);
+	renderer.bind_descriptor_sets(executor, *renderer_api->screen_space_glyph_pipeline);
+
+	const auto& index_buffer = renderer_api->glyph_ib;
+	vkCmdBindIndexBuffer(cmd, supply_cast<Vulkan::IndexBuffer>(*index_buffer), 0, VK_INDEX_TYPE_UINT32);
+
+	const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vertex_buffer) };
+	VkDeviceSize offsets { 0 };
+	vkCmdBindVertexBuffers(cmd, 0, 1, vbs.data(), &offsets);
+
+	vkCmdDrawIndexed(cmd, screen_space.text_data_index * 6, 1, 0, 0, 0);
+}
+
+void TextRenderer::draw_world_space(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
+{
+	auto raw_pointer = renderer_api->colour_image_data->get_mutable<TextColourAndImage>();
+	for (auto i = 0ULL; i < world_space.text_data_index; i++) {
+		auto& current = raw_pointer[i];
+
+		current.colour = world_space.character_colour_data.at(i);
+		current.index = world_space.character_texture_data.at(i);
+	}
+
+	renderer_api->world_space_glyph_vb->set_data(world_space.text_data_buffer.data(), world_space.vertex_data_index * sizeof(WorldSpaceTextData));
+	auto* cmd = supply_cast<Vulkan::CommandExecutor>(executor);
+	const auto& vertex_buffer = renderer_api->world_space_glyph_vb;
+
+	renderer.bind_pipeline(executor, *renderer_api->world_space_glyph_pipeline);
+	renderer.bind_descriptor_sets(executor, *renderer_api->world_space_glyph_pipeline);
+
+	const auto& index_buffer = renderer_api->glyph_ib;
+	vkCmdBindIndexBuffer(cmd, supply_cast<Vulkan::IndexBuffer>(*index_buffer), 0, VK_INDEX_TYPE_UINT32);
+
+	const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vertex_buffer) };
+	VkDeviceSize offsets { 0 };
+	vkCmdBindVertexBuffers(cmd, 0, 1, vbs.data(), &offsets);
+
+	vkCmdDrawIndexed(cmd, world_space.text_data_index * 6, 1, 0, 0, 0);
+}
+
+void TextRenderer::draw_billboard_space(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
+{
+	auto raw_pointer = renderer_api->colour_image_data->get_mutable<TextColourAndImage>();
+	for (auto i = 0ULL; i < billboard_space.text_data_index; i++) {
+		auto& current = raw_pointer[i];
+
+		current.colour = billboard_space.character_colour_data.at(i);
+		current.index = billboard_space.character_texture_data.at(i);
+	}
+
+	renderer_api->billboard_space_glyph_vb->set_data(
+		billboard_space.text_data_buffer.data(), billboard_space.vertex_data_index * sizeof(WorldSpaceTextData));
+	auto* cmd = supply_cast<Vulkan::CommandExecutor>(executor);
+	const auto& vertex_buffer = renderer_api->billboard_space_glyph_vb;
+
+	renderer.bind_pipeline(executor, *renderer_api->billboard_space_glyph_pipeline);
+	renderer.bind_descriptor_sets(executor, *renderer_api->billboard_space_glyph_pipeline);
+
+	const auto& index_buffer = renderer_api->glyph_ib;
+	vkCmdBindIndexBuffer(cmd, supply_cast<Vulkan::IndexBuffer>(*index_buffer), 0, VK_INDEX_TYPE_UINT32);
+
+	const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vertex_buffer) };
+	VkDeviceSize offsets { 0 };
+	vkCmdBindVertexBuffers(cmd, 0, 1, vbs.data(), &offsets);
+
+	vkCmdDrawIndexed(cmd, billboard_space.text_data_index * 6, 1, 0, 0, 0);
+}
+
 void TextRenderer::render(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor)
 {
 	renderer.begin_pass(executor, *renderer_api->glyph_framebuffer);
-	{
-		auto raw_pointer = renderer_api->colour_image_data->get_mutable<TextColourAndImage>();
-		for (auto i = 0ULL; i < world_space_text_data_index; i++) {
-			auto& current = raw_pointer[i];
-
-			current.colour = world_space_text_character_colour_data.at(i);
-			current.index = world_space_text_character_texture_data.at(i);
-		}
-
-		renderer_api->screen_space_glyph_vb->set_data(screen_space_text_data.data(), screen_space_vertex_data_index * sizeof(ScreenSpaceTextData));
-		auto* cmd = supply_cast<Vulkan::CommandExecutor>(executor);
-		const auto& vertex_buffer = renderer_api->screen_space_glyph_vb;
-
-		const auto& vk_pipeline = cast_to<Vulkan::Pipeline>(*renderer_api->screen_space_glyph_pipeline);
-		renderer.bind_pipeline(executor, *renderer_api->screen_space_glyph_pipeline);
-		renderer.bind_descriptor_sets(executor, *renderer_api->screen_space_glyph_pipeline);
-
-		const auto& index_buffer = renderer_api->glyph_ib;
-		vkCmdBindIndexBuffer(cmd, supply_cast<Vulkan::IndexBuffer>(*index_buffer), 0, VK_INDEX_TYPE_UINT32);
-
-		const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vertex_buffer) };
-		VkDeviceSize offsets { 0 };
-		vkCmdBindVertexBuffers(cmd, 0, 1, vbs.data(), &offsets);
-
-		vkCmdDrawIndexed(cmd, screen_space_text_data_index * 6, 1, 0, 0, 0);
+	if (screen_space.text_data_index > 0) {
+		draw_screen_space(renderer, executor);
 	}
 
-	{
-		auto raw_pointer = renderer_api->colour_image_data->get_mutable<TextColourAndImage>();
-		for (auto i = 0ULL; i < world_space_text_data_index; i++) {
-			auto& current = raw_pointer[i];
-
-			current.colour = world_space_text_character_colour_data.at(i);
-			current.index = world_space_text_character_texture_data.at(i);
-		}
-
-		renderer_api->world_space_glyph_vb->set_data(world_space_text_data.data(), world_space_vertex_data_index * sizeof(WorldSpaceTextData));
-		auto* cmd = supply_cast<Vulkan::CommandExecutor>(executor);
-		const auto& vertex_buffer = renderer_api->world_space_glyph_vb;
-
-		const auto& vk_pipeline = cast_to<Vulkan::Pipeline>(*renderer_api->world_space_glyph_pipeline);
-		renderer.bind_pipeline(executor, *renderer_api->world_space_glyph_pipeline);
-		renderer.bind_descriptor_sets(executor, *renderer_api->world_space_glyph_pipeline);
-
-		const auto& index_buffer = renderer_api->glyph_ib;
-		vkCmdBindIndexBuffer(cmd, supply_cast<Vulkan::IndexBuffer>(*index_buffer), 0, VK_INDEX_TYPE_UINT32);
-
-		const std::array<VkBuffer, 1> vbs { supply_cast<Vulkan::VertexBuffer>(*vertex_buffer) };
-		VkDeviceSize offsets { 0 };
-		vkCmdBindVertexBuffers(cmd, 0, 1, vbs.data(), &offsets);
-
-		auto& push_constant = renderer.get_graphics_resource().get_editable_push_constant();
-		vkCmdDrawIndexed(cmd, world_space_text_data_index * 6, 1, 0, 0, 0);
+	if (world_space.text_data_index > 0) {
+		draw_world_space(renderer, executor);
 	}
 
-	screen_space_text_data_index = 0;
-	screen_space_vertex_data_index = 0;
-	screen_space_submitted_vertices = 0;
-	world_space_text_data_index = 0;
-	world_space_vertex_data_index = 0;
-	world_space_submitted_vertices = 0;
+	if (billboard_space.text_data_index > 0) {
+		draw_billboard_space(renderer, executor);
+	}
+
+	screen_space.reset();
+	world_space.reset();
+	billboard_space.reset();
 
 	renderer.end_pass(executor);
 }

@@ -48,7 +48,7 @@ def extract_texture_map_faces(image_or_path: str | Image.Image, output_base_name
     return names
 
 
-def convert_to_ktx(filepaths: List[str]):
+def convert_to_ktx(filepaths: List[str], output_name: str):
 	import shutil
 	path = shutil.which("ktx")
 
@@ -61,9 +61,6 @@ def convert_to_ktx(filepaths: List[str]):
 
 	paths = map(lambda x: Path(x), filepaths)
 
-	# --format R8G8B8A8_UNORM --assign-oetf srgb --levels 1 --cubemap PNG/right.png PNG/left.png PNG/top.png PNG/bottom.png PNG/front.png PNG/back.png output_cube.ktx && cp output_cube.ktx
-	# /mnt/c/C/Personal/Disarray/App/Assets/Textures/cubemap_default.ktx
-
 	args = ['ktx', 'create', '--format', 'R8G8B8A8_UNORM', '--assign-oetf', 'srgb', '--levels', '1', '--cubemap']
 	for path in paths:
 		args.append(str(Path(path).absolute()))
@@ -75,7 +72,7 @@ def convert_to_ktx(filepaths: List[str]):
 def main(base_name: str, file_or_image):
     output_base_name = base_name
     filepaths = extract_texture_map_faces(file_or_image, output_base_name)
-    convert_to_ktx(filepaths)
+    convert_to_ktx(filepaths, output_name=output_base_name)
 
 
 def uri_validator(x):

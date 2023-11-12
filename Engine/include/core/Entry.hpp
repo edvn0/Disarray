@@ -23,6 +23,7 @@ int main(int argc, char** argv)
 	program.add_argument<std::string>("--name").help("Window name").default_value(std::string { "Disarray" });
 	program.add_argument<std::string>("--level").help("Log level").default_value(std::string { "debug" });
 	program.add_argument("--fullscreen").help("Start in fullscreen").default_value(false).implicit_value(true);
+	program.add_argument("--disable_validation").help("Disable validation layers").default_value(false).implicit_value(true);
 
 	try {
 		program.parse_args(argc, argv);
@@ -38,12 +39,14 @@ int main(int argc, char** argv)
 	auto working_directory = program.get<std::string>("wd");
 	auto log_level = program.get<std::string>("level");
 	auto is_fullscreen = program["--fullscreen"] == true;
+	auto disable_validation_layers = program["--disable_validation"] == true;
 	const Disarray::ApplicationProperties properties {
 		.width = static_cast<std::uint32_t>(width),
 		.height = static_cast<std::uint32_t>(height),
 		.name = std::string { name },
 		.is_fullscreen = is_fullscreen,
 		.working_directory = std::filesystem::path { working_directory },
+		.use_validation_layers = !disable_validation_layers,
 	};
 
 	Disarray::Logging::Logger::initialise_logger(log_level);

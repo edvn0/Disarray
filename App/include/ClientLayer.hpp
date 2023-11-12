@@ -23,8 +23,6 @@ public:
 	void render() override;
 	void destruct() override;
 
-	void create_entities();
-
 private:
 	void handle_file_drop(const std::filesystem::path&);
 	void setup_filewatcher_and_threadpool(Threading::ThreadPool& pool);

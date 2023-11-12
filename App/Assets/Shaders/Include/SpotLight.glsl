@@ -7,4 +7,4 @@ struct SpotLight {
     vec4 factors;
 };
 
-#define MAX_SPOT_LIGHTS 1000
+#define MAX_SPOT_LIGHTS 650

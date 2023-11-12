@@ -23,7 +23,14 @@ const float radius = 1.0F;
 void main()
 {
 	Uniform ubo = UBO.ubo;
-	gl_Position = ubo.view_projection * vec4(in_pos, 1.0F);
+	CameraUBO cbo = CBO.cbo;
+	mat3 view = mat3(cbo.view);
+	vec3 right = vec3(view[0][0], view[1][0], view[2][0]);
+	vec3 up = vec3(view[0][1], view[1][1], view[2][1]);
+
+	vec3 calculated_position = in_pos - right * in_tex_coords.x - up * in_tex_coords.y;
+
+	gl_Position = ubo.proj * cbo.view * vec4(calculated_position, 1.0F);
 
 	out_tex_coords = in_tex_coords;
 	uint index = uint(gl_VertexIndex / 4);

@@ -148,13 +148,11 @@ public:
 	virtual void draw_text(std::string_view text, const glm::uvec2& position, float size, const glm::vec4& colour) = 0;
 	virtual void draw_text(std::string_view text, const glm::vec3& position, float size, const glm::vec4& colour) = 0;
 	virtual void draw_text(std::string_view text, const glm::mat4& transform, float size, const glm::vec4& colour) = 0;
-	virtual void draw_text(std::string_view text, const glm::uvec2& position, const glm::vec4& colour)
-	{
-		return draw_text(text, position, 1.0F, colour);
-	};
-	virtual void draw_text(std::string_view text, const glm::uvec2& position, float size) { draw_text(text, position, size, { 1, 1, 1, 1 }); };
-	virtual void draw_text(std::string_view text, const glm::uvec2& position) { return draw_text(text, position, 1.0F, { 1, 1, 1, 1 }); };
-	virtual void draw_text(std::string_view text, const glm::vec3& position, float size) { draw_text(text, position, size, { 1, 1, 1, 1 }); };
+	virtual void draw_billboarded_text(std::string_view text, const glm::mat4& transform, float size, const glm::vec4& colour) = 0;
+	void draw_text(std::string_view text, const glm::uvec2& position, const glm::vec4& colour) { return draw_text(text, position, 1.0F, colour); };
+	void draw_text(std::string_view text, const glm::uvec2& position, float size) { draw_text(text, position, size, { 1, 1, 1, 1 }); };
+	void draw_text(std::string_view text, const glm::uvec2& position) { return draw_text(text, position, 1.0F, { 1, 1, 1, 1 }); };
+	void draw_text(std::string_view text, const glm::vec3& position, float size) { draw_text(text, position, size, { 1, 1, 1, 1 }); };
 
 	template <typename... Args> void draw_text(const glm::uvec2& position, fmt::format_string<Args...> fmt_string, Args&&... args)
 	{

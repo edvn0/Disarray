@@ -161,7 +161,7 @@ template <> inline constexpr std::string_view component_name<PointLight> = "Poin
 
 struct SpotLight {
 	glm::vec3 direction {};
-	float cutoff_angle_degrees {};
+	float cutoff_angle_degrees { 30.0F };
 	glm::vec4 diffuse { 0.F };
 	glm::vec4 specular { 0.F };
 	glm::vec4 ambient { 0.F };
@@ -311,6 +311,7 @@ template <> inline constexpr std::string_view component_name<Skybox> = "Skybox";
 enum class TextProjection : std::uint8_t {
 	ScreenSpace,
 	WorldSpace,
+	Billboard,
 };
 struct Text {
 	std::string text_data {};

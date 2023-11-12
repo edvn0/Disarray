@@ -197,6 +197,6 @@ namespace Detail {
 using SceneDeserialiser = Detail::Deserialiser<ScriptDeserialiser, MeshDeserialiser, SkyboxDeserialiser, TextDeserialiser, BoxColliderDeserialiser,
 	SphereColliderDeserialiser, CapsuleColliderDeserialiser, ColliderMaterialDeserialiser, RigidBodyDeserialiser, TextureDeserialiser,
 	TransformDeserialiser, LineGeometryDeserialiser, QuadGeometryDeserialiser, DirectionalLightDeserialiser, PointLightDeserialiser,
-	InheritanceDeserialiser>;
+	SpotLightDeserialiser, InheritanceDeserialiser>;
 
 } // namespace Disarray

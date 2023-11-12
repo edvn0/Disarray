@@ -1,15 +1,15 @@
 #include "DisarrayPCH.hpp"
 
-#include <core/filesystem/AssetLocations.hpp>
-#include <graphics/Mesh.hpp>
-#include <ui/UI.hpp>
+#include <magic_enum_switch.hpp>
 
 #include "core/App.hpp"
+#include "core/filesystem/AssetLocations.hpp "
 #include "graphics/BufferProperties.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/GLM.hpp"
 #include "graphics/Maths.hpp"
+#include "graphics/Mesh.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/PushConstantLayout.hpp"
@@ -23,8 +23,9 @@
 #include "graphics/Texture.hpp"
 #include "graphics/TextureCache.hpp"
 #include "graphics/UniformBufferSet.hpp"
-#include "magic_enum_switch.hpp"
+#include "scene/Components.hpp"
 #include "scene/SceneRenderer.hpp"
+#include "ui/UI.hpp"
 
 namespace Disarray {
 
@@ -535,14 +536,22 @@ auto SceneRenderer::draw_aabb(const Disarray::AABB& aabb, const glm::vec4& colou
 	draw_single_static_mesh(*aabb_model, *get_pipeline("AABB"), transformation_matrix, colour);
 }
 
-auto SceneRenderer::draw_text(const std::string& text_data, const glm::uvec2& position, float size, const glm::vec4& colour) -> void
+auto SceneRenderer::draw_text(const Components::Transform& transform, const Components::Text& text, const glm::vec4& colour) -> void
 {
-	renderer->draw_text(text_data, position, size, colour);
-}
-
-auto SceneRenderer::draw_text(const std::string& text_data, const glm::mat4& transform, float size, const glm::vec4& colour) -> void
-{
-	renderer->draw_text(text_data, transform, size, colour);
+	switch (text.projection) {
+	case Components::TextProjection::Billboard: {
+		renderer->draw_billboarded_text(text.text_data, transform.compute(), text.size, colour);
+		break;
+	}
+	case Components::TextProjection::ScreenSpace: {
+		renderer->draw_text(text.text_data, glm::uvec2(transform.position), text.size, colour);
+		break;
+	}
+	case Components::TextProjection::WorldSpace: {
+		renderer->draw_text(text.text_data, transform.position, text.size, colour);
+		break;
+	}
+	};
 }
 
 auto SceneRenderer::draw_skybox(const Mesh& skybox_mesh) -> void

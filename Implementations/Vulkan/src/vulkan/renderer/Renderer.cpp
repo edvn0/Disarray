@@ -106,6 +106,11 @@ void Renderer::draw_text(std::string_view text, const glm::uvec2& position, floa
 	text_renderer.submit_text(text, position, size, colour);
 }
 
+void Renderer::draw_billboarded_text(std::string_view text, const glm::mat4& transform, float size, const glm::vec4& colour)
+{
+	text_renderer.submit_billboarded_text(text, transform, size, colour);
+}
+
 void Renderer::draw_text(std::string_view text, const glm::vec3& position, float size, const glm::vec4& colour)
 {
 	text_renderer.submit_text(text, position, size, colour);

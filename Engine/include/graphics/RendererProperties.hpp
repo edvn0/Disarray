@@ -128,14 +128,16 @@ namespace Detail {
 	};
 } // namespace Detail
 
-static constexpr auto max_point_lights = 1000;
-static constexpr auto count_point_lights = 1000;
+static constexpr auto max_point_lights = 800;
+static constexpr auto count_point_lights = 800;
+static_assert(count_point_lights <= max_point_lights);
 static constexpr auto point_light_radius = 7;
 using PointLights = Detail::PointLights<max_point_lights>;
 template <> inline constexpr UBOIdentifier identifier_for<PointLights> = UBOIdentifier::PointLight;
 
-static constexpr auto max_spot_lights = 1000;
-static constexpr auto count_spot_lights = 1000;
+static constexpr auto max_spot_lights = 650;
+static constexpr auto count_spot_lights = 650;
+static_assert(count_spot_lights <= max_spot_lights);
 static constexpr auto spot_light_radius = 7;
 using SpotLights = Detail::SpotLights<max_spot_lights>;
 template <> inline constexpr UBOIdentifier identifier_for<SpotLights> = UBOIdentifier::SpotLight;

@@ -36,8 +36,7 @@ public:
 	auto begin_frame(const glm::mat4& view, const glm::mat4& projection, const glm::mat4& view_projection) -> void;
 	auto end_frame() -> void;
 
-	auto draw_text(const std::string& text_data, const glm::uvec2& position, float size, const glm::vec4& colour) -> void;
-	auto draw_text(const std::string& text_data, const glm::mat4& transform, float size, const glm::vec4& colour) -> void;
+	auto draw_text(const Components::Transform&, const Components::Text&, const glm::vec4& colour) -> void;
 
 	template <SceneFramebuffer FB> void begin_pass(bool explicit_clear = false) { begin_pass(*get_framebuffer<FB>(), explicit_clear); }
 	void end_pass();
