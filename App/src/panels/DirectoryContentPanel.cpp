@@ -5,15 +5,17 @@
 #include <filesystem>
 #include <string_view>
 
-#include "core/filesystem/AssetLocations.hpp"
+#include "graphics/ImageProperties.hpp"
+#include "graphics/TextureCache.hpp"
 #include "ui/UI.hpp"
 
 namespace Disarray::Client {
 
 using namespace std::string_view_literals;
 
-DirectoryContentPanel::DirectoryContentPanel(Device& dev, Window&, Swapchain&, const std::filesystem::path& initial)
+DirectoryContentPanel::DirectoryContentPanel(Device& dev, Window&, Swapchain&, const std::filesystem::path& initial, Disarray::TextureCache& cache)
 	: device(dev)
+	, texture_cache(cache)
 	, initial(initial)
 	, current(initial)
 {
@@ -80,7 +82,7 @@ auto DirectoryContentPanel::traverse_up(bool force_reload) -> bool
 	return could;
 }
 
-void DirectoryContentPanel::update(float time_step)
+void DirectoryContentPanel::update(float)
 {
 	if (changed) {
 		current_directory_content = path_and_content_cache[current];
@@ -103,10 +105,11 @@ void DirectoryContentPanel::interface()
 	if (can_traverse_up() && ImGui::ArrowButton("##GoBack", ImGuiDir_Left)) {
 		traverse_up(force_reload);
 	}
-
+	ImGui::SameLine();
 	if (ImGui::ArrowButton("##GoUpOneLevel", ImGuiDir_Up)) {
 		auto parent = current.parent_path();
-		if (std::filesystem::exists(parent)) {
+		static auto initials_parent = initial.parent_path();
+		if (std::filesystem::exists(parent) && parent != initials_parent) {
 			current = parent;
 			changed = true;
 		}
@@ -127,26 +130,22 @@ void DirectoryContentPanel::interface()
 			const auto& path = directory_entry;
 			const auto filename = path.filename();
 			std::string filename_string = filename.string();
+			ImGui::PushID(path.c_str());
 
-			const auto* data = filename_string.data();
-			ImGui::PushID(data);
+			const auto path_is_image = is_image(path);
 
-			const auto is_image = path.extension() == ".png" || path.extension() == ".jpg";
-
-			if (!is_image) {
+			if (!path_is_image) {
 				draw_file_or_directory(path, { thumbnail_size, thumbnail_size });
 			} else {
-				if (icons.contains(filename)) {
-					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-					UI::image(*icons[filename], { thumbnail_size, thumbnail_size });
-					ImGui::PopStyleColor();
-				} else {
-					icons[filename] = Texture::construct(device,
-						TextureProperties {
-							.path = path.string(),
-							.debug_name = fmt::format("DirectoryContentPanelImage-{}", path.filename().string()),
-						});
-				}
+				const auto exists = texture_cache.put({
+					.key = filename.string(),
+					.debug_name = fmt::format("DirectoryContentPanelImage-{}", path.filename().string()),
+					.path = path.string(),
+				});
+
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+				UI::image(*texture_cache.get(filename.string()), { thumbnail_size, thumbnail_size });
+				ImGui::PopStyleColor();
 			}
 
 			UI::drag_drop(path);
@@ -177,16 +176,8 @@ void DirectoryContentPanel::construct(App&)
 	file_watcher = make_scope<FileWatcher>(pool, "Assets", 200ms);
 	path_and_content_cache[current] = get_files_in_directory(current);
 	current_directory_content = path_and_content_cache[current];
-	directory_icon = Texture::construct(device,
-		{
-			.path = FS::icon("Directory.png"),
-			.debug_name = "DirectoryContentPanelImage-Directory",
-		});
-	file_icon = Texture::construct(device,
-		{
-			.path = FS::icon("File.png"),
-			.debug_name = "DirectoryContentPanelImage-File",
-		});
+	directory_icon = texture_cache.get("Directory");
+	file_icon = texture_cache.get("File");
 
 	file_watcher->on(FileStatuses::All, [this](const FileInformation& file_info) {
 		std::filesystem::path file_path { file_info.path };

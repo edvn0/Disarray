@@ -21,7 +21,7 @@ namespace Disarray::Client {
 
 class DirectoryContentPanel : public Panel {
 public:
-	DirectoryContentPanel(Device&, Window&, Swapchain& sc, const std::filesystem::path& initial = "Assets");
+	DirectoryContentPanel(Device&, Window&, Swapchain& sc, const std::filesystem::path& initial, Disarray::TextureCache& cache);
 	~DirectoryContentPanel() override = default;
 
 	auto traverse_down(const std::filesystem::path& into_directory, bool force_reload = false) -> bool;
@@ -41,6 +41,7 @@ private:
 	void reload();
 
 	Device& device;
+	TextureCache& texture_cache;
 	Scope<FileWatcher> file_watcher {};
 	const std::filesystem::path initial;
 	std::filesystem::path current {};
@@ -55,11 +56,8 @@ private:
 	std::mutex mutex;
 	std::vector<std::filesystem::path> current_directory_content;
 
-	static constexpr auto icons_max_size = 200;
-
 	std::unordered_map<std::filesystem::path, bool, path_hash> file_type_cache;
 	std::unordered_map<std::filesystem::path, std::vector<std::filesystem::path>, path_hash> path_and_content_cache {};
-	std::unordered_map<std::filesystem::path, Ref<Texture>, path_hash> icons {};
-	std::unordered_set<std::filesystem::path, path_hash> do_not_try_icons {};
 };
+
 } // namespace Disarray::Client

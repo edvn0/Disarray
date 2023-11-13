@@ -39,7 +39,7 @@ set(ENGINE_SOURCES
         include/graphics/ModelLoader.hpp
         include/graphics/TextureCache.hpp
         include/graphics/UniformBuffer.hpp
-		include/physics/PhysicsEngine.hpp
+        include/physics/PhysicsEngine.hpp
         include/ui/InterfaceLayer.hpp
         include/ui/UI.hpp
         include/DisarrayPCH.hpp
@@ -116,19 +116,20 @@ set(ENGINE_SOURCES
         src/graphics/Material.cpp
         src/graphics/ImageLoader.cpp
         src/graphics/IndexBuffer.cpp
+        src/graphics/ImageProperties.cpp
         src/graphics/StorageBuffer.cpp
         src/graphics/Texture.cpp
         src/graphics/Image.cpp
         src/graphics/Maths.cpp
         src/graphics/model_loaders/TinyObjModelLoader.cpp
         src/graphics/model_loaders/AssimpModelLoader.cpp
-		src/physics/PhysicsEngine.cpp
+        src/physics/PhysicsEngine.cpp
         src/glfw/GLFWInput.cpp
         src/glfw/GLFWClock.cpp
         src/scene/Components.cpp
         src/scene/Entity.cpp
         src/scene/Scene.cpp
-		src/scene/Deserialiser.cpp
+        src/scene/Deserialiser.cpp
         src/scene/SceneRenderer.cpp
         src/scene/Camera.cpp
         src/scene/CppScript.cpp

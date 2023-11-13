@@ -28,6 +28,7 @@ public:
 	auto get_view() -> VkImageView { return image->get_descriptor_info().imageView; }
 
 	auto get_image(std::uint32_t) const -> const Disarray::Image& override { return *image; }
+	auto valid() const -> bool override { return image != nullptr; }
 
 	void construct_using(Disarray::CommandExecutor&) override {};
 
@@ -59,6 +60,7 @@ public:
 	}
 
 	auto get_image(std::uint32_t) const -> const Disarray::Image& override { return *image; }
+	auto valid() const -> bool override { return image != nullptr; }
 
 	void construct_using(Disarray::CommandExecutor&) override {};
 

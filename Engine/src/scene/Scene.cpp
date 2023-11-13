@@ -158,10 +158,13 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 		light.diffuse = spot_light.diffuse;
 		light.specular = spot_light.specular;
 		light.direction_and_cutoff = {
-			spot_light.direction,
+			-glm::normalize(spot_light.direction),
 			glm::cos(glm::radians(spot_light.cutoff_angle_degrees)),
 		};
-		light.factors = spot_light.factors;
+		light.factors_and_outer_cutoff = {
+			glm::vec3(spot_light.factors),
+			glm::cos(glm::radians(spot_light.outer_cutoff_angle_degrees)),
+		};
 		texture.colour = light.ambient;
 
 		spot_light_ssbo[spot_light_index] = pos.compute();
@@ -312,24 +315,17 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 		}
 	}
 
-	for (auto line_view = registry.view<const Components::LineGeometry, const Components::Texture, const Components::Transform>();
-		 auto&& [entity, geom, tex, transform] : line_view.each()) {
-		scene_renderer.draw_planar_geometry(Geometry::Line,
-			{
-				.position = transform.position,
-				.to_position = geom.to_position,
-				.colour = tex.colour,
-				.identifier = static_cast<std::uint32_t>(entity),
-			});
-	}
-
 	for (auto line_view = registry.view<const Components::LineGeometry, const Components::Transform>();
 		 auto&& [entity, geom, transform] : line_view.each()) {
+		glm::vec4 colour = { 0.9F, 0.2F, 0.6F, 1.0F };
+		if (registry.any_of<Components::Texture>(entity)) {
+			colour = registry.get<Components::Texture>(entity).colour;
+		}
 		scene_renderer.draw_planar_geometry(Geometry::Line,
 			{
 				.position = transform.position,
 				.to_position = geom.to_position,
-				.colour = { 0.9F, 0.2F, 0.6F, 1.0F },
+				.colour = colour,
 				.identifier = static_cast<std::uint32_t>(entity),
 			});
 	}
@@ -386,10 +382,9 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 
 void Scene::draw_shadows(SceneRenderer& scene_renderer)
 {
-	for (auto&& [entity, mesh, texture, transform] : registry
-														 .view<const Components::Mesh, Components::Texture, const Components::Transform>(
-															 entt::exclude<Components::PointLight, Components::SpotLight, Components::Skybox>)
-														 .each()) {
+	for (auto shadow_view = registry.view<const Components::Mesh, Components::Texture, const Components::Transform>(
+			 entt::exclude<Components::PointLight, Components::SpotLight, Components::Skybox>);
+		 auto&& [entity, mesh, texture, transform] : shadow_view.each()) {
 		if (mesh.mesh == nullptr) {
 			continue;
 		}

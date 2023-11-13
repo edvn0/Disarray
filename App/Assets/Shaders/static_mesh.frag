@@ -35,7 +35,7 @@ layout(set = 1, binding = 1) uniform sampler2D depth_texture;
 layout(push_constant) uniform PushConstantBlock { PushConstant pc; }
 PC;
 
-layout(location = 0) in vec4 fragColor;
+layout(location = 0) in vec4 fragment_colour;
 layout(location = 1) in vec2 uvs;
 layout(location = 2) in vec3 normals;
 layout(location = 3) in vec3 fragment_position;
@@ -72,24 +72,8 @@ void main()
             out_vec += calculate_point_light(point_light_position, point_light_factors, point_light_ambient, point_light_diffuse,
             point_light_specular, normals, fragment_position, shadow, view_direction);
         }
-
-        for (uint i = 0; i < pc.max_spot_lights; i++) {
-            SpotLight current_spot_light = SLBO.lights[i];
-            vec4 spot_light_position = current_spot_light.position;
-            vec4 spot_light_factors = current_spot_light.factors;
-            vec4 spot_light_ambient = current_spot_light.ambient;
-            vec4 spot_light_diffuse = current_spot_light.diffuse;
-            vec4 spot_light_specular = current_spot_light.specular;
-            vec4 direction_and_cutoff = current_spot_light.direction_and_offset;
-
-            vec3 spot_light_direction = direction_and_cutoff.xyz;
-            float spot_light_cutoff = direction_and_cutoff.w;
-
-            out_vec += calculate_spot_light(spot_light_position, spot_light_factors, spot_light_ambient, spot_light_diffuse,
-            spot_light_specular, normals, fragment_position, shadow, view_direction, spot_light_direction, spot_light_cutoff);
-        }
-    } else {
-
+    }
+    else {
         uint base = tea(103, 107);
         [[unroll]] for (uint i = 0; i < 8; i++) {
             PointLight current_point_light = PLBO.lights[next_uint(base, pc.max_point_lights)];
@@ -101,24 +85,36 @@ void main()
             out_vec += calculate_point_light(point_light_position, point_light_factors, point_light_ambient, point_light_diffuse,
             point_light_specular, normals, fragment_position, shadow, view_direction);
         }
-
-        for (uint i = 0; i < pc.max_spot_lights; i++) {
-            SpotLight current_spot_light = SLBO.lights[next_uint(base, pc.max_spot_lights)];
-            vec4 spot_light_position = current_spot_light.position;
-            vec4 spot_light_factors = current_spot_light.factors;
-            vec4 spot_light_ambient = current_spot_light.ambient;
-            vec4 spot_light_diffuse = current_spot_light.diffuse;
-            vec4 spot_light_specular = current_spot_light.specular;
-            vec4 direction_and_cutoff = current_spot_light.direction_and_offset;
-
-            vec3 spot_light_direction = direction_and_cutoff.xyz;
-            float spot_light_cutoff = direction_and_cutoff.w;
-
-            out_vec += calculate_spot_light(spot_light_position, spot_light_factors, spot_light_ambient, spot_light_diffuse,
-            spot_light_specular, normals, fragment_position, shadow, view_direction, spot_light_direction, spot_light_cutoff);
-        }
     }
-    colour = pc.colour * vec4(out_vec, 1.0F);
+
+    for (uint i = 0; i < pc.max_spot_lights; i++) {
+        SpotLight current_spot_light = SLBO.lights[i];
+        vec4 sl_position = current_spot_light.position;
+        vec4 sl_factors = current_spot_light.factors;
+        vec4 sl_ambient = current_spot_light.ambient;
+        vec4 sl_diffuse = current_spot_light.diffuse;
+        vec4 sl_specular = current_spot_light.specular;
+        vec4 direction_and_cutoff = current_spot_light.direction_and_offset;
+
+        vec3 sl_direction = direction_and_cutoff.xyz;
+        float sl_cutoff = direction_and_cutoff.w;
+        float sl_outer_cutoff = sl_factors.w;
+
+        out_vec += calculate_spot_light(sl_position,
+        sl_factors,
+        sl_ambient,
+        sl_diffuse,
+        sl_specular,
+        normals,
+        fragment_position,
+        shadow,
+        view_direction,
+        sl_direction,
+        sl_cutoff,
+        sl_outer_cutoff);
+    }
+
+    colour = fragment_colour * pc.colour * vec4(out_vec, 1.0F);
     if (GAMMA_CORRECT == 0) {
         colour = gamma_correct(colour);
     }

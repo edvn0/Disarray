@@ -144,7 +144,7 @@ private:
 	Scope<Disarray::StorageBuffer> entity_transforms {};
 
 	struct PointLightData {
-		std::uint32_t calculate_point_lights { 1 };
+		std::uint32_t calculate_point_lights { 0 };
 		std::uint32_t use_gamma_correction { 0 };
 
 		[[nodiscard]] static auto get_constants() -> std::vector<SpecialisationConstant>

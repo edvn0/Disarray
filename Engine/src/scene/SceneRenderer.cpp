@@ -530,10 +530,7 @@ auto SceneRenderer::draw_aabb(const Disarray::AABB& aabb, const glm::vec4& colou
 	glm::vec3 aabb_center = aabb.middle_point();
 	glm::vec3 translation = -aabb_center;
 
-	glm::mat4 transformation_matrix = glm::mat4(1.0F);
-	transformation_matrix = glm::translate(transformation_matrix, translation);
-	transformation_matrix = transform * scale_matrix * transformation_matrix;
-	draw_single_static_mesh(*aabb_model, *get_pipeline("AABB"), transformation_matrix, colour);
+	draw_single_static_mesh(*aabb_model, *get_pipeline("AABB"), transform, colour);
 }
 
 auto SceneRenderer::draw_text(const Components::Transform& transform, const Components::Text& text, const glm::vec4& colour) -> void
@@ -585,9 +582,7 @@ auto SceneRenderer::draw_static_submeshes(const Collections::ScopedStringMap<Mes
 
 	auto& push_constant = get_graphics_resource().get_editable_push_constant();
 
-	Collections::for_each(submeshes, [&](const auto& sub) {
-		auto&& [key, mesh] = sub;
-
+	Collections::for_each_unwrapped(submeshes, [&](const auto&, const auto& mesh) {
 		std::size_t index = 0;
 		for (const auto& texture_index : mesh->texture_indices) {
 			push_constant.image_indices.at(index++) = static_cast<int>(texture_index);

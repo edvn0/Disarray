@@ -69,7 +69,7 @@ void ClientLayer::construct(App& app)
 	running_scene->sort();
 
 	auto stats_panel = app.add_panel<StatisticsPanel>(app.get_statistics());
-	auto content_panel = app.add_panel<DirectoryContentPanel>("Assets");
+	auto content_panel = app.add_panel<DirectoryContentPanel>("Assets", scene_renderer.get_texture_cache());
 	auto execution_stats_panel = app.add_panel<ExecutionStatisticsPanel>(scene_renderer.get_command_executor());
 	auto pipeline_editor_panel = app.add_panel<PipelineEditorPanel>(scene_renderer.get_pipeline_cache());
 	scene_panel = std::dynamic_pointer_cast<ScenePanel>(app.add_panel<ScenePanel>(running_scene.get()));

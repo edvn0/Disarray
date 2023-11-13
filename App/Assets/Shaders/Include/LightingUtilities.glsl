@@ -85,19 +85,22 @@ float shadow, vec3 view_direction)
 }
 
 vec3 calculate_spot_light(vec4 position, vec4 input_factors, vec4 input_ambient, vec4 input_diffuse, vec4 input_specular, vec3 normal, vec3 fragPos,
-float shadow, vec3 view_direction, vec3 spot_light_direction, float spot_light_cutoff)
+float shadow, vec3 view_direction, vec3 spot_light_direction, float spot_light_cutoff, float spot_light_outer_cutoff)
 {
     const vec3 light_to_frag_vector = vec3(position) - fragPos;
     const vec3 light_direction = normalize(light_to_frag_vector);
-    const float spot_factors = dot(light_direction, spot_light_direction);
+    const float theta = dot(light_direction, spot_light_direction);
+    const float epsilon   = spot_light_cutoff - spot_light_outer_cutoff;
+    const float intensity = clamp((theta - spot_light_outer_cutoff) / epsilon, 0.0, 1.0);
 
-    if (spot_factors > spot_light_cutoff) {
-        vec3 colour = calculate_point_light(position, input_factors, input_ambient, input_diffuse, input_specular, normal, fragPos, shadow, view_direction);
-        return colour * (1.0 - (1.0 - spot_factors) * 1.0/(1.0 - spot_light_cutoff));
-    }
-    else {
-        return vec3(0, 0, 0);
-    }
+    vec3 colour = calculate_point_light(position, input_factors, input_ambient, input_diffuse, input_specular, normal, fragPos, shadow, view_direction);
+    return intensity * colour;
+}
+
+vec3 calculate_spot_light(vec4 position, vec4 input_factors, vec4 input_ambient, vec4 input_diffuse, vec4 input_specular, vec3 normal, vec3 fragPos,
+float shadow, vec3 view_direction, vec3 spot_light_direction, float spot_light_cutoff)
+{
+    return calculate_spot_light(position, input_factors, input_ambient, input_diffuse, input_specular, normal, fragPos, shadow, view_direction, spot_light_direction, spot_light_cutoff, 0.82);
 }
 
 vec4 gamma_correct(vec4 colour)

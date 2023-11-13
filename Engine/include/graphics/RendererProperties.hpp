@@ -109,10 +109,10 @@ template <> inline constexpr UBOIdentifier identifier_for<PointLight> = UBOIdent
 struct SpotLight {
 	glm::vec4 position;
 	glm::vec4 direction_and_cutoff;
+	glm::vec4 factors_and_outer_cutoff { 1, 0.09F, 0.032F, glm::cos(glm::radians(25.0F)) };
 	glm::vec4 ambient;
 	glm::vec4 diffuse;
 	glm::vec4 specular;
-	glm::vec4 factors { 1, 0.09F, 0.032F, 0 };
 };
 template <> inline constexpr UBOIdentifier identifier_for<SpotLight> = UBOIdentifier::SpotLight;
 
@@ -131,14 +131,12 @@ namespace Detail {
 static constexpr auto max_point_lights = 800;
 static constexpr auto count_point_lights = 800;
 static_assert(count_point_lights <= max_point_lights);
-static constexpr auto point_light_radius = 7;
 using PointLights = Detail::PointLights<max_point_lights>;
 template <> inline constexpr UBOIdentifier identifier_for<PointLights> = UBOIdentifier::PointLight;
 
 static constexpr auto max_spot_lights = 650;
 static constexpr auto count_spot_lights = 650;
 static_assert(count_spot_lights <= max_spot_lights);
-static constexpr auto spot_light_radius = 7;
 using SpotLights = Detail::SpotLights<max_spot_lights>;
 template <> inline constexpr UBOIdentifier identifier_for<SpotLights> = UBOIdentifier::SpotLight;
 

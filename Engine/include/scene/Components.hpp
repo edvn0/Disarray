@@ -165,7 +165,8 @@ struct SpotLight {
 	glm::vec4 diffuse { 0.F };
 	glm::vec4 specular { 0.F };
 	glm::vec4 ambient { 0.F };
-	glm::vec4 factors { 1, 0.09F, 0.032F, 0 };
+	glm::vec3 factors { 1, 0.09F, 0.032F };
+	float outer_cutoff_angle_degrees { 25.0F };
 };
 template <> inline constexpr std::string_view component_name<SpotLight> = "SpotLight";
 

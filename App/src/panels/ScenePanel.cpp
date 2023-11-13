@@ -249,7 +249,8 @@ void ScenePanel::for_all_components(Entity& entity)
 
 	draw_component<Components::SpotLight>(entity, [](Components::SpotLight& spot) {
 		if (ImGui::DragFloat3("Direction", glm::value_ptr(spot.direction), 0.1F, -glm::pi<float>(), glm::pi<float>())) { }
-		if (ImGui::DragFloat("Cutoff Angle", &spot.cutoff_angle_degrees, 2.F, -90.F, 90.F)) { }
+		if (ImGui::DragFloat("Cutoff", &spot.cutoff_angle_degrees, 2.F, -90.F, 90.F)) { }
+		if (ImGui::DragFloat("Outer Cutoff", &spot.outer_cutoff_angle_degrees, 2.F, -90.F, 90.F)) { }
 		if (UI::Input::drag("Factors", spot.factors, 0.1F, 0.F, 10.F)) { }
 		if (ImGui::ColorEdit4("Ambient", glm::value_ptr(spot.ambient))) { }
 		if (ImGui::ColorEdit4("Diffuse", glm::value_ptr(spot.diffuse))) { }
@@ -286,22 +287,25 @@ void ScenePanel::for_all_components(Entity& entity)
 		bool any_changed = false;
 		std::optional<std::filesystem::path> selected { std::nullopt };
 		if (ImGui::Button("Choose path", { 80, 30 })) {
-			selected = UI::Popup::select_file(
-				{
-					"*.ktx",
-				},
-				"Assets/Textures");
+			selected = UI::Popup::select_file({ "*.ktx", "*.png" }, "Assets/Textures");
 			any_changed |= selected.has_value();
 		}
 
 		if (any_changed && selected.has_value()) {
 			const auto value = *selected;
-			skybox.texture = Texture::construct(dev,
+
+			auto new_cubemap = Texture::construct(dev,
 				{
 					.path = value,
 					.dimension = TextureDimension::Three,
 					.debug_name = value.string(),
 				});
+
+			if (!new_cubemap->valid()) {
+				return;
+			}
+
+			skybox.texture = std::move(new_cubemap);
 			current->submit_preframe_work([](Scene& this_scene, SceneRenderer& renderer) {
 				auto texture_cube = this_scene.get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
 
@@ -440,10 +444,10 @@ void ScenePanel::for_all_components(Entity& entity)
 
 	draw_component<Components::RigidBody>(entity, [&](Components::RigidBody& body) {
 		if (UI::combo_choice<BodyType>("Body Type", std::ref(body.body_type))) { }
-		if (ImGui::DragFloat("mass", &body.mass)) { }
-		if (ImGui::DragFloat("linear_drag", &body.linear_drag)) { }
-		if (ImGui::DragFloat("angular_drag", &body.angular_drag)) { }
-		if (UI::checkbox("Gravity", body.disable_gravity)) { }
+		if (ImGui::DragFloat("Mass", &body.mass)) { }
+		if (ImGui::DragFloat("Linear Drag", &body.linear_drag)) { }
+		if (ImGui::DragFloat("Angular Drag", &body.angular_drag)) { }
+		if (UI::checkbox("Disable gravity", body.disable_gravity)) { }
 		if (UI::checkbox("Kinematic", body.is_kinematic)) { }
 	});
 }

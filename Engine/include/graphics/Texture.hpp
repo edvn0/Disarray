@@ -53,6 +53,8 @@ public:
 
 	virtual void construct_using(CommandExecutor&) = 0;
 
+	virtual auto valid() const -> bool = 0;
+
 protected:
 	void generate_mips(float count_images = 0.0F);
 };
