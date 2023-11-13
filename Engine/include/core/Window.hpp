@@ -12,6 +12,7 @@ struct WindowProperties {
 	std::uint32_t height { 0 };
 	std::string name {};
 	bool is_fullscreen { false };
+	bool use_validation_layers { true };
 };
 
 class App;

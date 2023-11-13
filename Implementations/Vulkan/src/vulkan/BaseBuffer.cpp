@@ -3,8 +3,10 @@
 #include <magic_enum.hpp>
 
 #include "core/Ensure.hpp"
+#include "graphics/BufferProperties.hpp"
 #include "vulkan/Allocator.hpp"
 #include "vulkan/CommandExecutor.hpp"
+#include "vulkan/PhysicalDevice.hpp"
 
 namespace Disarray::Vulkan {
 
@@ -24,11 +26,33 @@ static auto to_vulkan_usage(BufferType buffer_type) -> VkBufferUsageFlags
 	}
 }
 
+auto fix_buffer_validity(const Disarray::Device& device, BufferType type, Disarray::BufferProperties& properties) -> void
+{
+	const auto& physical = device.get_physical_device();
+	const auto& vk_physical = cast_to<Vulkan::PhysicalDevice>(physical);
+	const double count_size_percentage = static_cast<double>(properties.count) / static_cast<double>(properties.size);
+
+	if (type == BufferType::Uniform) {
+		if (properties.size > vk_physical.get_limits().maxUniformBufferRange) {
+			properties.size = vk_physical.get_limits().maxUniformBufferRange;
+		}
+	} else if (type == BufferType::Storage) {
+		if (properties.size > vk_physical.get_limits().maxStorageBufferRange) {
+			properties.size = vk_physical.get_limits().maxStorageBufferRange;
+		}
+	} else {
+		return;
+	}
+	properties.count = static_cast<std::size_t>(count_size_percentage * static_cast<double>(properties.size));
+}
+
 BaseBuffer::BaseBuffer(const Disarray::Device& dev, BufferType buffer_type, Disarray::BufferProperties properties)
 	: device(dev)
 	, type(buffer_type)
 	, props(properties)
 {
+	fix_buffer_validity(dev, type, props);
+
 	if (props.data != nullptr) {
 		create_with_valid_data();
 	} else {

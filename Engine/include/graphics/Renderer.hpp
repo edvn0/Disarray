@@ -18,6 +18,7 @@
 #include "graphics/RendererProperties.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/TextRenderer.hpp"
+#include "graphics/UniformBufferSet.hpp"
 #include "graphics/VertexBuffer.hpp"
 
 using VkDescriptorSet = struct VkDescriptorSet_T*;
@@ -42,6 +43,15 @@ public:
 
 	virtual void expose_to_shaders(const Disarray::StorageBuffer& buffer, DescriptorSet set, DescriptorBinding binding) = 0;
 
+	template <class Buffer> void expose_to_shaders(const Disarray::UniformBufferSet<Buffer>& buffer_set, DescriptorSet set, DescriptorBinding binding)
+	{
+		for (const Scope<Disarray::UniformBuffer>& buffer : buffer_set) {
+			expose_to_shaders(*buffer, set, binding);
+		}
+	};
+
+	virtual void expose_to_shaders(const Disarray::UniformBuffer& buffer, DescriptorSet set, DescriptorBinding binding) = 0;
+
 	virtual void expose_to_shaders(std::span<const Ref<Disarray::Texture>> images, DescriptorSet set, DescriptorBinding binding) = 0;
 	virtual void expose_to_shaders(std::span<const Disarray::Texture*> images, DescriptorSet set, DescriptorBinding binding) = 0;
 	virtual void expose_to_shaders(const Disarray::Image& images, DescriptorSet set, DescriptorBinding binding) = 0;
@@ -54,12 +64,6 @@ public:
 
 	[[nodiscard]] virtual auto get_push_constant() const -> const PushConstant* = 0;
 	virtual auto get_editable_push_constant() -> PushConstant& = 0;
-
-	virtual auto get_editable_ubos() -> std::tuple<UBO&, CameraUBO&, PointLights&, ShadowPassUBO&, DirectionalLightUBO&, GlyphUBO&> = 0;
-
-	virtual void update_ubo() = 0;
-	virtual void update_ubo(std::size_t ubo_index) = 0;
-	virtual void update_ubo(UBOIdentifier identifier) = 0;
 };
 
 class Renderer : public ReferenceCountable {
@@ -144,13 +148,11 @@ public:
 	virtual void draw_text(std::string_view text, const glm::uvec2& position, float size, const glm::vec4& colour) = 0;
 	virtual void draw_text(std::string_view text, const glm::vec3& position, float size, const glm::vec4& colour) = 0;
 	virtual void draw_text(std::string_view text, const glm::mat4& transform, float size, const glm::vec4& colour) = 0;
-	virtual void draw_text(std::string_view text, const glm::uvec2& position, const glm::vec4& colour)
-	{
-		return draw_text(text, position, 1.0F, colour);
-	};
-	virtual void draw_text(std::string_view text, const glm::uvec2& position, float size) { draw_text(text, position, size, { 1, 1, 1, 1 }); };
-	virtual void draw_text(std::string_view text, const glm::uvec2& position) { return draw_text(text, position, 1.0F, { 1, 1, 1, 1 }); };
-	virtual void draw_text(std::string_view text, const glm::vec3& position, float size) { draw_text(text, position, size, { 1, 1, 1, 1 }); };
+	virtual void draw_billboarded_text(std::string_view text, const glm::mat4& transform, float size, const glm::vec4& colour) = 0;
+	void draw_text(std::string_view text, const glm::uvec2& position, const glm::vec4& colour) { return draw_text(text, position, 1.0F, colour); };
+	void draw_text(std::string_view text, const glm::uvec2& position, float size) { draw_text(text, position, size, { 1, 1, 1, 1 }); };
+	void draw_text(std::string_view text, const glm::uvec2& position) { return draw_text(text, position, 1.0F, { 1, 1, 1, 1 }); };
+	void draw_text(std::string_view text, const glm::vec3& position, float size) { draw_text(text, position, size, { 1, 1, 1, 1 }); };
 
 	template <typename... Args> void draw_text(const glm::uvec2& position, fmt::format_string<Args...> fmt_string, Args&&... args)
 	{
@@ -178,8 +180,7 @@ public:
 	virtual void on_batch_full(std::function<void(Renderer&)>&&) = 0;
 	virtual void flush_batch(Disarray::CommandExecutor&) = 0;
 
-	virtual void begin_frame(const Camera& camera) = 0;
-	virtual void begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_projection) = 0;
+	virtual void begin_frame() = 0;
 	virtual void end_frame() = 0;
 
 	virtual void force_recreation() = 0;

@@ -5,6 +5,7 @@
 #include "PointLight.glsl"
 #include "Random.glsl"
 #include "UBO.glsl"
+#include "SpotLight.glsl"
 
 layout(constant_id = 0) const int POINT_LIGHT_CHOICE = 0;
 
@@ -19,6 +20,9 @@ PLBO;
 
 layout(set = 0, binding = 4) uniform DirectionalLightBlock { DirectionalLightUBO dlu; }
 DLU;
+
+layout(set = 0, binding = 6) uniform SpotLightBlock { SpotLight[MAX_POINT_LIGHTS] lights; }
+SLBO;
 
 layout(push_constant) uniform PushConstantBlock { PushConstant pc; }
 PC;

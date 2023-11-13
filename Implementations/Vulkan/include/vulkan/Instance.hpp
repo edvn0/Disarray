@@ -14,15 +14,16 @@ class PhysicalDevice;
 
 class Instance : public Disarray::Instance, public PropertySupplier<VkInstance> {
 public:
-	Instance(const std::vector<const char*>& vec = { "VK_LAYER_KHRONOS_validation" });
+	explicit Instance(bool runtime_requested_validation = true, const std::vector<const char*>& = { "VK_LAYER_KHRONOS_validation" });
 	~Instance() override;
 
 	[[nodiscard]] auto supply() const -> VkInstance override { return instance; }
 
 private:
-	bool check_validation_layer_support() const;
+	[[nodiscard]] auto check_validation_layer_support() const -> bool;
 	void setup_debug_messenger();
 
+	bool use_validation_layers { true };
 	std::vector<const char*> requested_layers {};
 	VkInstance instance {};
 	VkDebugUtilsMessengerEXT debug_messenger {};

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+
 #include "graphics/UniformBuffer.hpp"
 #include "vulkan/BaseBuffer.hpp"
 #include "vulkan/MemoryAllocator.hpp"
@@ -22,6 +24,7 @@ public:
 	auto get_raw() const -> void* override;
 
 	auto get_buffer_info() const -> const auto& { return buffer_info; }
+	static auto get_descriptor_type() { return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; }
 
 private:
 	Vulkan::BaseBuffer base_buffer;

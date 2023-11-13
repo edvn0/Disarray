@@ -210,6 +210,20 @@ void PointLightDeserialiser::deserialise_impl(const nlohmann::json& object, Comp
 	light.factors = object["factors"];
 }
 
+auto SpotLightDeserialiser::should_add_component_impl(const nlohmann::json&) -> bool { return true; }
+void SpotLightDeserialiser::deserialise_impl(const nlohmann::json& object, Components::SpotLight& light, const Device& /*unused*/)
+{
+	light.direction = object["direction"];
+	light.factors = object["factors"];
+	light.cutoff_angle_degrees = object["cutoff_angle_degrees"];
+	if (object.contains("outer_cutoff_angle_degrees")) {
+		light.outer_cutoff_angle_degrees = object["outer_cutoff_angle_degrees"];
+	}
+	light.ambient = object["ambient"];
+	light.diffuse = object["diffuse"];
+	light.specular = object["specular"];
+}
+
 } // namespace Disarray
 
 NLOHMANN_JSON_NAMESPACE_BEGIN

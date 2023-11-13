@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 
 #include <array>
+#include <span>
 
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/IndexBuffer.hpp"
@@ -21,6 +22,7 @@
 
 using VkPipelineLayout = struct VkPipelineLayout_T*;
 using VkDevice = struct VkDevice_T*;
+using VkDescriptorSet = struct VkDescriptorSet_T*;
 
 namespace Disarray::Vulkan {
 
@@ -61,6 +63,7 @@ public:
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&, const glm::vec4&,
 		const glm::mat4&, const std::uint32_t) override;
 
+	void draw_billboarded_text(std::string_view text, const glm::mat4& transform, float size, const glm::vec4& colour) override;
 	void draw_text(std::string_view text, const glm::uvec2& position, float size, const glm::vec4& colour) override;
 	void draw_text(std::string_view text, const glm::vec3& position, float size, const glm::vec4& colour) override;
 	void draw_text(std::string_view text, const glm::mat4& transform, float size, const glm::vec4& colour) override;
@@ -77,8 +80,7 @@ public:
 	auto get_batch_renderer() -> BatchRenderer& override { return batch_renderer; }
 	auto get_text_renderer() -> TextRenderer& override { return text_renderer; }
 
-	void begin_frame(const Camera& /*camera*/) override;
-	void begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_projection) override;
+	void begin_frame() override;
 	void end_frame() override;
 
 	void force_recreation() override;
@@ -94,6 +96,7 @@ public:
 private:
 	void add_geometry_to_batch(Geometry, const GeometryProperties&);
 	void draw_billboard_quad(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline);
+	void bind_descriptor_sets(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const std::span<const VkDescriptorSet>& span);
 
 	const Disarray::Device& device;
 	const Disarray::Swapchain& swapchain;
@@ -102,6 +105,7 @@ private:
 	TextRenderer text_renderer;
 
 	mutable const Disarray::Pipeline* bound_pipeline { nullptr };
+	mutable std::size_t bound_descriptor_set_hash { 0 };
 	std::function<void(Disarray::Renderer&)> on_batch_full_func = [](auto&) {};
 
 	RendererProperties props;

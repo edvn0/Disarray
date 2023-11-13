@@ -24,6 +24,7 @@ struct ApplicationProperties {
 	std::string name {};
 	bool is_fullscreen { false };
 	std::filesystem::path working_directory { std::filesystem::current_path() };
+	bool use_validation_layers { true };
 };
 
 /**

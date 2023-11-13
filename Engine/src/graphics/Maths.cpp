@@ -1,7 +1,3 @@
-//
-// Created by edvin on 16/10/2023.
-//
-
 #include "graphics/Maths.hpp"
 
 namespace Disarray::Maths {

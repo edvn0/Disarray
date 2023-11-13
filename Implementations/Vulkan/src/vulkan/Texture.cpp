@@ -1,12 +1,11 @@
 #include "DisarrayPCH.hpp"
 
-#include "vulkan/Texture.hpp"
-
 #include <ktx.h>
 #include <ktxvulkan.h>
 
 #include <utility>
 
+#include "../../../../ThirdParty/stb_image/include/stb_image_write.h"
 #include "core/DataBuffer.hpp"
 #include "core/Ensure.hpp"
 #include "core/Log.hpp"
@@ -14,6 +13,7 @@
 #include "graphics/Image.hpp"
 #include "graphics/ImageLoader.hpp"
 #include "vulkan/Image.hpp"
+#include "vulkan/Texture.hpp"
 
 namespace Disarray::Vulkan {
 
@@ -81,19 +81,79 @@ auto Texture::load_pixels() -> DataBuffer
 	return pixels;
 }
 
+void extract_cubemap_faces(const std::filesystem::path& path)
+{
+	// Load the texture map image
+	DataBuffer buffer;
+	ImageLoader loader { path, buffer };
+	auto&& [width, height] = loader.get_extent();
+	auto channels = loader.get_channels();
+
+	// Define the coordinates for the faces in the 4x3 grid
+	std::uint32_t cellWidth = width / 4;
+	std::uint32_t cellHeight = height / 3;
+
+	if (width == height) {
+		cellWidth = cellHeight = (cellWidth / 4);
+	}
+
+	struct FaceCoordinates {
+		std::uint32_t x1, y1, x2, y2;
+	};
+	std::array<FaceCoordinates, 6> faces = {
+		FaceCoordinates { cellWidth, 0, cellWidth * 2, cellHeight }, // top
+		{ cellWidth * 0, cellHeight, cellWidth * 1, cellHeight * 2 }, // left
+		{ cellWidth * 1, cellHeight, cellWidth * 2, cellHeight * 2 }, // front
+		{ cellWidth * 2, cellHeight, cellWidth * 3, cellHeight * 2 }, // right
+		{ cellWidth * 3, cellHeight, cellWidth * 4, cellHeight * 2 }, // back
+		{ cellWidth, cellHeight * 2, cellWidth * 2, cellHeight * 3 }, // top
+	};
+
+	std::array<DataBuffer, 6> buffers {};
+	for (auto i = 0ULL; i < faces.size(); ++i) {
+		const FaceCoordinates& coordinates = faces[i];
+		int faceWidth = coordinates.x2 - coordinates.x1;
+		int faceHeight = coordinates.y2 - coordinates.y1;
+
+		// Allocate memory for the face image
+		auto& face_image = buffers.at(i);
+		face_image.copy_from(DataBuffer(faceWidth * faceHeight * channels));
+
+		// Copy pixels from the texture map to the face image
+		for (int y = 0; y < faceHeight; ++y) {
+			for (int x = 0; x < faceWidth; ++x) {
+				int sourceX = coordinates.x1 + x;
+				int sourceY = coordinates.y1 + y;
+				int sourceIndex = (sourceY * width + sourceX) * channels;
+				int destinationIndex = (y * faceWidth + x) * channels;
+
+				for (int c = 0; c < channels; ++c) {
+					face_image[destinationIndex + c] = buffer[sourceIndex + c];
+				}
+			}
+		}
+	}
+}
+
 Texture3D::Texture3D(const Device& dev, TextureProperties properties)
 	: Disarray::Texture(std::move(properties))
 	, device(dev)
 {
-
 	Extent full_extent;
 	DataBuffer pixels {};
 	std::vector<CopyRegion> copy_regions;
 	if (!props.path.empty()) {
-		ktxResult result;
-		ktxTexture* texture_data;
+		// NOTE: We assume that PNGs are default texture cubemap layouted.
+		ktxTexture* texture_data { nullptr };
+		ktxResult result = KTX_FILE_DATA_ERROR;
+		if (props.path.extension() == ".png") {
+			extract_cubemap_faces(props.path);
+			Log::error("Texture3D", "Cannot load PNGs just yet.");
+			return;
+		} else {
+			result = ktxTexture_CreateFromNamedFile(props.path.string().c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &texture_data);
+		}
 
-		result = ktxTexture_CreateFromNamedFile(props.path.string().c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &texture_data);
 		ensure(result == KTX_SUCCESS, "Could not load image.");
 
 		// Get properties required for using and upload texture data from the ktx texture object

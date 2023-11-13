@@ -74,7 +74,7 @@ auto image_button(const Disarray::Image& image, glm::vec2 size, const std::array
 		identifier = *get_cache()[hash];
 	}
 
-	return ImGui::ImageButton("Image", identifier, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
+	return ImGui::ImageButton(vk_image.get_properties().debug_name.c_str(), identifier, to_imgui<2>(size), to_imgui<2>(uvs[0]), to_imgui<2>(uvs[1]));
 }
 
 void image(const Disarray::Image& image, glm::vec2 size, const std::array<glm::vec2, 2>& uvs)
@@ -247,11 +247,12 @@ auto shader_drop_button(Device& device, const std::string& button_name, ShaderTy
 auto texture_drop_button(Device& device, const Texture& out_texture) -> Ref<Disarray::Texture>
 {
 	UI::image_button(out_texture.get_image());
-	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".png", ".jpg", ".jpeg" })) {
-		const auto& texture_path = *dropped;
+	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".png", ".jpg", ".jpeg", ".ktx" })) {
+		const std::filesystem::path& texture_path = *dropped;
 		return Texture::construct(device,
 			{
-				.path = std::filesystem::path(texture_path),
+				.path = texture_path,
+				.dimension = texture_path.extension().string() == ".ktx" ? TextureDimension::Three : TextureDimension::Two,
 				.debug_name = texture_path.string(),
 			});
 	}
@@ -321,7 +322,7 @@ namespace Popup {
 			extensions.push_back(ext.c_str());
 		}
 		const char* str = tinyfd_openFileDialog(
-			"File selector", absolute.string().c_str(), static_cast<std::int32_t>(extensions.size()), extensions.data(), nullptr, 0);
+			"File selector", absolute.string().c_str(), static_cast<std::int32_t>(extensions.size()), extensions.data(), "", 0);
 
 		if (str != nullptr) {
 			return { std::filesystem::path { str } };

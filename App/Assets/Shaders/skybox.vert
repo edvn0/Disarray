@@ -17,7 +17,7 @@ layout(location = 0) out vec3 uvs;
 
 void main()
 {
-	vec4 position = UBO.ubo.proj * CBO.cbo.view * vec4(pos, 1.0);
+	vec4 position = UBO.ubo.proj * mat4(mat3(UBO.ubo.view)) * vec4(pos, 1.0);
 	gl_Position = position.xyww;
 	uvs = pos;
 	uvs.xy *= -1.0;

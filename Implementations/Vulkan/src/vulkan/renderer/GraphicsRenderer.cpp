@@ -27,6 +27,31 @@
 
 namespace Disarray::Vulkan {
 
+// Define a hash function for VkDescriptorSet
+struct VkDescriptorSetHash {
+	std::size_t operator()(const VkDescriptorSet& descriptorSet) const
+	{
+		// You can customize the hash function based on your specific needs
+		// For simplicity, this example uses std::hash directly
+		return std::hash<VkDescriptorSet> {}(descriptorSet);
+	}
+};
+
+// Define a hash function for std::span of VkDescriptorSets
+struct VkDescriptorSetsSpanHash {
+	std::size_t operator()(const std::span<const VkDescriptorSet>& sets) const
+	{
+		std::size_t hash_value = 0;
+
+		// Combine hash values of individual VkDescriptorSets in the span
+		for (const auto& descriptorSet : sets) {
+			hash_value ^= VkDescriptorSetHash {}(descriptorSet) + 0x9e3779b9 + (hash_value << 6) + (hash_value >> 2);
+		}
+
+		return hash_value;
+	}
+};
+
 void Renderer::bind_pipeline(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, Disarray::PipelineBindPoint point)
 {
 	if (bound_pipeline == nullptr || &pipeline != bound_pipeline) {
@@ -41,15 +66,28 @@ void Renderer::bind_pipeline(Disarray::CommandExecutor& executor, const Disarray
 
 void Renderer::bind_descriptor_sets(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline)
 {
-	auto* pipeline_layout = cast_to<Vulkan::Pipeline>(pipeline).get_layout();
 	const std::array desc {
 		get_graphics_resource().get_descriptor_set(DescriptorSet(0)),
 		get_graphics_resource().get_descriptor_set(DescriptorSet(1)),
 		get_graphics_resource().get_descriptor_set(DescriptorSet(2)),
 		get_graphics_resource().get_descriptor_set(DescriptorSet(3)),
 	};
-	vkCmdBindDescriptorSets(supply_cast<Vulkan::CommandExecutor>(executor), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0,
-		static_cast<std::uint32_t>(desc.size()), desc.data(), 0, nullptr);
+	const auto span = std::span { desc.data(), desc.size() };
+	bind_descriptor_sets(executor, pipeline, span);
+}
+
+void Renderer::bind_descriptor_sets(
+	Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const std::span<const VkDescriptorSet>& span)
+{
+	auto* pipeline_layout = cast_to<Vulkan::Pipeline>(pipeline).get_layout();
+
+	VkDescriptorSetsSpanHash hasher;
+	const auto calculated = hasher(span) ^ Disarray::bit_cast<std::size_t>(pipeline_layout);
+	if (calculated != bound_descriptor_set_hash) {
+		vkCmdBindDescriptorSets(supply_cast<Vulkan::CommandExecutor>(executor), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0,
+			static_cast<std::uint32_t>(span.size()), span.data(), 0, nullptr);
+		bound_descriptor_set_hash = calculated;
+	}
 }
 
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const GeometryProperties& properties)
@@ -82,7 +120,6 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 	auto& push_constant = get_graphics_resource().get_editable_push_constant();
 
 	push_constant.object_transform = transform;
-	push_constant.current_identifier = identifier;
 	push_constant.colour = { 1, 1, 1, 1 };
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &push_constant);
@@ -150,7 +187,6 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 
 	push_constant.object_transform = transform;
 	push_constant.colour = colour;
-	push_constant.current_identifier = identifier;
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &push_constant);
 
@@ -188,7 +224,6 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Ve
 
 	push_constant.object_transform = transform;
 	push_constant.colour = colour;
-	push_constant.current_identifier = 0;
 	vkCmdPushConstants(
 		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &push_constant);
 

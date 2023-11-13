@@ -66,9 +66,10 @@ void ClientLayer::construct(App& app)
 
 	extent = app.get_swapchain().get_extent();
 	running_scene = scene;
+	running_scene->sort();
 
 	auto stats_panel = app.add_panel<StatisticsPanel>(app.get_statistics());
-	auto content_panel = app.add_panel<DirectoryContentPanel>("Assets");
+	auto content_panel = app.add_panel<DirectoryContentPanel>("Assets", scene_renderer.get_texture_cache());
 	auto execution_stats_panel = app.add_panel<ExecutionStatisticsPanel>(scene_renderer.get_command_executor());
 	auto pipeline_editor_panel = app.add_panel<PipelineEditorPanel>(scene_renderer.get_pipeline_cache());
 	scene_panel = std::dynamic_pointer_cast<ScenePanel>(app.add_panel<ScenePanel>(running_scene.get()));
@@ -88,185 +89,6 @@ void ClientLayer::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)
 	file_watcher = make_scope<FileWatcher>(pool, "Assets/Shaders", Collections::StringSet { ".vert", ".frag", ".glsl" }, tick_time);
 	auto& pipeline_cache = scene_renderer.get_pipeline_cache();
 	file_watcher->on_modified([&ext = extent, &pipeline_cache](const FileInformation& entry) { pipeline_cache.force_recreation(ext); });
-}
-
-void ClientLayer::create_entities()
-{
-	auto& graphics_resource = scene_renderer.get_graphics_resource();
-
-	const auto cube_mesh = Mesh::construct(device,
-		MeshProperties {
-			.path = FS::model("cube.obj"),
-		});
-
-	const VertexLayout layout {
-		{ ElementType::Float3, "position" },
-		{ ElementType::Float2, "uv" },
-		{ ElementType::Float4, "colour" },
-		{ ElementType::Float3, "normals" },
-		{ ElementType::Float3, "tangents" },
-		{ ElementType::Float3, "bitangents" },
-	};
-	auto& resources = graphics_resource;
-
-	auto texture_cube = Texture::construct(device,
-		{
-			.path = FS::texture("cubemap_yokohama_rgba.ktx"),
-			.dimension = TextureDimension::Three,
-			.debug_name = "Skybox",
-		});
-	auto skybox_material = Material::construct(device,
-		{
-			.vertex_shader = scene_renderer.get_pipeline_cache().get_shader("skybox.vert"),
-			.fragment_shader = scene_renderer.get_pipeline_cache().get_shader("skybox.frag"),
-			.textures = { texture_cube },
-		});
-
-	auto environment = scene->create("Environment");
-	environment.add_component<Components::Material>(skybox_material);
-	environment.add_component<Components::Skybox>(texture_cube);
-	environment.add_component<Components::Mesh>(cube_mesh);
-
-	auto floor = scene->create("Floor");
-	floor.get_transform().scale = { 70, 1, 70 };
-	floor.get_transform().position = { 0, 45, 0 };
-	floor.add_component<Components::BoxCollider>();
-	floor.add_component<Components::RigidBody>();
-
-	floor.get_components<Components::ID>().can_interact_with = false;
-	floor.add_component<Components::Texture>(nullptr, glm::vec4 { .1, .1, .9, 1.0 });
-	floor.add_component<Components::Mesh>(cube_mesh);
-	auto unit_vectors = scene->create("UnitVectors");
-	const glm::vec3 base_pos { 0, 0, 0 };
-	{
-		auto axis = scene->create("XAxis");
-		axis.get_components<Components::ID>().can_interact_with = false;
-		auto& transform = axis.get_components<Components::Transform>();
-		transform.position = base_pos;
-		axis.add_component<Components::LineGeometry>(base_pos + glm::vec3 { 10.0, 0, 0 });
-		axis.add_component<Components::Texture>(glm::vec4 { 1, 0, 0, 1 });
-		unit_vectors.add_child(axis);
-	}
-	{
-		auto axis = scene->create("YAxis");
-		axis.get_components<Components::ID>().can_interact_with = false;
-		auto& transform = axis.get_components<Components::Transform>();
-		transform.position = base_pos;
-		axis.add_component<Components::LineGeometry>(base_pos + glm::vec3 { 0, -10.0, 0 });
-		axis.add_component<Components::Texture>(glm::vec4 { 0, 1, 0, 1 });
-		unit_vectors.add_child(axis);
-	}
-	{
-		auto axis = scene->create("ZAxis");
-		axis.get_components<Components::ID>().can_interact_with = false;
-		auto& transform = axis.get_components<Components::Transform>();
-		transform.position = base_pos;
-		axis.add_component<Components::LineGeometry>(base_pos + glm::vec3 { 0, 0, -10.0 });
-		axis.add_component<Components::Texture>(glm::vec4 { 0, 0, 1, 1 });
-		unit_vectors.add_child(axis);
-	}
-
-	auto unit_squares = scene->create("UnitSquares");
-
-	static constexpr auto offset = glm::vec3(3, 3, 1);
-	static constexpr auto squares = 10;
-	static constexpr auto half_extent = (squares / 2) - 1;
-	for (auto i = -squares / 2; i < half_extent; i++) {
-		for (auto j = -squares / 2; j < half_extent; j++) {
-			auto axis = scene->create("Square-x{}y{}", i, j);
-			auto& transform = axis.add_component<Components::Transform>();
-			transform.position = glm::vec3 { i, -7, j };
-			transform.scale /= offset;
-			transform.rotation = glm::angleAxis(glm::radians(90.0F), glm::vec3 { 1, 0, 0 });
-			axis.add_component<Components::QuadGeometry>();
-			axis.add_component<Components::Texture>(Random::strong_colour());
-			unit_squares.add_child(axis);
-		}
-	}
-
-	auto viking_rotation = Maths::rotate_by(glm::radians(glm::vec3 { 0, 0, 0 }));
-	auto v_mesh = scene->create("Viking");
-	const auto viking = Mesh::construct(device,
-		{
-			.path = FS::model("viking.obj"),
-			.initial_rotation = viking_rotation,
-		});
-	v_mesh.get_components<Components::Transform>().position.y = -2;
-	v_mesh.add_component<Components::Mesh>(viking);
-	v_mesh.add_component<Components::BoxCollider>();
-	v_mesh.add_component<Components::RigidBody>().body_type = BodyType::Dynamic;
-	v_mesh.add_component<Components::Texture>(scene_renderer.get_texture_cache().get("viking_room"));
-
-	auto viking_room_texture = Texture::construct(device,
-		{
-			.extent = extent,
-			.format = ImageFormat::SBGR,
-			.path = FS::texture("viking_room.png"),
-			.debug_name = "viking",
-		});
-	v_mesh.add_component<Components::Texture>(viking_room_texture);
-	static constexpr auto val = 10.0F;
-	v_mesh.add_script<Scripts::LinearMovementScript>(-val, val);
-
-	auto colours = generate_colours<500>();
-	const auto sphere = Mesh::construct(device,
-		{
-			.path = FS::model("sphere.fbx"),
-		});
-
-	auto sun = scene->create("Sun");
-	auto& directional_sun = sun.add_component<Components::DirectionalLight>(glm::vec4 { 255, 255, 255, 8 },
-		Components::DirectionalLight::ProjectionParameters {
-			.factor = 145.F,
-			.near = -190.F,
-			.far = 90.F,
-			.fov = 60.F,
-		});
-	directional_sun.diffuse = Maths::scale_colour({ 49, 22, 22, 255 });
-	directional_sun.specular = Maths::scale_colour({ 181, 255, 0, 255 });
-	sun.add_component<Components::Mesh>(sphere);
-	sun.add_component<Components::Transform>().position = { -15, -15, -16 };
-	sun.add_component<Components::Controller>();
-
-	auto pl_system = scene->create("PointLightSystem");
-
-	constexpr auto create_point_light = [](Ref<Scene>& point_light_scene, auto index, auto& pl_sys, auto& cols, auto& sphere_mesh) {
-		auto point_light = point_light_scene->create("PointLight-{}", index);
-		point_light.template get_components<Components::ID>().can_interact_with = false;
-		auto& light_component = point_light.template add_component<Components::PointLight>();
-		light_component.ambient = cols.at(index).at(0);
-		light_component.diffuse = cols.at(index).at(1);
-		light_component.specular = cols.at(index).at(2);
-
-		constexpr auto float_radius = static_cast<float>(point_light_radius);
-		const auto point_in_sphere = Random::on_sphere(3.0F * float_radius);
-		auto& transform = point_light.template get_components<Components::Transform>();
-		transform.position = point_in_sphere;
-		// transform.scale *= 2;
-
-		point_light.template add_component<Components::Mesh>(sphere_mesh);
-		point_light.template add_component<Components::Texture>(cols.at(index).at(0));
-		Components::RigidBody& rigid = point_light.template add_component<Components::RigidBody>();
-		rigid.body_type = BodyType::Dynamic;
-		point_light.template add_component<Components::SphereCollider>();
-		pl_sys.add_child(point_light);
-	};
-
-	for (std::uint32_t i = 0; i < colours.size(); i++) {
-		create_point_light(scene, i, pl_system, colours, sphere);
-	}
-	// sponza
-	auto sponza = scene->create("Sponza");
-	// Text
-	auto text_hello = scene->create("Hello Text");
-	auto& component = text_hello.add_component<Components::Text>();
-	component.set_text("{}", "Hello world!");
-
-	auto scene_camera = scene->create("Scene Camera");
-	scene_camera.add_component<Components::Camera>();
-	scene_camera.get_components<Components::Transform>().position = { 15, -16, 16 };
-
-	scene->sort();
 }
 
 auto ClientLayer::toolbar() -> void
@@ -320,8 +142,15 @@ auto ClientLayer::toolbar() -> void
 		bool is_paused = running_scene->is_paused();
 		ImGui::SameLine();
 		const auto& pause_icon = icon_pause;
-		if (UI::image_button(*pause_icon, glm::vec2(size, size)) && toolbar_enabled) {
-			on_scene_pause();
+
+		if (!is_paused) {
+			if (UI::image_button(*pause_icon, glm::vec2(size, size)) && toolbar_enabled) {
+				on_scene_pause();
+			}
+		} else {
+			if (UI::image_button(*icon_play, glm::vec2(size, size)) && toolbar_enabled) {
+				on_scene_unpause();
+			}
 		}
 
 		// Step button
@@ -390,6 +219,15 @@ void ClientLayer::on_scene_pause()
 	}
 
 	running_scene->set_paused(true);
+}
+
+void ClientLayer::on_scene_unpause()
+{
+	if (scene_state == SceneState::Edit) {
+		return;
+	}
+
+	running_scene->set_paused(false);
 }
 
 void ClientLayer::interface()
@@ -483,8 +321,10 @@ void ClientLayer::handle_swapchain_recreation(Swapchain& swapchain)
 	scene_renderer.recreate(true, swapchain.get_extent());
 	auto& graphics_resource = scene_renderer.get_graphics_resource();
 
-	auto texture_cube = running_scene->get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
-	graphics_resource.expose_to_shaders(texture_cube->get_image(), DescriptorSet(2), DescriptorBinding(2));
+	if (const auto cube = running_scene->get_by_components<Components::Skybox>()) {
+		auto texture_cube = cube->get_components<Components::Skybox>().texture;
+		graphics_resource.expose_to_shaders(texture_cube->get_image(), DescriptorSet(2), DescriptorBinding(2));
+	}
 }
 
 void ClientLayer::on_event(Event& event)
@@ -507,8 +347,11 @@ void ClientLayer::on_event(Event& event)
 		}
 	});
 	dispatcher.dispatch<MouseButtonReleasedEvent>([this](MouseButtonReleasedEvent& pressed) {
+		running_scene->update_picked_entity(0);
+
 		if (ImGuizmo::IsUsing()) {
-			return true;
+			running_scene->update_picked_entity(0);
+			return false;
 		}
 
 		const auto vp_is_focused = viewport_panel_focused && viewport_panel_mouse_over;
@@ -526,14 +369,16 @@ void ClientLayer::on_event(Event& event)
 			}
 
 			auto pixel_data = image.read_pixel(pos);
-			std::visit(Tuple::overload { [&s = this->running_scene](const std::uint32_t& handle) { s->update_picked_entity(handle); },
-						   [](const glm::vec4& vec) {}, [](std::monostate) {} },
+			std::visit(Tuple::overload {
+						   [&current_scene = running_scene](const std::uint32_t& handle) { current_scene->update_picked_entity(handle); },
+						   [](const glm::vec4& vec) {},
+						   [](std::monostate) {},
+					   },
 				pixel_data);
 			return true;
 		}
 
-		running_scene->update_picked_entity(0);
-		return false;
+		return true;
 	});
 	camera.on_event(event);
 	running_scene->on_event(event);

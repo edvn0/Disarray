@@ -36,6 +36,8 @@ public:
 	explicit(false) operator bool() const { return is_valid(); }
 	[[nodiscard]] auto is_valid() const -> bool { return size != 0 && data != nullptr; }
 
+	auto operator[](std::size_t index) -> decltype(auto) { return data[index]; }
+
 	auto as_span() -> std::span<std::byte> { return { data.get(), size }; }
 
 private:

@@ -1,7 +1,5 @@
 #include "DisarrayPCH.hpp"
 
-#include "vulkan/Window.hpp"
-
 #include <GLFW/glfw3.h>
 
 #include <graphics/ImageLoader.hpp>
@@ -17,6 +15,7 @@
 #include "core/exceptions/GeneralExceptions.hpp"
 #include "core/filesystem/AssetLocations.hpp"
 #include "vulkan/Swapchain.hpp"
+#include "vulkan/Window.hpp"
 #include "vulkan/exceptions/VulkanExceptions.hpp"
 
 namespace Disarray::Vulkan {
@@ -138,7 +137,7 @@ Window::Window(const Disarray::WindowProperties& properties)
 	}
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	const auto& [width, height, name, is_fullscreen] = get_properties();
+	const auto& [width, height, name, is_fullscreen, use_validation_layers] = get_properties();
 
 	const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
@@ -184,7 +183,7 @@ Window::Window(const Disarray::WindowProperties& properties)
 		throw WindowingAPIException("Window was nullptr");
 	}
 
-	instance = make_scope<Vulkan::Instance>();
+	instance = make_scope<Vulkan::Instance>(use_validation_layers);
 	surface = make_scope<Vulkan::Surface>(*instance, window);
 
 	glfwSetWindowUserPointer(window, &user_data);

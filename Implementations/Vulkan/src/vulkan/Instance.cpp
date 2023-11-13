@@ -1,7 +1,5 @@
 #include "DisarrayPCH.hpp"
 
-#include "vulkan/Instance.hpp"
-
 #include <GLFW/glfw3.h>
 
 #include <cstring>
@@ -10,10 +8,12 @@
 #include "core/Log.hpp"
 #include "util/BitCast.hpp"
 #include "vulkan/Config.hpp"
+#include "vulkan/Instance.hpp"
 #include "vulkan/Verify.hpp"
 #include "vulkan/exceptions/VulkanExceptions.hpp"
 
-auto get_required_extensions() -> std::vector<const char*>
+namespace {
+auto get_required_extensions(bool runtime_use_validation) -> std::vector<const char*>
 {
 	uint32_t ext_count = 0;
 	const char** glfw_exts = nullptr;
@@ -21,7 +21,7 @@ auto get_required_extensions() -> std::vector<const char*>
 
 	std::vector<const char*> extensions(glfw_exts, glfw_exts + ext_count);
 
-	if constexpr (Disarray::Vulkan::Config::use_validation_layers) {
+	if (runtime_use_validation) {
 		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
 
@@ -32,8 +32,8 @@ auto get_required_extensions() -> std::vector<const char*>
 	return extensions;
 }
 
-static VKAPI_ATTR auto VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type,
-	const VkDebugUtilsMessengerCallbackDataEXT* callback_data, void* user_data) -> VkBool32
+VKAPI_ATTR auto VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT,
+	const VkDebugUtilsMessengerCallbackDataEXT* callback_data, void*) -> VkBool32
 {
 	switch (severity) {
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
@@ -76,13 +76,17 @@ void destroy_debug_messenger_ext(VkInstance instance, VkDebugUtilsMessengerEXT d
 	}
 }
 
+} // namespace
+
 namespace Disarray::Vulkan {
 
-Instance::Instance(const std::vector<const char*>& supported_layers)
-	: requested_layers(supported_layers)
+Instance::Instance(bool runtime_requested_validation, const std::vector<const char*>& supported_layers)
+	: use_validation_layers(runtime_requested_validation)
+	, requested_layers(supported_layers)
 {
 	const auto check_support = check_validation_layer_support();
-	if (Config::use_validation_layers && !check_support) {
+
+	if (use_validation_layers && !check_support) {
 		throw CouldNotCreateValidationLayersException("Could not configure validation layers, and it was asked for.");
 	}
 
@@ -98,12 +102,12 @@ Instance::Instance(const std::vector<const char*>& supported_layers)
 	create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	create_info.pApplicationInfo = &app_info;
 
-	const auto exts = get_required_extensions();
+	const auto exts = get_required_extensions(runtime_requested_validation);
 	create_info.enabledExtensionCount = static_cast<std::uint32_t>(exts.size());
 	create_info.ppEnabledExtensionNames = exts.data();
 
 	VkDebugUtilsMessengerCreateInfoEXT debug_create_info {};
-	if constexpr (Config::use_validation_layers) {
+	if (use_validation_layers) {
 		create_info.enabledLayerCount = static_cast<std::uint32_t>(requested_layers.size());
 		create_info.ppEnabledLayerNames = requested_layers.data();
 
@@ -124,7 +128,7 @@ Instance::Instance(const std::vector<const char*>& supported_layers)
 
 Instance::~Instance()
 {
-	if (Config::use_validation_layers) {
+	if (use_validation_layers) {
 		destroy_debug_messenger_ext(instance, debug_messenger, nullptr);
 	}
 	vkDestroyInstance(instance, nullptr);
@@ -132,8 +136,9 @@ Instance::~Instance()
 
 void Instance::setup_debug_messenger()
 {
-	if (!Config::use_validation_layers)
+	if (!use_validation_layers) {
 		return;
+	}
 
 	VkDebugUtilsMessengerCreateInfoEXT create_info;
 	populate_debug_messenger_create_info(create_info);
@@ -141,7 +146,7 @@ void Instance::setup_debug_messenger()
 	verify(create_debug_messenger_ext(instance, &create_info, nullptr, &debug_messenger));
 }
 
-bool Instance::check_validation_layer_support() const
+auto Instance::check_validation_layer_support() const -> bool
 {
 	uint32_t layer_count;
 	vkEnumerateInstanceLayerProperties(&layer_count, nullptr);

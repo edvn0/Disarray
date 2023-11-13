@@ -23,8 +23,6 @@ public:
 	void render() override;
 	void destruct() override;
 
-	void create_entities();
-
 private:
 	void handle_file_drop(const std::filesystem::path&);
 	void setup_filewatcher_and_threadpool(Threading::ThreadPool& pool);
@@ -33,6 +31,7 @@ private:
 	auto on_scene_play() -> void;
 	auto on_scene_stop() -> void;
 	auto on_scene_pause() -> void;
+	auto on_scene_unpause() -> void;
 	auto on_scene_simulate() -> void;
 
 	Device& device;

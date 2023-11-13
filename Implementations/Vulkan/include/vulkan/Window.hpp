@@ -32,7 +32,7 @@ struct UserData {
 
 class Window : public Disarray::Window {
 public:
-	Window(const Disarray::WindowProperties&);
+	explicit Window(const Disarray::WindowProperties&);
 	~Window() override;
 
 	[[nodiscard]] auto should_close() const -> bool override;

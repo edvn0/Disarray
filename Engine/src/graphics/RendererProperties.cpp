@@ -7,7 +7,7 @@ void PushConstant::reset_impl()
 	object_transform = glm::mat4 { 1.0F };
 	colour = glm::vec4 { 1.0F };
 	max_identifiers = 0;
-	current_identifier = 0;
+	max_spot_lights = 0;
 	max_point_lights = 0;
 	bound_textures = 0;
 	image_indices.fill(-1);

@@ -5,7 +5,8 @@
 
 #include <concepts>
 #include <cstdint>
-#include <limits>
+#include <filesystem>
+#include <unordered_set>
 
 #include "core/Concepts.hpp"
 #include "core/Types.hpp"
@@ -74,44 +75,9 @@ enum class ImageFormat : std::uint8_t {
 	Red,
 };
 
-template <std::integral Out = std::uint32_t> inline constexpr auto to_component_count(ImageFormat format)
-{
-	switch (format) {
-	case ImageFormat::SRGB:
-	case ImageFormat::RGB:
-	case ImageFormat::SBGR:
-	case ImageFormat::BGR:
-	case ImageFormat::SRGB32:
-	case ImageFormat::RGB32:
-	case ImageFormat::Depth:
-	case ImageFormat::DepthStencil:
-	case ImageFormat::Uint:
-		return static_cast<Out>(4U);
-	case ImageFormat::Red:
-		return static_cast<Out>(1U);
-	default:
-		unreachable();
-	}
-}
+auto to_component_count(ImageFormat format) -> std::uint32_t;
+auto to_size(ImageFormat format) -> std::size_t;
 
-inline constexpr auto to_size(ImageFormat format) -> std::size_t
-{
-	switch (format) {
-	case ImageFormat::SRGB:
-	case ImageFormat::RGB:
-	case ImageFormat::SBGR:
-	case ImageFormat::BGR:
-	case ImageFormat::Depth:
-	case ImageFormat::DepthStencil:
-	case ImageFormat::Uint:
-	case ImageFormat::Red:
-		return sizeof(float);
-	case ImageFormat::RGB32:
-	case ImageFormat::SRGB32:
-		return 4 * sizeof(float);
-	default:
-		unreachable();
-	}
-}
+auto is_image(const std::filesystem::path& path_to_file) -> bool;
 
 } // namespace Disarray

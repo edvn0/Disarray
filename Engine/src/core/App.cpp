@@ -24,7 +24,13 @@ App::App(const Disarray::ApplicationProperties& props)
 	const auto& path = props.working_directory;
 	std::filesystem::current_path(path);
 
-	window = Window::construct({ .width = props.width, .height = props.height, .name = props.name, .is_fullscreen = props.is_fullscreen });
+	window = Window::construct({
+		.width = props.width,
+		.height = props.height,
+		.name = props.name,
+		.is_fullscreen = props.is_fullscreen,
+		.use_validation_layers = props.use_validation_layers,
+	});
 	device = Device::construct(*window);
 	window->register_event_handler(*this);
 

@@ -33,6 +33,7 @@ class VertexBuffer;
 class Window;
 class PipelineCache;
 class TextureCache;
+class IGraphicsResource;
 class TextRenderer;
 struct BatchRenderer;
 struct MeshSubstructure;
@@ -52,12 +53,14 @@ namespace Components {
 	struct Texture;
 	struct DirectionalLight;
 	struct PointLight;
+	struct SpotLight;
 	struct Script;
 	struct Controller;
 	struct PillCollider;
 	struct BoxCollider;
 	struct SphereCollider;
 	struct Skybox;
+	struct Text;
 } // namespace Components
 
 } // namespace Disarray

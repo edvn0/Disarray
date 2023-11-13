@@ -49,6 +49,7 @@ void QuadVertexBatch::construct_impl(Renderer& renderer, const Device& dev)
 		BufferProperties {
 			.size = vertex_buffer_size(),
 			.count = vertices.size(),
+			.always_mapped = true,
 		});
 }
 

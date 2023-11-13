@@ -159,6 +159,17 @@ struct PointLight {
 };
 template <> inline constexpr std::string_view component_name<PointLight> = "PointLight";
 
+struct SpotLight {
+	glm::vec3 direction {};
+	float cutoff_angle_degrees { 30.0F };
+	glm::vec4 diffuse { 0.F };
+	glm::vec4 specular { 0.F };
+	glm::vec4 ambient { 0.F };
+	glm::vec3 factors { 1, 0.09F, 0.032F };
+	float outer_cutoff_angle_degrees { 25.0F };
+};
+template <> inline constexpr std::string_view component_name<SpotLight> = "SpotLight";
+
 struct Script {
 	Script() = default;
 
@@ -294,12 +305,14 @@ struct Skybox {
 	explicit Skybox(const Device&, std::string_view path);
 	Ref<Disarray::Texture> texture { nullptr };
 	glm::vec4 colour { 1.0F };
+	bool needs_update { false };
 };
 template <> inline constexpr std::string_view component_name<Skybox> = "Skybox";
 
 enum class TextProjection : std::uint8_t {
 	ScreenSpace,
 	WorldSpace,
+	Billboard,
 };
 struct Text {
 	std::string text_data {};

@@ -13,6 +13,7 @@
 #include "graphics/Framebuffer.hpp"
 #include "graphics/ImageProperties.hpp"
 #include "graphics/Pipeline.hpp"
+#include "graphics/Texture.hpp"
 #include "scene/Camera.hpp"
 #include "scene/Components.hpp"
 #include "ui/InterfaceLayer.hpp"
@@ -57,15 +58,12 @@ void ScenePanel::draw_entity_node(Disarray::Entity& entity, bool check_if_has_pa
 	const auto& id_component = entity.get_components<Components::ID>();
 	bool opened = ImGui::TreeNodeEx(Disarray::bit_cast<const void*>(&id_component.identifier), flags, "%s", tag.c_str());
 	if (ImGui::IsItemClicked()) {
-		*selected_entity = entity.get_identifier();
+		scene->update_picked_entity(entity.get_identifier());
 	}
 
 	bool entity_deleted = false;
-	if (ImGui::BeginPopupContextWindow("DeleteEntityPopup", ImGuiPopupFlags_MouseButtonRight)) {
+	if (ImGui::BeginPopup("DeleteEntityPopup", ImGuiPopupFlags_MouseButtonRight)) {
 		if (ImGui::MenuItem("Delete Entity")) {
-			entity_deleted = true;
-		}
-		if (ImGui::MenuItem("Add Component")) {
 			entity_deleted = true;
 		}
 		ImGui::EndPopup();
@@ -105,6 +103,18 @@ void ScenePanel::interface()
 	};
 
 	UI::begin("Scene");
+	const auto& tag = scene->get_name();
+	std::string buffer = tag;
+	buffer.resize(256);
+
+	if (ImGui::InputText("Scene name", buffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+		buffer.shrink_to_fit();
+
+		if (!buffer.empty() && tag != buffer) {
+			scene->set_name(buffer);
+		}
+	}
+
 	scene->for_all_entities([this](entt::entity entity_id) {
 		Entity entity { scene, entity_id };
 		draw_entity_node(entity, true);
@@ -112,12 +122,7 @@ void ScenePanel::interface()
 
 	if (ImGui::BeginPopupContextWindow("EmptyEntityId", ImGuiPopupFlags_MouseButtonRight)) {
 		if (ImGui::MenuItem("Create Empty Entity")) {
-			if (auto entity = Entity { scene, *selected_entity }; entity.is_valid()) {
-				auto child = scene->create("Parent{}-Child", static_cast<Identifier>(entity.get_identifier()));
-				entity.add_child(child);
-			} else {
-				scene->create("Empty Entity");
-			}
+			scene->create("Empty Entity");
 		}
 
 		if (ImGui::MenuItem("Copy Entity")) {
@@ -164,7 +169,7 @@ void ScenePanel::for_all_components(Entity& entity)
 			buffer.shrink_to_fit();
 
 			if (!buffer.empty() && tag.name != buffer) {
-				tag.name = buffer;
+				tag.name = std::string { buffer.c_str() };
 			}
 		}
 	}
@@ -172,8 +177,9 @@ void ScenePanel::for_all_components(Entity& entity)
 	ImGui::SameLine();
 	ImGui::PushItemWidth(-1);
 
-	if (ImGui::Button("Add Component"))
+	if (ImGui::Button("Add Component")) {
 		ImGui::OpenPopup("AddComponent");
+	}
 
 	if (ImGui::BeginPopup("AddComponent")) {
 		draw_add_component_all(AllComponents {});
@@ -241,6 +247,16 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (ImGui::ColorEdit4("Specular", glm::value_ptr(point.specular))) { }
 	});
 
+	draw_component<Components::SpotLight>(entity, [](Components::SpotLight& spot) {
+		if (ImGui::DragFloat3("Direction", glm::value_ptr(spot.direction), 0.1F, -glm::pi<float>(), glm::pi<float>())) { }
+		if (ImGui::DragFloat("Cutoff", &spot.cutoff_angle_degrees, 2.F, -90.F, 90.F)) { }
+		if (ImGui::DragFloat("Outer Cutoff", &spot.outer_cutoff_angle_degrees, 2.F, -90.F, 90.F)) { }
+		if (UI::Input::drag("Factors", spot.factors, 0.1F, 0.F, 10.F)) { }
+		if (ImGui::ColorEdit4("Ambient", glm::value_ptr(spot.ambient))) { }
+		if (ImGui::ColorEdit4("Diffuse", glm::value_ptr(spot.diffuse))) { }
+		if (ImGui::ColorEdit4("Specular", glm::value_ptr(spot.specular))) { }
+	});
+
 	draw_component<Components::Text>(entity, [](Components::Text& text) {
 		std::string buffer = text.text_data;
 		buffer.resize(256);
@@ -249,7 +265,7 @@ void ScenePanel::for_all_components(Entity& entity)
 			buffer.shrink_to_fit();
 
 			if (!buffer.empty() && text.text_data != buffer) {
-				text.text_data = buffer;
+				text.text_data = buffer.c_str();
 			}
 		}
 		if (ImGui::ColorEdit4("Colour", glm::value_ptr(text.colour))) { }
@@ -267,7 +283,58 @@ void ScenePanel::for_all_components(Entity& entity)
 		}
 	});
 
-	draw_component<Components::Skybox>(entity, [](Components::Skybox& skybox) { UI::image(skybox.texture->get_image()); });
+	draw_component<Components::Skybox>(entity, [&current = scene, &dev = device](Components::Skybox& skybox) {
+		bool any_changed = false;
+		std::optional<std::filesystem::path> selected { std::nullopt };
+		if (ImGui::Button("Choose path", { 80, 30 })) {
+			selected = UI::Popup::select_file({ "*.ktx", "*.png" }, "Assets/Textures");
+			any_changed |= selected.has_value();
+		}
+
+		if (any_changed && selected.has_value()) {
+			const auto value = *selected;
+
+			auto new_cubemap = Texture::construct(dev,
+				{
+					.path = value,
+					.dimension = TextureDimension::Three,
+					.debug_name = value.string(),
+				});
+
+			if (!new_cubemap->valid()) {
+				return;
+			}
+
+			skybox.texture = std::move(new_cubemap);
+			current->submit_preframe_work([](Scene& this_scene, SceneRenderer& renderer) {
+				auto texture_cube = this_scene.get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
+
+				auto& graphics_resource = renderer.get_graphics_resource();
+				graphics_resource.expose_to_shaders(texture_cube->get_image(), DescriptorSet(2), DescriptorBinding(2));
+			});
+		}
+
+		ImGui::SameLine();
+		std::ignore = UI::button("Drop texture", { 80, 30 });
+		if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem",
+				{
+					".ktx",
+				})) {
+			const auto& texture_path = *dropped;
+			skybox.texture = Texture::construct(dev,
+				{
+					.path = texture_path,
+					.dimension = TextureDimension::Three,
+					.debug_name = texture_path.string(),
+				});
+			current->submit_preframe_work([](Scene& this_scene, SceneRenderer& renderer) {
+				auto texture_cube = this_scene.get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
+
+				auto& graphics_resource = renderer.get_graphics_resource();
+				graphics_resource.expose_to_shaders(texture_cube->get_image(), DescriptorSet(2), DescriptorBinding(2));
+			});
+		}
+	});
 
 	draw_component<Components::Camera>(entity, [](Components::Camera& cam) {
 		std::ignore = UI::combo_choice<CameraType>("Type", std::ref(cam.type));
@@ -290,7 +357,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		bool any_changed = false;
 		std::optional<std::filesystem::path> selected { std::nullopt };
 		if (ImGui::Button("Choose path", { 80, 30 })) {
-			selected = UI::Popup::select_file({ "*.mesh", "*.obj", "*.fbx" });
+			selected = UI::Popup::select_file({ "*.mesh", "*.obj", "*.fbx" }, "Assets/Models");
 			any_changed |= selected.has_value();
 		}
 		if (ImGui::Checkbox("Draw AABB", &mesh_component.draw_aabb)) { };
@@ -377,10 +444,10 @@ void ScenePanel::for_all_components(Entity& entity)
 
 	draw_component<Components::RigidBody>(entity, [&](Components::RigidBody& body) {
 		if (UI::combo_choice<BodyType>("Body Type", std::ref(body.body_type))) { }
-		if (ImGui::DragFloat("mass", &body.mass)) { }
-		if (ImGui::DragFloat("linear_drag", &body.linear_drag)) { }
-		if (ImGui::DragFloat("angular_drag", &body.angular_drag)) { }
-		if (UI::checkbox("Gravity", body.disable_gravity)) { }
+		if (ImGui::DragFloat("Mass", &body.mass)) { }
+		if (ImGui::DragFloat("Linear Drag", &body.linear_drag)) { }
+		if (ImGui::DragFloat("Angular Drag", &body.angular_drag)) { }
+		if (UI::checkbox("Disable gravity", body.disable_gravity)) { }
 		if (UI::checkbox("Kinematic", body.is_kinematic)) { }
 	});
 }
