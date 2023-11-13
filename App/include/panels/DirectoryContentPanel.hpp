@@ -40,7 +40,6 @@ public:
 private:
 	void reload();
 
-	Device& device;
 	TextureCache& texture_cache;
 	Scope<FileWatcher> file_watcher {};
 	const std::filesystem::path initial;

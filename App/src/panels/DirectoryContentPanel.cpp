@@ -13,9 +13,8 @@ namespace Disarray::Client {
 
 using namespace std::string_view_literals;
 
-DirectoryContentPanel::DirectoryContentPanel(Device& dev, Window&, Swapchain&, const std::filesystem::path& initial, Disarray::TextureCache& cache)
-	: device(dev)
-	, texture_cache(cache)
+DirectoryContentPanel::DirectoryContentPanel(Device&, Window&, Swapchain&, const std::filesystem::path& initial, Disarray::TextureCache& cache)
+	: texture_cache(cache)
 	, initial(initial)
 	, current(initial)
 {
