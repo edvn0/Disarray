@@ -3,7 +3,7 @@
 #include <magic_enum_switch.hpp>
 
 #include "core/App.hpp"
-#include "core/filesystem/AssetLocations.hpp "
+#include "core/filesystem/AssetLocations.hpp"
 #include "graphics/BufferProperties.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"

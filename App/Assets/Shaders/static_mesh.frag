@@ -4,10 +4,10 @@
 #include "LightingUtilities.glsl"
 #include "PC.glsl"
 #include "PointLight.glsl"
-#include "ShadowPassUBO.glsl"
-#include "UBO.glsl"
-#include "SpotLight.glsl"
 #include "Random.glsl"
+#include "ShadowPassUBO.glsl"
+#include "SpotLight.glsl"
+#include "UBO.glsl"
 
 layout(constant_id = 0) const int POINT_LIGHT_CHOICE = 0;
 layout(constant_id = 1) const int GAMMA_CORRECT = 0;
@@ -45,77 +45,66 @@ layout(location = 0) out vec4 colour;
 
 void main()
 {
-    Uniform ubo = UBO.ubo;
-    DirectionalLightUBO dlu = DLU.dlu;
-    PushConstant pc = PC.pc;
-    ShadowPassUBO spu = SPU.spu;
+	Uniform ubo = UBO.ubo;
+	DirectionalLightUBO dlu = DLU.dlu;
+	PushConstant pc = PC.pc;
+	ShadowPassUBO spu = SPU.spu;
 
-    vec3 view_direction = normalize(vec3(CBO.camera.position) - fragment_position);
-    float shadow_bias = max(0.01 * (1.0 - dot(normals, vec3(dlu.direction))), 0.005);
-    float shadow = shadow_calculation(light_space_fragment_position, depth_texture, true, shadow_bias);
+	vec3 view_direction = normalize(vec3(CBO.camera.position) - fragment_position);
+	float shadow_bias = max(0.01 * (1.0 - dot(normals, vec3(dlu.direction))), 0.005);
+	float shadow = shadow_calculation(light_space_fragment_position, depth_texture, true, shadow_bias);
 
-    DirectionalLight light;
-    light.direction = vec3(dlu.direction);
-    light.ambient = dlu.ambient;
-    light.diffuse = vec3(dlu.diffuse);
-    light.specular = vec3(dlu.specular);
-    vec3 out_vec = calculate_directional_light(light, normals, view_direction, shadow, 32);
+	DirectionalLight light;
+	light.direction = vec3(dlu.direction);
+	light.ambient = dlu.ambient;
+	light.diffuse = vec3(dlu.diffuse);
+	light.specular = vec3(dlu.specular);
+	vec3 out_vec = calculate_directional_light(light, normals, view_direction, shadow, 32);
 
-    if (POINT_LIGHT_CHOICE == 0) {
-        for (uint i = 0; i < pc.max_point_lights; i++) {
-            PointLight current_point_light = PLBO.lights[i];
-            vec4 point_light_position = current_point_light.position;
-            vec4 point_light_factors = current_point_light.factors;
-            vec4 point_light_ambient = current_point_light.ambient;
-            vec4 point_light_diffuse = current_point_light.diffuse;
-            vec4 point_light_specular = current_point_light.specular;
-            out_vec += calculate_point_light(point_light_position, point_light_factors, point_light_ambient, point_light_diffuse,
-            point_light_specular, normals, fragment_position, shadow, view_direction);
-        }
-    }
-    else {
-        uint base = tea(103, 107);
-        [[unroll]] for (uint i = 0; i < 8; i++) {
-            PointLight current_point_light = PLBO.lights[next_uint(base, pc.max_point_lights)];
-            vec4 point_light_position = current_point_light.position;
-            vec4 point_light_factors = current_point_light.factors;
-            vec4 point_light_ambient = current_point_light.ambient;
-            vec4 point_light_diffuse = current_point_light.diffuse;
-            vec4 point_light_specular = current_point_light.specular;
-            out_vec += calculate_point_light(point_light_position, point_light_factors, point_light_ambient, point_light_diffuse,
-            point_light_specular, normals, fragment_position, shadow, view_direction);
-        }
-    }
+	if (POINT_LIGHT_CHOICE == 0) {
+		for (uint i = 0; i < pc.max_point_lights; i++) {
+			PointLight current_point_light = PLBO.lights[i];
+			vec4 point_light_position = current_point_light.position;
+			vec4 point_light_factors = current_point_light.factors;
+			vec4 point_light_ambient = current_point_light.ambient;
+			vec4 point_light_diffuse = current_point_light.diffuse;
+			vec4 point_light_specular = current_point_light.specular;
+			out_vec += calculate_point_light(point_light_position, point_light_factors, point_light_ambient, point_light_diffuse,
+				point_light_specular, normals, fragment_position, shadow, view_direction);
+		}
+	} else {
+		uint base = tea(103, 107);
+		[[unroll]] for (uint i = 0; i < 8; i++) {
+			PointLight current_point_light = PLBO.lights[next_uint(base, pc.max_point_lights)];
+			vec4 point_light_position = current_point_light.position;
+			vec4 point_light_factors = current_point_light.factors;
+			vec4 point_light_ambient = current_point_light.ambient;
+			vec4 point_light_diffuse = current_point_light.diffuse;
+			vec4 point_light_specular = current_point_light.specular;
+			out_vec += calculate_point_light(point_light_position, point_light_factors, point_light_ambient, point_light_diffuse,
+				point_light_specular, normals, fragment_position, shadow, view_direction);
+		}
+	}
 
-    for (uint i = 0; i < pc.max_spot_lights; i++) {
-        SpotLight current_spot_light = SLBO.lights[i];
-        vec4 sl_position = current_spot_light.position;
-        vec4 sl_factors = current_spot_light.factors;
-        vec4 sl_ambient = current_spot_light.ambient;
-        vec4 sl_diffuse = current_spot_light.diffuse;
-        vec4 sl_specular = current_spot_light.specular;
-        vec4 direction_and_cutoff = current_spot_light.direction_and_offset;
+	for (uint i = 0; i < pc.max_spot_lights; i++) {
+		SpotLight current_spot_light = SLBO.lights[i];
+		vec4 sl_position = current_spot_light.position;
+		vec4 sl_factors = current_spot_light.factors_and_outer_cutoff;
+		vec4 sl_ambient = current_spot_light.ambient;
+		vec4 sl_diffuse = current_spot_light.diffuse;
+		vec4 sl_specular = current_spot_light.specular;
+		vec4 direction_and_cutoff = current_spot_light.direction_and_cutoff;
 
-        vec3 sl_direction = direction_and_cutoff.xyz;
-        float sl_cutoff = direction_and_cutoff.w;
-        float sl_outer_cutoff = sl_factors.w;
+		vec3 sl_direction = direction_and_cutoff.xyz;
+		float sl_cutoff = direction_and_cutoff.w;
+		float sl_outer_cutoff = sl_factors.w;
 
-        out_vec += calculate_spot_light(sl_position,
-        sl_factors,
-        sl_ambient,
-        sl_diffuse,
-        sl_specular,
-        normals,
-        fragment_position,
-        shadow,
-        view_direction,
-        sl_direction,
-        sl_cutoff,
-        sl_outer_cutoff);
-    }
+		out_vec += calculate_spot_light(sl_position, sl_factors, sl_ambient, sl_diffuse, sl_specular, normals, fragment_position, shadow,
+			view_direction, sl_direction, sl_cutoff, sl_outer_cutoff);
+	}
 
-    colour = fragment_colour * pc.colour * vec4(out_vec, 1.0F);
-    if (GAMMA_CORRECT == 0) {
-        colour = gamma_correct(colour);
-    }
+	colour = pc.colour * vec4(out_vec, 1.0F);
+	if (GAMMA_CORRECT == 0) {
+		colour = gamma_correct(colour);
+	}
 }

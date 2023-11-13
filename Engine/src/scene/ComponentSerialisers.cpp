@@ -176,6 +176,7 @@ void PointLightSerialiser::serialise_impl(const Components::PointLight& light, n
 void SpotLightSerialiser::serialise_impl(const Components::SpotLight& light, nlohmann::json& object)
 {
 	object["cutoff_angle_degrees"] = light.cutoff_angle_degrees;
+	object["outer_cutoff_angle_degrees"] = light.outer_cutoff_angle_degrees;
 	object["factors"] = light.factors;
 	object["direction"] = light.direction;
 	object["ambient"] = light.ambient;
