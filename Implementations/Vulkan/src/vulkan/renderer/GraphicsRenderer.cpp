@@ -3,6 +3,7 @@
 // clang-format off
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/IndexBuffer.hpp"
+#include "graphics/RendererProperties.hpp"
 #include "graphics/Texture.hpp"
 #include "graphics/VertexBuffer.hpp"
 #include "vulkan/Renderer.hpp"
@@ -27,25 +28,17 @@
 
 namespace Disarray::Vulkan {
 
-// Define a hash function for VkDescriptorSet
 struct VkDescriptorSetHash {
-	std::size_t operator()(const VkDescriptorSet& descriptorSet) const
-	{
-		// You can customize the hash function based on your specific needs
-		// For simplicity, this example uses std::hash directly
-		return std::hash<VkDescriptorSet> {}(descriptorSet);
-	}
+	auto operator()(const VkDescriptorSet& descriptor_set) const -> std::size_t { return std::hash<VkDescriptorSet> {}(descriptor_set); }
 };
 
-// Define a hash function for std::span of VkDescriptorSets
 struct VkDescriptorSetsSpanHash {
-	std::size_t operator()(const std::span<const VkDescriptorSet>& sets) const
+	auto operator()(const std::span<const VkDescriptorSet>& sets) const -> std::size_t
 	{
 		std::size_t hash_value = 0;
 
-		// Combine hash values of individual VkDescriptorSets in the span
-		for (const auto& descriptorSet : sets) {
-			hash_value ^= VkDescriptorSetHash {}(descriptorSet) + 0x9e3779b9 + (hash_value << 6) + (hash_value >> 2);
+		for (const auto& descriptor_set : sets) {
+			hash_value ^= VkDescriptorSetHash {}(descriptor_set) + 0x9e3779b9 + (hash_value << 6) + (hash_value >> 2);
 		}
 
 		return hash_value;
@@ -76,65 +69,55 @@ void Renderer::bind_descriptor_sets(Disarray::CommandExecutor& executor, const D
 	bind_descriptor_sets(executor, pipeline, span);
 }
 
+void Renderer::push_constant(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const void* data, std::size_t size) {
+	get_graphics_resource().push_constant(executor, pipeline, data, size);
+}
+
+void Renderer::push_constant(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline)
+{
+	get_graphics_resource().push_constant(executor, pipeline);
+}
+
 void Renderer::bind_descriptor_sets(
 	Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const std::span<const VkDescriptorSet>& span)
 {
 	auto* pipeline_layout = cast_to<Vulkan::Pipeline>(pipeline).get_layout();
 
 	VkDescriptorSetsSpanHash hasher;
-	const auto calculated = hasher(span) ^ Disarray::bit_cast<std::size_t>(pipeline_layout);
+	const auto calculated = hasher(span);
 	if (calculated != bound_descriptor_set_hash) {
 		vkCmdBindDescriptorSets(supply_cast<Vulkan::CommandExecutor>(executor), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0,
 			static_cast<std::uint32_t>(span.size()), span.data(), 0, nullptr);
 		bound_descriptor_set_hash = calculated;
+		return;
 	}
 }
 
-void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const GeometryProperties& properties)
+void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
+	const Disarray::Material&,
+	const TransformMatrix& transform, const ColourVector& colour)
 {
-	draw_mesh(executor, mesh, properties.to_transform());
-}
-
-void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const glm::mat4& transform)
-{
-	ensure(false, "Never call this!");
-}
-
-void Renderer::draw_mesh(
-	Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline, const glm::mat4& transform)
-{
-	draw_mesh(executor, mesh, mesh_pipeline, transform, 0);
+	draw_mesh(executor, mesh.get_vertices(), mesh.get_indices(), mesh_pipeline, transform, colour);
 }
 
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
-	const glm::mat4& transform, const std::uint32_t identifier)
+	const TransformMatrix& transform, const ColourVector& colour)
+{
+	draw_mesh(executor, mesh.get_vertices(), mesh.get_indices(), mesh_pipeline, transform, colour);
+}
+
+void Renderer::draw_mesh_without_bind(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh)
 {
 	if (mesh.invalid()) {
 		return;
 	}
 
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
-	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
-	bind_pipeline(executor, mesh_pipeline);
-
-	auto& push_constant = get_graphics_resource().get_editable_push_constant();
-
-	push_constant.object_transform = transform;
-	push_constant.colour = { 1, 1, 1, 1 };
-	vkCmdPushConstants(
-		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &push_constant);
-
-	bind_descriptor_sets(executor, pipeline);
 
 	std::array<VkBuffer, 1> arr {};
 	arr[0] = supply_cast<Vulkan::VertexBuffer>(mesh.get_vertices());
 	std::array<VkDeviceSize, 1> offsets = { 0 };
 	vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets.data());
-
-	if (pipeline.get_properties().polygon_mode == PolygonMode::Line) {
-		vkCmdSetLineWidth(command_buffer, pipeline.get_properties().line_width);
-	}
-
 	vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(mesh.get_indices()), 0, VK_INDEX_TYPE_UINT32);
 
 	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(mesh.get_indices().size()), 1, 0, 0, 0);
@@ -149,7 +132,7 @@ void Renderer::draw_mesh_instanced(Disarray::CommandExecutor& executor, std::siz
 
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
-	bind_pipeline(executor, pipeline);
+	bind_pipeline(executor, pipeline, PipelineBindPoint::BindPointGraphics);
 	bind_descriptor_sets(executor, pipeline);
 
 	std::array arr { supply_cast<Vulkan::VertexBuffer>(vertex_buffer) };
@@ -165,60 +148,13 @@ void Renderer::draw_mesh_instanced(Disarray::CommandExecutor& executor, std::siz
 	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(index_buffer.size()), static_cast<std::uint32_t>(instance_count), 0, 0, 0);
 }
 
-void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
-	const Disarray::Texture& texture, const glm::mat4& transform, const std::uint32_t identifier)
-{
-	draw_mesh(executor, mesh, mesh_pipeline, texture, glm::vec4 { 1.0F }, transform, identifier);
-}
-
-void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
-	const Disarray::Texture& texture, const glm::vec4& colour, const glm::mat4& transform, const std::uint32_t identifier)
-{
-	if (mesh.invalid()) {
-		return;
-	}
-
-	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
-	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
-	bind_pipeline(executor, pipeline);
-
-	(void)texture;
-	auto& push_constant = get_graphics_resource().get_editable_push_constant();
-
-	push_constant.object_transform = transform;
-	push_constant.colour = colour;
-	vkCmdPushConstants(
-		command_buffer, pipeline.get_layout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &push_constant);
-
-	bind_descriptor_sets(executor, pipeline);
-
-	const std::array arr { supply_cast<Vulkan::VertexBuffer>(mesh.get_vertices()) };
-	const std::array offsets = { VkDeviceSize { 0 } };
-	vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets.data());
-
-	if (pipeline.get_properties().polygon_mode == PolygonMode::Line) {
-		vkCmdSetLineWidth(command_buffer, pipeline.get_properties().line_width);
-	}
-
-	const auto& indices = cast_to<Vulkan::IndexBuffer>(mesh.get_indices());
-	vkCmdBindIndexBuffer(command_buffer, indices.supply(), 0, VK_INDEX_TYPE_UINT32);
-	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(indices.size()), 1, 0, 0, 0);
-}
-void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
-	const glm::vec4& colour, const glm::mat4& transform)
-{
-	if (mesh.invalid())
-		return;
-	draw_mesh(executor, mesh.get_vertices(), mesh.get_indices(), mesh_pipeline, colour, transform);
-}
-
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::VertexBuffer& vertices, const Disarray::IndexBuffer& indices,
-	const Disarray::Pipeline& mesh_pipeline, const glm::vec4& colour, const glm::mat4& transform)
+	const Disarray::Pipeline& mesh_pipeline, const TransformMatrix& transform, const ColourVector& colour)
 {
 
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
-	bind_pipeline(executor, pipeline);
+	bind_pipeline(executor, pipeline, PipelineBindPoint::BindPointGraphics);
 
 	auto& push_constant = get_graphics_resource().get_editable_push_constant();
 
@@ -248,11 +184,11 @@ void Renderer::planar_geometry_pass(Disarray::CommandExecutor& executor) { batch
 
 void Renderer::fullscreen_quad_pass(Disarray::CommandExecutor& executor, const Disarray::Pipeline& fullscreen_pipeline)
 {
-	auto& framebuffer = fullscreen_pipeline.get_framebuffer();
+	const auto& framebuffer = fullscreen_pipeline.get_framebuffer();
 	begin_pass(executor, framebuffer, false, RenderAreaExtent { framebuffer });
 
 	auto* cmd = supply_cast<Vulkan::CommandExecutor>(executor);
-	bind_pipeline(executor, fullscreen_pipeline);
+	bind_pipeline(executor, fullscreen_pipeline, PipelineBindPoint::BindPointGraphics);
 	vkCmdDrawIndexed(cmd, 3, 1, 0, 0, 0);
 
 	end_pass(executor);

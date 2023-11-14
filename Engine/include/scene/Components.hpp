@@ -82,9 +82,8 @@ template <> inline constexpr std::string_view component_name<Mesh> = "Mesh";
 
 struct Material {
 	Material() = default;
-	Ref<Disarray::Texture> albedo { nullptr };
-	Ref<Disarray::Texture> normal { nullptr };
-	Ref<Disarray::Texture> specular { nullptr };
+	explicit Material(Ref<Disarray::Material>);
+	Ref<Disarray::Material> material { nullptr };
 };
 template <> inline constexpr std::string_view component_name<Material> = "Material";
 
@@ -259,7 +258,7 @@ template <> inline constexpr std::string_view component_name<Camera> = "Camera";
 struct RigidBody {
 	void* engine_body_storage { nullptr };
 
-	BodyType body_type { BodyType::Static };
+	BodyType body_type { BodyType::Dynamic };
 	float mass { 1.0F };
 	float linear_drag { 0.01F };
 	float angular_drag { 0.05F };

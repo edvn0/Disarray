@@ -51,7 +51,6 @@ public:
 	};
 
 	virtual void expose_to_shaders(const Disarray::UniformBuffer& buffer, DescriptorSet set, DescriptorBinding binding) = 0;
-
 	virtual void expose_to_shaders(std::span<const Ref<Disarray::Texture>> images, DescriptorSet set, DescriptorBinding binding) = 0;
 	virtual void expose_to_shaders(std::span<const Disarray::Texture*> images, DescriptorSet set, DescriptorBinding binding) = 0;
 	virtual void expose_to_shaders(const Disarray::Image& images, DescriptorSet set, DescriptorBinding binding) = 0;
@@ -61,6 +60,9 @@ public:
 	[[nodiscard]] virtual auto get_descriptor_set(DescriptorSet) const -> VkDescriptorSet = 0;
 	[[nodiscard]] virtual auto get_descriptor_set() const -> VkDescriptorSet = 0;
 	[[nodiscard]] virtual auto get_descriptor_set_layouts() const -> const std::vector<VkDescriptorSetLayout>& = 0;
+
+	virtual void push_constant(Disarray::CommandExecutor&, const Disarray::Pipeline&) = 0;
+	virtual void push_constant(Disarray::CommandExecutor&, const Disarray::Pipeline&, const void* data, std::size_t size) = 0;
 
 	[[nodiscard]] virtual auto get_push_constant() const -> const PushConstant* = 0;
 	virtual auto get_editable_push_constant() -> PushConstant& = 0;
@@ -100,7 +102,7 @@ public:
 	virtual void on_resize() = 0;
 	virtual void clear_pass(Disarray::CommandExecutor&, RenderPasses passes) = 0;
 
-	template <std::size_t T> void clear_pass(Disarray::CommandExecutor& executor, const std::array<RenderPasses, T>& passes)
+	template <std::size_t T> void clear_pass(Disarray::CommandExecutor& executor, std::array<RenderPasses, T>&& passes)
 	{
 		for (const auto& pass : passes) {
 			clear_pass(executor, pass);
@@ -115,41 +117,43 @@ public:
 
 	virtual void clear_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&) = 0;
 
-	virtual void bind_pipeline(Disarray::CommandExecutor&, const Disarray::Pipeline&, PipelineBindPoint = PipelineBindPoint::BindPointGraphics) = 0;
+	virtual void bind_pipeline(Disarray::CommandExecutor&, const Disarray::Pipeline&, PipelineBindPoint) = 0;
+	void bind_pipeline(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline)
+	{
+		bind_pipeline(executor, pipeline, PipelineBindPoint::BindPointGraphics);
+	};
 	virtual void bind_descriptor_sets(Disarray::CommandExecutor&, const Disarray::Pipeline&) = 0;
 
-	virtual void draw_planar_geometry(Geometry, const GeometryProperties&) = 0;
-	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const GeometryProperties&) = 0;
-	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const glm::mat4& transform = glm::identity<glm::mat4>()) = 0;
-	virtual void draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
-		const glm::vec4& colour, const glm::mat4& transform)
-		= 0;
-	virtual void draw_mesh(Disarray::CommandExecutor& executor, const Disarray::VertexBuffer& vertices, const Disarray::IndexBuffer& indices,
-		const Disarray::Pipeline& mesh_pipeline, const glm::vec4& colour, const glm::mat4& transform)
-		= 0;
+	virtual void push_constant(Disarray::CommandExecutor&, const Disarray::Pipeline&, const void* data, std::size_t size) = 0;
+	virtual void push_constant(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline) = 0;
 
-	virtual void draw_mesh(
-		Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const glm::mat4& transform = glm::identity<glm::mat4>())
-		= 0;
-	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&,
-		const glm::mat4& transform = glm::identity<glm::mat4>(), const std::uint32_t identifier = 0)
-		= 0;
-	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&,
-		const glm::mat4& transform = glm::identity<glm::mat4>(), const std::uint32_t identifier = 0)
-		= 0;
-	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&,
-		const glm::vec4& colour, const glm::mat4& transform = glm::identity<glm::mat4>(), const std::uint32_t identifier = 0)
-		= 0;
+	template <class T>
+		requires(sizeof(T) <= 128)
+	void push_constant(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const T& data = {})
+	{
+		push_constant(executor, pipeline, &data, sizeof(T));
+	}
 
+	virtual void draw_mesh(CommandExecutor&, const VertexBuffer&, const IndexBuffer&, const Pipeline&, const TransformMatrix&, const ColourVector&)
+		= 0;
+	virtual void draw_mesh(CommandExecutor&, const Mesh&, const Pipeline&, const TransformMatrix&, const ColourVector&) = 0;
+	virtual void draw_mesh(CommandExecutor&, const Mesh&, const Pipeline&, const Material&, const TransformMatrix&, const ColourVector&) = 0;
 	virtual void draw_mesh_instanced(
-		Disarray::CommandExecutor&, std::size_t count, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&)
+		CommandExecutor&, std::size_t count, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&)
 		= 0;
+	/**
+		note: Intended usage is for submeshes, where the pipeline and descriptor sets will be constants (for now!)
+	*/
+	virtual void draw_mesh_without_bind(
+		CommandExecutor&, const Disarray::Mesh&)
+		= 0;
+	virtual void draw_planar_geometry(Disarray::Geometry, const GeometryProperties&) = 0;
 
-	virtual void draw_text(std::string_view text, const glm::uvec2& position, float size, const glm::vec4& colour) = 0;
-	virtual void draw_text(std::string_view text, const glm::vec3& position, float size, const glm::vec4& colour) = 0;
-	virtual void draw_text(std::string_view text, const glm::mat4& transform, float size, const glm::vec4& colour) = 0;
-	virtual void draw_billboarded_text(std::string_view text, const glm::mat4& transform, float size, const glm::vec4& colour) = 0;
-	void draw_text(std::string_view text, const glm::uvec2& position, const glm::vec4& colour) { return draw_text(text, position, 1.0F, colour); };
+	virtual void draw_text(std::string_view text, const glm::uvec2& position, float size, const ColourVector&) = 0;
+	virtual void draw_text(std::string_view text, const glm::vec3& position, float size, const ColourVector&) = 0;
+	virtual void draw_text(std::string_view text, const TransformMatrix&, float size, const ColourVector&) = 0;
+	virtual void draw_billboarded_text(std::string_view text, const TransformMatrix&, float size, const ColourVector&) = 0;
+	void draw_text(std::string_view text, const glm::uvec2& position, const ColourVector& colour) { return draw_text(text, position, 1.0F, colour); };
 	void draw_text(std::string_view text, const glm::uvec2& position, float size) { draw_text(text, position, size, { 1, 1, 1, 1 }); };
 	void draw_text(std::string_view text, const glm::uvec2& position) { return draw_text(text, position, 1.0F, { 1, 1, 1, 1 }); };
 	void draw_text(std::string_view text, const glm::vec3& position, float size) { draw_text(text, position, size, { 1, 1, 1, 1 }); };
@@ -163,18 +167,18 @@ public:
 		return draw_text(fmt::format(fmt_string, std::forward<Args>(args)...), position, 1.0F);
 	};
 	template <typename... Args>
-	void draw_text(const glm::uvec2& position, const glm::vec4& colour, fmt::format_string<Args...> fmt_string, Args&&... args)
+	void draw_text(const glm::uvec2& position, const ColourVector& colour, fmt::format_string<Args...> fmt_string, Args&&... args)
 	{
 		return draw_text(fmt::format(fmt_string, std::forward<Args>(args)...), position, 1.0F, colour);
 	};
 	template <typename... Args>
-	void draw_text(const glm::vec3& position, const glm::vec4& colour, fmt::format_string<Args...> fmt_string, Args&&... args)
+	void draw_text(const glm::vec3& position, const ColourVector& colour, fmt::format_string<Args...> fmt_string, Args&&... args)
 	{
 		return draw_text(fmt::format(fmt_string, std::forward<Args>(args)...), position, 1.0F, colour);
 	};
 
-	virtual void set_scissors(Disarray::CommandExecutor& executor, const glm::vec2& scissor_extent, const glm::vec2& offset) = 0;
-	virtual void set_viewport(Disarray::CommandExecutor& executor, const glm::vec2& viewport_extent) = 0;
+	virtual void set_scissors(Disarray::CommandExecutor&, const glm::vec2& scissor_extent, const glm::vec2& offset) = 0;
+	virtual void set_viewport(Disarray::CommandExecutor&, const glm::vec2& viewport_extent) = 0;
 
 	virtual void submit_batched_geometry(Disarray::CommandExecutor&) = 0;
 	virtual void on_batch_full(std::function<void(Renderer&)>&&) = 0;

@@ -12,7 +12,7 @@ namespace Disarray {
 using json = nlohmann::json;
 using namespace std::string_view_literals;
 
-auto SkyboxDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
+auto SkyboxDeserialiser::should_add_component_impl(const nlohmann::json&) -> bool { return true; }
 void SkyboxDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Skybox& skybox, const Device& device)
 {
 	skybox.colour = {};
@@ -29,8 +29,8 @@ void SkyboxDeserialiser::deserialise_impl(const nlohmann::json& object, Componen
 	}
 }
 
-auto TextDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
-void TextDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Text& text, const Device& device)
+auto TextDeserialiser::should_add_component_impl(const nlohmann::json&) -> bool { return true; }
+void TextDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Text& text, const Device&)
 {
 	text.text_data = object["text_data"];
 	text.colour = object["colour"];
@@ -38,38 +38,38 @@ void TextDeserialiser::deserialise_impl(const nlohmann::json& object, Components
 	text.projection = to_enum_value<Components::TextProjection>(object, "projection").value_or(Components::TextProjection::WorldSpace);
 }
 
-auto CapsuleColliderDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
-void CapsuleColliderDeserialiser::deserialise_impl(const nlohmann::json& object, Components::CapsuleCollider& pill, const Device& device)
+auto CapsuleColliderDeserialiser::should_add_component_impl(const nlohmann::json&) -> bool { return true; }
+void CapsuleColliderDeserialiser::deserialise_impl(const nlohmann::json& object, Components::CapsuleCollider& pill, const Device&)
 {
 	pill.radius = object["radius"];
 	pill.height = object["height"];
 	pill.offset = object["offset"];
 }
 
-auto ColliderMaterialDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
-void ColliderMaterialDeserialiser::deserialise_impl(const nlohmann::json& object, Components::ColliderMaterial& material, const Device& device)
+auto ColliderMaterialDeserialiser::should_add_component_impl(const nlohmann::json&) -> bool { return true; }
+void ColliderMaterialDeserialiser::deserialise_impl(const nlohmann::json& object, Components::ColliderMaterial& material, const Device&)
 {
 	material.bounciness = object["bounciness"];
 	material.friction_coefficient = object["friction_coefficient"];
 	material.mass_density = object["mass_density"];
 }
 
-auto BoxColliderDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
-void BoxColliderDeserialiser::deserialise_impl(const nlohmann::json& object, Components::BoxCollider& box, const Device& device)
+auto BoxColliderDeserialiser::should_add_component_impl(const nlohmann::json&) -> bool { return true; }
+void BoxColliderDeserialiser::deserialise_impl(const nlohmann::json& object, Components::BoxCollider& box, const Device&)
 {
 	box.half_size = object["half_size"];
 	box.offset = object["offset"];
 }
 
-auto SphereColliderDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
-void SphereColliderDeserialiser::deserialise_impl(const nlohmann::json& object, Components::SphereCollider& sphere, const Device& device)
+auto SphereColliderDeserialiser::should_add_component_impl(const nlohmann::json&) -> bool { return true; }
+void SphereColliderDeserialiser::deserialise_impl(const nlohmann::json& object, Components::SphereCollider& sphere, const Device&)
 {
 	sphere.radius = object["radius"];
 	sphere.offset = object["offset"];
 }
 
-auto RigidBodyDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
-void RigidBodyDeserialiser::deserialise_impl(const nlohmann::json& object, Components::RigidBody& rigid_body, const Device& device)
+auto RigidBodyDeserialiser::should_add_component_impl(const nlohmann::json&) -> bool { return true; }
+void RigidBodyDeserialiser::deserialise_impl(const nlohmann::json& object, Components::RigidBody& rigid_body, const Device&)
 {
 	rigid_body.body_type = to_enum_value<BodyType>(object, "body_type").value_or(BodyType::Static);
 	rigid_body.mass = object["mass"];
@@ -80,7 +80,7 @@ void RigidBodyDeserialiser::deserialise_impl(const nlohmann::json& object, Compo
 }
 
 auto ScriptDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return object.contains("identifier"); }
-void ScriptDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Script& script, const Device& device)
+void ScriptDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Script& script, const Device&)
 {
 	const auto& identifier = object["identifier"];
 	Collections::StringViewMap<Parameter> parameters {};
@@ -118,7 +118,7 @@ void MeshDeserialiser::deserialise_impl(const nlohmann::json& object, Components
 	mesh.mesh = Mesh::construct(device, properties);
 }
 
-auto TextureDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool { return true; }
+auto TextureDeserialiser::should_add_component_impl(const nlohmann::json&) -> bool { return true; }
 void TextureDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Texture& texture, const Device& device)
 {
 	if (object.contains("properties")) {
@@ -152,7 +152,7 @@ void InheritanceDeserialiser::deserialise_impl(const nlohmann::json& object, Com
 	}
 }
 
-auto TransformDeserialiser::should_add_component_impl(const nlohmann::json& object_for_the_component) -> bool { return true; }
+auto TransformDeserialiser::should_add_component_impl(const nlohmann::json&) -> bool { return true; }
 void TransformDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Transform& transform, const Device& /*unused*/)
 {
 	transform.rotation = object["rotation"];

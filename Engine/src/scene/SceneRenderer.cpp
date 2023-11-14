@@ -42,6 +42,15 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 
 	renderer->on_batch_full([&exec = *command_executor](Renderer& ren) { ren.flush_batch(exec); });
 
+	const VertexLayout default_inputs {
+		{ ElementType::Float3, "position" },
+		{ ElementType::Float2, "uv" },
+		{ ElementType::Float4, "colour" },
+		{ ElementType::Float3, "normals" },
+		{ ElementType::Float3, "tangents" },
+		{ ElementType::Float3, "bitangents" },
+	};
+
 	auto& resources = get_graphics_resource();
 	const auto& desc_layout = resources.get_descriptor_set_layouts();
 	auto temporary_shadow = Framebuffer::construct(device,
@@ -63,14 +72,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 			.vertex_shader_key = "shadow.vert",
 			.fragment_shader_key = "shadow.frag",
 			.framebuffer = shadow_framebuffer,
-			.layout = {
-				{ ElementType::Float3, "position" },
-				{ ElementType::Float2, "uv" },
-				{ ElementType::Float4, "colour" },
-				{ ElementType::Float3, "normals" },
-				{ ElementType::Float3, "tangents" },
-				{ ElementType::Float3, "bitangents" },
-			},
+			.layout = default_inputs,
 			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 			.extent = renderer_extent,
 			.cull_mode = CullMode::Front,
@@ -86,14 +88,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 			.vertex_shader_key = "shadow_instances.vert",
 			.fragment_shader_key = "shadow.frag",
 			.framebuffer = shadow_framebuffer,
-			.layout = {
-				{ ElementType::Float3, "position" },
-				{ ElementType::Float2, "uv" },
-				{ ElementType::Float4, "colour" },
-				{ ElementType::Float3, "normals" },
-				{ ElementType::Float3, "tangents" },
-				{ ElementType::Float3, "bitangents" },
-			},
+			.layout = default_inputs,
 			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 			.extent = renderer_extent,
 			.cull_mode = CullMode::Front,
@@ -119,8 +114,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.vertex_shader_key = "identity.vert",
 		.fragment_shader_key = "identity.frag",
 		.framebuffer = get_framebuffer<SceneFramebuffer::Identity>(),
-		.layout = { { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float4, "colour" },
-			{ ElementType::Float3, "normals" }, { ElementType::Float3, "tangents" }, { ElementType::Float3, "bitangents" } },
+		.layout = default_inputs,
 		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 		.extent = renderer_extent,
 		.polygon_mode = PolygonMode::Fill,
@@ -137,7 +131,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		Framebuffer::construct(device,
 			{
 				.extent = renderer_extent,
-				.attachments = { { ImageFormat::SBGR }, { ImageFormat::Depth } },
+				.attachments = { { ImageFormat::SRGB32 }, { ImageFormat::Depth } },
 				.clear_colour_on_load = false,
 				.clear_depth_on_load = false,
 				.should_blend = true,
@@ -153,14 +147,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.vertex_shader_key = "point_light.vert",
 		.fragment_shader_key = "point_light.frag",
 		.framebuffer = get_framebuffer<SceneFramebuffer::Geometry>(),
-		.layout = {
-			{ ElementType::Float3, "position" },
-			{ ElementType::Float2, "uv" },
-			{ ElementType::Float4, "colour" },
-			{ ElementType::Float3, "normals" },
-			{ ElementType::Float3, "tangents" },
-			{ ElementType::Float3, "bitangents" },
-		},
+		.layout = default_inputs,
 		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 		.extent = renderer_extent,
 		.cull_mode = CullMode::Front,
@@ -173,14 +160,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.vertex_shader_key = "spot_light.vert",
 		.fragment_shader_key = "point_light.frag",
 		.framebuffer = get_framebuffer<SceneFramebuffer::Geometry>(),
-		.layout = {
-			{ ElementType::Float3, "position" },
-			{ ElementType::Float2, "uv" },
-			{ ElementType::Float4, "colour" },
-			{ ElementType::Float3, "normals" },
-			{ ElementType::Float3, "tangents" },
-			{ ElementType::Float3, "bitangents" },
-		},
+		.layout = default_inputs,
 		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 		.extent = renderer_extent,
 		.cull_mode = CullMode::Front,
@@ -193,14 +173,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.vertex_shader_key = "skybox.vert",
 		.fragment_shader_key = "skybox.frag",
 		.framebuffer = get_framebuffer<SceneFramebuffer::Geometry>(),
-		.layout = {
-			{ ElementType::Float3, "position" },
-			{ ElementType::Float2, "uv" },
-			{ ElementType::Float4, "colour" },
-			{ ElementType::Float3, "normals" },
-			{ ElementType::Float3, "tangents" },
-			{ ElementType::Float3, "bitangents" },
-		},
+		.layout = default_inputs,
 		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 		.extent = renderer_extent,
 		.cull_mode = CullMode::Back,
@@ -216,14 +189,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.vertex_shader_key = "static_mesh.vert",
 		.fragment_shader_key = "static_mesh.frag",
 		.framebuffer = get_framebuffer<SceneFramebuffer::Geometry>(),
-		.layout = {
-			{ ElementType::Float3, "position" },
-			{ ElementType::Float2, "uv" },
-			{ ElementType::Float4, "colour" },
-			{ ElementType::Float3, "normals" },
-			{ ElementType::Float3, "tangents" },
-			{ ElementType::Float3, "bitangents" },
-		},
+		.layout = default_inputs,
 		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 		.extent = renderer_extent,
 		.cull_mode = CullMode::Front,
@@ -236,20 +202,14 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.vertex_shader_key = "static_mesh.vert",
 		.fragment_shader_key = "static_mesh.frag",
 		.framebuffer = get_framebuffer<SceneFramebuffer::Geometry>(),
-		.layout = {
-			{ ElementType::Float3, "position" },
-			{ ElementType::Float2, "uv" },
-			{ ElementType::Float4, "colour" },
-			{ ElementType::Float3, "normals" },
-			{ ElementType::Float3, "tangents" },
-			{ ElementType::Float3, "bitangents" },
-		},
+		.layout = default_inputs,
 		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 		.extent = renderer_extent,
 		.cull_mode = CullMode::Front,
 		.descriptor_set_layouts = desc_layout,
 		.specialisation_constant = specialisation_constant_description,
 	});
+	point_light_data.calculate_point_lights = 0;
 
 	point_light_transforms = StorageBuffer::construct_scoped(device,
 		{
@@ -370,8 +330,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.vertex_shader_key = "static_mesh.vert",
 		.fragment_shader_key = "static_mesh.frag",
 		.framebuffer = geometry_framebuffer,
-		.layout = { { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float4, "colour" },
-			{ ElementType::Float3, "normals" }, { ElementType::Float3, "tangents" }, { ElementType::Float3, "bitangents" } },
+		.layout = default_inputs,
 		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 		.extent = renderer_extent,
 		.polygon_mode = PolygonMode::Line,
@@ -387,8 +346,12 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.vertex_shader_key = "quad.vert",
 		.fragment_shader_key = "quad.frag",
 		.framebuffer = geometry_framebuffer,
-		.layout = { { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float3, "normals" },
-			{ ElementType::Float4, "colour" }, },
+		.layout = {
+			{ ElementType::Float3, "position" },
+			{ ElementType::Float2, "uvs" },
+			{ ElementType::Float3, "normals" },
+			{ ElementType::Float4, "colour" },
+		},
 		.push_constant_layout = PushConstantLayout { PushConstantRange { PushConstantKind::Both, sizeof(PushConstant) } },
 		.extent = renderer_extent,
 		.cull_mode = CullMode::None,
@@ -408,6 +371,19 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 	pipeline_properties.polygon_mode = PolygonMode::Line;
 	pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" } };
 	get_pipeline_cache().put(pipeline_properties);
+
+	DataBuffer white_data_buffer;
+	white_data_buffer.allocate(1 * sizeof(std::uint32_t));
+	white_data_buffer[0] = static_cast<std::byte>(0xFFFFFFFF);
+
+	auto& white_texture = get_texture_cache().put({
+		.key = "White",
+		.debug_name = "White",
+		.data_buffer = white_data_buffer,
+	});
+	default_material = Material::construct_scoped(
+		device, { .textures = { { "albedo", white_texture }, { "diffuse", white_texture }, { "specular", white_texture}, },
+		});
 
 	renderer->construct_sub_renderers(device, app);
 }
@@ -492,7 +468,7 @@ auto SceneRenderer::text_rendering_pass() -> void
 
 auto SceneRenderer::planar_geometry_pass() -> void { renderer->planar_geometry_pass(*command_executor); }
 
-auto SceneRenderer::begin_frame(const glm::mat4& view, const glm::mat4& projection, const glm::mat4& view_projection) -> void
+auto SceneRenderer::begin_frame(const TransformMatrix& view, const TransformMatrix& projection, const TransformMatrix& view_projection) -> void
 {
 	auto camera_ubo_transaction = begin_uniform_transaction<CameraUBO>();
 	auto& camera = camera_ubo_transaction.get_buffer();
@@ -523,17 +499,12 @@ auto SceneRenderer::draw_identifiers(std::size_t count) -> void
 	renderer->draw_mesh_instanced(*command_executor, count, vb, ib, *get_pipeline("Identity"));
 }
 
-auto SceneRenderer::draw_aabb(const Disarray::AABB& aabb, const glm::vec4& colour, const glm::mat4& transform) -> void
+auto SceneRenderer::draw_aabb(const Disarray::AABB&, const ColourVector& colour, const TransformMatrix& transform) -> void
 {
-	const auto scale_matrix = aabb.calculate_scale_matrix();
-	// Calculate the center of the AABB
-	glm::vec3 aabb_center = aabb.middle_point();
-	glm::vec3 translation = -aabb_center;
-
 	draw_single_static_mesh(*aabb_model, *get_pipeline("AABB"), transform, colour);
 }
 
-auto SceneRenderer::draw_text(const Components::Transform& transform, const Components::Text& text, const glm::vec4& colour) -> void
+auto SceneRenderer::draw_text(const Components::Transform& transform, const Components::Text& text, const ColourVector& colour) -> void
 {
 	switch (text.projection) {
 	case Components::TextProjection::Billboard: {
@@ -566,42 +537,31 @@ auto SceneRenderer::draw_planar_geometry(Geometry geometry, const GeometryProper
 	renderer->draw_planar_geometry(geometry, properties);
 }
 
-auto SceneRenderer::draw_submesh(Disarray::CommandExecutor&, const Disarray::VertexBuffer& vertex_buffer, const Disarray::IndexBuffer& index_buffer,
-	const Disarray::Pipeline& pipeline, const glm::vec4& colour, const glm::mat4& transform, Disarray::PushConstant& push_constant) -> void
-{
-	push_constant.object_transform = transform;
-	push_constant.colour = colour;
-	draw_single_static_mesh(vertex_buffer, index_buffer, pipeline, transform, colour);
-}
-
-auto SceneRenderer::draw_static_submeshes(const Collections::ScopedStringMap<MeshSubstructure>& submeshes, const Pipeline& pipeline,
-	const glm::mat4& transform, const glm::vec4& colour) -> void
+auto SceneRenderer::draw_static_submeshes(const Collections::ScopedStringMap<Disarray::Mesh>& submeshes, const Pipeline& pipeline,
+	const TransformMatrix& transform, const ColourVector& colour) -> void
 {
 	renderer->bind_descriptor_sets(*command_executor, pipeline);
 	renderer->bind_pipeline(*command_executor, pipeline);
+	auto& editable = renderer->get_graphics_resource().get_editable_push_constant();
+	editable.object_transform = transform;
+	renderer->push_constant(*command_executor, pipeline);
 
-	auto& push_constant = get_graphics_resource().get_editable_push_constant();
 
-	Collections::for_each_unwrapped(submeshes, [&](const auto&, const auto& mesh) {
-		std::size_t index = 0;
-		for (const auto& texture_index : mesh->texture_indices) {
-			push_constant.image_indices.at(index++) = static_cast<int>(texture_index);
-		}
-		push_constant.bound_textures = static_cast<unsigned int>(index);
-		draw_submesh(*command_executor, *mesh->vertices, *mesh->indices, pipeline, colour, transform, push_constant);
-		push_constant.bound_textures = 0;
+	Collections::for_each_unwrapped(submeshes, [&](const auto&, const Scope<Disarray::Mesh>& mesh) {
+		renderer->draw_mesh_without_bind(*command_executor, *mesh);
 	});
 }
 
-auto SceneRenderer::draw_single_static_mesh(const Mesh& mesh, const Pipeline& pipeline, const glm::mat4& transform, const glm::vec4& colour) -> void
+auto SceneRenderer::draw_single_static_mesh(const Mesh& mesh, const Pipeline& pipeline, const TransformMatrix& transform, const ColourVector& colour)
+	-> void
 {
-	renderer->draw_mesh(*command_executor, mesh, pipeline, colour, transform);
+	renderer->draw_mesh(*command_executor, mesh, pipeline, transform, colour);
 }
 
-auto SceneRenderer::draw_single_static_mesh(
-	const VertexBuffer& vertices, const IndexBuffer& indices, const Pipeline& pipeline, const glm::mat4& transform, const glm::vec4& colour) -> void
+auto SceneRenderer::draw_single_static_mesh(const VertexBuffer& vertices, const IndexBuffer& indices, const Pipeline& pipeline,
+	const TransformMatrix& transform, const ColourVector& colour) -> void
 {
-	renderer->draw_mesh(*command_executor, vertices, indices, pipeline, colour, transform);
+	renderer->draw_mesh(*command_executor, vertices, indices, pipeline, transform, colour);
 }
 
 auto SceneRenderer::begin_pass(const Disarray::Framebuffer& framebuffer, bool explicit_clear) -> void

@@ -1,7 +1,6 @@
 #include "vulkan/Material.hpp"
 
 #include "graphics/Material.hpp"
-#include "graphics/Mesh.hpp"
 
 namespace Disarray {
 

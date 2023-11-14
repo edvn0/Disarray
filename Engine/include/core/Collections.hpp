@@ -53,6 +53,8 @@ template <class Value> using ReferencedStringViewMap = Detail::StringlikeUnorder
 template <class Value> using ReferencedStringMap = Detail::StringlikeUnorderedMap<std::string, Ref<Value>>;
 using StringViewSet = std::unordered_set<std::string_view, StringHash, std::equal_to<>, DefaultAllocator<std::string_view>>;
 using StringSet = std::unordered_set<std::string, StringHash, std::equal_to<>, DefaultAllocator<std::string>>;
+template <class T> using RefVector = std::vector<Ref<T>>;
+template <class T> using ScopeVector = std::vector<Scope<T>>;
 
 template <class T>
 concept Iterable = requires(T collection) {

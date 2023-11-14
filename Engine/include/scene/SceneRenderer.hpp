@@ -63,8 +63,8 @@ public:
 	auto draw_point_lights(const Disarray::Mesh& point_light_mesh, std::uint32_t count, const Disarray::Pipeline& pipeline) -> void;
 	auto draw_planar_geometry(Geometry, const GeometryProperties&) -> void;
 	auto draw_aabb(const AABB& aabb, const glm::vec4& colour, const glm::mat4& transform) -> void;
-	auto draw_static_submeshes(const Collections::ScopedStringMap<Disarray::MeshSubstructure>&, const Disarray::Pipeline&, const glm::mat4& transform,
-		const glm::vec4& colour) -> void;
+	auto draw_static_submeshes(
+		const Collections::ScopedStringMap<Disarray::Mesh>&, const Disarray::Pipeline&, const glm::mat4& transform, const glm::vec4& colour) -> void;
 	auto draw_single_static_mesh(const Disarray::Mesh& mesh, const Disarray::Pipeline& pipeline, const glm::mat4& transform, const glm::vec4& colour)
 		-> void;
 	auto draw_single_static_mesh(const Disarray::VertexBuffer& vertices, const Disarray::IndexBuffer& indices, const Disarray::Pipeline& pipeline,
@@ -167,6 +167,8 @@ private:
 
 	PointLightData point_light_data {};
 
+	Scope<Disarray::Material> default_material {};
+
 	auto begin_pass(const Disarray::Framebuffer& framebuffer, bool explicit_clear) -> void;
 	void clear_pass(RenderPasses render_pass);
 
@@ -176,8 +178,6 @@ private:
 			clear_pass(pass);
 		}
 	}
-	auto draw_submesh(Disarray::CommandExecutor&, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&,
-		const glm::vec4&, const glm::mat4&, PushConstant& push_constant) -> void;
 };
 
 } // namespace Disarray

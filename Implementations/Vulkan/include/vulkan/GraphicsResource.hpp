@@ -53,6 +53,9 @@ public:
 	[[nodiscard]] auto get_push_constant() const -> const PushConstant* override { return &pc; }
 	auto get_editable_push_constant() -> PushConstant& override { return pc; }
 
+	void push_constant(Disarray::CommandExecutor&, const Disarray::Pipeline&) override;
+	void push_constant(Disarray::CommandExecutor&, const Disarray::Pipeline&, const void* data, std::size_t size) override;
+
 private:
 	void cleanup_graphics_resource();
 	auto descriptor_write_sets_per_frame(DescriptorSet descriptor_set) -> std::vector<VkWriteDescriptorSet>;

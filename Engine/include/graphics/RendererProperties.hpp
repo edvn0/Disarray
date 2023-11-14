@@ -16,6 +16,9 @@
 
 namespace Disarray {
 
+using ColourVector = glm::vec4;
+using TransformMatrix = glm::mat4;
+
 using DescriptorSet = TypeSafeWrapper<std::uint32_t>;
 using DescriptorBinding = TypeSafeWrapper<std::uint16_t>;
 

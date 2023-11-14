@@ -147,11 +147,14 @@ auto Image::read_pixel(const glm::vec2& pos) const -> PixelReadData
 		auto create_info = vk_structures<VkBufferCreateInfo>()();
 		const auto& img_props = get_properties();
 		const auto img_size = img_props.data.get_size();
-		VkDeviceSize size = get_properties().data.is_valid() ? img_size : img_props.extent.get_size() * sizeof(float);
+		VkDeviceSize size = get_properties().data.is_valid() ? img_size : img_props.extent.get_size() * to_size(props.format);
 		create_info.size = size;
 		create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-		allocation = allocator.allocate_buffer(
-			pixel_data_buffer, create_info, { .usage = Usage::AUTO_PREFER_HOST, .creation = Creation::HOST_ACCESS_RANDOM_BIT });
+		allocation = allocator.allocate_buffer(pixel_data_buffer, create_info,
+			{
+				.usage = Usage::AUTO_PREFER_HOST,
+				.creation = Creation::HOST_ACCESS_RANDOM_BIT,
+			});
 
 		VkBufferImageCopy buffer_copy_region = {};
 		buffer_copy_region.imageSubresource.aspectMask = aspect_mask;

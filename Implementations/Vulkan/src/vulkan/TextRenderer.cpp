@@ -161,7 +161,7 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 	renderer_api->glyph_framebuffer = Framebuffer::construct(device,
 		{
 			.extent = extent,
-			.attachments = { { ImageFormat::SBGR, true }, { ImageFormat::Depth } },
+			.attachments = { { ImageFormat::SRGB32, true }, { ImageFormat::Depth } },
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
 			.should_blend = true,

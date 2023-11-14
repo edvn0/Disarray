@@ -109,7 +109,7 @@ namespace Detail {
 		DeserialiseComponent<Components::Controller>, DeserialiseComponent<Components::Camera>, DeserialiseComponent<Components::BoxCollider>,
 		DeserialiseComponent<Components::SphereCollider>, DeserialiseComponent<Components::CapsuleCollider>,
 		DeserialiseComponent<Components::ColliderMaterial>, DeserialiseComponent<Components::RigidBody>, DeserialiseComponent<Components::Skybox>,
-		DeserialiseComponent<Components::Text>>;
+		DeserialiseComponent<Components::Text>, DeserialiseComponent<Components::Material>>;
 
 	template <class... Deserialisers> struct Deserialiser {
 		using json = nlohmann::json;
@@ -197,6 +197,6 @@ namespace Detail {
 using SceneDeserialiser = Detail::Deserialiser<ScriptDeserialiser, MeshDeserialiser, SkyboxDeserialiser, TextDeserialiser, BoxColliderDeserialiser,
 	SphereColliderDeserialiser, CapsuleColliderDeserialiser, ColliderMaterialDeserialiser, RigidBodyDeserialiser, TextureDeserialiser,
 	TransformDeserialiser, LineGeometryDeserialiser, QuadGeometryDeserialiser, DirectionalLightDeserialiser, PointLightDeserialiser,
-	SpotLightDeserialiser, InheritanceDeserialiser>;
+	SpotLightDeserialiser, InheritanceDeserialiser, MaterialDeserialiser>;
 
 } // namespace Disarray

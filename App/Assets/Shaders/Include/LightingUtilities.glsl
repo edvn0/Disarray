@@ -94,9 +94,9 @@ vec3 calculate_spot_light(vec4 position, vec4 input_factors, vec4 input_ambient,
 	const float epsilon = spot_light_cutoff - spot_light_outer_cutoff;
 	const float intensity = clamp((theta - spot_light_outer_cutoff) / epsilon, 0.0, 1.0);
 
-	vec3 colour = calculate_point_light(
-		position, input_factors, input_ambient, input_diffuse, input_specular, normal, fragment_position, shadow, view_direction);
-	return intensity * colour;
+	vec3 colour
+		= calculate_point_light(position, input_factors, input_ambient, input_diffuse, input_specular, normal, fragment_position, 0, view_direction);
+	return (1 - shadow) * intensity * colour;
 }
 
 vec3 calculate_spot_light(vec4 position, vec4 input_factors, vec4 input_ambient, vec4 input_diffuse, vec4 input_specular, vec3 normal,

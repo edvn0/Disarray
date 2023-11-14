@@ -20,6 +20,7 @@ struct Submesh {
 	std::vector<uint32_t> indices {};
 	std::vector<Disarray::TextureProperties> texture_properties {};
 	std::vector<Ref<Disarray::Texture>> textures {};
+	AABB aabb {};
 
 	template <SubmeshMember T> [[nodiscard]] auto count() const -> std::size_t
 	{
@@ -132,7 +133,8 @@ public:
 	[[nodiscard]] auto construct_textures(const Device&) -> std::vector<Ref<Disarray::Texture>>;
 
 	[[nodiscard]] auto get_mesh_data() -> const ImportedMesh& { return mesh_data; }
-	[[nodiscard]] auto get_aabb() const -> AABB;
+
+	[[nodiscard]] auto construct_mesh(const Device&) -> Ref<Disarray::Mesh>;
 
 private:
 	Scope<IModelImporter> importer { nullptr };

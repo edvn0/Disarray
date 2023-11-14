@@ -82,9 +82,6 @@ template <class T, class D = DefaultDelete<T>, class... Args> inline auto make_s
 	return Scope<T, D> { new T { std::forward<Args>(args)... }, D {} };
 }
 
-template <class T> using RefVector = std::vector<Ref<T>>;
-template <class T> using ScopeVector = std::vector<Scope<T>>;
-
 template <class To, class From>
 	requires(std::is_base_of_v<From, To>)
 auto cast_to(From&& obj) -> decltype(auto)

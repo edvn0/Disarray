@@ -35,11 +35,11 @@ struct MeshSubstructure {
 class Mesh : public ReferenceCountable {
 	DISARRAY_OBJECT_PROPS(Mesh, MeshProperties)
 public:
-	virtual auto get_vertices() const -> VertexBuffer& = 0;
-	virtual auto get_indices() const -> IndexBuffer& = 0;
+	virtual auto get_vertices() const -> const VertexBuffer& = 0;
+	virtual auto get_indices() const -> const IndexBuffer& = 0;
 
-	[[nodiscard]] virtual auto get_submeshes() const -> const Collections::ScopedStringMap<Disarray::MeshSubstructure>& = 0;
-	[[nodiscard]] virtual auto get_textures() const -> const RefVector<Disarray::Texture>& = 0;
+	[[nodiscard]] virtual auto get_submeshes() const -> const Collections::ScopedStringMap<Disarray::Mesh>& = 0;
+	[[nodiscard]] virtual auto get_textures() const -> const Collections::RefVector<Disarray::Texture>& = 0;
 
 	virtual auto get_aabb() const -> const AABB& = 0;
 	virtual auto has_children() const -> bool = 0;

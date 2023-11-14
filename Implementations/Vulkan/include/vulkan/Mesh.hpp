@@ -20,14 +20,14 @@ public:
 	Mesh(const Disarray::Device&, const Submesh&);
 	~Mesh() override;
 
-	auto get_indices() const -> Disarray::IndexBuffer& override;
-	auto get_vertices() const -> Disarray::VertexBuffer& override;
+	auto get_indices() const -> const Disarray::IndexBuffer& override;
+	auto get_vertices() const -> const Disarray::VertexBuffer& override;
 	auto get_aabb() const -> const AABB& override;
 
 	[[nodiscard]] auto invalid() const -> bool override;
 
-	auto get_submeshes() const -> const Collections::ScopedStringMap<Disarray::MeshSubstructure>& override;
-	auto get_textures() const -> const RefVector<Disarray::Texture>& override;
+	auto get_submeshes() const -> const Collections::ScopedStringMap<Disarray::Mesh>& override;
+	auto get_textures() const -> const Collections::RefVector<Disarray::Texture>& override;
 	auto has_children() const -> bool override;
 
 	void force_recreation() override;
@@ -36,11 +36,19 @@ public:
 
 private:
 	void load_and_initialise_model();
+	void load_and_initialise_model(const ImportedMesh&);
+
+	Mesh(const Disarray::Device& dev, Scope<Disarray::VertexBuffer> vertices, Scope<Disarray::IndexBuffer> indices,
+		const std::vector<Ref<Disarray::Texture>>& textures);
 
 	const Disarray::Device& device;
 
-	std::vector<Ref<Disarray::Texture>> mesh_textures;
-	Collections::ScopedStringMap<Disarray::MeshSubstructure> submeshes {};
+	Collections::ScopedStringMap<Disarray::Mesh> submeshes {};
+
+	Scope<Disarray::VertexBuffer> vertex_buffer { nullptr };
+	Scope<Disarray::IndexBuffer> index_buffer { nullptr };
+	Collections::RefVector<Disarray::Texture> mesh_textures;
+
 	AABB aabb {};
 	std::string mesh_name {};
 };

@@ -68,7 +68,8 @@ void main()
         }
     } else {
         uint base = tea(103, 107);
-        [[unroll]] for (uint i = 0; i < 8; i++) {
+		uint count_max = min(8, pc.max_point_lights);
+        [[unroll]] for (uint i = 0; i < count_max; i++) {
             PointLight light = PLBO.lights[next_uint(base, pc.max_point_lights)];
             out_vec += calc_point_light(light, shadow, normals, fragment_position, view_direction);
         }

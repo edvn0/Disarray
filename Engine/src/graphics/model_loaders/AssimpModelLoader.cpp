@@ -70,7 +70,7 @@ auto AssimpModelLoader::process_mesh(aiMesh* mesh, const std::filesystem::path& 
 		if (has_uvs) {
 			model_vertex.uvs = glm::vec2 {
 				mesh_uvs[i].x,
-				mesh_uvs[i].y,
+						mesh_uvs[i].y,
 			};
 		}
 
@@ -134,7 +134,18 @@ auto AssimpModelLoader::process_mesh(aiMesh* mesh, const std::filesystem::path& 
 		}
 	}
 
-	return Submesh(vertices, indices, textures);
+	auto aabb = mesh->mAABB;
+	return Submesh {
+		vertices,
+		indices,
+		textures,
+		{},
+		AABB {
+			glm::vec2 { aabb.mMin.x, aabb.mMax.x },
+			glm::vec2 { aabb.mMin.y, aabb.mMax.y },
+			glm::vec2 { aabb.mMin.z, aabb.mMax.z },
+		},
+	};
 }
 
 inline auto get_mutex() -> std::mutex&
@@ -162,7 +173,6 @@ auto AssimpModelLoader::process_current_node(
 		std::string name(mesh_name.length, '\0');
 		std::memcpy(name.data(), mesh_name.C_Str(), mesh_name.length);
 		name.resize(mesh_name.length);
-		const auto& aabb = ai_mesh->mAABB;
 
 		mesh_map.try_emplace(name, process_mesh(ai_mesh, base_directory, scene));
 	});

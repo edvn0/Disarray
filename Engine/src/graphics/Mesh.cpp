@@ -1,6 +1,7 @@
 #include "DisarrayPCH.hpp"
 
 #include "graphics/Mesh.hpp"
+#include "graphics/ModelLoader.hpp"
 #include "vulkan/Mesh.hpp"
 
 namespace Disarray {

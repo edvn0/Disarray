@@ -21,6 +21,9 @@
 
 namespace Disarray::Client {
 
+static constexpr std::size_t string_buffer_size = 256;
+
+
 ScenePanel::ScenePanel(Device& dev, Window&, Swapchain&, Scene* s)
 	: device(dev)
 	, scene(s)
@@ -105,9 +108,9 @@ void ScenePanel::interface()
 	UI::begin("Scene");
 	const auto& tag = scene->get_name();
 	std::string buffer = tag;
-	buffer.resize(256);
+	buffer.resize(string_buffer_size);
 
-	if (ImGui::InputText("Scene name", buffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+	if (ImGui::InputText("Scene name", buffer.data(), string_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue)) {
 		buffer.shrink_to_fit();
 
 		if (!buffer.empty() && tag != buffer) {
@@ -158,14 +161,15 @@ void Client::ScenePanel::update(float)
 	}
 }
 
+// NOLINTBEGIN
 void ScenePanel::for_all_components(Entity& entity)
 {
 	if (entity.has_component<Components::Tag>()) {
 		auto& tag = entity.get_components<Components::Tag>();
 		std::string buffer = tag.name;
-		buffer.resize(256);
+		buffer.resize(string_buffer_size);
 
-		if (ImGui::InputText("Tag", buffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+		if (ImGui::InputText("Tag", buffer.data(), string_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue)) {
 			buffer.shrink_to_fit();
 
 			if (!buffer.empty() && tag.name != buffer) {
@@ -249,23 +253,27 @@ void ScenePanel::for_all_components(Entity& entity)
 
 	draw_component<Components::SpotLight>(entity, [](Components::SpotLight& spot) {
 		if (ImGui::DragFloat3("Direction", glm::value_ptr(spot.direction), 0.1F, -glm::pi<float>(), glm::pi<float>())) { }
-		if (ImGui::DragFloat("Cutoff", &spot.cutoff_angle_degrees, 2.F, -90.F, 90.F)) { }
-		if (ImGui::DragFloat("Outer Cutoff", &spot.outer_cutoff_angle_degrees, 2.F, -90.F, 90.F)) { }
 		if (UI::Input::drag("Factors", spot.factors, 0.1F, 0.F, 10.F)) { }
 		if (ImGui::ColorEdit4("Ambient", glm::value_ptr(spot.ambient))) { }
 		if (ImGui::ColorEdit4("Diffuse", glm::value_ptr(spot.diffuse))) { }
 		if (ImGui::ColorEdit4("Specular", glm::value_ptr(spot.specular))) { }
+		if (ImGui::DragFloat("Cutoff", &spot.cutoff_angle_degrees, 1.5F, 2.0F, 85.F)) { }
+		if (ImGui::DragFloat("Outer Cutoff", &spot.outer_cutoff_angle_degrees, 1.5F, 2.0F, 85.F)) { }
+		if (spot.cutoff_angle_degrees > spot.outer_cutoff_angle_degrees) {
+			std::swap(spot.cutoff_angle_degrees, spot.outer_cutoff_angle_degrees);
+		}
 	});
 
 	draw_component<Components::Text>(entity, [](Components::Text& text) {
 		std::string buffer = text.text_data;
-		buffer.resize(256);
+		buffer.resize(string_buffer_size);
 
-		if (ImGui::InputText("Text", buffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+		if (ImGui::InputText("Text", buffer.data(), string_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue)) {
 			buffer.shrink_to_fit();
 
 			if (!buffer.empty() && text.text_data != buffer) {
-				text.text_data = buffer.c_str();
+				const auto* buffer_c_str = buffer.c_str();
+				text.text_data = buffer_c_str;
 			}
 		}
 		if (ImGui::ColorEdit4("Colour", glm::value_ptr(text.colour))) { }
@@ -273,47 +281,35 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (UI::combo_choice<Components::TextProjection>("Space Choice", std::ref(text.projection))) { }
 	});
 
-	draw_component<Components::Material>(entity, [&](Components::Material& mat) {
-		if (mat.albedo) {
-			UI::texture_drop_button(device, *mat.albedo);
-		} else {
-			UI::button("Drop albedo map here!", { 100, 30 });
-			if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".png", ".jpg", ".jpeg", ".ktx" })) {
-				const std::filesystem::path& texture_path = *dropped;
-				mat.albedo = Texture::construct(device,
-					{
-						.path = texture_path,
-						.debug_name = texture_path.string(),
-					});
-			}
+	draw_component<Components::Material>(entity, [&](Components::Material& mat) { auto& properties = mat.material->get_properties();
+		Collections::for_each_unwrapped(properties.textures, [](const auto& key, Ref<Disarray::Texture>& texture) {
+			ImGui::PushID(key.c_str());
+			UI::text("{}:", key);
+			UI::image(*texture);
+			ImGui::PopID();
+		});
+
+		ImGui::NewLine();
+		std::string buffer;
+		buffer.resize(string_buffer_size);
+
+		std::ignore = ImGui::InputText("Texture name", buffer.data(), string_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
+		std::optional<std::filesystem::path> selected { std::nullopt };
+		if (ImGui::Button("Choose path", { 80, 30 })) {
+			selected = UI::Popup::select_file({ "*.mesh", "*.obj", "*.fbx" }, FS::model_directory());
 		}
-		ImGui::SameLine();
-		if (mat.normal) {
-			UI::texture_drop_button(device, *mat.normal);
-		} else {
-			UI::button("Drop normal map here!", { 100, 30 });
-			if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".png", ".jpg", ".jpeg", ".ktx" })) {
-				const std::filesystem::path& texture_path = *dropped;
-				mat.normal = Texture::construct(device,
+		if (UI::button("Add texture")) {
+			std::string name { buffer.c_str() };
+			if (!selected.has_value()) return;
+
+			const auto& path = *selected;
+
+			properties.textures.try_emplace(name,
+				Texture::construct(device,
 					{
-						.path = texture_path,
-						.debug_name = texture_path.string(),
-					});
-			}
-		}
-		ImGui::SameLine();
-		if (mat.specular) {
-			UI::texture_drop_button(device, *mat.specular);
-		} else {
-			UI::button("Drop specular map here!", { 100, 30 });
-			if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".png", ".jpg", ".jpeg", ".ktx" })) {
-				const std::filesystem::path& texture_path = *dropped;
-				mat.specular = Texture::construct(device,
-					{
-						.path = texture_path,
-						.debug_name = texture_path.string(),
-					});
-			}
+						.path = path,
+						.debug_name = path.string(),
+					}));
 		}
 	});
 
@@ -326,7 +322,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		}
 
 		if (any_changed && selected.has_value()) {
-			const auto value = *selected;
+			const auto& value = *selected;
 
 			auto new_cubemap = Texture::construct(dev,
 				{
@@ -341,7 +337,7 @@ void ScenePanel::for_all_components(Entity& entity)
 
 			skybox.texture = std::move(new_cubemap);
 			current->submit_preframe_work([](Scene& this_scene, SceneRenderer& renderer) {
-				auto texture_cube = this_scene.get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
+				const auto& texture_cube = this_scene.get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
 
 				auto& graphics_resource = renderer.get_graphics_resource();
 				graphics_resource.expose_to_shaders(texture_cube->get_image(), DescriptorSet(2), DescriptorBinding(2));
@@ -362,7 +358,7 @@ void ScenePanel::for_all_components(Entity& entity)
 					.debug_name = texture_path.string(),
 				});
 			current->submit_preframe_work([](Scene& this_scene, SceneRenderer& renderer) {
-				auto texture_cube = this_scene.get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
+				const auto& texture_cube = this_scene.get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
 
 				auto& graphics_resource = renderer.get_graphics_resource();
 				graphics_resource.expose_to_shaders(texture_cube->get_image(), DescriptorSet(2), DescriptorBinding(2));
@@ -485,6 +481,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (UI::checkbox("Kinematic", body.is_kinematic)) { }
 	});
 }
+// NOLINTEND
 
 void ScenePanel::on_event(Event& event) { }
 

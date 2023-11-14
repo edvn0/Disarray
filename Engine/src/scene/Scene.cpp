@@ -362,27 +362,31 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 		}
 	}
 
-	for (auto&& [entity, mesh, transform] :
+	for (auto&& [entity, mesh, texture, transform] :
 		registry
-			.view<const Components::Mesh, const Components::Transform>(
-				entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight, Components::SpotLight, Components::Skybox>)
+			.view<const Components::Mesh, const Components::Texture, const Components::Transform>(
+				entt::exclude<Components::DirectionalLight, Components::PointLight, Components::SpotLight, Components::Skybox>)
 			.each()) {
 		if (mesh.mesh == nullptr) {
 			continue;
 		}
 
 		const auto& actual_pipeline = *scene_renderer.get_pipeline("StaticMesh");
-		const auto transform_computed = transform.compute();
-		scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
+		const auto computed_transform = transform.compute();
 		if (mesh.draw_aabb) {
-			scene_renderer.draw_aabb(mesh.mesh->get_aabb(), { 1, 1, 1, 1 }, transform_computed);
+			scene_renderer.draw_aabb(mesh.mesh->get_aabb(), texture.colour, computed_transform);
+		}
+		if (mesh.mesh->has_children()) {
+			scene_renderer.draw_static_submeshes(mesh.mesh->get_submeshes(), actual_pipeline, computed_transform, texture.colour);
+		} else {
+			scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, computed_transform, texture.colour);
 		}
 	}
 }
 
 void Scene::draw_shadows(SceneRenderer& scene_renderer)
 {
-	for (auto shadow_view = registry.view<const Components::Mesh, Components::Texture, const Components::Transform>(
+	for (auto shadow_view = registry.view<const Components::Mesh, const Components::Texture, const Components::Transform>(
 			 entt::exclude<Components::PointLight, Components::SpotLight, Components::Skybox>);
 		 auto&& [entity, mesh, texture, transform] : shadow_view.each()) {
 		if (mesh.mesh == nullptr) {
@@ -397,10 +401,10 @@ void Scene::draw_shadows(SceneRenderer& scene_renderer)
 		}
 	}
 
-	for (auto&& [entity, mesh, transform] :
+	for (auto&& [entity, mesh, texture, transform] :
 		registry
-			.view<const Components::Mesh, const Components::Transform>(
-				entt::exclude<Components::Texture, Components::DirectionalLight, Components::SpotLight, Components::PointLight, Components::Skybox>)
+			.view<const Components::Mesh, const Components::Texture, const Components::Transform>(
+				entt::exclude<Components::DirectionalLight, Components::SpotLight, Components::PointLight, Components::Skybox>)
 			.each()) {
 		if (mesh.mesh == nullptr) {
 			continue;
@@ -408,7 +412,11 @@ void Scene::draw_shadows(SceneRenderer& scene_renderer)
 
 		const auto& actual_pipeline = *scene_renderer.get_pipeline("Shadow");
 		const auto transform_computed = transform.compute();
-		scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
+		if (mesh.mesh->has_children()) {
+			scene_renderer.draw_static_submeshes(mesh.mesh->get_submeshes(), actual_pipeline, transform.compute(), texture.colour);
+		} else {
+			scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, transform.compute(), texture.colour);
+		}
 	}
 }
 

@@ -27,6 +27,7 @@
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Renderer.hpp"
 #include "vulkan/StorageBuffer.hpp"
+#include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/UniformBuffer.hpp"
 #include "vulkan/VertexBuffer.hpp"
@@ -151,7 +152,23 @@ namespace {
 		skybox_image.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		skybox_image.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-		return std::array { glyph_texture_binding, glyph_array_sampler_binding, skybox_image };
+		auto albedo_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		albedo_map.descriptorCount = 1;
+		albedo_map.binding = 3;
+		albedo_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		albedo_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		auto normal_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		normal_map.descriptorCount = 1;
+		normal_map.binding = 4;
+		normal_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		normal_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		auto specular_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		specular_map.descriptorCount = 1;
+		specular_map.binding = 5;
+		specular_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		specular_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		return std::array { glyph_texture_binding, glyph_array_sampler_binding, skybox_image, albedo_map, normal_map, specular_map };
 	}
 
 	template <std::size_t Count> auto create_set_three_bindings()
@@ -391,5 +408,17 @@ void GraphicsResource::internal_expose_to_shaders(
 
 	vkUpdateDescriptorSets(supply_cast<Vulkan::Device>(device), static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
 }
+
+void GraphicsResource::push_constant(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline)
+{
+	push_constant(executor, pipeline, &pc, sizeof(PushConstant));
+}
+
+void GraphicsResource::push_constant(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const void* data, std::size_t size) {
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
+	auto* pipeline_layout = cast_to<Vulkan::Pipeline>(pipeline).get_layout();
+	vkCmdPushConstants(command_buffer, pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<std::uint32_t>(size), data);
+}
+
 
 } // namespace Disarray::Vulkan
