@@ -32,6 +32,10 @@ SLBO;
 
 layout(set = 1, binding = 1) uniform sampler2D depth_texture;
 
+layout(set = 2, binding = 3) uniform sampler2D albedo_map;
+layout(set = 2, binding = 4) uniform sampler2D normal_map;
+layout(set = 2, binding = 5) uniform sampler2D specular_map;
+
 layout(push_constant) uniform PushConstantBlock { PushConstant pc; }
 PC;
 

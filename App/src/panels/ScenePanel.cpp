@@ -273,13 +273,47 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (UI::combo_choice<Components::TextProjection>("Space Choice", std::ref(text.projection))) { }
 	});
 
-	draw_component<Components::Material>(entity, [](Components::Material& mat) {
-		const auto& props = mat.material->get_properties();
-		UI::text_wrapped("VS: {}", props.vertex_shader->get_properties().identifier.string());
-		UI::text_wrapped("FS: {}", props.fragment_shader->get_properties().identifier.string());
-		for (const auto& text : props.textures) {
-			UI::text("{}", text->get_properties().debug_name);
-			UI::image(text->get_image());
+	draw_component<Components::Material>(entity, [&](Components::Material& mat) {
+		if (mat.albedo) {
+			UI::texture_drop_button(device, *mat.albedo);
+		} else {
+			UI::button("Drop albedo map here!", { 100, 30 });
+			if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".png", ".jpg", ".jpeg", ".ktx" })) {
+				const std::filesystem::path& texture_path = *dropped;
+				mat.albedo = Texture::construct(device,
+					{
+						.path = texture_path,
+						.debug_name = texture_path.string(),
+					});
+			}
+		}
+		ImGui::SameLine();
+		if (mat.normal) {
+			UI::texture_drop_button(device, *mat.normal);
+		} else {
+			UI::button("Drop normal map here!", { 100, 30 });
+			if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".png", ".jpg", ".jpeg", ".ktx" })) {
+				const std::filesystem::path& texture_path = *dropped;
+				mat.normal = Texture::construct(device,
+					{
+						.path = texture_path,
+						.debug_name = texture_path.string(),
+					});
+			}
+		}
+		ImGui::SameLine();
+		if (mat.specular) {
+			UI::texture_drop_button(device, *mat.specular);
+		} else {
+			UI::button("Drop specular map here!", { 100, 30 });
+			if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".png", ".jpg", ".jpeg", ".ktx" })) {
+				const std::filesystem::path& texture_path = *dropped;
+				mat.specular = Texture::construct(device,
+					{
+						.path = texture_path,
+						.debug_name = texture_path.string(),
+					});
+			}
 		}
 	});
 

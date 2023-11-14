@@ -82,9 +82,9 @@ template <> inline constexpr std::string_view component_name<Mesh> = "Mesh";
 
 struct Material {
 	Material() = default;
-	explicit Material(Device&, std::string_view vertex_path, std::string_view fragment_path);
-	explicit Material(Ref<Disarray::Material>);
-	Ref<Disarray::Material> material { nullptr };
+	Ref<Disarray::Texture> albedo { nullptr };
+	Ref<Disarray::Texture> normal { nullptr };
+	Ref<Disarray::Texture> specular { nullptr };
 };
 template <> inline constexpr std::string_view component_name<Material> = "Material";
 

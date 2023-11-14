@@ -124,7 +124,7 @@ void Window::register_event_handler(Disarray::App& app)
 
 	glfwSetWindowIconifyCallback(window, [](GLFWwindow* win, int iconified) {
 		auto& data = *static_cast<UserData*>(glfwGetWindowUserPointer(win));
-		WindowMinimizeEvent event((bool)iconified);
+		WindowMinimizeEvent event(static_cast<bool>(iconified));
 		data.callback(event);
 	});
 }

@@ -20,7 +20,7 @@ public:
 
 	auto get_descriptor_layouts() const { return layout; }
 
-	const auto& get_descriptor_set(std::uint32_t) const { return descriptor_set; }
+	auto get_descriptor_set(std::uint32_t) const -> const auto& { return descriptor_set; }
 
 private:
 	void recreate_material(bool should_clean);

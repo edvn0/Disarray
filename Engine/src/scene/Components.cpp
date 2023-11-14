@@ -35,28 +35,6 @@ Mesh::Mesh(Ref<Disarray::Mesh> input_mesh)
 {
 }
 
-Material::Material(Device& device, std::string_view vertex, std::string_view fragment)
-	: material(Disarray::Material::construct(device,
-		MaterialProperties {
-			.vertex_shader = Shader::construct(device,
-				{
-					.path = std::filesystem::path { vertex },
-					.identifier = vertex,
-				}),
-			.fragment_shader = Shader::construct(device,
-				{
-					.path = std::filesystem::path { fragment },
-					.identifier = fragment,
-				}),
-		}))
-{
-}
-
-Material::Material(Ref<Disarray::Material> input)
-	: material(std::move(input))
-{
-}
-
 Texture::Texture(Device& device, std::string_view path)
 	: texture(Disarray::Texture::construct(device,
 		TextureProperties {
