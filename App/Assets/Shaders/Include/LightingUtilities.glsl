@@ -1,3 +1,7 @@
+layout(set = 2, binding = 3) uniform sampler2D albedo_map;
+layout(set = 2, binding = 4) uniform sampler2D diffuse_map;
+layout(set = 2, binding = 5) uniform sampler2D specular_map;
+
 struct DirectionalLight {
 	vec3 direction;
 	vec4 ambient;
@@ -51,9 +55,9 @@ vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 view_
 	const vec3 reflection_direction = reflect(-light_direction, normal);
 	const float spec = pow(max(dot(view_direction, reflection_direction), 0.0), spec_pow);
 	// combine results
-	vec3 ambient = light.ambient.xyz * light.ambient.a;
-	vec3 diffuse = light.diffuse * diff;
-	vec3 specular = light.specular * spec;
+	vec3 ambient = light.ambient.xyz * light.ambient.a * vec3(texture(albedo_map, uvs));
+	vec3 diffuse = light.diffuse * diff * vec3(texture(diffuse_map, uvs));
+	vec3 specular = light.specular * spec * vec3(texture(specular_map, uvs));
 	const float inverse_shadow_factor = 1.0F - shadow;
 	return (ambient + inverse_shadow_factor * (diffuse + specular));
 }
@@ -75,9 +79,9 @@ vec3 calculate_point_light(vec4 position, vec4 input_factors, vec4 input_ambient
 	const float attenuation = 1.0F / factors;
 
 	// combine results
-	vec4 ambient = input_ambient;
-	vec4 diffuse = input_diffuse * diff;
-	vec4 specular = input_specular * spec;
+	vec4 ambient = input_ambient * texture(albedo_map, uvs);
+	vec4 diffuse = input_diffuse * diff * texture(diffuse_map, uvs);
+	vec4 specular = input_specular * spec * texture(specular_map, uvs);
 	ambient *= attenuation;
 	diffuse *= attenuation;
 	specular *= attenuation;

@@ -18,20 +18,15 @@ public:
 
 	void update_material(Disarray::Renderer&) override;
 
-	auto get_descriptor_layouts() const { return layout; }
-
-	auto get_descriptor_set(std::uint32_t) const -> const auto& { return descriptor_set; }
+	void write_textures(IGraphicsResource& resource) const override;
 
 private:
 	void recreate_material(bool should_clean);
 
 	const Disarray::Device& device;
-	VkDescriptorSetLayout layout {};
-	VkDescriptorSet descriptor_set {};
 
 	bool needs_update { true };
 	std::vector<Ref<Texture>> textures;
-	std::vector<Ref<UniformBuffer>> buffers;
 };
 
 } // namespace Disarray::Vulkan

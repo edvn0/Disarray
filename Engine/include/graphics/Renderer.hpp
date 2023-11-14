@@ -66,6 +66,8 @@ public:
 
 	[[nodiscard]] virtual auto get_push_constant() const -> const PushConstant* = 0;
 	virtual auto get_editable_push_constant() -> PushConstant& = 0;
+
+	[[nodiscard]] virtual auto get_image_count() const -> std::uint32_t = 0;
 };
 
 class Renderer : public ReferenceCountable {
@@ -135,6 +137,9 @@ public:
 	}
 
 	virtual void draw_mesh(CommandExecutor&, const VertexBuffer&, const IndexBuffer&, const Pipeline&, const TransformMatrix&, const ColourVector&)
+		= 0;
+	virtual void draw_mesh(
+		CommandExecutor&, const VertexBuffer&, const IndexBuffer&, const Pipeline&, const Material&, const TransformMatrix&, const ColourVector&)
 		= 0;
 	virtual void draw_mesh(CommandExecutor&, const Mesh&, const Pipeline&, const TransformMatrix&, const ColourVector&) = 0;
 	virtual void draw_mesh(CommandExecutor&, const Mesh&, const Pipeline&, const Material&, const TransformMatrix&, const ColourVector&) = 0;

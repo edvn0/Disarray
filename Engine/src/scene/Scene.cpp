@@ -206,9 +206,9 @@ void Scene::update(float)
 
 void Scene::render(SceneRenderer& renderer)
 {
-	auto render_planar_geometry = [](auto& ren) { ren.planar_geometry_pass(); };
+	static constexpr auto render_planar_geometry = [](auto& ren) { ren.planar_geometry_pass(); };
 
-	auto render_text = [](auto& scene_renderer, entt::registry& reg) {
+	static constexpr auto render_text = [](auto& scene_renderer, entt::registry& reg) {
 		for (auto&& [entity, text, transform] : reg.template view<const Components::Text, const Components::Transform>().each()) {
 			auto colour = text.colour;
 			if (reg.any_of<Components::Texture>(entity)) {
@@ -283,36 +283,32 @@ void Scene::draw_skybox(SceneRenderer& scene_renderer)
 
 void Scene::draw_geometry(SceneRenderer& scene_renderer)
 {
-	{
-		auto point_light_view = registry.view<const Components::PointLight, const Components::Mesh>();
-		Ref<Disarray::Mesh> point_light_mesh = nullptr;
+	auto point_light_view = registry.view<const Components::PointLight, const Components::Mesh>();
+	Ref<Disarray::Mesh> point_light_mesh = nullptr;
 
-		for (auto&& [entity, point_light, mesh] : point_light_view.each()) {
-			point_light_mesh = mesh.mesh;
-			break;
-		}
-
-		auto point_light_view_for_count = registry.view<const Components::PointLight>().size();
-		if (point_light_view_for_count > 0 && point_light_mesh != nullptr) {
-			const auto& pipeline = *scene_renderer.get_pipeline("PointLight");
-			scene_renderer.draw_point_lights(*point_light_mesh, point_light_view_for_count, pipeline);
-		}
+	for (auto&& [entity, point_light, mesh] : point_light_view.each()) {
+		point_light_mesh = mesh.mesh;
+		break;
 	}
 
-	{
-		auto spot_light_view = registry.view<const Components::SpotLight, const Components::Mesh>();
-		Ref<Disarray::Mesh> spot_light_mesh = nullptr;
+	auto point_light_view_for_count = registry.view<const Components::PointLight>().size();
+	if (point_light_view_for_count > 0 && point_light_mesh != nullptr) {
+		const auto& pipeline = *scene_renderer.get_pipeline("PointLight");
+		scene_renderer.draw_point_lights(*point_light_mesh, point_light_view_for_count, pipeline);
+	}
 
-		for (auto&& [entity, point_light, mesh] : spot_light_view.each()) {
-			spot_light_mesh = mesh.mesh;
-			break;
-		}
+	auto spot_light_view = registry.view<const Components::SpotLight, const Components::Mesh>();
+	Ref<Disarray::Mesh> spot_light_mesh = nullptr;
 
-		auto spot_light_view_for_count = registry.view<const Components::SpotLight>().size();
-		if (spot_light_view_for_count > 0 && spot_light_mesh != nullptr) {
-			const auto& pipeline = *scene_renderer.get_pipeline("SpotLight");
-			scene_renderer.draw_point_lights(*spot_light_mesh, spot_light_view_for_count, pipeline);
-		}
+	for (auto&& [entity, point_light, mesh] : spot_light_view.each()) {
+		spot_light_mesh = mesh.mesh;
+		break;
+	}
+
+	auto spot_light_view_for_count = registry.view<const Components::SpotLight>().size();
+	if (spot_light_view_for_count > 0 && spot_light_mesh != nullptr) {
+		const auto& pipeline = *scene_renderer.get_pipeline("SpotLight");
+		scene_renderer.draw_point_lights(*spot_light_mesh, spot_light_view_for_count, pipeline);
 	}
 
 	for (auto line_view = registry.view<const Components::LineGeometry, const Components::Transform>();

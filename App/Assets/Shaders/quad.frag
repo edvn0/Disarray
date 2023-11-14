@@ -1,6 +1,5 @@
 #include "CameraUBO.glsl"
 #include "DirectionalLightUBO.glsl"
-#include "LightingUtilities.glsl"
 #include "PC.glsl"
 #include "PointLight.glsl"
 #include "Random.glsl"
@@ -36,6 +35,8 @@ layout(location = 3) in vec3 fragment_position;
 layout(location = 4) in vec4 light_space_fragment_position;
 
 layout(location = 0) out vec4 colour;
+
+#include "LightingUtilities.glsl"
 
 vec3 calc_point_light(PointLight light, float shadow, vec3 normal, vec3 fragment_pos, vec3 view_direction)
 {

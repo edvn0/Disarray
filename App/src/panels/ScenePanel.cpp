@@ -23,7 +23,6 @@ namespace Disarray::Client {
 
 static constexpr std::size_t string_buffer_size = 256;
 
-
 ScenePanel::ScenePanel(Device& dev, Window&, Swapchain&, Scene* s)
 	: device(dev)
 	, scene(s)
@@ -281,7 +280,8 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (UI::combo_choice<Components::TextProjection>("Space Choice", std::ref(text.projection))) { }
 	});
 
-	draw_component<Components::Material>(entity, [&](Components::Material& mat) { auto& properties = mat.material->get_properties();
+	draw_component<Components::Material>(entity, [&](Components::Material& mat) {
+		auto& properties = mat.material->get_properties();
 		Collections::for_each_unwrapped(properties.textures, [](const auto& key, Ref<Disarray::Texture>& texture) {
 			ImGui::PushID(key.c_str());
 			UI::text("{}:", key);
@@ -300,8 +300,9 @@ void ScenePanel::for_all_components(Entity& entity)
 		}
 		if (UI::button("Add texture")) {
 			std::string name { buffer.c_str() };
-			if (!selected.has_value()) return;
-
+			if (!selected.has_value()) {
+				return;
+			}
 			const auto& path = *selected;
 
 			properties.textures.try_emplace(name,

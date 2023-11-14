@@ -13,7 +13,7 @@ class DataBuffer {
 public:
 	DataBuffer() = default;
 	explicit DataBuffer(std::size_t);
-	DataBuffer(std::nullptr_t);
+	explicit DataBuffer(std::nullptr_t);
 
 	DataBuffer(const void* data, std::size_t);
 
@@ -39,6 +39,9 @@ public:
 	auto operator[](std::size_t index) -> decltype(auto) { return data[index]; }
 
 	auto as_span() -> std::span<std::byte> { return { data.get(), size }; }
+
+	void write(const auto& data, auto size) { std::memcpy(get_data(), &data, size); }
+	void write(const auto& data) { std::memcpy(get_data(), &data, sizeof(data)); }
 
 private:
 	std::unique_ptr<std::byte[]> data { nullptr };

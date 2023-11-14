@@ -66,37 +66,35 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 	const auto& shadow_framebuffer = get_framebuffer<SceneFramebuffer::Shadow>();
 	get_graphics_resource().expose_to_shaders(shadow_framebuffer->get_depth_image(), DescriptorSet { 1 }, DescriptorBinding { 1 });
 	SpecialisationConstantDescription specialisation_constant_description { point_light_data };
-	resources.get_pipeline_cache().put(
-		{
-			.pipeline_key = "Shadow",
-			.vertex_shader_key = "shadow.vert",
-			.fragment_shader_key = "shadow.frag",
-			.framebuffer = shadow_framebuffer,
-			.layout = default_inputs,
-			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-			.extent = renderer_extent,
-			.cull_mode = CullMode::Front,
-			.write_depth = true,
-			.test_depth = true,
-			.descriptor_set_layouts = desc_layout,
-			.specialisation_constant = specialisation_constant_description,
-		});
+	resources.get_pipeline_cache().put({
+		.pipeline_key = "Shadow",
+		.vertex_shader_key = "shadow.vert",
+		.fragment_shader_key = "shadow.frag",
+		.framebuffer = shadow_framebuffer,
+		.layout = default_inputs,
+		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+		.extent = renderer_extent,
+		.cull_mode = CullMode::Front,
+		.write_depth = true,
+		.test_depth = true,
+		.descriptor_set_layouts = desc_layout,
+		.specialisation_constant = specialisation_constant_description,
+	});
 
-	resources.get_pipeline_cache().put(
-		{
-			.pipeline_key = "ShadowInstances",
-			.vertex_shader_key = "shadow_instances.vert",
-			.fragment_shader_key = "shadow.frag",
-			.framebuffer = shadow_framebuffer,
-			.layout = default_inputs,
-			.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-			.extent = renderer_extent,
-			.cull_mode = CullMode::Front,
-			.write_depth = true,
-			.test_depth = true,
-			.descriptor_set_layouts = desc_layout,
-			.specialisation_constant = specialisation_constant_description,
-		});
+	resources.get_pipeline_cache().put({
+		.pipeline_key = "ShadowInstances",
+		.vertex_shader_key = "shadow_instances.vert",
+		.fragment_shader_key = "shadow.frag",
+		.framebuffer = shadow_framebuffer,
+		.layout = default_inputs,
+		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+		.extent = renderer_extent,
+		.cull_mode = CullMode::Front,
+		.write_depth = true,
+		.test_depth = true,
+		.descriptor_set_layouts = desc_layout,
+		.specialisation_constant = specialisation_constant_description,
+	});
 
 	framebuffers.try_emplace(SceneFramebuffer::Identity,
 		Framebuffer::construct(device,
@@ -369,21 +367,32 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 	pipeline_properties.test_depth = true;
 	pipeline_properties.line_width = 3.0F;
 	pipeline_properties.polygon_mode = PolygonMode::Line;
-	pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" } };
+	pipeline_properties.layout = {
+		{ ElementType::Float3, "pos" },
+		{ ElementType::Float4, "colour" },
+	};
 	get_pipeline_cache().put(pipeline_properties);
 
 	DataBuffer white_data_buffer;
-	white_data_buffer.allocate(1 * sizeof(std::uint32_t));
-	white_data_buffer[0] = static_cast<std::byte>(0xFFFFFFFF);
+	white_data_buffer.allocate(sizeof(std::uint32_t));
+	white_data_buffer.write(0xFFFFFFFF);
 
-	auto& white_texture = get_texture_cache().put({
+	const auto& white_texture = get_texture_cache().put({
 		.key = "White",
 		.debug_name = "White",
 		.data_buffer = white_data_buffer,
+		.extent = { 1, 1 },
 	});
 	default_material = Material::construct_scoped(
-		device, { .textures = { { "albedo", white_texture }, { "diffuse", white_texture }, { "specular", white_texture}, },
+		device,
+		{
+			.textures = {
+				{ "albedo", white_texture },
+				{ "diffuse", white_texture },
+				{ "specular", white_texture },
+			},
 		});
+	default_material->write_textures(get_graphics_resource());
 
 	renderer->construct_sub_renderers(device, app);
 }
@@ -434,6 +443,7 @@ auto SceneRenderer::recreate(bool should_clean, const Extent& extent) -> void
 	get_graphics_resource().expose_to_shaders(*entity_identifiers, DescriptorSet { 3 }, DescriptorBinding { 2 });
 	get_graphics_resource().expose_to_shaders(*entity_transforms, DescriptorSet { 3 }, DescriptorBinding { 3 });
 
+	default_material->write_textures(get_graphics_resource());
 	command_executor->recreate(true, extent);
 }
 
@@ -546,22 +556,32 @@ auto SceneRenderer::draw_static_submeshes(const Collections::ScopedStringMap<Dis
 	editable.object_transform = transform;
 	renderer->push_constant(*command_executor, pipeline);
 
+	Collections::for_each_unwrapped(
+		submeshes, [&](const auto&, const Scope<Disarray::Mesh>& mesh) { renderer->draw_mesh_without_bind(*command_executor, *mesh); });
+}
 
-	Collections::for_each_unwrapped(submeshes, [&](const auto&, const Scope<Disarray::Mesh>& mesh) {
-		renderer->draw_mesh_without_bind(*command_executor, *mesh);
-	});
+auto SceneRenderer::draw_single_static_mesh(const Disarray::Mesh& mesh, const Disarray::Pipeline& pipeline, const Disarray::Material& material,
+	const TransformMatrix& transform, const ColourVector& colour) -> void
+{
+	renderer->draw_mesh(*command_executor, mesh, pipeline, material, transform, colour);
+}
+
+auto SceneRenderer::draw_single_static_mesh(const Disarray::VertexBuffer& vertices, const Disarray::IndexBuffer& indices,
+	const Disarray::Pipeline& pipeline, const Disarray::Material& material, const TransformMatrix& transform, const ColourVector& colour) -> void
+{
+	renderer->draw_mesh(*command_executor, vertices, indices, pipeline, material, transform, colour);
 }
 
 auto SceneRenderer::draw_single_static_mesh(const Mesh& mesh, const Pipeline& pipeline, const TransformMatrix& transform, const ColourVector& colour)
 	-> void
 {
-	renderer->draw_mesh(*command_executor, mesh, pipeline, transform, colour);
+	renderer->draw_mesh(*command_executor, mesh, pipeline, *default_material, transform, colour);
 }
 
 auto SceneRenderer::draw_single_static_mesh(const VertexBuffer& vertices, const IndexBuffer& indices, const Pipeline& pipeline,
 	const TransformMatrix& transform, const ColourVector& colour) -> void
 {
-	renderer->draw_mesh(*command_executor, vertices, indices, pipeline, transform, colour);
+	renderer->draw_mesh(*command_executor, vertices, indices, pipeline, *default_material, transform, colour);
 }
 
 auto SceneRenderer::begin_pass(const Disarray::Framebuffer& framebuffer, bool explicit_clear) -> void

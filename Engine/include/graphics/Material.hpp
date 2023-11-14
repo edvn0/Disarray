@@ -17,6 +17,7 @@ class Material : public ReferenceCountable {
 	DISARRAY_OBJECT_PROPS(Material, MaterialProperties)
 public:
 	virtual void update_material(Renderer&) = 0;
+	virtual void write_textures(IGraphicsResource& resource) const = 0;
 };
 
 } // namespace Disarray

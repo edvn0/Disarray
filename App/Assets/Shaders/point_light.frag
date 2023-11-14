@@ -1,6 +1,5 @@
 #include "CameraUBO.glsl"
 #include "DirectionalLightUBO.glsl"
-#include "LightingUtilities.glsl"
 #include "PC.glsl"
 #include "UBO.glsl"
 
@@ -27,6 +26,8 @@ layout(location = 3) in vec3 fragment_position;
 layout(location = 4) in vec4 light_space_fragment_position;
 
 layout(location = 0) out vec4 colour;
+
+#include "LightingUtilities.glsl"
 
 void main()
 {

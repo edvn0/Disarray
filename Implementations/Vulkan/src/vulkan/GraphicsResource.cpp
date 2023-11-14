@@ -157,18 +157,27 @@ namespace {
 		albedo_map.binding = 3;
 		albedo_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		albedo_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		auto normal_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
-		normal_map.descriptorCount = 1;
-		normal_map.binding = 4;
-		normal_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		normal_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		auto diffuse_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		diffuse_map.descriptorCount = 1;
+		diffuse_map.binding = 4;
+		diffuse_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		diffuse_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
 		auto specular_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
 		specular_map.descriptorCount = 1;
 		specular_map.binding = 5;
 		specular_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		specular_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-		return std::array { glyph_texture_binding, glyph_array_sampler_binding, skybox_image, albedo_map, normal_map, specular_map };
+		return std::array {
+			glyph_texture_binding,
+			glyph_array_sampler_binding,
+			skybox_image,
+			albedo_map,
+			diffuse_map,
+			specular_map,
+		};
 	}
 
 	template <std::size_t Count> auto create_set_three_bindings()

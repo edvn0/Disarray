@@ -24,6 +24,7 @@ struct TextureCacheCreationProperties {
 	std::uint32_t mips { 1 };
 	ImageFormat format { ImageFormat::SRGB };
 	DataBuffer data_buffer {};
+	Extent extent {};
 };
 
 class TextureCache : public ResourceCache<Ref<Disarray::Texture>, TextureCacheCreationProperties, TextureCache, std::string, StringHash> {
@@ -62,7 +63,9 @@ public:
 		if (props.data_buffer.is_valid()) {
 			return Texture::construct(ResourceCache::get_device(),
 				TextureProperties {
+					.extent = props.extent,
 					.generate_mips = false,
+					.data_buffer = props.data_buffer,
 					.locked_extent = true,
 					.debug_name = props.debug_name,
 				});

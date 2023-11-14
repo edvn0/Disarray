@@ -1,29 +1,26 @@
 #include "DisarrayPCH.hpp"
 
-// clang-format off
-#include "graphics/CommandExecutor.hpp"
-#include "graphics/IndexBuffer.hpp"
-#include "graphics/RendererProperties.hpp"
-#include "graphics/Texture.hpp"
-#include "graphics/VertexBuffer.hpp"
-#include "vulkan/Renderer.hpp"
-// clang-format on
-
 #include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
 
 #include <array>
 
 #include "core/Instrumentation.hpp"
 #include "core/Types.hpp"
+#include "graphics/CommandExecutor.hpp"
+#include "graphics/IndexBuffer.hpp"
 #include "graphics/Pipeline.hpp"
+#include "graphics/RendererProperties.hpp"
+#include "graphics/Texture.hpp"
+#include "graphics/VertexBuffer.hpp"
 #include "util/BitCast.hpp"
 #include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/IndexBuffer.hpp"
+#include "vulkan/Material.hpp"
 #include "vulkan/Mesh.hpp"
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/RenderPass.hpp"
+#include "vulkan/Renderer.hpp"
 #include "vulkan/VertexBuffer.hpp"
 
 namespace Disarray::Vulkan {
@@ -82,20 +79,22 @@ void Renderer::bind_descriptor_sets(
 	Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const std::span<const VkDescriptorSet>& span)
 {
 	auto* pipeline_layout = cast_to<Vulkan::Pipeline>(pipeline).get_layout();
+	vkCmdBindDescriptorSets(supply_cast<Vulkan::CommandExecutor>(executor), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0,
+		static_cast<std::uint32_t>(span.size()), span.data(), 0, nullptr);
 
-	VkDescriptorSetsSpanHash hasher;
-	const auto calculated = hasher(span);
-	if (calculated != bound_descriptor_set_hash) {
-		vkCmdBindDescriptorSets(supply_cast<Vulkan::CommandExecutor>(executor), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0,
-			static_cast<std::uint32_t>(span.size()), span.data(), 0, nullptr);
-		bound_descriptor_set_hash = calculated;
-		return;
-	}
+		/*
+
+		VkDescriptorSetsSpanHash hasher;
+		const auto calculated = hasher(span);
+		if (calculated != bound_descriptor_set_hash) {
+			bound_descriptor_set_hash = calculated;
+			return;
+		}
+		*/
 }
 
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
-	const Disarray::Material&,
-	const TransformMatrix& transform, const ColourVector& colour)
+	const Disarray::Material& material, const TransformMatrix& transform, const ColourVector& colour)
 {
 	draw_mesh(executor, mesh.get_vertices(), mesh.get_indices(), mesh_pipeline, transform, colour);
 }
@@ -149,9 +148,14 @@ void Renderer::draw_mesh_instanced(Disarray::CommandExecutor& executor, std::siz
 }
 
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::VertexBuffer& vertices, const Disarray::IndexBuffer& indices,
+	const Disarray::Pipeline& mesh_pipeline, const Disarray::Material& material, const TransformMatrix& transform, const ColourVector& colour)
+{
+	draw_mesh(executor, vertices, indices, mesh_pipeline, transform, colour);
+}
+
+void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::VertexBuffer& vertices, const Disarray::IndexBuffer& indices,
 	const Disarray::Pipeline& mesh_pipeline, const TransformMatrix& transform, const ColourVector& colour)
 {
-
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 	const auto& pipeline = cast_to<Vulkan::Pipeline>(mesh_pipeline);
 	bind_pipeline(executor, pipeline, PipelineBindPoint::BindPointGraphics);

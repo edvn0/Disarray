@@ -135,6 +135,29 @@ void TextureDeserialiser::deserialise_impl(const nlohmann::json& object, Compone
 	texture.colour = object["colour"];
 }
 
+auto MaterialDeserialiser::should_add_component_impl(const nlohmann::json&) -> bool { return true; }
+void MaterialDeserialiser::deserialise_impl(const nlohmann::json& object, Components::Material& texture, const Device& device)
+{
+	auto& textures = texture.material->get_properties().textures;
+	const auto& material = object["material"];
+	if (!material.contains("textures")) {
+		return;
+	}
+
+	const auto& json_textures = material["textures"];
+	for (const auto& [k, v] : json_textures.items()) {
+		textures.emplace(k,
+			Texture::construct(device,
+				{
+					.extent = v["extent"],
+					.format = to_enum_value<ImageFormat>(v, "format").value_or(ImageFormat::SBGR),
+					.mips = v["mips"],
+					.path = v["path"],
+					.debug_name = v["debug_name"],
+				}));
+	}
+}
+
 auto InheritanceDeserialiser::should_add_component_impl(const nlohmann::json& object) -> bool
 {
 	return object.contains("children") || object.contains("parent");

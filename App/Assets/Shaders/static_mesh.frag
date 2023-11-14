@@ -1,12 +1,11 @@
 #include "CameraUBO.glsl"
 #include "DirectionalLightUBO.glsl"
 #include "ImageIndices.glsl"
-#include "LightingUtilities.glsl"
 #include "PC.glsl"
 #include "PointLight.glsl"
-#include "Random.glsl"
 #include "ShadowPassUBO.glsl"
 #include "SpotLight.glsl"
+#include "Random.glsl"
 #include "UBO.glsl"
 
 layout(constant_id = 0) const int POINT_LIGHT_CHOICE = 0;
@@ -32,10 +31,6 @@ SLBO;
 
 layout(set = 1, binding = 1) uniform sampler2D depth_texture;
 
-layout(set = 2, binding = 3) uniform sampler2D albedo_map;
-layout(set = 2, binding = 4) uniform sampler2D normal_map;
-layout(set = 2, binding = 5) uniform sampler2D specular_map;
-
 layout(push_constant) uniform PushConstantBlock { PushConstant pc; }
 PC;
 
@@ -46,6 +41,8 @@ layout(location = 3) in vec3 fragment_position;
 layout(location = 4) in vec4 light_space_fragment_position;
 
 layout(location = 0) out vec4 colour;
+
+#include "LightingUtilities.glsl"
 
 void main()
 {

@@ -36,7 +36,7 @@ public:
 	auto begin_frame(const glm::mat4& view, const glm::mat4& projection, const glm::mat4& view_projection) -> void;
 	auto end_frame() -> void;
 
-	auto draw_text(const Components::Transform&, const Components::Text&, const glm::vec4& colour) -> void;
+	auto draw_text(const Components::Transform&, const Components::Text&, const ColourVector&) -> void;
 
 	template <SceneFramebuffer FB> void begin_pass(bool explicit_clear = false) { begin_pass(*get_framebuffer<FB>(), explicit_clear); }
 	void end_pass();
@@ -62,13 +62,17 @@ public:
 	}
 	auto draw_point_lights(const Disarray::Mesh& point_light_mesh, std::uint32_t count, const Disarray::Pipeline& pipeline) -> void;
 	auto draw_planar_geometry(Geometry, const GeometryProperties&) -> void;
-	auto draw_aabb(const AABB& aabb, const glm::vec4& colour, const glm::mat4& transform) -> void;
+	auto draw_aabb(const AABB& aabb, const ColourVector&, const TransformMatrix&) -> void;
 	auto draw_static_submeshes(
-		const Collections::ScopedStringMap<Disarray::Mesh>&, const Disarray::Pipeline&, const glm::mat4& transform, const glm::vec4& colour) -> void;
-	auto draw_single_static_mesh(const Disarray::Mesh& mesh, const Disarray::Pipeline& pipeline, const glm::mat4& transform, const glm::vec4& colour)
+		const Collections::ScopedStringMap<Disarray::Mesh>&, const Disarray::Pipeline&, const TransformMatrix&, const ColourVector&) -> void;
+	auto draw_single_static_mesh(const Disarray::Mesh& mesh, const Disarray::Pipeline&, const TransformMatrix&, const ColourVector&)
 		-> void;
-	auto draw_single_static_mesh(const Disarray::VertexBuffer& vertices, const Disarray::IndexBuffer& indices, const Disarray::Pipeline& pipeline,
-		const glm::mat4& transform, const glm::vec4& colour) -> void;
+	auto draw_single_static_mesh(const Disarray::VertexBuffer& vertices, const Disarray::IndexBuffer& indices, const Disarray::Pipeline&,
+		const TransformMatrix&, const ColourVector&) -> void;
+	auto draw_single_static_mesh(const Disarray::Mesh& mesh, const Disarray::Pipeline&, const Disarray::Material&, const TransformMatrix&, const ColourVector&)
+		-> void;
+	auto draw_single_static_mesh(const Disarray::VertexBuffer& vertices, const Disarray::IndexBuffer& indices, const Disarray::Pipeline&, const Disarray::Material&,
+		const TransformMatrix&, const ColourVector&) -> void;
 	/**
 	 * END ACTUAL DRAWING
 	 */

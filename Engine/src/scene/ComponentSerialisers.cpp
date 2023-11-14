@@ -2,6 +2,8 @@
 
 #include <optional>
 
+#include "core/Collections.hpp"
+#include "graphics/Material.hpp"
 #include "magic_enum.hpp"
 #include "scene/ComponentSerialisers.hpp"
 #include "scene/Components.hpp"
@@ -117,6 +119,28 @@ void TextureSerialiser::serialise_impl(const Components::Texture& texture, nlohm
 		properties["debug_name"] = props.debug_name;
 		object["properties"] = properties;
 	}
+}
+
+void MaterialSerialiser::serialise_impl(const Components::Material& material, nlohmann::json& object)
+{
+	if (!material.material) {
+		object["material"] = {};
+		return;
+	}
+	const MaterialProperties& props = material.material->get_properties();
+	json material_textures;
+	Collections::for_each_unwrapped(props.textures, [&](const auto& key, const Ref<Texture>& texture) {
+		json properties;
+		const auto& texture_props = texture->get_properties();
+		properties["path"] = texture_props.path;
+		properties["extent"] = texture_props.extent;
+		properties["format"] = magic_enum::enum_name(texture_props.format);
+		properties["mips"] = texture_props.mips ? *texture_props.mips : 1;
+		properties["path"] = texture_props.path;
+		properties["debug_name"] = texture_props.debug_name;
+		material_textures[key] = properties;
+	});
+	object["material"] = { { "textures", material_textures } };
 }
 
 void InheritanceSerialiser::serialise_impl(const Components::Inheritance& inheritance, nlohmann::json& object)

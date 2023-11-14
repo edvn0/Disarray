@@ -51,6 +51,8 @@ public:
 		const Disarray::Pipeline&) override;
 
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&,
+		const Disarray::Material&, const TransformMatrix&, const ColourVector&) override;
+	void draw_mesh(Disarray::CommandExecutor&, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&,
 		const TransformMatrix&, const ColourVector&) override;
 	void draw_mesh(
 		Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const TransformMatrix&, const ColourVector&) override;
