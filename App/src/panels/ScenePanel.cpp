@@ -4,7 +4,6 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtx/dual_quaternion.hpp>
 
-#include <fmt/format.h>
 #include <imgui.h>
 #include <imgui_internal.h>
 
@@ -416,10 +415,10 @@ void ScenePanel::for_all_components(Entity& entity)
 		auto& parameters = script_component.get_script().get_parameters();
 		bool any_changed = false;
 		for (auto&& [key, value] : parameters) {
-			any_changed |= switch_parameter<glm::vec2>(value, [key](glm::vec2& vector) { return UI::Input::slider(key, vector, 0.1F); });
-			any_changed |= switch_parameter<glm::vec3>(value, [key](glm::vec3& vector) { return UI::Input::slider(key, vector, 0.1F); });
-			any_changed |= switch_parameter<glm::vec4>(value, [key](glm::vec4& vector) { return UI::Input::slider(key, vector, 0.1F); });
-			any_changed |= switch_parameter<std::uint32_t>(value, [key](std::uint32_t& vector) {
+			any_changed |= switch_parameter<glm::vec2>(value, [&key = key](glm::vec2& vector) { return UI::Input::slider(key, vector, 0.1F); });
+			any_changed |= switch_parameter<glm::vec3>(value, [&key = key](glm::vec3& vector) { return UI::Input::slider(key, vector, 0.1F); });
+			any_changed |= switch_parameter<glm::vec4>(value, [&key = key](glm::vec4& vector) { return UI::Input::slider(key, vector, 0.1F); });
+			any_changed |= switch_parameter<std::uint32_t>(value, [&key = key](std::uint32_t& vector) {
 				auto as_int = static_cast<std::int32_t>(vector);
 				const bool changed = ImGui::DragInt(key.data(), &as_int);
 				if (changed) {
@@ -427,7 +426,7 @@ void ScenePanel::for_all_components(Entity& entity)
 				}
 				return changed;
 			});
-			any_changed |= switch_parameter<std::uint8_t>(value, [key](std::uint8_t& vector) {
+			any_changed |= switch_parameter<std::uint8_t>(value, [&key = key](std::uint8_t& vector) {
 				auto as_int = static_cast<std::int32_t>(vector);
 				const bool changed = ImGui::DragInt(key.data(), &as_int);
 				if (changed) {
@@ -435,8 +434,8 @@ void ScenePanel::for_all_components(Entity& entity)
 				}
 				return changed;
 			});
-			any_changed |= switch_parameter<float>(value, [key](float& vector) { return UI::Input::slider<1>(key, &vector, 0.1F); });
-			any_changed |= switch_parameter<double>(value, [key](double& vector) {
+			any_changed |= switch_parameter<float>(value, [&key = key](float& vector) { return UI::Input::slider<1>(key, &vector, 0.1F); });
+			any_changed |= switch_parameter<double>(value, [&key = key](double& vector) {
 				auto as_float = static_cast<float>(vector);
 				bool changed = ImGui::DragFloat(key.data(), &as_float, 0.1F);
 				if (changed) {

@@ -409,9 +409,9 @@ void Scene::draw_shadows(SceneRenderer& scene_renderer)
 		const auto& actual_pipeline = *scene_renderer.get_pipeline("Shadow");
 		const auto transform_computed = transform.compute();
 		if (mesh.mesh->has_children()) {
-			scene_renderer.draw_static_submeshes(mesh.mesh->get_submeshes(), actual_pipeline, transform.compute(), texture.colour);
+			scene_renderer.draw_static_submeshes(mesh.mesh->get_submeshes(), actual_pipeline, transform_computed, texture.colour);
 		} else {
-			scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, transform.compute(), texture.colour);
+			scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, transform_computed, texture.colour);
 		}
 	}
 }

@@ -31,7 +31,7 @@ struct TextColourAndImage {
 static_assert(alignof(TextColourAndImage) == 16);
 static_assert(sizeof(TextColourAndImage) == 32);
 
-struct TextRenderer::TextRenderingAPI {
+struct TextRenderingAPI {
 	FT_Library library;
 	std::vector<FT_Face> faces {};
 
@@ -49,7 +49,7 @@ struct TextRenderer::TextRenderingAPI {
 	Disarray::Renderer* renderer { nullptr };
 };
 
-template <> auto PimplDeleter<TextRenderer::TextRenderingAPI>::operator()(TextRenderer::TextRenderingAPI* ptr) noexcept -> void
+template <> auto PimplDeleter<TextRenderingAPI>::operator()(TextRenderingAPI* ptr) noexcept -> void
 {
 	FT_Done_FreeType(ptr->library);
 	delete ptr;

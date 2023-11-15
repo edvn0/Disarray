@@ -281,7 +281,7 @@ static auto replace(std::string& output, const std::string_view from, const std:
 
 auto BasicIncluder::check_and_replace(std::string& io_string, std::string_view to_find)
 {
-	const auto include = fmt::format("#include \"{}\"\n", to_find);
+	const auto include = fmt::format("#include \"{}\"", to_find);
 	if (io_string.find(include) == std::string::npos) {
 		return;
 	}
@@ -317,7 +317,8 @@ void BasicIncluder::replace_all_includes(std::string& io_string)
 void ShaderCompiler::add_include_extension(std::string& glsl_code)
 {
 	ensure(glsl_code.find("#version") == std::string::npos, "Shader already has a #version directive");
-	static constexpr std::string_view extension = "#version 460\n#extension GL_EXT_control_flow_attributes : require\n";
+	static constexpr std::string_view extension
+		= "#version 460\n#extension GL_EXT_control_flow_attributes : require\n#extension GL_GOOGLE_include_directive : require\n";
 	glsl_code.insert(0, extension);
 
 	using namespace std::string_view_literals;

@@ -3,7 +3,6 @@
 #include <glm/gtx/matrix_decompose.hpp>
 
 #include <Disarray.hpp>
-#include <fmt/format.h>
 #include <imgui_internal.h>
 
 #include <array>

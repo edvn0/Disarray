@@ -11,6 +11,7 @@
 
 namespace Disarray {
 
+struct TextRenderingAPI;
 class TextRenderer {
 	static constexpr auto glyph_count = 500UL;
 	static constexpr auto font_data_count = 128UL;
@@ -35,7 +36,6 @@ private:
 	void draw_world_space(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor);
 	void draw_billboard_space(Disarray::Renderer& renderer, Disarray::CommandExecutor& executor);
 
-	struct TextRenderingAPI;
 	Scope<TextRenderingAPI, PimplDeleter<TextRenderingAPI>> renderer_api { nullptr };
 
 	struct FontData {

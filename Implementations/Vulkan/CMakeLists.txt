@@ -53,6 +53,7 @@ set(SOURCES
 	src/vulkan/renderer/Renderer.cpp
 	src/vulkan/RenderBatchImplementation.cpp
 	src/vulkan/TextRenderer.cpp
+	src/vulkan/exceptions/VulkanExceptions.cpp
 	src/vulkan/VertexBuffer.cpp
 	src/vulkan/Swapchain.cpp
 	src/vulkan/QueueFamilyIndex.cpp

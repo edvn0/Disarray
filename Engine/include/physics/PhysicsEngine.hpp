@@ -37,6 +37,8 @@ struct ColliderParameters {
 
 using EngineRigidBody = void*;
 
+struct EngineImpl;
+
 class PhysicsEngine {
 public:
 	PhysicsEngine(std::uint32_t velocity_its, std::uint32_t position_its);
@@ -62,7 +64,6 @@ private:
 	std::uint32_t velocity_iterations {};
 	std::uint32_t position_iterations {};
 
-	struct EngineImpl;
 	Scope<EngineImpl, PimplDeleter<EngineImpl>> engine;
 };
 

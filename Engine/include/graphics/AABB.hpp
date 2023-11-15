@@ -13,6 +13,14 @@ enum class AABBAxis : std::uint8_t {
 struct AABBRange {
 	float min {};
 	float max {};
+
+	constexpr AABBRange(std::floating_point auto min_value, std::floating_point auto max_value)
+		: min(min_value)
+		, max(max_value)
+	{
+	}
+
+	constexpr AABBRange() = default;
 };
 class AABB {
 

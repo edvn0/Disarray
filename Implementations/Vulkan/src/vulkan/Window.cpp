@@ -169,7 +169,7 @@ Window::Window(const Disarray::WindowProperties& properties)
 		glfwShowWindow(window);
 	}
 
-	{
+	if (FS::exists(FS::icon("Disarray_Logo.png"))) {
 		DataBuffer buffer;
 		ImageLoader loader { FS::icon("Disarray_Logo.png"), buffer };
 		std::array<GLFWimage, 1> images {};

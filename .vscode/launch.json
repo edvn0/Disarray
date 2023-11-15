@@ -8,10 +8,11 @@
 			"type": "lldb",
 			"request": "launch",
 			"name": "Debug",
-			"program": "${workspaceFolder}/build/App/RelWithDebInfo/App.exe",
+			"program": "${workspaceFolder}/build/App/Debug/App",
 			"args": [
 				"--wd",
-				"${workspaceFolder}/App"
+				"${workspaceFolder}/App",
+				"--disable_validation"
 			],
 			"cwd": "${workspaceFolder}",
 		},

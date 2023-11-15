@@ -11,11 +11,12 @@ namespace Disarray {
 
 namespace Logging {
 
+	struct LoggerDataPimpl;
+
 	class Logger {
 	private:
 		Logger();
 
-		struct LoggerDataPimpl;
 		Scope<LoggerDataPimpl, PimplDeleter<LoggerDataPimpl>> logger_data;
 
 	public:

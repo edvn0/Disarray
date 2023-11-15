@@ -16,7 +16,6 @@ void PushConstant::reset_impl()
 void UBO::reset_impl()
 {
 	static constexpr auto identity_matrix = glm::identity<glm::mat4>();
-	static constexpr auto one_vector = glm::vec4(1, 1, 1, 1);
 	view = identity_matrix;
 	proj = identity_matrix;
 	view_projection = identity_matrix;
