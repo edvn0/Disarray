@@ -1,9 +1,8 @@
 #include "scene/Scripts.hpp"
 
-#include <core/Tuple.hpp>
-
 #include <cstdint>
 
+#include "core/Tuple.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "scene/Entity.hpp"
 #include "ui/UI.hpp"

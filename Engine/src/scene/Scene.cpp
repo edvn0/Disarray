@@ -354,7 +354,16 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 		if (mesh.mesh->has_children()) {
 			scene_renderer.draw_static_submeshes(mesh.mesh->get_submeshes(), actual_pipeline, computed_transform, texture.colour);
 		} else {
-			scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, computed_transform, texture.colour);
+			Ref<Disarray::Material> material { nullptr };
+			if (registry.all_of<Components::Material>(entity)) {
+				material = registry.get<Components::Material>(entity).material;
+			}
+
+			if (material != nullptr) {
+				scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, *material, computed_transform, texture.colour);
+			} else {
+				scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, computed_transform, texture.colour);
+			}
 		}
 	}
 
@@ -514,11 +523,11 @@ void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoTyp
 		glm::value_ptr(transform), nullptr, snap ? snap_values.data() : nullptr);
 
 	if (ImGuizmo::IsUsing()) {
-		glm::vec3 scale;
-		glm::quat rotation;
-		glm::vec3 translation;
-		glm::vec3 skew;
-		glm::vec4 perspective;
+		glm::vec3 scale {};
+		glm::quat rotation {};
+		glm::vec3 translation {};
+		glm::vec3 skew {};
+		glm::vec4 perspective {};
 		glm::decompose(transform, scale, rotation, translation, skew, perspective);
 
 		auto delta_rotation = rotation - entity_transform.rotation;
