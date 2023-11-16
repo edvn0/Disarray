@@ -1,6 +1,7 @@
 #include "DisarrayPCH.hpp"
 
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 #include <array>
 
@@ -66,7 +67,8 @@ void Renderer::bind_descriptor_sets(Disarray::CommandExecutor& executor, const D
 	bind_descriptor_sets(executor, pipeline, span);
 }
 
-void Renderer::push_constant(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const void* data, std::size_t size) {
+void Renderer::push_constant(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const void* data, std::size_t size)
+{
 	get_graphics_resource().push_constant(executor, pipeline, data, size);
 }
 
@@ -82,20 +84,21 @@ void Renderer::bind_descriptor_sets(
 	vkCmdBindDescriptorSets(supply_cast<Vulkan::CommandExecutor>(executor), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0,
 		static_cast<std::uint32_t>(span.size()), span.data(), 0, nullptr);
 
-		/*
+	/*
 
-		VkDescriptorSetsSpanHash hasher;
-		const auto calculated = hasher(span);
-		if (calculated != bound_descriptor_set_hash) {
-			bound_descriptor_set_hash = calculated;
-			return;
-		}
-		*/
+	VkDescriptorSetsSpanHash hasher;
+	const auto calculated = hasher(span);
+	if (calculated != bound_descriptor_set_hash) {
+		bound_descriptor_set_hash = calculated;
+		return;
+	}
+	*/
 }
 
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
 	const Disarray::Material& material, const TransformMatrix& transform, const ColourVector& colour)
 {
+	// material.write_textures(get_graphics_resource());
 	draw_mesh(executor, mesh.get_vertices(), mesh.get_indices(), mesh_pipeline, transform, colour);
 }
 

@@ -26,7 +26,9 @@ public:
 
 	auto attachment_count() const -> std::uint32_t override;
 
-	auto supply() const -> VkPipelineShaderStageCreateInfo override { return stage; }
+	[[nodiscard]] auto supply() const -> VkPipelineShaderStageCreateInfo override { return stage; }
+	[[nodiscard]] auto supply() -> VkPipelineShaderStageCreateInfo override { return stage; }
+
 	void destroy_module() override;
 
 private:

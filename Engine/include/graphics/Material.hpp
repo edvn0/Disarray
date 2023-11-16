@@ -5,6 +5,7 @@
 #include "core/Collections.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
+#include "graphics/Swapchain.hpp"
 #include "graphics/Texture.hpp"
 
 namespace Disarray {
@@ -18,6 +19,8 @@ class Material : public ReferenceCountable {
 public:
 	virtual void update_material(Renderer&) = 0;
 	virtual void write_textures(IGraphicsResource& resource) const = 0;
+
+	virtual void bind(const Disarray::CommandExecutor&, const Disarray::Pipeline&, FrameIndex) const = 0;
 };
 
 } // namespace Disarray

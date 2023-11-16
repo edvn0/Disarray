@@ -102,14 +102,23 @@ template <class T, std::size_t BatchSize> auto split_into_batches(Iterable auto&
 	return rtn;
 }
 
-constexpr inline auto for_each(Iterable auto& collection, auto&& func) { std::for_each(std::begin(collection), std::end(collection), func); }
+template <bool Index = false> constexpr inline auto for_each(Iterable auto& collection, auto&& func)
+{
+	if constexpr (Index) {
+		auto indexed_iteration = [&func, i = 0](auto&& kv) mutable { func(kv, i++); };
+		std::for_each(std::begin(collection), std::end(collection), indexed_iteration);
+	} else {
+		std::for_each(std::begin(collection), std::end(collection), func);
+	}
+}
+
 constexpr inline auto for_each_unwrapped(Iterable auto& collection, auto&& func)
 {
 	auto unwrapper = [&func](auto&& kv) {
 		auto&& [key, value] = kv;
 		func(key, value);
 	};
-	std::for_each(std::begin(collection), std::end(collection), unwrapper);
+	Collections::for_each(collection, unwrapper);
 }
 constexpr inline auto remove_if(Iterable auto& collection, auto&& predicate)
 {

@@ -68,6 +68,7 @@ public:
 	virtual auto get_editable_push_constant() -> PushConstant& = 0;
 
 	[[nodiscard]] virtual auto get_image_count() const -> std::uint32_t = 0;
+	[[nodiscard]] virtual auto get_current_frame_index() const -> FrameIndex = 0;
 };
 
 class Renderer : public ReferenceCountable {

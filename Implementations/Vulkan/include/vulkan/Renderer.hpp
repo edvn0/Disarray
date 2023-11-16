@@ -24,6 +24,7 @@
 using VkPipelineLayout = struct VkPipelineLayout_T*;
 using VkDevice = struct VkDevice_T*;
 using VkDescriptorSet = struct VkDescriptorSet_T*;
+struct VkDescriptorSetAllocateInfo;
 
 namespace Disarray::Vulkan {
 

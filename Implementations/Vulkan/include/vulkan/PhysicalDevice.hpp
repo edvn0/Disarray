@@ -19,7 +19,8 @@ public:
 	auto get_queue_family_indexes() -> Disarray::QueueFamilyIndex& override { return *queue_family_index; }
 	auto get_queue_family_indexes() const -> const Disarray::QueueFamilyIndex& override { return *queue_family_index; }
 
-	auto supply() const -> VkPhysicalDevice override { return physical_device; }
+	[[nodiscard]] auto supply() const -> VkPhysicalDevice override { return physical_device; }
+	[[nodiscard]] auto supply() -> VkPhysicalDevice override { return physical_device; }
 
 	auto get_limits() const -> VkPhysicalDeviceLimits { return device_properties.limits; }
 	auto get_sample_count() const -> SampleCount { return samples; }

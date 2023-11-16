@@ -313,7 +313,7 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 
 	for (auto line_view = registry.view<const Components::LineGeometry, const Components::Transform>();
 		 auto&& [entity, geom, transform] : line_view.each()) {
-		glm::vec4 colour = { 0.9F, 0.2F, 0.6F, 1.0F };
+		glm::vec4 colour { 1.0F };
 		if (registry.any_of<Components::Texture>(entity)) {
 			colour = registry.get<Components::Texture>(entity).colour;
 		}
@@ -326,12 +326,16 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 			});
 	}
 
-	for (auto rect_view = registry.view<const Components::Texture, const Components::QuadGeometry, const Components::Transform>();
-		 auto&& [entity, tex, geom, transform] : rect_view.each()) {
+	for (auto rect_view = registry.view<const Components::QuadGeometry, const Components::Transform>();
+		 auto&& [entity, geom, transform] : rect_view.each()) {
+		glm::vec4 colour { 1.0F };
+		if (registry.any_of<Components::Texture>(entity)) {
+			colour = registry.get<Components::Texture>(entity).colour;
+		}
 		scene_renderer.draw_planar_geometry(Geometry::Rectangle,
 			{
 				.position = transform.position,
-				.colour = tex.colour,
+				.colour = colour,
 				.rotation = transform.rotation,
 				.dimensions = transform.scale,
 				.identifier = static_cast<std::uint32_t>(entity),
@@ -341,11 +345,9 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 	for (auto mesh_view = registry.view<const Components::Mesh, const Components::Texture, const Components::Transform>(
 			 entt::exclude<Components::PointLight, Components::SpotLight, Components::DirectionalLight, Components::Skybox>);
 		 auto&& [entity, mesh, texture, transform] : mesh_view.each()) {
-
 		if (mesh.mesh == nullptr) {
 			continue;
 		}
-
 		const auto& actual_pipeline = *scene_renderer.get_pipeline("StaticMesh");
 		const auto computed_transform = transform.compute();
 		if (mesh.draw_aabb) {
@@ -360,6 +362,7 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 			}
 
 			if (material != nullptr) {
+				material->update_material(*scene_renderer.get_renderer());
 				scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, *material, computed_transform, texture.colour);
 			} else {
 				scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, computed_transform, texture.colour);

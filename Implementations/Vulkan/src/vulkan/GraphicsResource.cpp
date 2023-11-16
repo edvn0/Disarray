@@ -278,6 +278,16 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 	}
 }
 
+void GraphicsResource::allocate_descriptor_sets(VkDescriptorSetAllocateInfo& allocation_info, std::vector<VkDescriptorSet>& output)
+{
+	auto* vk_device = supply_cast<Vulkan::Device>(device);
+	allocation_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocation_info.descriptorPool = pool;
+	allocation_info.descriptorSetCount = swapchain_image_count;
+
+	vkAllocateDescriptorSets(vk_device, &allocation_info, output.data());
+}
+
 void GraphicsResource::expose_to_shaders(const Disarray::UniformBuffer& uniform_buffer, DescriptorSet set, DescriptorBinding binding)
 {
 	auto* vk_device = supply_cast<Vulkan::Device>(device);

@@ -57,6 +57,9 @@ public:
 	void push_constant(Disarray::CommandExecutor&, const Disarray::Pipeline&, const void* data, std::size_t size) override;
 
 	[[nodiscard]] auto get_image_count() const -> std::uint32_t override { return swapchain_image_count; }
+	[[nodiscard]] auto get_current_frame_index() const -> FrameIndex override { return swapchain.get_current_frame_index(); }
+
+	void allocate_descriptor_sets(VkDescriptorSetAllocateInfo& info, std::vector<VkDescriptorSet>& output_sets);
 
 private:
 	void cleanup_graphics_resource();

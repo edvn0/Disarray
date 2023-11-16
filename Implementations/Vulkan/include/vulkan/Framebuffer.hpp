@@ -35,7 +35,9 @@ public:
 		}
 	}
 
-	auto supply() const -> VkFramebuffer override { return framebuffer; }
+	[[nodiscard]] auto supply() const -> VkFramebuffer override { return framebuffer; }
+	[[nodiscard]] auto supply() -> VkFramebuffer override { return framebuffer; }
+
 	auto get_image(std::uint32_t index) const -> const Disarray::Image& override { return attachments.at(index)->get_image(0); }
 	auto get_depth_image() const -> const Disarray::Image& override { return depth_attachment->get_image(0); }
 

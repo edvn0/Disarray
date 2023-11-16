@@ -280,6 +280,10 @@ void ScenePanel::for_all_components(Entity& entity)
 	});
 
 	draw_component<Components::Material>(entity, [&](Components::Material& mat) {
+		if (!mat.material) {
+			mat.material = Material::construct(device, {});
+		}
+
 		auto& properties = mat.material->get_properties();
 		Collections::for_each_unwrapped(properties.textures, [](const auto& key, Ref<Disarray::Texture>& texture) {
 			ImGui::PushID(key.c_str());
@@ -289,28 +293,26 @@ void ScenePanel::for_all_components(Entity& entity)
 		});
 
 		ImGui::NewLine();
-		std::string buffer;
-		buffer.resize(string_buffer_size);
-
-		std::ignore = ImGui::InputText("Texture name", buffer.data(), string_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
 		std::optional<std::filesystem::path> selected { std::nullopt };
 		if (ImGui::Button("Choose path", { 80, 30 })) {
-			selected = UI::Popup::select_file({ "*.mesh", "*.obj", "*.fbx" }, FS::model_directory());
+			selected = UI::Popup::select_file(
+				{
+					"*.png",
+					"*.bmp",
+				},
+				FS::texture_directory());
 		}
-		if (UI::button("Add texture")) {
-			std::string name { buffer.c_str() };
-			if (!selected.has_value()) {
-				return;
-			}
-			const auto& path = *selected;
+		if (!selected.has_value()) {
+			return;
+		}
+		const auto& path = *selected;
 
-			properties.textures.try_emplace(name,
-				Texture::construct(device,
-					{
-						.path = path,
-						.debug_name = path.string(),
-					}));
-		}
+		properties.textures.try_emplace(path.filename().string(),
+			Texture::construct(device,
+				{
+					.path = path,
+					.debug_name = path.filename().string(),
+				}));
 	});
 
 	draw_component<Components::Skybox>(entity, [&current = scene, &dev = device](Components::Skybox& skybox) {

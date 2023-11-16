@@ -129,6 +129,7 @@ public:
 	}
 
 	auto get_final_image() -> const Disarray::Image&;
+	auto get_renderer() const -> const Scope<Renderer>& { return renderer; };
 
 private:
 	const Disarray::Device& device;

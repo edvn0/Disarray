@@ -16,6 +16,7 @@ public:
 	auto get_present_queue() const -> VkQueue { return present; }
 
 	auto supply() const -> VkDevice override { return device; }
+	auto supply() -> VkDevice override { return device; }
 
 	auto get_physical_device() -> Disarray::PhysicalDevice& override { return *physical_device; }
 	auto get_physical_device() const -> const Disarray::PhysicalDevice& override { return *physical_device; }
