@@ -98,8 +98,7 @@ void Renderer::bind_descriptor_sets(
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
 	const Disarray::Material& material, const TransformMatrix& transform, const ColourVector& colour)
 {
-	// material.write_textures(get_graphics_resource());
-	draw_mesh(executor, mesh.get_vertices(), mesh.get_indices(), mesh_pipeline, transform, colour);
+	draw_mesh(executor, mesh.get_vertices(), mesh.get_indices(), mesh_pipeline, material, transform, colour);
 }
 
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
@@ -151,7 +150,7 @@ void Renderer::draw_mesh_instanced(Disarray::CommandExecutor& executor, std::siz
 }
 
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::VertexBuffer& vertices, const Disarray::IndexBuffer& indices,
-	const Disarray::Pipeline& mesh_pipeline, const Disarray::Material& material, const TransformMatrix& transform, const ColourVector& colour)
+	const Disarray::Pipeline& mesh_pipeline, const Disarray::Material&, const TransformMatrix& transform, const ColourVector& colour)
 {
 	draw_mesh(executor, vertices, indices, mesh_pipeline, transform, colour);
 }

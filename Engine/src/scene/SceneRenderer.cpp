@@ -564,22 +564,18 @@ auto SceneRenderer::draw_static_submeshes(const Collections::ScopedStringMap<Dis
 auto SceneRenderer::draw_single_static_mesh(const Disarray::Mesh& mesh, const Disarray::Pipeline& pipeline, const Disarray::Material& material,
 	const TransformMatrix& transform, const ColourVector& colour) -> void
 {
-	material.bind(*command_executor, pipeline, get_graphics_resource().get_current_frame_index());
 	renderer->draw_mesh(*command_executor, mesh, pipeline, material, transform, colour);
 }
 
 auto SceneRenderer::draw_single_static_mesh(const Disarray::VertexBuffer& vertices, const Disarray::IndexBuffer& indices,
 	const Disarray::Pipeline& pipeline, const Disarray::Material& material, const TransformMatrix& transform, const ColourVector& colour) -> void
 {
-	material.bind(*command_executor, pipeline, get_graphics_resource().get_current_frame_index());
 	renderer->draw_mesh(*command_executor, vertices, indices, pipeline, material, transform, colour);
 }
 
 auto SceneRenderer::draw_single_static_mesh(const Mesh& mesh, const Pipeline& pipeline, const TransformMatrix& transform, const ColourVector& colour)
 	-> void
 {
-	default_material->update_material(*get_renderer());
-	default_material->bind(*command_executor, pipeline, get_graphics_resource().get_current_frame_index());
 	renderer->draw_mesh(*command_executor, mesh, pipeline, *default_material, transform, colour);
 }
 

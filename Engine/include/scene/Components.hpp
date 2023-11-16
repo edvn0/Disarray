@@ -251,7 +251,7 @@ struct Camera {
 	bool reverse { false };
 	CameraType type { CameraType::Perspective };
 
-	[[nodiscard]] auto compute(const Transform& transform, const Extent& extent) const -> const std::tuple<glm::mat4, glm::mat4, glm::mat4>&;
+	[[nodiscard]] auto compute(const Transform& transform, const Extent& extent) const -> std::tuple<glm::mat4, glm::mat4, glm::mat4>;
 };
 template <> inline constexpr std::string_view component_name<Camera> = "Camera";
 

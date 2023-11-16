@@ -1,15 +1,14 @@
 #include "DisarrayPCH.hpp"
 
-#include "graphics/TextRenderer.hpp"
-
-// clang-format off
 #include <ft2build.h>
+
 #include <vector>
+
 #include "core/DataBuffer.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Pipeline.hpp"
+#include "graphics/TextRenderer.hpp"
 #include FT_FREETYPE_H
-// clang-format on
 
 #include "core/Log.hpp"
 #include "core/filesystem/FileIO.hpp"
