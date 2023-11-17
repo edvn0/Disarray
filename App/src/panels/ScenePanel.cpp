@@ -243,7 +243,12 @@ void ScenePanel::for_all_components(Entity& entity)
 	});
 
 	draw_component<Components::PointLight>(entity, [](Components::PointLight& point) {
-		if (UI::Input::drag("Factors", point.factors, 0.1F, 0.F, 10.F)) { }
+		glm::vec2 factors = { point.factors.y, point.factors.z };
+
+		if (UI::Input::drag("Factors", factors, 0.1F, 0.F, 10.F)) {
+			point.factors.y = factors.x;
+			point.factors.z = factors.y;
+		}
 		if (ImGui::ColorEdit4("Ambient", glm::value_ptr(point.ambient))) { }
 		if (ImGui::ColorEdit4("Diffuse", glm::value_ptr(point.diffuse))) { }
 		if (ImGui::ColorEdit4("Specular", glm::value_ptr(point.specular))) { }
@@ -251,7 +256,12 @@ void ScenePanel::for_all_components(Entity& entity)
 
 	draw_component<Components::SpotLight>(entity, [](Components::SpotLight& spot) {
 		if (ImGui::DragFloat3("Direction", glm::value_ptr(spot.direction), 0.1F, -glm::pi<float>(), glm::pi<float>())) { }
-		if (UI::Input::drag("Factors", spot.factors, 0.1F, 0.F, 10.F)) { }
+		glm::vec2 factors = { spot.factors.y, spot.factors.z };
+
+		if (UI::Input::drag("Factors", factors, 0.1F, 0.F, 10.F)) {
+			spot.factors.y = factors.x;
+			spot.factors.z = factors.y;
+		}
 		if (ImGui::ColorEdit4("Ambient", glm::value_ptr(spot.ambient))) { }
 		if (ImGui::ColorEdit4("Diffuse", glm::value_ptr(spot.diffuse))) { }
 		if (ImGui::ColorEdit4("Specular", glm::value_ptr(spot.specular))) { }
@@ -389,7 +399,13 @@ void ScenePanel::for_all_components(Entity& entity)
 		bool any_changed = false;
 		std::optional<std::filesystem::path> selected { std::nullopt };
 		if (ImGui::Button("Choose path", { 80, 30 })) {
-			selected = UI::Popup::select_file({ "*.mesh", "*.obj", "*.fbx" }, "Assets/Models");
+			selected = UI::Popup::select_file(
+				{
+					"*.mesh",
+					"*.obj",
+					"*.fbx",
+				},
+				"Assets/Models");
 			any_changed |= selected.has_value();
 		}
 		if (ImGui::Checkbox("Draw AABB", &mesh_component.draw_aabb)) { };
@@ -417,29 +433,33 @@ void ScenePanel::for_all_components(Entity& entity)
 		auto& parameters = script_component.get_script().get_parameters();
 		bool any_changed = false;
 		for (auto&& [key, value] : parameters) {
-			any_changed |= switch_parameter<glm::vec2>(value, [&key = key](glm::vec2& vector) { return UI::Input::slider(key, vector, 0.1F); });
-			any_changed |= switch_parameter<glm::vec3>(value, [&key = key](glm::vec3& vector) { return UI::Input::slider(key, vector, 0.1F); });
-			any_changed |= switch_parameter<glm::vec4>(value, [&key = key](glm::vec4& vector) { return UI::Input::slider(key, vector, 0.1F); });
-			any_changed |= switch_parameter<std::uint32_t>(value, [&key = key](std::uint32_t& vector) {
+			any_changed |= switch_parameter<glm::vec2>(
+				value, [&variant_key = key](glm::vec2& vector) { return UI::Input::slider(variant_key, vector, 0.1F); });
+			any_changed |= switch_parameter<glm::vec3>(
+				value, [&variant_key = key](glm::vec3& vector) { return UI::Input::slider(variant_key, vector, 0.1F); });
+			any_changed |= switch_parameter<glm::vec4>(
+				value, [&variant_key = key](glm::vec4& vector) { return UI::Input::slider(variant_key, vector, 0.1F); });
+			any_changed |= switch_parameter<std::uint32_t>(value, [&variant_key = key](std::uint32_t& vector) {
 				auto as_int = static_cast<std::int32_t>(vector);
-				const bool changed = ImGui::DragInt(key.data(), &as_int);
+				const bool changed = ImGui::DragInt(variant_key.data(), &as_int);
 				if (changed) {
 					vector = static_cast<std::uint32_t>(as_int);
 				}
 				return changed;
 			});
-			any_changed |= switch_parameter<std::uint8_t>(value, [&key = key](std::uint8_t& vector) {
+			any_changed |= switch_parameter<std::uint8_t>(value, [&variant_key = key](std::uint8_t& vector) {
 				auto as_int = static_cast<std::int32_t>(vector);
-				const bool changed = ImGui::DragInt(key.data(), &as_int);
+				const bool changed = ImGui::DragInt(variant_key.data(), &as_int);
 				if (changed) {
 					vector = static_cast<std::uint8_t>(as_int);
 				}
 				return changed;
 			});
-			any_changed |= switch_parameter<float>(value, [&key = key](float& vector) { return UI::Input::slider<1>(key, &vector, 0.1F); });
-			any_changed |= switch_parameter<double>(value, [&key = key](double& vector) {
+			any_changed
+				|= switch_parameter<float>(value, [&variant_key = key](float& vector) { return UI::Input::slider<1>(variant_key, &vector, 0.1F); });
+			any_changed |= switch_parameter<double>(value, [&variant_key = key](double& vector) {
 				auto as_float = static_cast<float>(vector);
-				bool changed = ImGui::DragFloat(key.data(), &as_float, 0.1F);
+				bool changed = ImGui::DragFloat(variant_key.data(), &as_float, 0.1F);
 				if (changed) {
 					vector = static_cast<double>(as_float);
 				}

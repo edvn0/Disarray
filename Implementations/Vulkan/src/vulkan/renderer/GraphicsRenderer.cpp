@@ -59,9 +59,6 @@ void Renderer::bind_descriptor_sets(Disarray::CommandExecutor& executor, const D
 {
 	const std::array desc {
 		get_graphics_resource().get_descriptor_set(DescriptorSet(0)),
-		get_graphics_resource().get_descriptor_set(DescriptorSet(1)),
-		get_graphics_resource().get_descriptor_set(DescriptorSet(2)),
-		get_graphics_resource().get_descriptor_set(DescriptorSet(3)),
 	};
 	const auto span = std::span { desc.data(), desc.size() };
 	bind_descriptor_sets(executor, pipeline, span);

@@ -8,6 +8,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(ENGINE_SOURCES
         include/Forward.hpp
+        include/assets/Asset.hpp
+        include/assets/AssetType.hpp
+        include/graphics/MaterialTable.hpp
         include/graphics/BufferProperties.hpp
         include/graphics/RenderPass.hpp
         include/graphics/Renderer.hpp
@@ -92,6 +95,7 @@ set(ENGINE_SOURCES
         include/util/FormattingUtilities.hpp
         include/util/Timer.hpp
         Disarray.hpp
+        src/graphics/MaterialTable.cpp
         src/graphics/Shader.cpp
         src/graphics/AABB.cpp
         src/graphics/CommandExecutor.cpp

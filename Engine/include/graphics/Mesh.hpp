@@ -26,12 +26,6 @@ struct MeshProperties {
 	std::unordered_set<VertexInput> include_inputs = { std::begin(default_vertex_inputs), std::end(default_vertex_inputs) };
 };
 
-struct MeshSubstructure {
-	Scope<Disarray::VertexBuffer> vertices {};
-	Scope<Disarray::IndexBuffer> indices {};
-	std::unordered_set<std::int32_t> texture_indices {};
-};
-
 class Mesh : public ReferenceCountable {
 	DISARRAY_OBJECT_PROPS(Mesh, MeshProperties)
 public:

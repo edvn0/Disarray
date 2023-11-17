@@ -56,6 +56,10 @@ public:
 
 	auto create_from_impl(const PipelineCacheCreationProperties& props) -> Ref<Disarray::Pipeline>
 	{
+		if (!shader_cache.contains(props.vertex_shader_key) || !shader_cache.contains(props.fragment_shader_key)) {
+			return nullptr;
+		}
+
 		PipelineProperties properties {
 			.vertex_shader = shader_cache[props.vertex_shader_key],
 			.fragment_shader = shader_cache[props.fragment_shader_key],

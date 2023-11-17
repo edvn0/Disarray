@@ -47,6 +47,10 @@ public:
 		}
 
 		auto resource = create_from(props);
+		if (resource == nullptr) {
+			throw;
+		}
+
 		const auto& [pair, could] = storage.try_emplace(std::move(key), std::move(resource));
 		return pair->second;
 	}

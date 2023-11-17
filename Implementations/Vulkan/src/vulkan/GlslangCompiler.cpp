@@ -177,7 +177,7 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	custom.maxTextureImageUnits = 2000;
 
 	auto glslang_type = Detail::CompilerIntrinsics::to_glslang_type(type);
-	Scope<glslang::TShader> shader = make_scope<glslang::TShader>(glslang_type);
+	auto shader = make_scope<glslang::TShader>(glslang_type);
 
 	std::string output;
 	if (!FS::read_from_file(path_to_shader.string(), output)) {
@@ -194,16 +194,16 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	shader->setStrings(sources.data(), 1);
 
 	// Use appropriate Vulkan version
-	glslang::EShTargetClientVersion target_api_version = glslang::EShTargetVulkan_1_3;
+	const glslang::EShTargetClientVersion target_api_version = glslang::EShTargetVulkan_1_3;
 	shader->setEnvClient(glslang::EShClientVulkan, target_api_version);
 
-	glslang::EShTargetLanguageVersion target_spirv_version = glslang::EShTargetSpv_1_6;
+	const glslang::EShTargetLanguageVersion target_spirv_version = glslang::EShTargetSpv_1_6;
 	shader->setEnvTarget(glslang::EshTargetSpv, target_spirv_version);
 
 	shader->setEntryPoint("main");
 	const int default_version = 460;
 	const bool forward_compatible = false;
-	EProfile default_profile = ECoreProfile;
+	const EProfile default_profile = ECoreProfile;
 
 	std::string preprocessed_str;
 	if (glslang::TShader::ForbidIncluder forbid_includer {}; !shader->preprocess(
@@ -230,8 +230,8 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	const auto& intermediate_ref = *(program.getIntermediate(shader->getStage()));
 	std::vector<uint32_t> spirv;
 	glslang::SpvOptions options {};
-	options.validate = true;
-	options.generateDebugInfo = true;
+	options.stripDebugInfo = true;
+	options.optimizeSize = true;
 	spv::SpvBuildLogger logger;
 	glslang::GlslangToSpv(intermediate_ref, spirv, &logger, &options);
 
@@ -271,7 +271,7 @@ void ShaderCompiler::destroy()
 
 static auto replace(std::string& output, const std::string_view from, const std::string& replacement) -> bool
 {
-	size_t start_pos = output.find(from);
+	const std::size_t start_pos = output.find(from);
 	if (start_pos == std::string::npos) {
 		return false;
 	}

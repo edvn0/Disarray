@@ -24,7 +24,7 @@ using DescriptorBinding = TypeSafeWrapper<std::uint16_t>;
 
 enum class UBOIdentifier : std::uint8_t {
 	Missing,
-	Default,
+	ViewProjection,
 	Camera,
 	PointLight,
 	ShadowPass,
@@ -143,14 +143,14 @@ static_assert(count_spot_lights <= max_spot_lights);
 using SpotLights = Detail::SpotLights<max_spot_lights>;
 template <> inline constexpr UBOIdentifier identifier_for<SpotLights> = UBOIdentifier::SpotLight;
 
-struct UBO : Resettable<UBO> {
+struct ViewProjectionUBO : Resettable<ViewProjectionUBO> {
 	glm::mat4 view;
 	glm::mat4 proj;
 	glm::mat4 view_projection;
 
 	void reset_impl();
 };
-template <> inline constexpr UBOIdentifier identifier_for<UBO> = UBOIdentifier::Default;
+template <> inline constexpr UBOIdentifier identifier_for<ViewProjectionUBO> = UBOIdentifier::ViewProjection;
 
 struct CameraUBO : Resettable<CameraUBO> {
 	glm::vec4 position { 0 };

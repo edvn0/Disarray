@@ -36,7 +36,6 @@ class TextureCache;
 class VertexBuffer;
 class Window;
 struct BatchRenderer;
-struct MeshSubstructure;
 struct Submesh;
 
 class CppScript;

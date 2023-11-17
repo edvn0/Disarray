@@ -64,26 +64,12 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 	framebuffers.try_emplace(SceneFramebuffer::Shadow, std::move(temporary_shadow));
 
 	const auto& shadow_framebuffer = get_framebuffer<SceneFramebuffer::Shadow>();
-	get_graphics_resource().expose_to_shaders(shadow_framebuffer->get_depth_image(), DescriptorSet { 1 }, DescriptorBinding { 1 });
-	SpecialisationConstantDescription specialisation_constant_description { point_light_data };
+	get_graphics_resource().expose_to_shaders(shadow_framebuffer->get_depth_image(), DescriptorSet { 0 }, DescriptorBinding { 11 });
+
+	const SpecialisationConstantDescription specialisation_constant_description { point_light_data };
 	resources.get_pipeline_cache().put({
 		.pipeline_key = "Shadow",
 		.vertex_shader_key = "shadow.vert",
-		.fragment_shader_key = "shadow.frag",
-		.framebuffer = shadow_framebuffer,
-		.layout = default_inputs,
-		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-		.extent = renderer_extent,
-		.cull_mode = CullMode::Front,
-		.write_depth = true,
-		.test_depth = true,
-		.descriptor_set_layouts = desc_layout,
-		.specialisation_constant = specialisation_constant_description,
-	});
-
-	resources.get_pipeline_cache().put({
-		.pipeline_key = "ShadowInstances",
-		.vertex_shader_key = "shadow_instances.vert",
 		.fragment_shader_key = "shadow.frag",
 		.framebuffer = shadow_framebuffer,
 		.layout = default_inputs,
@@ -138,33 +124,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 			}));
 
 	const auto& geometry_framebuffer = get_framebuffer<SceneFramebuffer::Geometry>();
-	get_graphics_resource().expose_to_shaders(geometry_framebuffer->get_image(), DescriptorSet { 1 }, DescriptorBinding { 0 });
-
-	resources.get_pipeline_cache().put({
-		.pipeline_key = "PointLight",
-		.vertex_shader_key = "point_light.vert",
-		.fragment_shader_key = "point_light.frag",
-		.framebuffer = get_framebuffer<SceneFramebuffer::Geometry>(),
-		.layout = default_inputs,
-		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-		.extent = renderer_extent,
-		.cull_mode = CullMode::Front,
-		.descriptor_set_layouts = desc_layout,
-		.specialisation_constant = specialisation_constant_description,
-	});
-
-	resources.get_pipeline_cache().put({
-		.pipeline_key = "SpotLight",
-		.vertex_shader_key = "spot_light.vert",
-		.fragment_shader_key = "point_light.frag",
-		.framebuffer = get_framebuffer<SceneFramebuffer::Geometry>(),
-		.layout = default_inputs,
-		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
-		.extent = renderer_extent,
-		.cull_mode = CullMode::Front,
-		.descriptor_set_layouts = desc_layout,
-		.specialisation_constant = specialisation_constant_description,
-	});
+	get_graphics_resource().expose_to_shaders(geometry_framebuffer->get_image(), DescriptorSet { 0 }, DescriptorBinding { 12 });
 
 	resources.get_pipeline_cache().put(PipelineCacheCreationProperties {
 		.pipeline_key = "Skybox",
@@ -209,95 +169,19 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 	});
 	point_light_data.calculate_point_lights = 0;
 
-	point_light_transforms = StorageBuffer::construct_scoped(device,
-		{
-			.size = count_point_lights * sizeof(glm::mat4),
-			.count = count_point_lights,
-			.always_mapped = true,
-		});
-	point_light_colours = StorageBuffer::construct_scoped(device,
-		{
-			.size = count_point_lights * sizeof(glm::vec4),
-			.count = count_point_lights,
-			.always_mapped = true,
-		});
-	spot_light_transforms = StorageBuffer::construct_scoped(device,
-		{
-			.size = count_spot_lights * sizeof(glm::mat4),
-			.count = count_spot_lights,
-			.always_mapped = true,
-		});
-	spot_light_colours = StorageBuffer::construct_scoped(device,
-		{
-			.size = count_spot_lights * sizeof(glm::vec4),
-			.count = count_spot_lights,
-			.always_mapped = true,
-		});
+	uniform_buffer_set = make_scope<BufferSet<UniformBuffer>>(device, get_graphics_resource(), 1);
+	uniform_buffer_set->add_buffer<ViewProjectionUBO>(DescriptorSet { 0 }, DescriptorBinding { 0 });
+	uniform_buffer_set->add_buffer<CameraUBO>(DescriptorSet { 0 }, DescriptorBinding { 1 });
+	uniform_buffer_set->add_buffer<PointLight>(DescriptorSet { 0 }, DescriptorBinding { 2 });
+	uniform_buffer_set->add_buffer<ShadowPassUBO>(DescriptorSet { 0 }, DescriptorBinding { 3 });
+	uniform_buffer_set->add_buffer<DirectionalLightUBO>(DescriptorSet { 0 }, DescriptorBinding { 4 });
+	uniform_buffer_set->add_buffer<GlyphUBO>(DescriptorSet { 0 }, DescriptorBinding { 5 });
+	uniform_buffer_set->add_buffer<SpotLights>(DescriptorSet { 0 }, DescriptorBinding { 6 });
 
+	storage_buffer_set = make_scope<BufferSet<StorageBuffer>>(device, get_graphics_resource(), 1);
 	static constexpr auto max_identifier_objects = 2000;
-	entity_identifiers = StorageBuffer::construct_scoped(device,
-		{
-			.size = max_identifier_objects * sizeof(std::uint32_t),
-			.count = max_identifier_objects,
-			.always_mapped = true,
-		});
-	entity_transforms = StorageBuffer::construct_scoped(device,
-		{
-			.size = max_identifier_objects * sizeof(glm::mat4),
-			.count = max_identifier_objects,
-			.always_mapped = true,
-		});
-	get_graphics_resource().expose_to_shaders(*point_light_transforms, DescriptorSet { 3 }, DescriptorBinding { 0 });
-	get_graphics_resource().expose_to_shaders(*point_light_colours, DescriptorSet { 3 }, DescriptorBinding { 1 });
-	get_graphics_resource().expose_to_shaders(*entity_identifiers, DescriptorSet { 3 }, DescriptorBinding { 2 });
-	get_graphics_resource().expose_to_shaders(*entity_transforms, DescriptorSet { 3 }, DescriptorBinding { 3 });
-	get_graphics_resource().expose_to_shaders(*spot_light_transforms, DescriptorSet { 3 }, DescriptorBinding { 4 });
-	get_graphics_resource().expose_to_shaders(*spot_light_colours, DescriptorSet { 3 }, DescriptorBinding { 5 });
-
-	uniform = make_scope<UniformBufferSet<UBO>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = sizeof(UBO),
-		});
-	camera_ubo = make_scope<UniformBufferSet<CameraUBO>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = sizeof(CameraUBO),
-		});
-	lights = make_scope<UniformBufferSet<PointLights>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = max_point_lights * sizeof(PointLight),
-		});
-	shadow_pass_ubo = make_scope<UniformBufferSet<ShadowPassUBO>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = sizeof(ShadowPassUBO),
-		});
-	directional_light_ubo = make_scope<UniformBufferSet<DirectionalLightUBO>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = sizeof(DirectionalLightUBO),
-		});
-	glyph_ubo = make_scope<UniformBufferSet<GlyphUBO>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = sizeof(GlyphUBO),
-		});
-	spot_light_data = make_scope<UniformBufferSet<SpotLights>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = max_spot_lights * sizeof(SpotLight),
-		});
-
-	get_graphics_resource().expose_to_shaders(*uniform, DescriptorSet(0), DescriptorBinding(0));
-	get_graphics_resource().expose_to_shaders(*camera_ubo, DescriptorSet(0), DescriptorBinding(1));
-	get_graphics_resource().expose_to_shaders(*lights, DescriptorSet(0), DescriptorBinding(2));
-	get_graphics_resource().expose_to_shaders(*shadow_pass_ubo, DescriptorSet(0), DescriptorBinding(3));
-	get_graphics_resource().expose_to_shaders(*directional_light_ubo, DescriptorSet(0), DescriptorBinding(4));
-	get_graphics_resource().expose_to_shaders(*glyph_ubo, DescriptorSet(0), DescriptorBinding(5));
-	get_graphics_resource().expose_to_shaders(*spot_light_data, DescriptorSet(0), DescriptorBinding(6));
-
-	auto texture_cube = Texture::construct(device,
-		{
-			.path = FS::texture("cubemap_default.ktx"),
-			.dimension = TextureDimension::Three,
-			.debug_name = "Skybox",
-		});
-	get_graphics_resource().expose_to_shaders(*texture_cube, DescriptorSet { 2 }, DescriptorBinding { 2 });
+	storage_buffer_set->add_buffer(max_identifier_objects * sizeof(std::uint32_t), DescriptorSet { 0 }, DescriptorBinding { 9 });
+	storage_buffer_set->add_buffer(max_identifier_objects * sizeof(glm::mat4), DescriptorSet { 0 }, DescriptorBinding { 7 });
 
 	framebuffers.try_emplace(SceneFramebuffer::FullScreen,
 		Framebuffer::construct(device,
@@ -433,15 +317,10 @@ auto SceneRenderer::recreate(bool should_clean, const Extent& extent) -> void
 	framebuffers.at(SceneFramebuffer::Shadow)->recreate(should_clean, old_extent);
 
 	const auto& shadow_framebuffer = get_framebuffer<SceneFramebuffer::Shadow>();
-	get_graphics_resource().expose_to_shaders(shadow_framebuffer->get_depth_image(), DescriptorSet { 1 }, DescriptorBinding { 1 });
+	get_graphics_resource().expose_to_shaders(shadow_framebuffer->get_depth_image(), DescriptorSet { 0 }, DescriptorBinding { 11 });
 
 	const auto& geometry_framebuffer = get_framebuffer<SceneFramebuffer::Geometry>();
-	get_graphics_resource().expose_to_shaders(geometry_framebuffer->get_image(), DescriptorSet { 1 }, DescriptorBinding { 0 });
-
-	get_graphics_resource().expose_to_shaders(*point_light_transforms, DescriptorSet { 3 }, DescriptorBinding { 0 });
-	get_graphics_resource().expose_to_shaders(*point_light_colours, DescriptorSet { 3 }, DescriptorBinding { 1 });
-	get_graphics_resource().expose_to_shaders(*entity_identifiers, DescriptorSet { 3 }, DescriptorBinding { 2 });
-	get_graphics_resource().expose_to_shaders(*entity_transforms, DescriptorSet { 3 }, DescriptorBinding { 3 });
+	get_graphics_resource().expose_to_shaders(geometry_framebuffer->get_image(), DescriptorSet { 0 }, DescriptorBinding { 12 });
 
 	default_material->write_textures(get_graphics_resource());
 	command_executor->recreate(true, extent);
@@ -466,11 +345,15 @@ auto SceneRenderer::fullscreen_quad_pass() -> void { renderer->fullscreen_quad_p
 auto SceneRenderer::text_rendering_pass() -> void
 {
 	{
-		auto transaction = glyph_ubo->transaction();
-		auto& buffer = transaction.get_buffer();
+		auto& glyph = uniform_buffer_set->for_frame(DescriptorSet(0), DescriptorBinding(6));
+		auto& view_projection = uniform_buffer_set->for_frame(DescriptorSet(0), DescriptorBinding(0));
 		const auto float_extent = renderer_extent.as<float>();
+		GlyphUBO buffer {};
 		buffer.projection = Maths::ortho(0.F, float_extent.width, 0.F, float_extent.height, -1.0F, 1.0F);
-		buffer.view = uniform->read().view;
+		const ViewProjectionUBO& ubo = *static_cast<const ViewProjectionUBO*>(view_projection->get_raw());
+		buffer.view = ubo.view;
+
+		glyph->set_data<GlyphUBO>(&buffer);
 	}
 
 	renderer->text_rendering_pass(*command_executor);
@@ -480,11 +363,8 @@ auto SceneRenderer::planar_geometry_pass() -> void { renderer->planar_geometry_p
 
 auto SceneRenderer::begin_frame(const TransformMatrix& view, const TransformMatrix& projection, const TransformMatrix& view_projection) -> void
 {
-	auto camera_ubo_transaction = begin_uniform_transaction<CameraUBO>();
-	auto& camera = camera_ubo_transaction.get_buffer();
-
-	auto default_ubo_transaction = begin_uniform_transaction<UBO>();
-	auto& default_ubo = default_ubo_transaction.get_buffer();
+	CameraUBO camera {};
+	ViewProjectionUBO default_ubo {};
 
 	const auto view_matrix = glm::inverse(view);
 	camera.position = view_matrix[3];
@@ -494,6 +374,12 @@ auto SceneRenderer::begin_frame(const TransformMatrix& view, const TransformMatr
 	default_ubo.view_projection = view_projection;
 
 	camera.view = view;
+
+	auto& camera_buffer = uniform_buffer_set->for_frame(get_graphics_resource().get_current_frame_index(), DescriptorSet(0), DescriptorBinding(3));
+	camera_buffer->set_data<CameraUBO>(&camera);
+	auto& default_ubo_buffer
+		= uniform_buffer_set->for_frame(get_graphics_resource().get_current_frame_index(), DescriptorSet(0), DescriptorBinding(3));
+	default_ubo_buffer->set_data<ViewProjectionUBO>(&default_ubo);
 
 	renderer->begin_frame();
 }
@@ -532,10 +418,7 @@ auto SceneRenderer::draw_text(const Components::Transform& transform, const Comp
 	};
 }
 
-auto SceneRenderer::draw_skybox(const Mesh& skybox_mesh) -> void
-{
-	draw_single_static_mesh(skybox_mesh, *get_pipeline("Skybox"), glm::mat4 {}, { 1, 1, 1, 1 });
-}
+auto SceneRenderer::draw_skybox() -> void { draw_single_static_mesh(*aabb_model, *get_pipeline("Skybox"), glm::mat4 {}, { 1, 1, 1, 1 }); }
 
 auto SceneRenderer::draw_point_lights(const Mesh& point_light_mesh, std::uint32_t count, const Pipeline& pipeline) -> void
 {

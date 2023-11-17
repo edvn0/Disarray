@@ -13,7 +13,7 @@ void PushConstant::reset_impl()
 	image_indices.fill(-1);
 }
 
-void UBO::reset_impl()
+void ViewProjectionUBO::reset_impl()
 {
 	static constexpr auto identity_matrix = glm::identity<glm::mat4>();
 	view = identity_matrix;

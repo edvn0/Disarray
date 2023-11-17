@@ -130,10 +130,10 @@ void Material::update_material(Disarray::Renderer& renderer)
 void Material::write_textures(IGraphicsResource& resource) const
 {
 	for (auto i = FrameIndex { 0 }; i < resource.get_image_count(); i++) {
-		auto* set = resource.get_descriptor_set(i, DescriptorSet(2));
+		auto* set = resource.get_descriptor_set(i, DescriptorSet(0));
 
 		std::vector<VkWriteDescriptorSet> write_descriptors {};
-		std::uint32_t binding = 3;
+		std::uint32_t binding = 17;
 		Collections::for_each_unwrapped(props.textures, [&](const auto&, const auto& texture) mutable {
 			const auto& vk_image = cast_to<Vulkan::Image>(texture->get_image());
 			auto& write_descriptor_set = write_descriptors.emplace_back();

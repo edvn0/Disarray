@@ -1,8 +1,4 @@
-#include "GlyphUBO.glsl"
-#include "UBO.glsl"
-
-layout(set = 2, binding = 0) uniform texture2D glyph_textures[128];
-layout(set = 2, binding = 1) uniform sampler glyph_texture_sampler;
+#include "Buffers.glsl"
 
 layout(location = 0) in vec2 in_tex_coords;
 layout(location = 1) in vec4 colour;

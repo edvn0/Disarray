@@ -12,12 +12,14 @@
 #include "core/Collections.hpp"
 #include "core/Types.hpp"
 #include "core/filesystem/AssetLocations.hpp"
+#include "fmt/core.h"
 #include "graphics/Image.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/UniformBuffer.hpp"
+#include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/GraphicsResource.hpp"
@@ -27,7 +29,6 @@
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Renderer.hpp"
 #include "vulkan/StorageBuffer.hpp"
-#include "vulkan/CommandExecutor.hpp"
 #include "vulkan/Swapchain.hpp"
 #include "vulkan/UniformBuffer.hpp"
 #include "vulkan/VertexBuffer.hpp"
@@ -79,17 +80,111 @@ namespace {
 		directional_light_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		directional_light_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
 
+		auto spot_light_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		spot_light_binding.descriptorCount = 1;
+		spot_light_binding.binding = 5;
+		spot_light_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		spot_light_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+
 		auto glyph_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
 		glyph_binding.descriptorCount = 1;
-		glyph_binding.binding = 5;
+		glyph_binding.binding = 6;
 		glyph_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		glyph_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
 
-		auto spot_light_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
-		spot_light_binding.descriptorCount = 1;
-		spot_light_binding.binding = 6;
-		spot_light_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		spot_light_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+		auto entity_transform_ssbo = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		entity_transform_ssbo.descriptorCount = 1;
+		entity_transform_ssbo.binding = 7;
+		entity_transform_ssbo.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		entity_transform_ssbo.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+
+		auto entity_colour_ssbo = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		entity_colour_ssbo.descriptorCount = 1;
+		entity_colour_ssbo.binding = 8;
+		entity_colour_ssbo.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		entity_colour_ssbo.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+
+		auto entity_identifier_ssbo = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		entity_identifier_ssbo.descriptorCount = 1;
+		entity_identifier_ssbo.binding = 9;
+		entity_identifier_ssbo.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		entity_identifier_ssbo.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+
+		auto font_colour_image_ssbo = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		font_colour_image_ssbo.descriptorCount = 1;
+		font_colour_image_ssbo.binding = 10;
+		font_colour_image_ssbo.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		font_colour_image_ssbo.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+
+		auto depth_texture = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		depth_texture.descriptorCount = 1;
+		depth_texture.binding = 11;
+		depth_texture.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		depth_texture.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		auto geometry_texture = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		geometry_texture.descriptorCount = 1;
+		geometry_texture.binding = 12;
+		geometry_texture.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		geometry_texture.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		auto font_texture = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		font_texture.descriptorCount = 1;
+		font_texture.binding = 13;
+		font_texture.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		font_texture.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		auto glyph_textures = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		glyph_textures.descriptorCount = 128;
+		glyph_textures.binding = 14;
+		glyph_textures.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+		glyph_textures.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		auto glyph_texture_sampler = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		glyph_texture_sampler.descriptorCount = 1;
+		glyph_texture_sampler.binding = 15;
+		glyph_texture_sampler.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+		glyph_texture_sampler.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		auto skycube_sampler = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		skycube_sampler.descriptorCount = 1;
+		skycube_sampler.binding = 16;
+		skycube_sampler.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		skycube_sampler.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		// Convert these to VkDescriptorSetLayoutBindings
+		auto albedo_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		albedo_map.descriptorCount = 1;
+		albedo_map.binding = 17;
+		albedo_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		albedo_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		auto diffuse_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		diffuse_map.descriptorCount = 1;
+		diffuse_map.binding = 18;
+		diffuse_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		diffuse_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		auto specular_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		specular_map.descriptorCount = 1;
+		specular_map.binding = 19;
+		specular_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		specular_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		auto normal_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		normal_map.descriptorCount = 1;
+		normal_map.binding = 20;
+		normal_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		normal_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		auto metalness_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		metalness_map.descriptorCount = 1;
+		metalness_map.binding = 21;
+		metalness_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		metalness_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		auto roughness_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
+		roughness_map.descriptorCount = 1;
+		roughness_map.binding = 22;
+		roughness_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		roughness_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		return std::array {
 			default_binding,
@@ -99,100 +194,23 @@ namespace {
 			directional_light_binding,
 			glyph_binding,
 			spot_light_binding,
-		};
-	}
-
-	auto create_set_one_bindings()
-	{
-		// Default framebuffer
-		auto image_binding_0 = vk_structures<VkDescriptorSetLayoutBinding> {}();
-		image_binding_0.descriptorCount = 1;
-		image_binding_0.binding = 0;
-		image_binding_0.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		image_binding_0.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		// Depth texture
-		auto image_binding_1 = vk_structures<VkDescriptorSetLayoutBinding> {}();
-		image_binding_1.descriptorCount = 1;
-		image_binding_1.binding = 1;
-		image_binding_1.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		image_binding_1.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		// Font texture
-		auto image_binding_2 = vk_structures<VkDescriptorSetLayoutBinding> {}();
-		image_binding_2.descriptorCount = 1;
-		image_binding_2.binding = 2;
-		image_binding_2.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		image_binding_2.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		return std::array {
-			image_binding_0,
-			image_binding_1,
-			image_binding_2,
-		};
-	}
-
-	auto create_set_two_bindings()
-	{
-		auto glyph_texture_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
-		glyph_texture_binding.descriptorCount = 128;
-		glyph_texture_binding.binding = 0;
-		glyph_texture_binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-		glyph_texture_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		auto glyph_array_sampler_binding = vk_structures<VkDescriptorSetLayoutBinding> {}();
-		glyph_array_sampler_binding.descriptorCount = 1;
-		glyph_array_sampler_binding.binding = 1;
-		glyph_array_sampler_binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-		glyph_array_sampler_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		auto skybox_image = vk_structures<VkDescriptorSetLayoutBinding> {}();
-		skybox_image.descriptorCount = 1;
-		skybox_image.binding = 2;
-		skybox_image.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		skybox_image.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		auto albedo_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
-		albedo_map.descriptorCount = 1;
-		albedo_map.binding = 3;
-		albedo_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		albedo_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		auto diffuse_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
-		diffuse_map.descriptorCount = 1;
-		diffuse_map.binding = 4;
-		diffuse_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		diffuse_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		auto specular_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
-		specular_map.descriptorCount = 1;
-		specular_map.binding = 5;
-		specular_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		specular_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		return std::array {
-			glyph_texture_binding,
-			glyph_array_sampler_binding,
-			skybox_image,
+			entity_transform_ssbo,
+			entity_colour_ssbo,
+			entity_identifier_ssbo,
+			font_colour_image_ssbo,
+			depth_texture,
+			geometry_texture,
+			font_texture,
+			glyph_textures,
+			glyph_texture_sampler,
+			skycube_sampler,
 			albedo_map,
 			diffuse_map,
 			specular_map,
+			normal_map,
+			metalness_map,
+			roughness_map,
 		};
-	}
-
-	template <std::size_t Count> auto create_set_three_bindings()
-	{
-		std::array<VkDescriptorSetLayoutBinding, Count> ssbo_bindings {};
-		std::uint32_t i = 0;
-		for (auto& binding : ssbo_bindings) {
-			binding.descriptorCount = 1;
-			binding.binding = i++;
-			binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
-			binding.pImmutableSamplers = nullptr;
-		}
-
-		return ssbo_bindings;
 	}
 } // namespace
 
@@ -205,10 +223,6 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 	auto* vk_device = supply_cast<Vulkan::Device>(device);
 
 	auto set_zero_bindings = create_set_zero_bindings();
-	auto set_one_bindings = create_set_one_bindings();
-	auto set_two_bindings = create_set_two_bindings();
-	auto set_three_bindings = create_set_three_bindings<7>();
-
 	auto layout_create_info = vk_structures<VkDescriptorSetLayoutCreateInfo> {}();
 
 	layout_create_info.bindingCount = static_cast<std::uint32_t>(set_zero_bindings.size());
@@ -216,22 +230,7 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 	VkDescriptorSetLayout set_zero_ubos_layout = nullptr;
 	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &set_zero_ubos_layout));
 
-	layout_create_info.bindingCount = static_cast<std::uint32_t>(set_one_bindings.size());
-	layout_create_info.pBindings = set_one_bindings.data();
-	VkDescriptorSetLayout set_one_images_layout = nullptr;
-	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &set_one_images_layout));
-
-	layout_create_info.bindingCount = static_cast<std::uint32_t>(set_two_bindings.size());
-	layout_create_info.pBindings = set_two_bindings.data();
-	VkDescriptorSetLayout set_two_image_array_layout = nullptr;
-	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &set_two_image_array_layout));
-
-	VkDescriptorSetLayout set_three_ssbo_layout = nullptr;
-	layout_create_info.bindingCount = static_cast<std::uint32_t>(set_three_bindings.size());
-	layout_create_info.pBindings = set_three_bindings.data();
-	verify(vkCreateDescriptorSetLayout(vk_device, &layout_create_info, nullptr, &set_three_ssbo_layout));
-
-	layouts = { set_zero_ubos_layout, set_one_images_layout, set_two_image_array_layout, set_three_ssbo_layout };
+	layouts = { set_zero_ubos_layout };
 	static constexpr auto descriptor_pool_max_size = 1000;
 
 	const std::array<VkDescriptorPoolSize, 12> sizes = [](auto size) {
@@ -433,11 +432,12 @@ void GraphicsResource::push_constant(Disarray::CommandExecutor& executor, const 
 	push_constant(executor, pipeline, &pc, sizeof(PushConstant));
 }
 
-void GraphicsResource::push_constant(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const void* data, std::size_t size) {
+void GraphicsResource::push_constant(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const void* data, std::size_t size)
+{
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 	auto* pipeline_layout = cast_to<Vulkan::Pipeline>(pipeline).get_layout();
-	vkCmdPushConstants(command_buffer, pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<std::uint32_t>(size), data);
+	vkCmdPushConstants(
+		command_buffer, pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<std::uint32_t>(size), data);
 }
-
 
 } // namespace Disarray::Vulkan

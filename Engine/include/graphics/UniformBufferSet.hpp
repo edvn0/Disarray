@@ -26,6 +26,7 @@ public:
 				return;
 			}
 			buffer_set.update();
+			has_commited = true;
 		};
 
 		auto get_buffer() -> BufferFor& { return buffer_set.get_buffer(); }
