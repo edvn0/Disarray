@@ -117,9 +117,9 @@ namespace Reflection {
 		}
 		~ShaderResourceDeclaration() = default;
 
-		virtual const std::string& GetName() const { return m_Name; }
-		virtual std::uint32_t GetRegister() const { return m_Register; }
-		virtual std::uint32_t GetCount() const { return m_Count; }
+		[[nodiscard]] virtual auto get_name() const -> const std::string& { return m_Name; }
+		[[nodiscard]] virtual auto get_register() const -> std::uint32_t { return m_Register; }
+		[[nodiscard]] virtual auto get_count() const -> std::uint32_t { return m_Count; }
 
 	private:
 		std::string m_Name;
@@ -149,6 +149,8 @@ public:
 
 	void destroy_module() override;
 
+	void create_descriptors();
+
 private:
 	static auto read_file(const std::filesystem::path&) -> std::string;
 
@@ -157,6 +159,8 @@ private:
 	ReflectionData reflection_data {};
 	std::vector<VkDescriptorSetLayout> descriptor_set_layouts {};
 	VkDescriptorSet descriptor_set { nullptr };
+
+	std::unordered_map<uint32_t, std::vector<VkDescriptorPoolSize>> type_counts {};
 
 	const Disarray::Device& device;
 	VkPipelineShaderStageCreateInfo stage {};

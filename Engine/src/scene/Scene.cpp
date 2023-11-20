@@ -80,11 +80,7 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 
 	ShadowPassUBO shadow_pass {};
 	DirectionalLightUBO directional {};
-	PointLights point_lights {};
-	SpotLights spot_lights {};
-
 	auto& push_constant = scene_renderer.get_graphics_resource().get_editable_push_constant();
-
 	{
 		for (auto sun_component_view = registry.view<const Components::Transform, Components::DirectionalLight>();
 			 auto&& [entity, transform, sun] : sun_component_view.each()) {
@@ -139,6 +135,9 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 			point_light_index++;
 		}
 		push_constant.max_point_lights = static_cast<std::uint32_t>(point_light_index);
+
+		auto& point_light_buffer = scene_renderer.get_point_light_data();
+		point_light_buffer.set_data(&lights);
 	}
 
 	if (spot_light_count > 0) {
@@ -166,7 +165,8 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 		}
 		push_constant.max_spot_lights = static_cast<std::uint32_t>(spot_light_index);
 
-		// Write lights to uniform buffer set
+		auto& spot_light_buffer = scene_renderer.get_spot_light_data();
+		spot_light_buffer.set_data(&lights);
 	}
 
 	std::size_t identifier_index { 0 };

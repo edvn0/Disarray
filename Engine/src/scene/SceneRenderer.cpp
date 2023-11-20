@@ -29,6 +29,9 @@
 
 namespace Disarray {
 
+auto get_current_frame_index(const IGraphicsResource& graphics_resource) -> FrameIndex { return graphics_resource.get_current_frame_index(); }
+auto get_image_count(const IGraphicsResource& graphics_resource) -> std::uint32_t { return graphics_resource.get_image_count(); }
+
 SceneRenderer::SceneRenderer(const Disarray::Device& dev)
 	: device(dev)
 {
@@ -64,7 +67,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 	framebuffers.try_emplace(SceneFramebuffer::Shadow, std::move(temporary_shadow));
 
 	const auto& shadow_framebuffer = get_framebuffer<SceneFramebuffer::Shadow>();
-	get_graphics_resource().expose_to_shaders(shadow_framebuffer->get_depth_image(), DescriptorSet { 0 }, DescriptorBinding { 11 });
+	get_graphics_resource().expose_to_shaders(shadow_framebuffer->get_depth_image(), DescriptorSet { 0 }, DescriptorBinding { 10 });
 
 	const SpecialisationConstantDescription specialisation_constant_description { point_light_data };
 	resources.get_pipeline_cache().put({
@@ -124,7 +127,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 			}));
 
 	const auto& geometry_framebuffer = get_framebuffer<SceneFramebuffer::Geometry>();
-	get_graphics_resource().expose_to_shaders(geometry_framebuffer->get_image(), DescriptorSet { 0 }, DescriptorBinding { 12 });
+	get_graphics_resource().expose_to_shaders(geometry_framebuffer->get_image(), DescriptorSet { 0 }, DescriptorBinding { 11 });
 
 	resources.get_pipeline_cache().put(PipelineCacheCreationProperties {
 		.pipeline_key = "Skybox",
@@ -180,8 +183,9 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 
 	storage_buffer_set = make_scope<BufferSet<StorageBuffer>>(device, get_graphics_resource(), 1);
 	static constexpr auto max_identifier_objects = 2000;
-	storage_buffer_set->add_buffer(max_identifier_objects * sizeof(std::uint32_t), DescriptorSet { 0 }, DescriptorBinding { 9 });
-	storage_buffer_set->add_buffer(max_identifier_objects * sizeof(glm::mat4), DescriptorSet { 0 }, DescriptorBinding { 7 });
+	storage_buffer_set->add_buffer(max_identifier_objects * sizeof(glm::mat4), max_identifier_objects, DescriptorSet { 0 }, DescriptorBinding { 7 });
+	storage_buffer_set->add_buffer(
+		max_identifier_objects * sizeof(std::uint32_t), max_identifier_objects, DescriptorSet { 0 }, DescriptorBinding { 8 });
 
 	framebuffers.try_emplace(SceneFramebuffer::FullScreen,
 		Framebuffer::construct(device,
@@ -317,10 +321,10 @@ auto SceneRenderer::recreate(bool should_clean, const Extent& extent) -> void
 	framebuffers.at(SceneFramebuffer::Shadow)->recreate(should_clean, old_extent);
 
 	const auto& shadow_framebuffer = get_framebuffer<SceneFramebuffer::Shadow>();
-	get_graphics_resource().expose_to_shaders(shadow_framebuffer->get_depth_image(), DescriptorSet { 0 }, DescriptorBinding { 11 });
+	get_graphics_resource().expose_to_shaders(shadow_framebuffer->get_depth_image(), DescriptorSet { 0 }, DescriptorBinding { 10 });
 
 	const auto& geometry_framebuffer = get_framebuffer<SceneFramebuffer::Geometry>();
-	get_graphics_resource().expose_to_shaders(geometry_framebuffer->get_image(), DescriptorSet { 0 }, DescriptorBinding { 12 });
+	get_graphics_resource().expose_to_shaders(geometry_framebuffer->get_image(), DescriptorSet { 0 }, DescriptorBinding { 11 });
 
 	default_material->write_textures(get_graphics_resource());
 	command_executor->recreate(true, extent);
@@ -375,10 +379,9 @@ auto SceneRenderer::begin_frame(const TransformMatrix& view, const TransformMatr
 
 	camera.view = view;
 
-	auto& camera_buffer = uniform_buffer_set->for_frame(get_graphics_resource().get_current_frame_index(), DescriptorSet(0), DescriptorBinding(3));
+	auto& camera_buffer = uniform_buffer_set->for_frame(DescriptorSet(0), DescriptorBinding(3));
 	camera_buffer->set_data<CameraUBO>(&camera);
-	auto& default_ubo_buffer
-		= uniform_buffer_set->for_frame(get_graphics_resource().get_current_frame_index(), DescriptorSet(0), DescriptorBinding(3));
+	auto& default_ubo_buffer = uniform_buffer_set->for_frame(DescriptorSet(0), DescriptorBinding(3));
 	default_ubo_buffer->set_data<ViewProjectionUBO>(&default_ubo);
 
 	renderer->begin_frame();
@@ -392,16 +395,21 @@ auto SceneRenderer::draw_identifiers(std::size_t count) -> void
 {
 	const auto& vb = aabb_model->get_vertices();
 	const auto& ib = aabb_model->get_indices();
+	renderer->bind_buffer_set(*uniform_buffer_set, *storage_buffer_set);
 	renderer->draw_mesh_instanced(*command_executor, count, vb, ib, *get_pipeline("Identity"));
 }
 
 auto SceneRenderer::draw_aabb(const Disarray::AABB&, const ColourVector& colour, const TransformMatrix& transform) -> void
 {
+	renderer->bind_buffer_set(*uniform_buffer_set, *storage_buffer_set);
+
 	draw_single_static_mesh(*aabb_model, *get_pipeline("AABB"), transform, colour);
 }
 
 auto SceneRenderer::draw_text(const Components::Transform& transform, const Components::Text& text, const ColourVector& colour) -> void
 {
+	renderer->bind_buffer_set(*uniform_buffer_set, *storage_buffer_set);
+
 	switch (text.projection) {
 	case Components::TextProjection::Billboard: {
 		renderer->draw_billboarded_text(text.text_data, transform.compute(), text.size, colour);
@@ -418,10 +426,16 @@ auto SceneRenderer::draw_text(const Components::Transform& transform, const Comp
 	};
 }
 
-auto SceneRenderer::draw_skybox() -> void { draw_single_static_mesh(*aabb_model, *get_pipeline("Skybox"), glm::mat4 {}, { 1, 1, 1, 1 }); }
+auto SceneRenderer::draw_skybox() -> void
+{
+	renderer->bind_buffer_set(*uniform_buffer_set, *storage_buffer_set);
+	draw_single_static_mesh(*aabb_model, *get_pipeline("Skybox"), glm::mat4 {}, { 1, 1, 1, 1 });
+}
 
 auto SceneRenderer::draw_point_lights(const Mesh& point_light_mesh, std::uint32_t count, const Pipeline& pipeline) -> void
 {
+	renderer->bind_buffer_set(*uniform_buffer_set, *storage_buffer_set);
+
 	renderer->draw_mesh_instanced(*command_executor, count, point_light_mesh.get_vertices(), point_light_mesh.get_indices(), pipeline);
 }
 
@@ -433,6 +447,8 @@ auto SceneRenderer::draw_planar_geometry(Geometry geometry, const GeometryProper
 auto SceneRenderer::draw_static_submeshes(const Collections::ScopedStringMap<Disarray::Mesh>& submeshes, const Pipeline& pipeline,
 	const TransformMatrix& transform, const ColourVector& colour) -> void
 {
+	renderer->bind_buffer_set(*uniform_buffer_set, *storage_buffer_set);
+
 	renderer->bind_descriptor_sets(*command_executor, pipeline);
 	renderer->bind_pipeline(*command_executor, pipeline);
 	auto& editable = renderer->get_graphics_resource().get_editable_push_constant();
@@ -447,24 +463,32 @@ auto SceneRenderer::draw_static_submeshes(const Collections::ScopedStringMap<Dis
 auto SceneRenderer::draw_single_static_mesh(const Disarray::Mesh& mesh, const Disarray::Pipeline& pipeline, const Disarray::Material& material,
 	const TransformMatrix& transform, const ColourVector& colour) -> void
 {
+	renderer->bind_buffer_set(*uniform_buffer_set, *storage_buffer_set);
+
 	renderer->draw_mesh(*command_executor, mesh, pipeline, material, transform, colour);
 }
 
 auto SceneRenderer::draw_single_static_mesh(const Disarray::VertexBuffer& vertices, const Disarray::IndexBuffer& indices,
 	const Disarray::Pipeline& pipeline, const Disarray::Material& material, const TransformMatrix& transform, const ColourVector& colour) -> void
 {
+	renderer->bind_buffer_set(*uniform_buffer_set, *storage_buffer_set);
+
 	renderer->draw_mesh(*command_executor, vertices, indices, pipeline, material, transform, colour);
 }
 
 auto SceneRenderer::draw_single_static_mesh(const Mesh& mesh, const Pipeline& pipeline, const TransformMatrix& transform, const ColourVector& colour)
 	-> void
 {
+	renderer->bind_buffer_set(*uniform_buffer_set, *storage_buffer_set);
+
 	renderer->draw_mesh(*command_executor, mesh, pipeline, *default_material, transform, colour);
 }
 
 auto SceneRenderer::draw_single_static_mesh(const VertexBuffer& vertices, const IndexBuffer& indices, const Pipeline& pipeline,
 	const TransformMatrix& transform, const ColourVector& colour) -> void
 {
+	renderer->bind_buffer_set(*uniform_buffer_set, *storage_buffer_set);
+
 	renderer->draw_mesh(*command_executor, vertices, indices, pipeline, *default_material, transform, colour);
 }
 

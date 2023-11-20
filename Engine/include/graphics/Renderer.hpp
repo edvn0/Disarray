@@ -16,10 +16,13 @@
 #include "graphics/Pipeline.hpp"
 #include "graphics/RenderCommandQueue.hpp"
 #include "graphics/RendererProperties.hpp"
+#include "graphics/StorageBuffer.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/TextRenderer.hpp"
+#include "graphics/UniformBuffer.hpp"
 #include "graphics/UniformBufferSet.hpp"
 #include "graphics/VertexBuffer.hpp"
+#include "scene/SceneRenderer.hpp"
 
 using VkDescriptorSet = struct VkDescriptorSet_T*;
 using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;
@@ -126,6 +129,11 @@ public:
 		bind_pipeline(executor, pipeline, PipelineBindPoint::BindPointGraphics);
 	};
 	virtual void bind_descriptor_sets(Disarray::CommandExecutor&, const Disarray::Pipeline&) = 0;
+
+	virtual void bind_buffer_set(Disarray::BufferSet<Disarray::UniformBuffer>& uniform_buffer_set) = 0;
+	virtual void bind_buffer_set(
+		Disarray::BufferSet<Disarray::UniformBuffer>& uniform_buffer_set, Disarray::BufferSet<Disarray::StorageBuffer>& storage_buffer_set)
+		= 0;
 
 	virtual void push_constant(Disarray::CommandExecutor&, const Disarray::Pipeline&, const void* data, std::size_t size) = 0;
 	virtual void push_constant(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline) = 0;

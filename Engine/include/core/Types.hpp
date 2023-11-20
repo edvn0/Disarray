@@ -16,11 +16,11 @@ namespace Disarray {
 template <std::integral T> struct TypeSafeWrapper {
 	T value { 0 };
 
-	constexpr explicit TypeSafeWrapper(std::integral auto input)
+	constexpr explicit TypeSafeWrapper(std::integral auto input) noexcept
 		: value(static_cast<T>(input))
 	{
 	}
-	constexpr TypeSafeWrapper() = default;
+	constexpr TypeSafeWrapper() noexcept = default;
 
 	constexpr auto operator+(std::integral auto addend) -> TypeSafeWrapper { return TypeSafeWrapper { value + addend }; }
 	constexpr auto operator-(std::integral auto addend) -> TypeSafeWrapper { return TypeSafeWrapper { value - addend }; }

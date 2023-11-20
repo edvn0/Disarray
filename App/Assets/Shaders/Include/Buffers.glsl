@@ -89,18 +89,15 @@ gbo;
 layout(std140, set = 0, binding = 7) readonly buffer EntityTransformBlock { TransformObject ssbo_objects[]; }
 EntityTransformSSBO;
 
-layout(std140, set = 0, binding = 8) readonly buffer EntityColourBlock { ColourObject ssbo_objects[]; }
-EntityColourSSBO;
-
-layout(std140, set = 0, binding = 9) readonly buffer EntityIdentifierBlock { IdentifierObject ssbo_objects[]; }
+layout(std140, set = 0, binding = 8) readonly buffer EntityIdentifierBlock { IdentifierObject ssbo_objects[]; }
 EntityIdentifierSSBO;
 
-layout(std140, set = 0, binding = 10) readonly buffer FontColourImageBlock { FontColourImage ssbo_objects[]; }
+layout(std140, set = 0, binding = 9) readonly buffer FontColourImageBlock { FontColourImage ssbo_objects[]; }
 FontColourImageSSBO;
 
-layout(set = 0, binding = 11) uniform sampler2D depth_texture;
-layout(set = 0, binding = 12) uniform sampler2D geometry_texture;
-layout(set = 0, binding = 13) uniform sampler2D font_texture;
-layout(set = 0, binding = 14) uniform texture2D glyph_textures[128];
-layout(set = 0, binding = 15) uniform sampler glyph_texture_sampler;
-layout(set = 0, binding = 16) uniform samplerCube skybox_texture;
+layout(set = 0, binding = 10) uniform sampler2D depth_texture;
+layout(set = 0, binding = 11) uniform sampler2D geometry_texture;
+layout(set = 0, binding = 12) uniform sampler2D font_texture;
+layout(set = 0, binding = 13) uniform texture2D glyph_textures[128];
+layout(set = 0, binding = 14) uniform sampler glyph_texture_sampler;
+layout(set = 0, binding = 15) uniform samplerCube skybox_texture;

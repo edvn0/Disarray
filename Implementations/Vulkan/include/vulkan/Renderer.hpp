@@ -88,6 +88,11 @@ public:
 
 	void bind_pipeline(Disarray::CommandExecutor&, const Disarray::Pipeline&, PipelineBindPoint) override;
 	void bind_descriptor_sets(Disarray::CommandExecutor&, const Disarray::Pipeline&) override;
+
+	void bind_buffer_set(Disarray::BufferSet<Disarray::UniformBuffer>& uniform_buffer_set) override;
+	void bind_buffer_set(Disarray::BufferSet<Disarray::UniformBuffer>& uniform_buffer_set,
+		Disarray::BufferSet<Disarray::StorageBuffer>& storage_buffer_set) override;
+
 	void push_constant(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const void* data, std::size_t size) override;
 	void push_constant(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline) override;
 

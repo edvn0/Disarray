@@ -12,9 +12,11 @@
 #include "graphics/Pipeline.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "graphics/Texture.hpp"
+#include "graphics/UniformBuffer.hpp"
 #include "graphics/VertexBuffer.hpp"
 #include "util/BitCast.hpp"
 #include "vulkan/CommandExecutor.hpp"
+#include "vulkan/Device.hpp"
 #include "vulkan/Framebuffer.hpp"
 #include "vulkan/IndexBuffer.hpp"
 #include "vulkan/Material.hpp"
@@ -22,6 +24,8 @@
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Renderer.hpp"
+#include "vulkan/StorageBuffer.hpp"
+#include "vulkan/UniformBuffer.hpp"
 #include "vulkan/VertexBuffer.hpp"
 
 namespace Disarray::Vulkan {
@@ -62,6 +66,60 @@ void Renderer::bind_descriptor_sets(Disarray::CommandExecutor& executor, const D
 	};
 	const auto span = std::span { desc.data(), desc.size() };
 	bind_descriptor_sets(executor, pipeline, span);
+}
+
+namespace {
+	auto internal_bind_buffer_set(IGraphicsResource& resource, Disarray::BufferSet<Disarray::UniformBuffer>* uniform_buffer_set,
+		Disarray::BufferSet<Disarray::StorageBuffer>* storage_buffer_set)
+	{
+		std::vector<VkWriteDescriptorSet> write_descriptor_sets;
+		uniform_buffer_set->for_each_frame_and_set(DescriptorSet(0),
+			[&writes = write_descriptor_sets, image_count = resource.get_image_count(), set = resource.get_descriptor_set(DescriptorSet(0)), i = 0](
+				const auto, const auto& buffer) mutable {
+				const auto& vk_buffer = cast_to<Vulkan::UniformBuffer>(*buffer);
+
+				auto& write_descriptor = writes.emplace_back();
+				write_descriptor.descriptorCount = 1;
+				write_descriptor.descriptorType = Vulkan::UniformBuffer::get_descriptor_type();
+				write_descriptor.pBufferInfo = &vk_buffer.get_buffer_info();
+				write_descriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				write_descriptor.dstSet = set;
+				write_descriptor.dstBinding = i++;
+			});
+
+		if (storage_buffer_set != nullptr) {
+			storage_buffer_set->for_each_frame_and_set(DescriptorSet(0),
+				[&writes = write_descriptor_sets, image_count = resource.get_image_count(), set = resource.get_descriptor_set(DescriptorSet(0)),
+					i = 7](const auto, const auto& buffer) mutable {
+					const auto& vk_buffer = cast_to<Vulkan::StorageBuffer>(*buffer);
+
+					auto& write_descriptor = writes.emplace_back();
+					write_descriptor.descriptorCount = 1;
+					write_descriptor.descriptorType = Vulkan::StorageBuffer::get_descriptor_type();
+					write_descriptor.pBufferInfo = &vk_buffer.get_descriptor_info();
+					write_descriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+					write_descriptor.dstSet = set;
+					write_descriptor.dstBinding = i++;
+				});
+		}
+
+		return write_descriptor_sets;
+	}
+} // namespace
+
+void Renderer::bind_buffer_set(Disarray::BufferSet<Disarray::UniformBuffer>& uniform_buffer_set)
+{
+	auto write_descriptor_sets = internal_bind_buffer_set(get_graphics_resource(), &uniform_buffer_set, nullptr);
+	vkUpdateDescriptorSets(
+		supply_cast<Vulkan::Device>(device), static_cast<std::uint32_t>(write_descriptor_sets.size()), write_descriptor_sets.data(), 0, nullptr);
+}
+
+void Renderer::bind_buffer_set(
+	Disarray::BufferSet<Disarray::UniformBuffer>& uniform_buffer_set, Disarray::BufferSet<Disarray::StorageBuffer>& storage_buffer_set)
+{
+	auto write_descriptor_sets = internal_bind_buffer_set(get_graphics_resource(), &uniform_buffer_set, &storage_buffer_set);
+	vkUpdateDescriptorSets(
+		supply_cast<Vulkan::Device>(device), static_cast<std::uint32_t>(write_descriptor_sets.size()), write_descriptor_sets.data(), 0, nullptr);
 }
 
 void Renderer::push_constant(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const void* data, std::size_t size)

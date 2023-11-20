@@ -155,7 +155,7 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 			.always_mapped = true,
 		});
 
-	renderer.get_graphics_resource().expose_to_shaders(*renderer_api->colour_image_data, DescriptorSet { 0 }, DescriptorBinding { 10 });
+	renderer.get_graphics_resource().expose_to_shaders(*renderer_api->colour_image_data, DescriptorSet { 0 }, DescriptorBinding { 9 });
 
 	renderer_api->glyph_framebuffer = Framebuffer::construct(device,
 		{
@@ -241,8 +241,8 @@ auto TextRenderer::recreate(bool, const Extent&) -> void
 	for (const auto& tex : font_data) {
 		textures.at(i++) = tex.texture == nullptr ? nullptr : tex.texture.get();
 	}
-	resources.expose_to_shaders(textures, DescriptorSet { 0 }, DescriptorBinding { 14 });
-	resources.expose_to_shaders(renderer_api->glyph_framebuffer->get_image(0), DescriptorSet { 0 }, DescriptorBinding { 13 });
+	resources.expose_to_shaders(renderer_api->glyph_framebuffer->get_image(0), DescriptorSet { 0 }, DescriptorBinding { 12 });
+	resources.expose_to_shaders(textures, DescriptorSet { 0 }, DescriptorBinding { 13 });
 }
 
 auto TextRenderer::get_pipelines() -> std::array<Disarray::Pipeline*, 2>

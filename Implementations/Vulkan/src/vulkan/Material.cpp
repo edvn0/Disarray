@@ -160,8 +160,6 @@ void Material::bind(const Disarray::CommandExecutor& executor, const Disarray::P
 
 	std::array descriptor_sets {
 		descriptor_set.at(0),
-		descriptor_set.at(1),
-		descriptor_set.at(2),
 	};
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, static_cast<std::uint32_t>(descriptor_sets.size()),
 		descriptor_sets.data(), 0, nullptr);

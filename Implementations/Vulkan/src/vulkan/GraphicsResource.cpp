@@ -98,91 +98,87 @@ namespace {
 		entity_transform_ssbo.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		entity_transform_ssbo.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
 
-		auto entity_colour_ssbo = vk_structures<VkDescriptorSetLayoutBinding> {}();
-		entity_colour_ssbo.descriptorCount = 1;
-		entity_colour_ssbo.binding = 8;
-		entity_colour_ssbo.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		entity_colour_ssbo.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
-
 		auto entity_identifier_ssbo = vk_structures<VkDescriptorSetLayoutBinding> {}();
 		entity_identifier_ssbo.descriptorCount = 1;
-		entity_identifier_ssbo.binding = 9;
+		entity_identifier_ssbo.binding = 8;
 		entity_identifier_ssbo.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		entity_identifier_ssbo.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
 
 		auto font_colour_image_ssbo = vk_structures<VkDescriptorSetLayoutBinding> {}();
 		font_colour_image_ssbo.descriptorCount = 1;
-		font_colour_image_ssbo.binding = 10;
+		font_colour_image_ssbo.binding = 9;
 		font_colour_image_ssbo.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		font_colour_image_ssbo.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
 
 		auto depth_texture = vk_structures<VkDescriptorSetLayoutBinding> {}();
 		depth_texture.descriptorCount = 1;
-		depth_texture.binding = 11;
+		depth_texture.binding = 10;
 		depth_texture.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		depth_texture.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		auto geometry_texture = vk_structures<VkDescriptorSetLayoutBinding> {}();
 		geometry_texture.descriptorCount = 1;
-		geometry_texture.binding = 12;
+		geometry_texture.binding = 11;
 		geometry_texture.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		geometry_texture.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		auto font_texture = vk_structures<VkDescriptorSetLayoutBinding> {}();
 		font_texture.descriptorCount = 1;
-		font_texture.binding = 13;
+		font_texture.binding = 12;
 		font_texture.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		font_texture.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		auto glyph_textures = vk_structures<VkDescriptorSetLayoutBinding> {}();
 		glyph_textures.descriptorCount = 128;
-		glyph_textures.binding = 14;
+		glyph_textures.binding = 13;
 		glyph_textures.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 		glyph_textures.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		auto glyph_texture_sampler = vk_structures<VkDescriptorSetLayoutBinding> {}();
 		glyph_texture_sampler.descriptorCount = 1;
-		glyph_texture_sampler.binding = 15;
+		glyph_texture_sampler.binding = 14;
 		glyph_texture_sampler.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
 		glyph_texture_sampler.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		auto skycube_sampler = vk_structures<VkDescriptorSetLayoutBinding> {}();
 		skycube_sampler.descriptorCount = 1;
-		skycube_sampler.binding = 16;
+		skycube_sampler.binding = 15;
 		skycube_sampler.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		skycube_sampler.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		// Convert these to VkDescriptorSetLayoutBindings
+
 		auto albedo_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
 		albedo_map.descriptorCount = 1;
-		albedo_map.binding = 17;
+		albedo_map.binding = 16;
 		albedo_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		albedo_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		auto diffuse_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
 		diffuse_map.descriptorCount = 1;
-		diffuse_map.binding = 18;
+		diffuse_map.binding = 17;
 		diffuse_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		diffuse_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		auto specular_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
 		specular_map.descriptorCount = 1;
-		specular_map.binding = 19;
+		specular_map.binding = 18;
 		specular_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		specular_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		auto normal_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
 		normal_map.descriptorCount = 1;
-		normal_map.binding = 20;
+		normal_map.binding = 19;
 		normal_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		normal_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
 		auto metalness_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
 		metalness_map.descriptorCount = 1;
-		metalness_map.binding = 21;
+		metalness_map.binding = 20;
 		metalness_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		metalness_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
 		auto roughness_map = vk_structures<VkDescriptorSetLayoutBinding> {}();
 		roughness_map.descriptorCount = 1;
-		roughness_map.binding = 22;
+		roughness_map.binding = 21;
 		roughness_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		roughness_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
@@ -195,7 +191,6 @@ namespace {
 			glyph_binding,
 			spot_light_binding,
 			entity_transform_ssbo,
-			entity_colour_ssbo,
 			entity_identifier_ssbo,
 			font_colour_image_ssbo,
 			depth_texture,

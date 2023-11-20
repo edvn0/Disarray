@@ -1,9 +1,9 @@
-layout(set = 0, binding = 17) uniform sampler2D albedo_map;
-layout(set = 0, binding = 18) uniform sampler2D diffuse_map;
-layout(set = 0, binding = 19) uniform sampler2D specular_map;
-layout(set = 0, binding = 20) uniform sampler2D normal_map;
-layout(set = 0, binding = 21) uniform sampler2D metalness_map;
-layout(set = 0, binding = 22) uniform sampler2D rougness_map;
+layout(set = 0, binding = 16) uniform sampler2D albedo_map;
+layout(set = 0, binding = 17) uniform sampler2D diffuse_map;
+layout(set = 0, binding = 18) uniform sampler2D specular_map;
+layout(set = 0, binding = 19) uniform sampler2D normal_map;
+layout(set = 0, binding = 20) uniform sampler2D metalness_map;
+layout(set = 0, binding = 21) uniform sampler2D rougness_map;
 
 struct DirectionalLight {
     vec3 direction;

@@ -4,51 +4,67 @@
 
 #include <glm/fwd.hpp>
 
+#include <algorithm>
+#include <functional>
+#include <unordered_map>
+
 #include "core/Collections.hpp"
 #include "core/PointerDefinition.hpp"
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/RendererProperties.hpp"
+#include "graphics/Swapchain.hpp"
 #include "graphics/UniformBufferSet.hpp"
 
 namespace Disarray {
+
+auto get_current_frame_index(const IGraphicsResource& graphics_resource) -> FrameIndex;
+auto get_image_count(const IGraphicsResource& graphics_resource) -> std::uint32_t;
 
 template <class Buffer> struct BufferSet {
 
 	explicit BufferSet(const Disarray::Device& dev, const IGraphicsResource& resource, std::integral auto sets)
 		: device(dev)
 		, graphics_resource(resource)
-		, frame_count(resource.get_image_count())
+		, frame_count(get_image_count(resource))
 		, set_count(sets)
 	{
 	}
 
-	auto add_buffer(std::size_t size, DescriptorSet set, DescriptorBinding binding) -> void
+	auto add_buffer(std::size_t size, std::size_t count, DescriptorSet set, DescriptorBinding binding) -> void
 	{
 		for (auto frame_index = FrameIndex {}; frame_index < frame_count; frame_index++) {
-			const auto index = frame_index.value * frame_count + set.value * set_count + binding.value;
-			storage_buffers.try_emplace(index,
-				Buffer::construct_scoped(device,
-					{
-						.size = size,
-						.always_mapped = true,
-					}));
+			storage_buffers[frame_index][set][binding] = Buffer::construct_scoped(device,
+				BufferProperties {
+					.size = size,
+					.count = count,
+					.always_mapped = true,
+				});
 		}
 	}
 
-	template <class T> auto add_buffer(DescriptorSet set, DescriptorBinding binding) -> void { add_buffer(sizeof(T), set, binding); }
+	template <class T> auto add_buffer(DescriptorSet set, DescriptorBinding binding) -> void { add_buffer(sizeof(T), 1, set, binding); }
 
 	auto for_frame(FrameIndex frame_index, DescriptorSet set, DescriptorBinding binding) -> Scope<Buffer>&
 	{
-		const auto index = frame_index.value * frame_count + set.value * set_count + binding.value;
-		return storage_buffers.at(index);
+		return storage_buffers.at(frame_index.value).at(set.value).at(binding.value);
 	}
 
 	auto for_frame(DescriptorSet set, DescriptorBinding binding) -> Scope<Buffer>&
 	{
-		const auto index = graphics_resource.get_current_frame_index().value * frame_count + set.value * set_count + binding.value;
-		return storage_buffers.at(index);
+		return storage_buffers.at(get_current_frame_index(graphics_resource)).at(set).at(binding);
+	}
+
+	auto for_frame(DescriptorBinding binding) -> Scope<Buffer>&
+	{
+		return storage_buffers.at(get_current_frame_index(graphics_resource)).at(DescriptorSet(0)).at(binding);
+	}
+
+	auto for_each_frame(auto&& func) const { Collections::for_each_unwrapped(storage_buffers.at(get_current_frame_index(graphics_resource)), func); }
+	auto for_each_frame_and_set(DescriptorSet set, auto&& func) const
+	{
+		Collections::for_each_unwrapped(storage_buffers.at(get_current_frame_index(graphics_resource)).at(set), func);
 	}
 
 private:
@@ -56,7 +72,9 @@ private:
 	const IGraphicsResource& graphics_resource;
 	std::uint32_t frame_count { 3 };
 	std::uint32_t set_count { 1 };
-	std::unordered_map<std::uint32_t, Scope<Buffer>> storage_buffers {};
+
+	// frame [ set ] [ binding ]
+	std::unordered_map<FrameIndex, std::unordered_map<DescriptorSet, std::unordered_map<DescriptorBinding, Scope<Buffer>>>> storage_buffers {};
 };
 
 enum class SceneFramebuffer : std::uint8_t {
@@ -137,8 +155,10 @@ public:
 	auto get_graphics_resource() -> IGraphicsResource&;
 	auto get_pipeline(const std::string& key) -> Ref<Disarray::Pipeline>&;
 
-	auto get_entity_identifiers() -> auto& { return *storage_buffer_set->for_frame(DescriptorSet(0), DescriptorBinding(9)); }
+	auto get_entity_identifiers() -> auto& { return *storage_buffer_set->for_frame(DescriptorSet(0), DescriptorBinding(8)); }
 	auto get_entity_transforms() -> auto& { return *storage_buffer_set->for_frame(DescriptorSet(0), DescriptorBinding(7)); }
+	auto get_spot_light_data() -> auto& { return *uniform_buffer_set->for_frame(DescriptorBinding(5)); }
+	auto get_point_light_data() -> auto& { return *uniform_buffer_set->for_frame(DescriptorBinding(2)); }
 
 	template <SceneFramebuffer Framebuffer> auto get_framebuffer() const { return framebuffers.at(Framebuffer); }
 
