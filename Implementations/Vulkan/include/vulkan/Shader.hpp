@@ -22,22 +22,22 @@ namespace Reflection {
 	class ShaderUniform {
 	public:
 		ShaderUniform() = default;
-		ShaderUniform(std::string_view name, ShaderUniformType type, std::uint32_t size, std::uint32_t offset)
-			: m_Name(name)
-			, m_Type(type)
-			, m_Size(size)
-			, m_Offset(offset) {};
+		ShaderUniform(std::string_view name_view, ShaderUniformType input_type, std::uint32_t input_size, std::uint32_t input_offset)
+			: name(name_view)
+			, type(input_type)
+			, size(input_size)
+			, offset(input_offset) {};
 
-		const std::string& GetName() const { return m_Name; }
-		ShaderUniformType GetType() const { return m_Type; }
-		std::uint32_t GetSize() const { return m_Size; }
-		std::uint32_t GetOffset() const { return m_Offset; }
+		[[nodiscard]] auto get_name() const -> const std::string& { return name; }
+		[[nodiscard]] auto get_type() const -> ShaderUniformType { return type; }
+		[[nodiscard]] auto get_size() const -> std::uint32_t { return size; }
+		[[nodiscard]] auto get_offset() const -> std::uint32_t { return offset; }
 
 	private:
-		std::string m_Name;
-		ShaderUniformType m_Type = ShaderUniformType::None;
-		std::uint32_t m_Size = 0;
-		std::uint32_t m_Offset = 0;
+		std::string name;
+		ShaderUniformType type = ShaderUniformType::None;
+		std::uint32_t size = 0;
+		std::uint32_t offset = 0;
 	};
 
 	struct ShaderUniformBuffer {
@@ -109,22 +109,22 @@ namespace Reflection {
 	class ShaderResourceDeclaration {
 	public:
 		ShaderResourceDeclaration() = default;
-		ShaderResourceDeclaration(std::string name, std::uint32_t resourceRegister, std::uint32_t count)
-			: m_Name(std::move(name))
-			, m_Register(resourceRegister)
-			, m_Count(count)
+		ShaderResourceDeclaration(std::string input_name, std::uint32_t reg, std::uint32_t input_count)
+			: name(std::move(input_name))
+			, resource_register(reg)
+			, count(input_count)
 		{
 		}
 		~ShaderResourceDeclaration() = default;
 
-		[[nodiscard]] virtual auto get_name() const -> const std::string& { return m_Name; }
-		[[nodiscard]] virtual auto get_register() const -> std::uint32_t { return m_Register; }
-		[[nodiscard]] virtual auto get_count() const -> std::uint32_t { return m_Count; }
+		[[nodiscard]] virtual auto get_name() const -> const std::string& { return name; }
+		[[nodiscard]] virtual auto get_register() const -> std::uint32_t { return resource_register; }
+		[[nodiscard]] virtual auto get_count() const -> std::uint32_t { return count; }
 
 	private:
-		std::string m_Name;
-		std::uint32_t m_Register = 0;
-		std::uint32_t m_Count = 0;
+		std::string name;
+		std::uint32_t resource_register = 0;
+		std::uint32_t count = 0;
 	};
 } // namespace Reflection
 

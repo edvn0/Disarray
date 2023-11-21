@@ -72,10 +72,14 @@ public:
 
 	[[nodiscard]] virtual auto get_image_count() const -> std::uint32_t = 0;
 	[[nodiscard]] virtual auto get_current_frame_index() const -> FrameIndex = 0;
+
+	[[nodiscard]] virtual auto get_device() const -> const Device& = 0;
 };
 
 class Renderer : public ReferenceCountable {
 public:
+	~Renderer() override;
+
 	virtual void construct_sub_renderers(const Disarray::Device&, Disarray::App&) = 0;
 
 	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear, const RenderAreaExtent&) = 0;
@@ -216,19 +220,20 @@ public:
 	template <class Func> static auto submit(Func&& func) { get_render_command_queue().allocate(std::forward<Func>(func)); }
 
 	static auto execute_queue() { get_render_command_queue().execute(); }
-
 	static auto get_render_command_queue() -> RenderCommandQueue& { return command_queue; }
 
+	static auto get_white_texture() -> const auto& { return *white_texture; }
+	static auto get_black_texture() -> const auto& { return *black_texture; }
+
 protected:
-	explicit Renderer(Scope<IGraphicsResource> resource)
-		: graphics_resource { std::move(resource) }
-	{
-	}
+	explicit Renderer(Scope<IGraphicsResource> resource);
 
 private:
 	Scope<IGraphicsResource> graphics_resource { nullptr };
 
 	static inline RenderCommandQueue command_queue { {} };
+	static inline Ref<Disarray::Texture> white_texture { nullptr };
+	static inline Ref<Disarray::Texture> black_texture { nullptr };
 };
 
 } // namespace Disarray

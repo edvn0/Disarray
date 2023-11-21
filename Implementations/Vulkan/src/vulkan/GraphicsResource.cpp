@@ -45,7 +45,7 @@ GraphicsResource::GraphicsResource(const Disarray::Device& dev, const Disarray::
 	initialise_descriptors();
 }
 
-void GraphicsResource::recreate(bool should_clean, const Extent& extent) { initialise_descriptors(should_clean); }
+void GraphicsResource::recreate(bool should_clean, const Extent&) { initialise_descriptors(should_clean); }
 
 namespace {
 	auto create_set_zero_bindings()
@@ -228,7 +228,7 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 	layouts = { set_zero_ubos_layout };
 	static constexpr auto descriptor_pool_max_size = 1000;
 
-	const std::array<VkDescriptorPoolSize, 12> sizes = [](auto size) {
+	const std::array<VkDescriptorPoolSize, 12> sizes = []() {
 		std::array<VkDescriptorPoolSize, 12> temp {};
 		temp.at(0) = { VK_DESCRIPTOR_TYPE_SAMPLER, descriptor_pool_max_size };
 		temp.at(1) = { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, descriptor_pool_max_size };
@@ -243,7 +243,7 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 		temp.at(10) = { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, descriptor_pool_max_size };
 		temp.at(11) = { VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK, descriptor_pool_max_size };
 		return temp;
-	}(descriptor_pool_max_size);
+	}();
 
 	auto pool_create_info = vk_structures<VkDescriptorPoolCreateInfo> {}();
 	pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -251,7 +251,9 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 	pool_create_info.pPoolSizes = sizes.data();
 	pool_create_info.maxSets = descriptor_pool_max_size * static_cast<std::uint32_t>(sizes.size());
 
-	verify(vkCreateDescriptorPool(vk_device, &pool_create_info, nullptr, &pool));
+	pool = make_scope<DescriptorAllocationPool>(device, swapchain_image_count);
+
+	verify(vkCreateDescriptorPool(vk_device, &pool_create_info, nullptr, &pool->pool));
 
 	std::vector<VkDescriptorSetLayout> desc_layouts(layouts.size());
 	for (std::size_t i = 0; i < desc_layouts.size(); i++) {
@@ -260,7 +262,7 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 
 	VkDescriptorSetAllocateInfo alloc_info {};
 	alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	alloc_info.descriptorPool = pool;
+	alloc_info.descriptorPool = pool->pool;
 	alloc_info.descriptorSetCount = static_cast<std::uint32_t>(desc_layouts.size());
 	alloc_info.pSetLayouts = desc_layouts.data();
 
@@ -274,12 +276,25 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 
 void GraphicsResource::allocate_descriptor_sets(VkDescriptorSetAllocateInfo& allocation_info, std::vector<VkDescriptorSet>& output)
 {
-	auto* vk_device = supply_cast<Vulkan::Device>(device);
+	auto* vk_device = supply_cast<Vulkan::Device>(pool->device);
 	allocation_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocation_info.descriptorPool = pool;
-	allocation_info.descriptorSetCount = swapchain_image_count;
+	allocation_info.descriptorPool = pool->pool;
+
+	// TODO(EdwinC): Maybe this should not be implied
+	allocation_info.descriptorSetCount = !output.empty() ? static_cast<std::uint32_t>(output.size()) : pool->image_count;
 
 	vkAllocateDescriptorSets(vk_device, &allocation_info, output.data());
+}
+
+void GraphicsResource::allocate_descriptor_sets(VkDescriptorSetAllocateInfo& allocation_info, VkDescriptorSet& output)
+{
+	auto* vk_device = supply_cast<Vulkan::Device>(pool->device);
+	allocation_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocation_info.descriptorPool = pool->pool;
+
+	allocation_info.descriptorSetCount = 1;
+
+	vkAllocateDescriptorSets(vk_device, &allocation_info, &output);
 }
 
 void GraphicsResource::expose_to_shaders(const Disarray::UniformBuffer& uniform_buffer, DescriptorSet set, DescriptorBinding binding)
@@ -362,13 +377,18 @@ void GraphicsResource::expose_to_shaders(std::span<const Disarray::Texture*> tex
 	internal_expose_to_shaders(cast_to<Vulkan::Image>(textures[0]->get_image()).get_descriptor_info().sampler, image_infos, set, binding);
 }
 
+GraphicsResource::DescriptorAllocationPool::~DescriptorAllocationPool()
+{
+	vkDestroyDescriptorPool(supply_cast<Vulkan::Device>(device), pool, nullptr);
+}
+
 void GraphicsResource::cleanup_graphics_resource()
 {
 	const auto& vk_device = supply_cast<Vulkan::Device>(device);
 	descriptor_sets.clear();
 	Collections::for_each(layouts, [&vk_device](VkDescriptorSetLayout& layout) { vkDestroyDescriptorSetLayout(vk_device, layout, nullptr); });
 	layouts = {};
-	vkDestroyDescriptorPool(vk_device, pool, nullptr);
+	pool.reset();
 }
 
 GraphicsResource::~GraphicsResource() { cleanup_graphics_resource(); }

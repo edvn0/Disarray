@@ -23,11 +23,13 @@
 
 namespace Disarray::Runtime {
 
-static auto was_initialised() -> bool&
-{
-	static bool initialised { false };
-	return std::ref(initialised);
-}
+namespace {
+	auto was_initialised() -> bool&
+	{
+		static bool initialised { false };
+		return std::ref(initialised);
+	}
+} // namespace
 
 struct Detail::CompilerIntrinsics {
 	Scope<IncludeDirectoryIncluder> include_dir_includer = make_scope<IncludeDirectoryIncluder>("Assets/Shaders/Include");

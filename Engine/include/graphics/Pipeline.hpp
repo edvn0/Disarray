@@ -276,6 +276,9 @@ public:
 	virtual auto get_render_pass() const -> const Disarray::RenderPass& = 0;
 	virtual auto get_framebuffer() const -> const Disarray::Framebuffer& = 0;
 
+	auto get_vertex_shader() const -> const Ref<Shader>& { return get_properties().vertex_shader; };
+	auto get_fragment_shader() const -> const Ref<Shader>& { return get_properties().fragment_shader; };
+
 	[[nodiscard]] auto is_valid() const -> bool { return props.is_valid(); };
 
 	[[nodiscard]] auto has_shader_with_name(std::string_view name) const -> bool

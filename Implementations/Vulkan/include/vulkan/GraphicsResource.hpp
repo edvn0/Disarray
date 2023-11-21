@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "core/DisarrayObject.hpp"
+#include "graphics/Device.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
@@ -59,11 +60,16 @@ public:
 	[[nodiscard]] auto get_image_count() const -> std::uint32_t override { return swapchain_image_count; }
 	[[nodiscard]] auto get_current_frame_index() const -> FrameIndex override { return swapchain.get_current_frame_index(); }
 
-	void allocate_descriptor_sets(VkDescriptorSetAllocateInfo& info, std::vector<VkDescriptorSet>& output_sets);
+	[[nodiscard]] auto get_device() const -> const Disarray::Device& override { return device; }
+
+	static void allocate_descriptor_sets(VkDescriptorSetAllocateInfo& info, std::vector<VkDescriptorSet>& output_sets);
+	static void allocate_descriptor_sets(VkDescriptorSetAllocateInfo& info, VkDescriptorSet& output_sets);
 
 private:
 	void cleanup_graphics_resource();
 	auto descriptor_write_sets_per_frame(DescriptorSet descriptor_set) -> std::vector<VkWriteDescriptorSet>;
+	void internal_expose_to_shaders(
+		VkSampler sampler, const std::vector<VkDescriptorImageInfo>& image_infos, DescriptorSet set, DescriptorBinding binding);
 
 	const Disarray::Device& device;
 	const Disarray::Swapchain& swapchain;
@@ -72,15 +78,24 @@ private:
 	Disarray::PipelineCache pipeline_cache;
 	Disarray::TextureCache texture_cache;
 
-	VkDescriptorPool pool { nullptr };
+	struct DescriptorAllocationPool {
+		DescriptorAllocationPool(const Disarray::Device& dev, std::uint32_t count) noexcept
+			: device(dev)
+			, image_count(count) {};
+
+		~DescriptorAllocationPool();
+
+		const Disarray::Device& device;
+		std::uint32_t image_count;
+		VkDescriptorPool pool;
+	};
+	static inline Scope<DescriptorAllocationPool> pool {};
+
 	PushConstant pc {};
 
 	std::unordered_map<FrameIndex, std::vector<VkDescriptorSet>> descriptor_sets;
 	std::vector<VkDescriptorSetLayout> layouts;
 	void initialise_descriptors(bool should_clean = false);
-
-	void internal_expose_to_shaders(
-		VkSampler sampler, const std::vector<VkDescriptorImageInfo>& image_infos, DescriptorSet set, DescriptorBinding binding);
 };
 
 } // namespace Disarray::Vulkan

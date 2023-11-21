@@ -16,6 +16,7 @@
 #include "core/Formatters.hpp"
 #include "core/Log.hpp"
 #include "graphics/Texture.hpp"
+#include "scene/SceneRenderer.hpp"
 #include "util/Timer.hpp"
 
 namespace Disarray {
