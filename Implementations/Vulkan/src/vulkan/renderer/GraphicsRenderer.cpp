@@ -9,6 +9,7 @@
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/IndexBuffer.hpp"
+#include "graphics/MaterialTable.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "graphics/Texture.hpp"
@@ -29,6 +30,113 @@
 #include "vulkan/VertexBuffer.hpp"
 
 namespace Disarray::Vulkan {
+
+static const std::vector<std::vector<VkWriteDescriptorSet>>& RT_RetrieveOrCreateUniformBufferWriteDescriptors(
+	Ref<Vulkan::Material> material, const BufferSet<Disarray::UniformBuffer>* ubo_set)
+{
+	// UniformBufferSet -> Shader Hash -> Frame -> WriteDescriptor
+	std::unordered_map<BufferSet<Disarray::UniformBuffer>*, std::unordered_map<uint64_t, std::vector<std::vector<VkWriteDescriptorSet>>>>
+		UniformBufferWriteDescriptorCache;
+
+	size_t shaderHash = material->GetShader()->GetHash();
+	if (UniformBufferWriteDescriptorCache.find(&ubo_set) != UniformBufferWriteDescriptorCache.end()) {
+		const auto& shaderMap = UniformBufferWriteDescriptorCache.at(&ubo_set);
+		if (shaderMap.find(shaderHash) != shaderMap.end()) {
+			const auto& writeDescriptors = shaderMap.at(shaderHash);
+			return writeDescriptors;
+		}
+	}
+
+	uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
+	Ref<VulkanShader> vulkanShader = vulkanMaterial->GetShader().As<VulkanShader>();
+	if (vulkanShader->HasDescriptorSet(0)) {
+		const auto& shaderDescriptorSets = vulkanShader->GetShaderDescriptorSets();
+		if (!shaderDescriptorSets.empty()) {
+			for (auto&& [binding, shaderUB] : shaderDescriptorSets[0].UniformBuffers) {
+				auto& writeDescriptors = UniformBufferWriteDescriptorCache[&ubo_set][shaderHash];
+				writeDescriptors.resize(framesInFlight);
+				for (uint32_t frame = 0; frame < framesInFlight; frame++) {
+					Ref<VulkanUniformBuffer> uniformBuffer = uniformBufferSet->Get(binding, 0, frame); // set = 0 for now
+
+					VkWriteDescriptorSet writeDescriptorSet = {};
+					writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+					writeDescriptorSet.descriptorCount = 1;
+					writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+					writeDescriptorSet.pBufferInfo = &uniformBuffer->GetDescriptorBufferInfo();
+					writeDescriptorSet.dstBinding = uniformBuffer->GetBinding();
+					writeDescriptors[frame].push_back(writeDescriptorSet);
+				}
+			}
+		}
+	}
+
+	return UniformBufferWriteDescriptorCache[&ubo_set][shaderHash];
+}
+
+static const std::vector<std::vector<VkWriteDescriptorSet>>& RT_RetrieveOrCreateStorageBufferWriteDescriptors(
+	Ref<StorageBufferSet> storageBufferSet, Ref<VulkanMaterial> vulkanMaterial)
+{
+	std::unordered_map<StorageBufferSet*, std::unordered_map<uint64_t, std::vector<std::vector<VkWriteDescriptorSet>>>>
+		StorageBufferWriteDescriptorCache;
+
+	size_t shaderHash = vulkanMaterial->GetShader()->GetHash();
+	if (s_Data->StorageBufferWriteDescriptorCache.find(storageBufferSet.Raw()) != s_Data->StorageBufferWriteDescriptorCache.end()) {
+		const auto& shaderMap = s_Data->StorageBufferWriteDescriptorCache.at(storageBufferSet.Raw());
+		if (shaderMap.find(shaderHash) != shaderMap.end()) {
+			const auto& writeDescriptors = shaderMap.at(shaderHash);
+			return writeDescriptors;
+		}
+	}
+
+	uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
+	Ref<VulkanShader> vulkanShader = vulkanMaterial->GetShader().As<VulkanShader>();
+	if (vulkanShader->HasDescriptorSet(0)) {
+		const auto& shaderDescriptorSets = vulkanShader->GetShaderDescriptorSets();
+		if (!shaderDescriptorSets.empty()) {
+			for (auto&& [binding, shaderSB] : shaderDescriptorSets[0].StorageBuffers) {
+				auto& writeDescriptors = s_Data->StorageBufferWriteDescriptorCache[storageBufferSet.Raw()][shaderHash];
+				writeDescriptors.resize(framesInFlight);
+				for (uint32_t frame = 0; frame < framesInFlight; frame++) {
+					Ref<VulkanStorageBuffer> storageBuffer = storageBufferSet->Get(binding, 0, frame); // set = 0 for now
+
+					VkWriteDescriptorSet writeDescriptorSet = {};
+					writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+					writeDescriptorSet.descriptorCount = 1;
+					writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+					writeDescriptorSet.pBufferInfo = &storageBuffer->GetDescriptorBufferInfo();
+					writeDescriptorSet.dstBinding = storageBuffer->GetBinding();
+					writeDescriptors[frame].push_back(writeDescriptorSet);
+				}
+			}
+		}
+	}
+
+	return s_Data->StorageBufferWriteDescriptorCache[storageBufferSet.Raw()][shaderHash];
+}
+
+void Renderer::update_material_for_rendering(
+	Ref<Vulkan::Material> material, const BufferSet<Disarray::UniformBuffer>* ubo_buffer, const BufferSet<Disarray::StorageBuffer>* sbo_buffer)
+{
+	if (ubo_buffer) {
+		auto writeDescriptors = RT_RetrieveOrCreateUniformBufferWriteDescriptors(ubo_buffer, material);
+		if (sbo_buffer) {
+			const auto& storageBufferWriteDescriptors = RT_RetrieveOrCreateStorageBufferWriteDescriptors(sbo_buffer, material);
+
+			const uint32_t framesInFlight = 3;
+			for (uint32_t frame = 0; frame < framesInFlight; frame++) {
+				writeDescriptors[frame].reserve(writeDescriptors[frame].size() + storageBufferWriteDescriptors[frame].size());
+				writeDescriptors[frame].insert(
+					writeDescriptors[frame].end(), storageBufferWriteDescriptors[frame].begin(), storageBufferWriteDescriptors[frame].end());
+			}
+		}
+
+		(void)writeDescriptors;
+		// material->RT_UpdateForRendering(writeDescriptors);
+	} else {
+		Log::info("Material Update", "Updating material");
+		// material->RT_UpdateForRendering();
+	}
+}
 
 struct VkDescriptorSetHash {
 	auto operator()(const VkDescriptorSet& descriptor_set) const -> std::size_t { return std::hash<VkDescriptorSet> {}(descriptor_set); }
@@ -441,6 +549,57 @@ void Renderer::set_viewport(Disarray::CommandExecutor& executor, const glm::vec2
 	viewport.minDepth = 0.0F;
 	viewport.maxDepth = 1.0F;
 	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+}
+
+void Renderer::bind_buffer(Disarray::CommandExecutor& executor, const Disarray::VertexBuffer& buffer)
+{
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
+	auto offsets = std::array<VkDeviceSize, 1> { 0 };
+	auto vk_buffer = supply_cast<Vulkan::VertexBuffer>(buffer);
+	vkCmdBindVertexBuffers(command_buffer, 0, 1, &vk_buffer, offsets.data());
+}
+
+void Renderer::bind_buffer(Disarray::CommandExecutor& executor, const Disarray::IndexBuffer& buffer)
+{
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
+	auto offsets = std::array<VkDeviceSize, 1> { 0 };
+	auto vk_buffer = supply_cast<Vulkan::IndexBuffer>(buffer);
+	vkCmdBindVertexBuffers(command_buffer, 0, 1, &vk_buffer, offsets.data());
+}
+
+void Renderer::draw_static_mesh(CommandExecutor& executor, const Pipeline& pipeline, const BufferSet<Disarray::UniformBuffer>& uniform_buffer_set,
+	const BufferSet<Disarray::StorageBuffer>& storage_buffer_set, const StaticSubmesh& submesh, const MaterialTable& material_table,
+	const TransformMatrix& transform)
+{
+	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
+
+	/*Ref<MeshSource> meshSource = mesh->GetMeshSource();
+	Ref<VulkanVertexBuffer> vulkanMeshVB = meshSource->GetVertexBuffer().As<VulkanVertexBuffer>();
+	VkBuffer vbMeshBuffer = vulkanMeshVB->GetVulkanBuffer();
+	VkDeviceSize offsets[1] = { 0 };
+	vkCmdBindVertexBuffers(command_buffer, 0, 1, &vbMeshBuffer, offsets);
+
+	auto vulkanMeshIB = Ref<VulkanIndexBuffer>(meshSource->GetIndexBuffer());
+	VkBuffer ibBuffer = vulkanMeshIB->GetVulkanBuffer();
+	vkCmdBindIndexBuffer(command_buffer, ibBuffer, 0, VK_INDEX_TYPE_UINT32);*/
+
+	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, supply_cast<Vulkan::Pipeline>(pipeline));
+
+	auto vk_material = material_table.get_material(submesh.MaterialIndex)->get_material().as<Vulkan::Material>();
+	update_material_for_rendering(vk_material, &uniform_buffer_set, &storage_buffer_set);
+
+	// NOTE: Descriptor Set 0 is owned by the renderer
+	std::array<VkDescriptorSet, 2> descriptorSets {};
+
+	auto* layout = cast_to<Vulkan::Pipeline>(pipeline).get_layout();
+	vkCmdBindDescriptorSets(
+		command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, (uint32_t)descriptorSets.size(), descriptorSets.data(), 0, nullptr);
+
+	// auto uniformStorageBuffer = vk_material->GetUniformStorageBuffer();
+	// vkCmdPushConstants(command_buffer, layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, uniformStorageBuffer.Size, uniformStorageBuffer.Data);
+
+	// add instance count!
+	vkCmdDrawIndexed(command_buffer, submesh.IndexCount, 1, submesh.BaseIndex, submesh.BaseVertex, 0);
 }
 
 } // namespace Disarray::Vulkan

@@ -135,6 +135,7 @@ public:
 		const Disarray::Mesh& mesh, const Disarray::Pipeline&, const Disarray::Material&, const TransformMatrix&, const ColourVector&) -> void;
 	auto draw_single_static_mesh(const Disarray::VertexBuffer& vertices, const Disarray::IndexBuffer& indices, const Disarray::Pipeline&,
 		const Disarray::Material&, const TransformMatrix&, const ColourVector&) -> void;
+	void draw_static_mesh(const Disarray::StaticMesh& mesh, const Disarray::MaterialTable& table, const TransformMatrix& transform);
 	/**
 	 * END ACTUAL DRAWING
 	 */

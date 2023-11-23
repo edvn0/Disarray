@@ -55,6 +55,11 @@ void ClientLayer::construct(App& app)
 	setup_filewatcher_and_threadpool(app.get_thread_pool());
 
 	scene = make_ref<Scene>(device, "Default scene");
+	auto sponza = scene->create("StaticMesh");
+
+	auto sponza_mesh = StaticMesh::construct(device, scene_renderer.get_pipeline_cache(), "Assets/Models/sponza/sponza.obj");
+	sponza.add_component<Components::StaticMesh>(sponza_mesh);
+
 	scene->construct(app);
 	icon_play = scene_renderer.get_texture_cache().get("Play");
 	icon_stop = scene_renderer.get_texture_cache().get("Stop");

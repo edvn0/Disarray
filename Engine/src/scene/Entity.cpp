@@ -1,11 +1,10 @@
 #include "DisarrayPCH.hpp"
 
-#include "scene/Entity.hpp"
-
 #include <fmt/format.h>
 
 #include "core/Log.hpp"
 #include "scene/Components.hpp"
+#include "scene/Entity.hpp"
 #include "scene/Scene.hpp"
 #include "util/FormattingUtilities.hpp"
 
@@ -51,6 +50,30 @@ Entity::Entity(Scene* s, entt::entity entity, std::string_view n)
 	, name(n)
 	, identifier(entity)
 {
+}
+
+auto Entity::compute_transform() const -> glm::mat4
+{
+	glm::mat4 transform(1.0f);
+	const Components::Transform& transform_component = get_components<Components::Transform>();
+
+	if (!has_component<Components::Inheritance>()) {
+		return transform_component.compute();
+	}
+
+	const auto& inheritance = get_components<Components::Inheritance>();
+	if (inheritance.parent != invalid_identifier) {
+		auto view = scene->get_registry().view<const Components::ID>();
+		for (auto&& [handle, id] : view.each()) {
+			if (id.identifier == inheritance.parent) {
+				const auto& parent_transform = scene->get_registry().get<Components::Transform>(handle);
+				transform = parent_transform.compute();
+				break;
+			}
+		}
+	}
+
+	return transform * transform_component.compute();
 }
 
 ImmutableEntity::ImmutableEntity(const Scene* scene, entt::entity handle)

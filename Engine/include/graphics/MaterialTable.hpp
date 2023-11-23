@@ -74,10 +74,10 @@ public:
 	void set_material(std::uint32_t index, Ref<MaterialAsset> material);
 	void clear_material(std::uint32_t index);
 
-	Ref<MaterialAsset> get_material(std::uint32_t materialIndex) const
+	Ref<MaterialAsset> get_material(std::uint32_t material_index) const
 	{
-		ensure(has_material(materialIndex));
-		return materials.at(materialIndex);
+		ensure(has_material(material_index));
+		return materials.at(material_index);
 	}
 	auto get_materials() -> std::unordered_map<std::uint32_t, Ref<MaterialAsset>>& { return materials; }
 	auto get_materials() const -> const std::unordered_map<std::uint32_t, Ref<MaterialAsset>>& { return materials; }

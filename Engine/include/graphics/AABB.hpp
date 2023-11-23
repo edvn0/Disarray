@@ -56,6 +56,31 @@ public:
 	[[nodiscard]] auto calculate_scale_matrix() const -> glm::mat4;
 	[[nodiscard]] auto middle_point() const -> glm::vec3;
 
+	void update(const glm::vec3& vertex_position)
+	{
+		min_max_x.min = glm::min(vertex_position.x, min_max_x.min);
+		min_max_y.min = glm::min(vertex_position.y, min_max_y.min);
+		min_max_z.min = glm::min(vertex_position.z, min_max_z.min);
+		// Generate for max
+		min_max_x.max = glm::max(vertex_position.x, min_max_x.max);
+		min_max_y.max = glm::max(vertex_position.y, min_max_y.max);
+		min_max_z.max = glm::max(vertex_position.z, min_max_z.max);
+	}
+
+	void update(const glm::vec3& new_min, const glm::vec3& new_max)
+	{
+		min_max_x.min = glm::min(new_min.x, min_max_x.min);
+		min_max_y.min = glm::min(new_min.y, min_max_y.min);
+		min_max_z.min = glm::min(new_min.z, min_max_z.min);
+		// Generate for max
+		min_max_x.max = glm::max(new_max.x, min_max_x.max);
+		min_max_y.max = glm::max(new_max.y, min_max_y.max);
+		min_max_z.max = glm::max(new_max.z, min_max_z.max);
+	}
+
+	auto max_vector() const { return glm::vec4 { min_max_x.max, min_max_y.max, min_max_z.max, 1.0F }; }
+	auto min_vector() const { return glm::vec4 { min_max_x.min, min_max_y.min, min_max_z.min, 1.0F }; }
+
 private:
 	AABBRange min_max_x {};
 	AABBRange min_max_y {};

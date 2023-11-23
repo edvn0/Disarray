@@ -20,6 +20,7 @@
 #include "graphics/UniformBuffer.hpp"
 #include "graphics/VertexBuffer.hpp"
 #include "graphics/VertexTypes.hpp"
+#include "vulkan/Material.hpp"
 
 using VkPipelineLayout = struct VkPipelineLayout_T*;
 using VkDevice = struct VkDevice_T*;
@@ -50,6 +51,8 @@ public:
 	// IGraphics
 	void draw_mesh_instanced(Disarray::CommandExecutor&, std::size_t count, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&,
 		const Disarray::Pipeline&) override;
+	void draw_static_mesh(CommandExecutor&, const Pipeline&, const BufferSet<Disarray::UniformBuffer>&, const BufferSet<Disarray::StorageBuffer>&,
+		const StaticSubmesh&, const MaterialTable&, const TransformMatrix&) override;
 
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&,
 		const Disarray::Material&, const TransformMatrix&, const ColourVector&) override;
@@ -57,10 +60,9 @@ public:
 		const TransformMatrix&, const ColourVector&) override;
 	void draw_mesh(
 		Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const TransformMatrix&, const ColourVector&) override;
-	void draw_mesh(
-		Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Material&, const TransformMatrix&, const ColourVector&) override;
-	void draw_mesh_without_bind(
-		Disarray::CommandExecutor&, const Disarray::Mesh&) override;
+	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Material&, const TransformMatrix&,
+		const ColourVector&) override;
+	void draw_mesh_without_bind(Disarray::CommandExecutor&, const Disarray::Mesh&) override;
 
 	void draw_billboarded_text(std::string_view, const TransformMatrix&, float, const ColourVector&) override;
 	void draw_text(std::string_view, const glm::uvec2&, float, const ColourVector&) override;
@@ -90,8 +92,11 @@ public:
 	void bind_descriptor_sets(Disarray::CommandExecutor&, const Disarray::Pipeline&) override;
 
 	void bind_buffer_set(Disarray::BufferSet<Disarray::UniformBuffer>& uniform_buffer_set) override;
-	void bind_buffer_set(Disarray::BufferSet<Disarray::UniformBuffer>& uniform_buffer_set,
-		Disarray::BufferSet<Disarray::StorageBuffer>& storage_buffer_set) override;
+	void bind_buffer_set(
+		Disarray::BufferSet<Disarray::UniformBuffer>& uniform_buffer_set, Disarray::BufferSet<Disarray::StorageBuffer>& storage_buffer_set) override;
+
+	void bind_buffer(Disarray::CommandExecutor&, const Disarray::VertexBuffer&) override;
+	void bind_buffer(Disarray::CommandExecutor&, const Disarray::IndexBuffer&) override;
 
 	void push_constant(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const void* data, std::size_t size) override;
 	void push_constant(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline) override;
@@ -103,6 +108,9 @@ private:
 	void add_geometry_to_batch(Geometry, const GeometryProperties&);
 	void draw_billboard_quad(Disarray::CommandExecutor&, const Disarray::Pipeline&);
 	void bind_descriptor_sets(Disarray::CommandExecutor&, const Disarray::Pipeline&, const std::span<const VkDescriptorSet>&);
+
+	void update_material_for_rendering(
+		Ref<Vulkan::Material> material, const BufferSet<Disarray::UniformBuffer>* ubo_buffer, const BufferSet<Disarray::StorageBuffer>* sbo_buffer);
 
 	const Disarray::Device& device;
 	const Disarray::Swapchain& swapchain;

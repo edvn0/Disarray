@@ -45,9 +45,13 @@ namespace Logging {
 
 	auto Logger::Logger::debug(const std::string& message) -> void { logger_data->logger.debug(message); }
 
+	auto Logger::Logger::trace(const std::string& message) -> void { logger_data->logger.trace(message); }
+
 	auto Logger::Logger::to_file(const std::string& message) -> void { logger_data->logger.trace(message); }
 
 	auto Logger::Logger::info(const std::string& message) -> void { logger_data->logger.info(message); }
+
+	auto Logger::Logger::warn(const std::string& message) -> void { logger_data->logger.warn(message); }
 
 	auto Logger::Logger::error(const std::string& message) -> void { logger_data->logger.error(message); }
 

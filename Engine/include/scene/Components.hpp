@@ -82,6 +82,17 @@ struct Mesh {
 };
 template <> inline constexpr std::string_view component_name<Mesh> = "Mesh";
 
+struct StaticMesh {
+	StaticMesh() = default;
+	explicit StaticMesh(Ref<Disarray::StaticMesh> input)
+		: mesh(std::move(input)) {};
+
+	Ref<Disarray::StaticMesh> mesh { nullptr };
+	Ref<Disarray::MaterialTable> material_table { MaterialTable::construct() };
+	bool draw_aabb { false };
+};
+template <> inline constexpr std::string_view component_name<StaticMesh> = "StaticMesh";
+
 struct Material {
 	Material() = default;
 	explicit Material(Ref<Disarray::Material>);
@@ -222,7 +233,7 @@ template <> inline constexpr std::string_view component_name<Script> = "Script";
 
 struct Inheritance {
 	std::unordered_set<Identifier> children {};
-	Identifier parent {};
+	Identifier parent { invalid_identifier };
 
 	void add_child(Entity&);
 

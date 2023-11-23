@@ -341,6 +341,16 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 			scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, computed_transform, texture.colour);
 		}
 	}
+
+	auto view = registry.view<const Components::StaticMesh, const Components::Transform>();
+	for (auto&& [handle, mesh, transform] : view.each()) {
+		if (mesh.mesh == nullptr || mesh.material_table == nullptr) {
+			continue;
+		}
+		Entity entity { this, handle };
+		auto entity_transform = entity.compute_transform();
+		scene_renderer.draw_static_mesh(*mesh.mesh, *mesh.material_table, entity_transform);
+	}
 }
 
 void Scene::draw_shadows(SceneRenderer& scene_renderer)

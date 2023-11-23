@@ -238,4 +238,10 @@ void Material::recreate(bool should_clean, const Extent&) { recreate_material(sh
 
 void Material::force_recreation() { recreate_material(true); }
 
+POCMaterial::POCMaterial(const Disarray::Device& dev, POCMaterialProperties properties)
+	: Disarray::POCMaterial(std::move(properties))
+	, device(dev)
+{
+}
+
 } // namespace Disarray::Vulkan

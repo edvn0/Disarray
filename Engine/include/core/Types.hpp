@@ -111,7 +111,7 @@ auto supply_cast(From&& obj) -> decltype(auto)
 }
 
 template <class To, class From>
-	requires(std::is_base_of_v<From, To> && requires(To t) { t.supply(); })
+	requires(std::is_base_of_v<From, To> && requires(To& t) { t.supply(); })
 auto supply_cast(From& obj) -> decltype(auto)
 {
 	return polymorphic_cast<To>(obj).supply();

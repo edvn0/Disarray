@@ -18,6 +18,7 @@ public:
 	void set_data(const void*, std::size_t size) override;
 
 	auto supply() const -> VkBuffer;
+	auto supply() -> VkBuffer;
 	auto count() const -> std::size_t override;
 	auto get_raw() -> void* override;
 	auto get_raw() const -> void* override;

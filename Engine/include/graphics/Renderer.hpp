@@ -19,6 +19,7 @@
 #include "graphics/StorageBuffer.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/TextRenderer.hpp"
+#include "graphics/Texture.hpp"
 #include "graphics/UniformBuffer.hpp"
 #include "graphics/UniformBufferSet.hpp"
 #include "graphics/VertexBuffer.hpp"
@@ -139,6 +140,9 @@ public:
 		Disarray::BufferSet<Disarray::UniformBuffer>& uniform_buffer_set, Disarray::BufferSet<Disarray::StorageBuffer>& storage_buffer_set)
 		= 0;
 
+	virtual void bind_buffer(Disarray::CommandExecutor&, const VertexBuffer&) = 0;
+	virtual void bind_buffer(Disarray::CommandExecutor&, const IndexBuffer&) = 0;
+
 	virtual void push_constant(Disarray::CommandExecutor&, const Disarray::Pipeline&, const void* data, std::size_t size) = 0;
 	virtual void push_constant(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline) = 0;
 
@@ -159,12 +163,13 @@ public:
 	virtual void draw_mesh_instanced(
 		CommandExecutor&, std::size_t count, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&)
 		= 0;
+	virtual void draw_static_mesh(CommandExecutor&, const Pipeline&, const BufferSet<UniformBuffer>&, const BufferSet<StorageBuffer>&,
+		const StaticSubmesh&, const MaterialTable&, const TransformMatrix&)
+		= 0;
 	/**
 		note: Intended usage is for submeshes, where the pipeline and descriptor sets will be constants (for now!)
 	*/
-	virtual void draw_mesh_without_bind(
-		CommandExecutor&, const Disarray::Mesh&)
-		= 0;
+	virtual void draw_mesh_without_bind(CommandExecutor&, const Disarray::Mesh&) = 0;
 	virtual void draw_planar_geometry(Disarray::Geometry, const GeometryProperties&) = 0;
 
 	virtual void draw_text(std::string_view text, const glm::uvec2& position, float size, const ColourVector&) = 0;
@@ -222,8 +227,8 @@ public:
 	static auto execute_queue() { get_render_command_queue().execute(); }
 	static auto get_render_command_queue() -> RenderCommandQueue& { return command_queue; }
 
-	static auto get_white_texture() -> const auto& { return *white_texture; }
-	static auto get_black_texture() -> const auto& { return *black_texture; }
+	static auto get_white_texture() -> const Ref<Texture>& { return white_texture; }
+	static auto get_black_texture() -> const Ref<Texture>& { return black_texture; }
 
 protected:
 	explicit Renderer(Scope<IGraphicsResource> resource);

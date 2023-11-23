@@ -35,4 +35,13 @@ private:
 	bool needs_update { true };
 };
 
+class POCMaterial : public Disarray::POCMaterial {
+public:
+	POCMaterial(const Disarray::Device& dev, POCMaterialProperties properties);
+	~POCMaterial() override = default;
+
+private:
+	const Disarray::Device& device;
+};
+
 } // namespace Disarray::Vulkan

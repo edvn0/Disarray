@@ -23,5 +23,6 @@ auto VertexBuffer::count() const -> std::size_t { return base_buffer.count(); }
 auto VertexBuffer::get_raw() -> void* { return base_buffer.get_raw(); }
 auto VertexBuffer::get_raw() const -> void* { return base_buffer.get_raw(); }
 auto VertexBuffer::supply() const -> VkBuffer { return base_buffer.supply(); }
+auto VertexBuffer::supply() -> VkBuffer { return base_buffer.supply(); }
 
 } // namespace Disarray::Vulkan
