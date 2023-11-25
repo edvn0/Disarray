@@ -55,6 +55,12 @@ template <AllowedVectorTypes T> [[nodiscard]] inline auto read_from_file(std::st
 	Reader reader {};
 	return reader.read_from_file(path, output);
 }
+template <AllowedVectorTypes T> [[nodiscard]] inline auto read_from_file(Pathlike auto path, std::string& output) -> bool
+{
+	using Reader = Detail::GenericFileReader<T>;
+	Reader reader {};
+	return reader.read_from_file(path, output);
+}
 
 template <AllowedVectorTypes T> [[nodiscard]] auto read_from_file(std::string_view path, std::vector<T>& output) -> bool
 {
@@ -64,6 +70,7 @@ template <AllowedVectorTypes T> [[nodiscard]] auto read_from_file(std::string_vi
 }
 
 [[nodiscard]] inline auto read_from_file(std::string_view path, std::string& output) -> bool { return read_from_file<char>(path, output); }
+[[nodiscard]] inline auto read_from_file(Pathlike auto path, std::string& output) -> bool { return read_from_file<char>(path, output); }
 
 [[nodiscard]] inline auto file_size(Pathlike auto pathlike) -> std::size_t
 {

@@ -24,6 +24,7 @@ set(SOURCES
         include/vulkan/PhysicalDevice.hpp
         include/vulkan/BaseBuffer.hpp
         include/vulkan/Shader.hpp
+        include/vulkan/UnifiedShader.hpp
         include/vulkan/SwapchainUtilities.hpp
         include/vulkan/ImageUtilities.hpp
         include/vulkan/Image.hpp
@@ -38,6 +39,7 @@ set(SOURCES
         include/vulkan/DebugMarker.hpp
         src/vulkan/CleanupAwaiter.cpp
         src/vulkan/Shader.cpp
+        src/vulkan/UnifiedShader.cpp
         src/vulkan/CommandExecutor.cpp
         src/vulkan/UI.cpp
         src/vulkan/MemoryAllocator.cpp

@@ -43,6 +43,7 @@
 #include "graphics/Swapchain.hpp"
 #include "graphics/Texture.hpp"
 #include "graphics/TextureCache.hpp"
+#include "graphics/UnifiedShader.hpp"
 #include "scene/Camera.hpp"
 #include "scene/Components.hpp"
 #include "scene/CppScript.hpp"

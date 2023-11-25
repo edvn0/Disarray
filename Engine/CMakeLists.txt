@@ -26,6 +26,7 @@ set(ENGINE_SOURCES
         include/graphics/Swapchain.hpp
         include/graphics/PhysicalDevice.hpp
         include/graphics/Shader.hpp
+        include/graphics/UnifiedShader.hpp
         include/graphics/PushConstantLayout.hpp
         include/graphics/Image.hpp
         include/graphics/ResourceCache.hpp
@@ -97,6 +98,7 @@ set(ENGINE_SOURCES
         Disarray.hpp
         src/graphics/MaterialTable.cpp
         src/graphics/Shader.cpp
+        src/graphics/UnifiedShader.cpp
         src/graphics/AABB.cpp
         src/graphics/CommandExecutor.cpp
         src/graphics/RendererProperties.cpp

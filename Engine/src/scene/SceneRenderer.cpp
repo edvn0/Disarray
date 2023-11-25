@@ -509,7 +509,7 @@ void SceneRenderer::draw_static_mesh(const Disarray::StaticMesh& mesh, const Dis
 {
 	const auto& vertex_buffer = mesh.get_vertices();
 	const auto& index_buffer = mesh.get_indices();
-	renderer->bind_mesh_buffers(vertex_buffer, index_buffer);
+	// 	renderer->bind_mesh_buffers(vertex_buffer, index_buffer);
 
 	for (const auto& submesh : mesh.get_submeshes()) {
 		renderer->draw_static_mesh(

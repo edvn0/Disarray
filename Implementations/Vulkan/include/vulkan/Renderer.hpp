@@ -51,8 +51,8 @@ public:
 	// IGraphics
 	void draw_mesh_instanced(Disarray::CommandExecutor&, std::size_t count, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&,
 		const Disarray::Pipeline&) override;
-	void draw_static_mesh(CommandExecutor&, const Pipeline&, const BufferSet<Disarray::UniformBuffer>&, const BufferSet<Disarray::StorageBuffer>&,
-		const StaticSubmesh&, const MaterialTable&, const TransformMatrix&) override;
+	void draw_static_mesh(Disarray::CommandExecutor&, const Disarray::Pipeline&, const BufferSet<Disarray::UniformBuffer>&,
+		const BufferSet<Disarray::StorageBuffer>&, const StaticSubmesh&, const Disarray::MaterialTable&, const TransformMatrix&) override;
 
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&,
 		const Disarray::Material&, const TransformMatrix&, const ColourVector&) override;

@@ -31,6 +31,7 @@
 
 namespace Disarray::Vulkan {
 
+/*
 static const std::vector<std::vector<VkWriteDescriptorSet>>& RT_RetrieveOrCreateUniformBufferWriteDescriptors(
 	Ref<Vulkan::Material> material, const BufferSet<Disarray::UniformBuffer>* ubo_set)
 {
@@ -113,12 +114,13 @@ static const std::vector<std::vector<VkWriteDescriptorSet>>& RT_RetrieveOrCreate
 
 	return s_Data->StorageBufferWriteDescriptorCache[storageBufferSet.Raw()][shaderHash];
 }
+*/
 
 void Renderer::update_material_for_rendering(
 	Ref<Vulkan::Material> material, const BufferSet<Disarray::UniformBuffer>* ubo_buffer, const BufferSet<Disarray::StorageBuffer>* sbo_buffer)
 {
 	if (ubo_buffer) {
-		auto writeDescriptors = RT_RetrieveOrCreateUniformBufferWriteDescriptors(ubo_buffer, material);
+		/*auto writeDescriptors = RT_RetrieveOrCreateUniformBufferWriteDescriptors(ubo_buffer, material);
 		if (sbo_buffer) {
 			const auto& storageBufferWriteDescriptors = RT_RetrieveOrCreateStorageBufferWriteDescriptors(sbo_buffer, material);
 
@@ -129,8 +131,8 @@ void Renderer::update_material_for_rendering(
 					writeDescriptors[frame].end(), storageBufferWriteDescriptors[frame].begin(), storageBufferWriteDescriptors[frame].end());
 			}
 		}
+		*/
 
-		(void)writeDescriptors;
 		// material->RT_UpdateForRendering(writeDescriptors);
 	} else {
 		Log::info("Material Update", "Updating material");
@@ -567,9 +569,9 @@ void Renderer::bind_buffer(Disarray::CommandExecutor& executor, const Disarray::
 	vkCmdBindVertexBuffers(command_buffer, 0, 1, &vk_buffer, offsets.data());
 }
 
-void Renderer::draw_static_mesh(CommandExecutor& executor, const Pipeline& pipeline, const BufferSet<Disarray::UniformBuffer>& uniform_buffer_set,
-	const BufferSet<Disarray::StorageBuffer>& storage_buffer_set, const StaticSubmesh& submesh, const MaterialTable& material_table,
-	const TransformMatrix& transform)
+void Renderer::draw_static_mesh(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline,
+	const BufferSet<Disarray::UniformBuffer>& uniform_buffer_set, const BufferSet<Disarray::StorageBuffer>& storage_buffer_set,
+	const StaticSubmesh& submesh, const Disarray::MaterialTable& material_table, const TransformMatrix& transform)
 {
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(executor);
 

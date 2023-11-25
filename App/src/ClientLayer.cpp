@@ -57,8 +57,12 @@ void ClientLayer::construct(App& app)
 	scene = make_ref<Scene>(device, "Default scene");
 	auto sponza = scene->create("StaticMesh");
 
-	auto sponza_mesh = StaticMesh::construct(device, scene_renderer.get_pipeline_cache(), "Assets/Models/sponza/sponza.obj");
-	sponza.add_component<Components::StaticMesh>(sponza_mesh);
+	// auto sponza_mesh = StaticMesh::construct(device, scene_renderer.get_pipeline_cache(), "Assets/Models/sponza/sponza.obj");
+	// sponza.add_component<Components::StaticMesh>(sponza_mesh);
+	auto combined_shader = UnifiedShader::construct(device,
+		{
+			.path = "Assets/Shaders/static_mesh_combined.glsl",
+		});
 
 	scene->construct(app);
 	icon_play = scene_renderer.get_texture_cache().get("Play");
