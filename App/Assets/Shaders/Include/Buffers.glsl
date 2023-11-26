@@ -43,6 +43,18 @@ layout(push_constant) uniform PushConstantBlock {
 }
 pc;
 
+layout(push_constant) uniform Material
+{
+    vec3 AlbedoColor;
+    float Metalness;
+    float Roughness;
+    float Emission;
+
+    float EnvMapRotation;
+
+    bool UseNormalMap;
+} u_MaterialUniforms;
+
 layout(set = 0, binding = 0) uniform UniformBlock {
     mat4 view;
     mat4 proj;

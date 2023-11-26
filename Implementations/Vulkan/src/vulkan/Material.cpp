@@ -3,6 +3,8 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
+#include <ranges>
+
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Pipeline.hpp"
@@ -15,6 +17,7 @@
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/Renderer.hpp"
 #include "vulkan/Texture.hpp"
+#include "vulkan/UnifiedShader.hpp"
 
 namespace Disarray::Vulkan {
 
@@ -242,6 +245,72 @@ POCMaterial::POCMaterial(const Disarray::Device& dev, POCMaterialProperties prop
 	: Disarray::POCMaterial(std::move(properties))
 	, device(dev)
 {
+	recreate_material(false, {});
 }
+
+auto POCMaterial::recreate_material(bool should_clean, const Extent& extent) -> void
+{
+	if (should_clean) {
+		clean_material();
+	}
+
+	allocate_buffer_storage();
+}
+auto POCMaterial::find_uniform_declaration(const std::string& name) -> const Reflection::ShaderUniform*
+{
+	const auto& shader_buffers = cast_to<Vulkan::UnifiedShader>(*props.shader).get_shader_buffers();
+
+	if (shader_buffers.size() > 0) {
+		const auto& [Name, Size, Uniforms] = shader_buffers.begin()->second;
+		if (!Uniforms.contains(name))
+			return nullptr;
+
+		return &Uniforms.at(name);
+	}
+	return nullptr;
+}
+auto POCMaterial::find_resouce_declaration(const std::string& name) -> const Reflection::ShaderResourceDeclaration*
+{
+	if (const auto& resources = cast_to<Vulkan::UnifiedShader>(*props.shader).get_resources(); resources.find(name) != resources.end()) {
+		return &resources.at(name);
+	}
+
+	return nullptr;
+}
+
+auto POCMaterial::clean_material() -> void { }
+
+auto POCMaterial::allocate_buffer_storage() -> void
+{
+
+	if (const auto& shader_buffers = cast_to<Vulkan::UnifiedShader>(*props.shader).get_shader_buffers(); shader_buffers.size() > 0) {
+		uint32_t size = 0;
+		for (auto&& [id, buffer_size, buffer] : std::ranges::views::values(shader_buffers)) {
+			size += buffer_size;
+		}
+		uniform_storage_buffer.allocate(size);
+		uniform_storage_buffer.zero_initialise();
+	}
+}
+
+void POCMaterial::set(const std::string& name, float value) { set<>(name, value); }
+void POCMaterial::set(const std::string& name, int value) { set<>(name, value); }
+void POCMaterial::set(const std::string& name, std::uint32_t value) { set<>(name, value); }
+void POCMaterial::set(const std::string& name, bool value) { set<>(name, value); }
+void POCMaterial::set(const std::string& name, const glm::ivec2& value) { set<>(name, value); }
+void POCMaterial::set(const std::string& name, const glm::ivec3& value) { set<>(name, value); }
+void POCMaterial::set(const std::string& name, const glm::ivec4& value) { set<>(name, value); }
+void POCMaterial::set(const std::string& name, const glm::uvec2& value) { set<>(name, value); }
+void POCMaterial::set(const std::string& name, const glm::uvec3& value) { set<>(name, value); }
+void POCMaterial::set(const std::string& name, const glm::uvec4& value) { set<>(name, value); }
+void POCMaterial::set(const std::string& name, const glm::vec2& value) { set<>(name, value); }
+void POCMaterial::set(const std::string& name, const glm::vec3& value) { set<>(name, value); }
+void POCMaterial::set(const std::string& name, const glm::vec4& value) { set<>(name, value); }
+void POCMaterial::set(const std::string& name, const glm::mat3& value) { set<>(name, value); }
+void POCMaterial::set(const std::string& name, const glm::mat4& value) { set<>(name, value); }
+
+void POCMaterial::set(const std::string& name, const Ref<Disarray::Texture>& value) { }
+void POCMaterial::set(const std::string& name, const Ref<Disarray::Texture>&, std::uint32_t value) { }
+void POCMaterial::set(const std::string& name, const Ref<Disarray::Image>& image) { }
 
 } // namespace Disarray::Vulkan

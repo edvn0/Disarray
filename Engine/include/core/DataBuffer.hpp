@@ -40,8 +40,17 @@ public:
 
 	auto as_span() -> std::span<std::byte> { return { data.get(), size }; }
 
+	template <class T> auto read(const std::size_t offset) const -> T&
+	{
+		T* result;
+		std::memcpy(result, get_data() + offset, sizeof(T));
+		return *result;
+	}
+
+	void write(const auto& data, auto size, auto offset) { std::memcpy(get_data() + offset, &data, size); }
 	void write(const auto& data, auto size) { std::memcpy(get_data(), &data, size); }
 	void write(const auto& data) { std::memcpy(get_data(), &data, sizeof(data)); }
+	void zero_initialise() const;
 
 private:
 	std::unique_ptr<std::byte[]> data { nullptr };

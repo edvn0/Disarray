@@ -5,6 +5,7 @@
 #include <assimp/LogStream.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <core/filesystem/AssetLocations.hpp>
 
 #include <algorithm>
 #include <cstdint>
@@ -174,17 +175,11 @@ namespace Vulkan {
 #endif
 	}
 
-	static const uint32_t s_MeshImportFlags = aiProcess_CalcTangentSpace | // Create binormals/tangents just in case
-		aiProcess_Triangulate | // Make sure we're triangles
-		aiProcess_SortByPType | // Split meshes by primitive type
-		aiProcess_GenNormals | // Make sure we have legit normals
-		aiProcess_GenUVCoords | // Convert UVs if required
+	static constexpr uint32_t s_MeshImportFlags = aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_SortByPType | aiProcess_GenNormals
+		| aiProcess_GenUVCoords |
 		//		aiProcess_OptimizeGraph |
-		aiProcess_OptimizeMeshes | // Batch draws where possible
-		aiProcess_JoinIdenticalVertices | aiProcess_LimitBoneWeights
-		| // If more than N (=4) bone weights, discard least influencing bones and renormalise sum to 1
-		aiProcess_ValidateDataStructure | // Validation
-		aiProcess_GlobalScale; // e.g. convert cm to m for fbx import (and other formats where cm is native)
+		aiProcess_OptimizeMeshes | aiProcess_JoinIdenticalVertices | aiProcess_LimitBoneWeights | aiProcess_ValidateDataStructure
+		| aiProcess_GlobalScale;
 
 	StaticMesh::StaticMesh(const Device& dev, PipelineCache& cache, const std::filesystem::path& path)
 		: device(dev)
@@ -198,16 +193,13 @@ namespace Vulkan {
 		importer->SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
 
 		const aiScene* loaded_scene = importer->ReadFile(file_path.string(), s_MeshImportFlags);
-		if (!loaded_scene) // note: scene can legit contain no meshes (e.g. it could contain an armature, an animation, and no
-						   // skin (mesh)))
-		{
+		if (!loaded_scene) {
 			Log::error("Mesh", "Failed to load mesh file: {0}", file_path.string());
 			return;
 		}
 
 		scene = loaded_scene;
 
-		// If no meshes in the scene, there's nothing more for us to do
 		if (!scene->HasMeshes()) {
 			return;
 		}
@@ -283,9 +275,11 @@ namespace Vulkan {
 
 				auto mi = POCMaterial::construct(device,
 					{
-						.vertex = cache.get_shader("static_mesh.vert"),
-						.fragment = cache.get_shader("static_mesh.frag"),
-						.name = materialName,
+						.shader = UnifiedShader::construct(device,
+							{
+								.path = FS::shader("static_mesh_combined.glsl"),
+								.optimize = false,
+							}),
 					});
 				materials[i] = mi;
 
@@ -304,8 +298,8 @@ namespace Vulkan {
 					emission = aiEmission.r;
 
 				// TODO(edvin): Obviously
-				// mi->Set("u_MaterialUniforms.AlbedoColor", albedoColor);
-				// mi->Set("u_MaterialUniforms.Emission", emission);
+				mi->set("u_MaterialUniforms.AlbedoColor", albedoColor);
+				mi->set("u_MaterialUniforms.Emission", emission);
 
 				float shininess, metalness;
 				if (aiMaterial->Get(AI_MATKEY_SHININESS, shininess) != aiReturn_SUCCESS)
@@ -348,8 +342,8 @@ namespace Vulkan {
 
 					if (texture) {
 						Log::info("Mesh", "Loaded albedo!");
-						// mi->Set("u_AlbedoTexture", texture);
-						// mi->Set("u_MaterialUniforms.AlbedoColor", glm::vec3(1.0f));
+						mi->set("u_AlbedoTexture", texture);
+						mi->set("u_MaterialUniforms.AlbedoColor", glm::vec3(1.0f));
 					} else {
 						Log::error("Mesh", "Could not load texture: {0}", aiTexPath.C_Str());
 						fallback = true;
@@ -358,7 +352,7 @@ namespace Vulkan {
 
 				if (fallback) {
 					Log::info("StaticMesh", "    No albedo map");
-					// mi->Set("u_AlbedoTexture", whiteTexture);
+					mi->set("u_AlbedoTexture", whiteTexture);
 				}
 
 				// Normal maps
@@ -391,8 +385,8 @@ namespace Vulkan {
 
 					if (texture) {
 						Log::info("StaticMesh", "Loaded normal map!");
-						// mi->Set("u_NormalTexture", texture);
-						// mi->Set("u_MaterialUniforms.UseNormalMap", true);
+						mi->set("u_NormalTexture", texture);
+						mi->set("u_MaterialUniforms.UseNormalMap", true);
 					} else {
 						Log::error("Mesh", "    Could not load texture: {0}", aiTexPath.C_Str());
 						fallback = true;
@@ -401,8 +395,8 @@ namespace Vulkan {
 
 				if (fallback) {
 					Log::info("StaticMesh", "    No normal map");
-					// mi->Set("u_NormalTexture", whiteTexture);
-					// mi->Set("u_MaterialUniforms.UseNormalMap", false);
+					mi->set("u_NormalTexture", whiteTexture);
+					mi->set("u_MaterialUniforms.UseNormalMap", false);
 				}
 
 				// Roughness map
@@ -435,8 +429,8 @@ namespace Vulkan {
 
 					if (texture) {
 						Log::info("StaticMesh", "Loaded roughness map!");
-						// mi->Set("u_RoughnessTexture", texture);
-						// mi->Set("u_MaterialUniforms.Roughness", 1.0f);
+						mi->set("u_RoughnessTexture", texture);
+						mi->set("u_MaterialUniforms.Roughness", 1.0f);
 					} else {
 						Log::error("Mesh", "    Could not load roughness: {0}", aiTexPath.C_Str());
 						fallback = true;
@@ -445,8 +439,8 @@ namespace Vulkan {
 
 				if (fallback) {
 					Log::info("StaticMesh", "    No roughness map");
-					//	mi->Set("u_RoughnessTexture", whiteTexture);
-					//	mi->Set("u_MaterialUniforms.Roughness", roughness);
+					mi->set("u_RoughnessTexture", whiteTexture);
+					mi->set("u_MaterialUniforms.Roughness", roughness);
 				}
 
 				bool metalnessTextureFound = false;
@@ -484,8 +478,8 @@ namespace Vulkan {
 
 							if (texture) {
 								metalnessTextureFound = true;
-								// mi->Set("u_MetalnessTexture", texture);
-								// mi->Set("u_MaterialUniforms.Metalness", 1.0f);
+								mi->set("u_MetalnessTexture", texture);
+								mi->set("u_MaterialUniforms.Metalness", 1.0f);
 							} else {
 								Log::error("Mesh", "    Could not load texture: {0}", str);
 							}
@@ -497,35 +491,34 @@ namespace Vulkan {
 				fallback = !metalnessTextureFound;
 				if (fallback) {
 					Log::info("StaticMesh", "    No metalness map");
-					// mi->Set("u_MetalnessTexture", whiteTexture);
-					// mi->Set("u_MaterialUniforms.Metalness", metalness);
+					mi->set("u_MetalnessTexture", whiteTexture);
+					mi->set("u_MaterialUniforms.Metalness", metalness);
 				}
 			}
 			Log::info("StaticMesh", "------------------------");
 		} else {
 			auto mi = POCMaterial::construct(device,
 				{
-					.vertex = cache.get_shader("static_mesh.vert"),
-					.fragment = cache.get_shader("static_mesh.frag"),
+					.shader = UnifiedShader::construct(device,
+						{
+							.path = FS::shader("static_mesh_combined.glsl"),
+							.optimize = false,
+						}),
 					.name = "Default",
 				});
 
-			// TODO(edvin): obviously
-			/*
-			mi->Set("u_MaterialUniforms.AlbedoColor", glm::vec3(0.8f));
-			mi->Set("u_MaterialUniforms.Emission", 0.0f);
-			mi->Set("u_MaterialUniforms.Metalness", 0.0f);
-			mi->Set("u_MaterialUniforms.Roughness", 0.8f);
-			mi->Set("u_MaterialUniforms.UseNormalMap", false);
+			mi->set("u_MaterialUniforms.AlbedoColor", glm::vec3(0.8f));
+			mi->set("u_MaterialUniforms.Emission", 0.0f);
+			mi->set("u_MaterialUniforms.Metalness", 0.0f);
+			mi->set("u_MaterialUniforms.Roughness", 0.8f);
+			mi->set("u_MaterialUniforms.UseNormalMap", false);
 
-			mi->Set("u_AlbedoTexture", whiteTexture);
-			mi->Set("u_MetalnessTexture", whiteTexture);
-			mi->Set("u_RoughnessTexture", whiteTexture);
-			 */
+			mi->set("u_AlbedoTexture", whiteTexture);
+			mi->set("u_MetalnessTexture", whiteTexture);
+			mi->set("u_RoughnessTexture", whiteTexture);
 			materials.push_back(mi);
 		}
 
-		// m_Vertices.data(), (uint32_t)(m_Vertices.size() * sizeof(Vertex))
 		vertex_buffer = VertexBuffer::construct(device,
 			{
 				.data = vertices.data(),
@@ -566,11 +559,11 @@ namespace Vulkan {
 
 	void StaticMesh::traverse_nodes(aiNode* node, const glm::mat4& parent_transform, std::uint32_t level)
 	{
-		glm::mat4 local_transform = to_mat4_from_assimp(node->mTransformation);
-		glm::mat4 transform = parent_transform * local_transform;
+		const glm::mat4 local_transform = to_mat4_from_assimp(node->mTransformation);
+		const glm::mat4 transform = parent_transform * local_transform;
 		node_map[node].resize(node->mNumMeshes);
 		for (uint32_t i = 0; i < node->mNumMeshes; i++) {
-			uint32_t mesh = node->mMeshes[i];
+			const std::uint32_t mesh = node->mMeshes[i];
 			auto& submesh = submeshes[mesh];
 			submesh.NodeName = node->mName.C_Str();
 			submesh.Transform = transform;

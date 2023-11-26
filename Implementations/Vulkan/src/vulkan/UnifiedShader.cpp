@@ -480,7 +480,6 @@ auto split_string(const std::string& input, const std::string& delimiter) -> std
 		pos = found + delimiter.length();
 	}
 
-	// Add the last token
 	if (const auto last_token = input.substr(pos); !last_token.empty()) {
 		split_strings.push_back(last_token);
 	}
@@ -543,21 +542,28 @@ UnifiedShader::UnifiedShader(const Disarray::Device& dev, UnifiedShaderPropertie
 	recreate(false, {});
 }
 
-UnifiedShader::~UnifiedShader() = default;
+auto UnifiedShader::clean_shader() -> void
+{
+	sources.clear();
+	spirv_sources.clear();
+	for (const auto& kv : shader_modules) {
+		auto&& [type, module] = kv;
+		vkDestroyShaderModule(supply_cast<Vulkan::Device>(device), module, nullptr);
+	}
+	for (const auto& layout : descriptor_set_layouts) {
+		vkDestroyDescriptorSetLayout(supply_cast<Vulkan::Device>(device), layout, nullptr);
+	}
+	shader_modules.clear();
+	stage_infos.clear();
+}
+
+UnifiedShader::~UnifiedShader() { clean_shader(); };
 
 void UnifiedShader::recreate(bool should_clean, const Extent&)
 {
 	if (should_clean) {
-		sources.clear();
-		spirv_sources.clear();
-		for (const auto& kv : shader_modules) {
-			auto&& [type, module] = kv;
-			vkDestroyShaderModule(supply_cast<Vulkan::Device>(device), module, nullptr);
-		}
-		shader_modules.clear();
-		stage_infos.clear();
+		clean_shader();
 	}
-
 	std::string read_file;
 	if (!FS::read_from_file(props.path.string(), read_file)) {
 		Log::error("UnifiedShader", "Failed to read shader file: {}", props.path.string());
@@ -663,7 +669,6 @@ auto reflect_on_stages(const std::unordered_map<Disarray::ShaderType, std::vecto
 
 auto UnifiedShader::create_vulkan_objects() -> void
 {
-	// Create shader modules
 	for (const auto& kv : spirv_sources) {
 		auto&& [type, spirv] = kv;
 		VkShaderModuleCreateInfo create_info {};
@@ -677,12 +682,12 @@ auto UnifiedShader::create_vulkan_objects() -> void
 			throw CouldNotCompileShaderException { "Failed to create shader module!" };
 		}
 
-		shader_modules.emplace(type, shader_module);
+		shader_modules.emplace(type, std::move(shader_module));
 		stage_infos.emplace(type,
 			VkPipelineShaderStageCreateInfo {
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 				.stage = to_vulkan_shader_type(type),
-				.module = shader_module,
+				.module = shader_modules.at(type),
 				.pName = "main",
 			});
 	}
