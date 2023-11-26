@@ -133,6 +133,8 @@ struct ReflectionData {
 	std::vector<Reflection::PushConstantRange> PushConstantRanges;
 	Collections::StringMap<Reflection::ShaderBuffer> constant_buffers {};
 	Collections::StringMap<Reflection::ShaderResourceDeclaration> resources {};
+
+	auto operator|=(const ReflectionData& other) -> ReflectionData&;
 };
 
 class Shader : public Disarray::Shader, public PropertySupplier<VkPipelineShaderStageCreateInfo> {
