@@ -8,6 +8,11 @@
 #include "graphics/UnifiedShader.hpp"
 #include "vulkan/UnifiedShader.hpp"
 
+auto std::hash<Disarray::UnifiedShader>::operator()(const Disarray::UnifiedShader& shader) const noexcept -> std::size_t
+{
+	return hash_value(shader.get_properties().path);
+}
+
 namespace Disarray {
 
 auto UnifiedShader::construct(const Disarray::Device& device, UnifiedShaderProperties properties) -> Ref<Disarray::UnifiedShader>

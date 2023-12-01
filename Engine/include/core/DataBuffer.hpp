@@ -12,10 +12,17 @@ namespace Disarray {
 class DataBuffer {
 public:
 	DataBuffer() = default;
-	explicit DataBuffer(std::size_t);
-	explicit DataBuffer(std::nullptr_t);
+	explicit DataBuffer(std::integral auto input_size)
+		: DataBuffer(nullptr, static_cast<std::size_t>(input_size))
+	{
+	}
+	DataBuffer(const void* data, std::integral auto input_size)
+		: DataBuffer(static_cast<std::size_t>(input_size))
+	{
+		std::memcpy(this->data.get(), data, size);
+	}
 
-	DataBuffer(const void* data, std::size_t);
+	explicit DataBuffer(std::nullptr_t);
 
 	DataBuffer(const DataBuffer&);
 	DataBuffer(DataBuffer&&) noexcept;
@@ -53,6 +60,8 @@ public:
 	void zero_initialise() const;
 
 private:
+	explicit DataBuffer(std::size_t);
+
 	std::unique_ptr<std::byte[]> data { nullptr };
 	std::size_t size { 0 };
 };

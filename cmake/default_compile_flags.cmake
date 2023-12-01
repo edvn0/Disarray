@@ -39,7 +39,7 @@ function(default_compile_flags)
                 /wd4324
                 /wd4201
                 /wd4702)
-        target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_WINDOWS)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE DISARRAY_WINDOWS -D_HAS_EXCEPTIONS=0)
     endif ()
 
     if (DISARRAY_LOG_ALLOCATIONS)

@@ -27,7 +27,7 @@ void main()
     vec3 out_vec = calculate_directional_light(light, uvs, normals, view_direction, shadow, 32);
 
     if (POINT_LIGHT_CHOICE == 0) {
-        for (uint i = 0; i < pc.max_point_lights; i++) {
+        for (uint i = 0; i < plbo.max_point_lights.x; i++) {
             PointLight current_point_light = plbo.lights[i];
             vec4 point_light_position = current_point_light.position;
             vec4 point_light_factors = current_point_light.factors;
@@ -39,9 +39,9 @@ void main()
         }
     } else {
         uint base = tea(103, 107);
-        uint count_max = min(8, pc.max_point_lights);
+        uint count_max = min(8, plbo.max_point_lights.x);
         [[unroll]] for (uint i = 0; i < count_max; i++) {
-            PointLight current_point_light = plbo.lights[next_uint(base, pc.max_point_lights)];
+            PointLight current_point_light = plbo.lights[next_uint(base, plbo.max_point_lights.x)];
             vec4 point_light_position = current_point_light.position;
             vec4 point_light_factors = current_point_light.factors;
             vec4 point_light_ambient = current_point_light.ambient;
@@ -52,7 +52,7 @@ void main()
         }
     }
 
-    for (uint i = 0; i < pc.max_spot_lights; i++) {
+    for (uint i = 0; i < slbo.max_spot_lights.x; i++) {
         SpotLight current_spot_light = slbo.lights[i];
         vec4 sl_position = current_spot_light.position;
         vec4 sl_factors = current_spot_light.factors_and_outer_cutoff;
@@ -69,7 +69,7 @@ void main()
         view_direction, sl_direction, sl_cutoff, sl_outer_cutoff);
     }
 
-    colour = pc.colour * vec4(out_vec, 1.0F);
+    colour = vec4(pc.albedo_colour, 1.0F) * vec4(out_vec, 1.0F);
     if (GAMMA_CORRECT == 0) {
         colour = gamma_correct(colour);
     }

@@ -33,4 +33,7 @@ template <typename T, typename... U> constexpr bool EvaluatedAnyOf = (std::is_sa
 template <class T>
 concept Pathlike = AnyOf<T, std::string, std::string_view, std::filesystem::path, const char*>;
 
+template <class T>
+concept Stringlike = AnyOf<T, std::string, std::string_view, const char*>;
+
 } // namespace Disarray

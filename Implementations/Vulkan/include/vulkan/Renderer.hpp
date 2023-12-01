@@ -52,7 +52,8 @@ public:
 	void draw_mesh_instanced(Disarray::CommandExecutor&, std::size_t count, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&,
 		const Disarray::Pipeline&) override;
 	void draw_static_mesh(Disarray::CommandExecutor&, const Disarray::Pipeline&, const BufferSet<Disarray::UniformBuffer>&,
-		const BufferSet<Disarray::StorageBuffer>&, const StaticSubmesh&, const Disarray::MaterialTable&, const TransformMatrix&) override;
+		const BufferSet<Disarray::StorageBuffer>&, const StaticSubmesh&, const Disarray::StaticMesh& mesh, const Disarray::MaterialTable&,
+		const TransformMatrix&) override;
 
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&,
 		const Disarray::Material&, const TransformMatrix&, const ColourVector&) override;
@@ -109,8 +110,8 @@ private:
 	void draw_billboard_quad(Disarray::CommandExecutor&, const Disarray::Pipeline&);
 	void bind_descriptor_sets(Disarray::CommandExecutor&, const Disarray::Pipeline&, const std::span<const VkDescriptorSet>&);
 
-	void update_material_for_rendering(
-		Ref<Vulkan::Material> material, const BufferSet<Disarray::UniformBuffer>* ubo_buffer, const BufferSet<Disarray::StorageBuffer>* sbo_buffer);
+	void update_material_for_rendering(Ref<Vulkan::POCMaterial> material, const BufferSet<Disarray::UniformBuffer>* ubo_buffer,
+		const BufferSet<Disarray::StorageBuffer>* sbo_buffer);
 
 	const Disarray::Device& device;
 	const Disarray::Swapchain& swapchain;

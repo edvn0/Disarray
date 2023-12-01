@@ -75,7 +75,6 @@ void Scene::begin_frame(const Camera& camera, SceneRenderer& scene_renderer)
 void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_proj, SceneRenderer& scene_renderer)
 {
 	execute_callbacks(scene_renderer);
-
 	scene_renderer.begin_frame(view, proj, view_proj);
 
 	ShadowPassUBO shadow_pass {};
@@ -134,7 +133,7 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 
 			point_light_index++;
 		}
-		push_constant.max_point_lights = static_cast<std::uint32_t>(point_light_index);
+		lights.count_and_padding.x = static_cast<std::uint32_t>(point_light_index);
 
 		auto& point_light_buffer = scene_renderer.get_point_light_data();
 		point_light_buffer.set_data(&lights);
@@ -163,7 +162,7 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 
 			spot_light_index++;
 		}
-		push_constant.max_spot_lights = static_cast<std::uint32_t>(spot_light_index);
+		lights.count_and_padding.x = static_cast<std::uint32_t>(spot_light_index);
 
 		auto& spot_light_buffer = scene_renderer.get_spot_light_data();
 		spot_light_buffer.set_data(&lights);

@@ -33,15 +33,15 @@ void main()
     vec3 out_vec = calculate_directional_light(light, uvs, normals, view_direction, shadow, 32);
 
     if (POINT_LIGHT_CHOICE == 0) {
-        for (uint i = 0; i < pc.max_point_lights; i++) {
+        for (uint i = 0; i < plbo.max_point_lights.x; i++) {
             PointLight light = plbo.lights[i];
             out_vec += calc_point_light(light, uvs, shadow, normals, fragment_position, view_direction);
         }
     } else {
         uint base = tea(103, 107);
-        uint count_max = min(8, pc.max_point_lights);
+        uint count_max = min(8, plbo.max_point_lights.x);
         [[unroll]] for (uint i = 0; i < count_max; i++) {
-            PointLight light = plbo.lights[next_uint(base, pc.max_point_lights)];
+            PointLight light = plbo.lights[next_uint(base, plbo.max_point_lights.x)];
             out_vec += calc_point_light(light, uvs, shadow, normals, fragment_position, view_direction);
         }
     }

@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "PushConstantLayout.hpp"
+#include "UnifiedShader.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/Hashes.hpp"
 #include "core/ReferenceCounted.hpp"
@@ -214,6 +215,7 @@ struct PipelineProperties {
 	Ref<Shader> vertex_shader { nullptr };
 	Ref<Shader> fragment_shader { nullptr };
 	Ref<Shader> compute_shader { nullptr };
+	Ref<UnifiedShader> combined_shader { nullptr };
 	Ref<Framebuffer> framebuffer { nullptr };
 	VertexLayout layout {};
 	PushConstantLayout push_constant_layout {};

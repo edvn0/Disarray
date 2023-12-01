@@ -11,16 +11,12 @@
 #include <cstdint>
 #include <exception>
 #include <future>
-#include <iostream>
-#include <mutex>
-#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "core/Ensure.hpp"
 #include "core/Log.hpp"
-#include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
 #include "core/exceptions/GeneralExceptions.hpp"
 #include "graphics/BufferProperties.hpp"
@@ -49,7 +45,7 @@ struct AssimpLogStream : public Assimp::LogStream {
 		}
 	}
 
-	virtual void write(const char* message) override
+	void write(const char* message) override
 	{
 		std::string msg(message);
 		if (!msg.empty() && msg[msg.length() - 1] == '\n') {
@@ -90,8 +86,8 @@ namespace Vulkan {
 	void Mesh::load_and_initialise_model(const ImportedMesh& imported)
 	{
 		if (imported.size() == 1) {
-			const auto& kv = *imported.begin();
-			auto&& [key, loaded_submesh] = kv;
+			const auto& key_value = *imported.begin();
+			auto&& [key, loaded_submesh] = key_value;
 			vertex_buffer = VertexBuffer::construct_scoped(device,
 				{
 					.data = loaded_submesh.data<ModelVertex>(),
@@ -111,20 +107,21 @@ namespace Vulkan {
 		}
 
 		for (const auto& mesh_data = imported; const auto& [key, loaded_submesh] : mesh_data) {
-			auto vb = VertexBuffer::construct_scoped(device,
+			auto submesh_vertex_buffer = VertexBuffer::construct_scoped(device,
 				{
 					.data = loaded_submesh.data<ModelVertex>(),
 					.size = loaded_submesh.size<ModelVertex>(),
 					.count = loaded_submesh.count<ModelVertex>(),
 				});
-			auto ib = IndexBuffer::construct_scoped(device,
+			auto submesh_index_buffer = IndexBuffer::construct_scoped(device,
 				{
 					.data = loaded_submesh.data<std::uint32_t>(),
 					.size = loaded_submesh.size<std::uint32_t>(),
 					.count = loaded_submesh.count<std::uint32_t>(),
 				});
 
-			auto submesh = Scope<Vulkan::Mesh> { new Vulkan::Mesh { device, std::move(vb), std::move(ib), loaded_submesh.textures } };
+			auto submesh = Scope<Vulkan::Mesh> { new Vulkan::Mesh {
+				device, std::move(submesh_vertex_buffer), std::move(submesh_index_buffer), loaded_submesh.textures } };
 			submesh->aabb = loaded_submesh.aabb;
 			submeshes.try_emplace(key, std::move(submesh));
 		}
@@ -153,7 +150,7 @@ namespace Vulkan {
 
 	auto Mesh::get_submeshes() const -> const Collections::ScopedStringMap<Disarray::Mesh>& { return submeshes; }
 
-	auto Mesh::has_children() const -> bool { return submeshes.size() > 0ULL; }
+	auto Mesh::has_children() const -> bool { return !submeshes.empty(); }
 
 	struct MeshConstructor {
 		auto operator()(const auto& device, MeshProperties props) const { return Mesh::construct(device, std::move(props)); }
@@ -175,7 +172,7 @@ namespace Vulkan {
 #endif
 	}
 
-	static constexpr uint32_t s_MeshImportFlags = aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_SortByPType | aiProcess_GenNormals
+	static constexpr uint32_t mesh_import_flags = aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_SortByPType | aiProcess_GenNormals
 		| aiProcess_GenUVCoords |
 		//		aiProcess_OptimizeGraph |
 		aiProcess_OptimizeMeshes | aiProcess_JoinIdenticalVertices | aiProcess_LimitBoneWeights | aiProcess_ValidateDataStructure
@@ -192,8 +189,8 @@ namespace Vulkan {
 		importer = make_scope<Assimp::Importer, PimplDeleter<Assimp::Importer>>();
 		importer->SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
 
-		const aiScene* loaded_scene = importer->ReadFile(file_path.string(), s_MeshImportFlags);
-		if (!loaded_scene) {
+		const aiScene* loaded_scene = importer->ReadFile(file_path.string(), mesh_import_flags);
+		if (loaded_scene == nullptr) {
 			Log::error("Mesh", "Failed to load mesh file: {0}", file_path.string());
 			return;
 		}
@@ -204,31 +201,31 @@ namespace Vulkan {
 			return;
 		}
 
-		uint32_t vertexCount = 0;
-		uint32_t indexCount = 0;
+		uint32_t vertex_count = 0;
+		uint32_t index_count = 0;
 
 		submeshes.reserve(scene->mNumMeshes);
-		for (unsigned m = 0; m < scene->mNumMeshes; m++) {
-			aiMesh* mesh = scene->mMeshes[m];
+		for (std::uint32_t submesh_index = 0; submesh_index < scene->mNumMeshes; submesh_index++) {
+			aiMesh* mesh = scene->mMeshes[submesh_index];
 
 			StaticSubmesh& submesh = submeshes.emplace_back();
-			submesh.BaseVertex = vertexCount;
-			submesh.BaseIndex = indexCount;
-			submesh.MaterialIndex = mesh->mMaterialIndex;
-			submesh.VertexCount = mesh->mNumVertices;
-			submesh.IndexCount = mesh->mNumFaces * 3;
-			submesh.MeshName = mesh->mName.C_Str();
+			submesh.base_vertex = vertex_count;
+			submesh.base_index = index_count;
+			submesh.material_index = mesh->mMaterialIndex;
+			submesh.vertex_count = mesh->mNumVertices;
+			submesh.index_count = mesh->mNumFaces * 3;
+			submesh.mesh_name = mesh->mName.C_Str();
 
-			vertexCount += mesh->mNumVertices;
-			indexCount += submesh.IndexCount;
+			vertex_count += mesh->mNumVertices;
+			index_count += submesh.index_count;
 
 			ensure(mesh->HasPositions(), "Meshes require positions.");
 			ensure(mesh->HasNormals(), "Meshes require normals.");
 
 			// Vertices
-			auto& submesh_aabb = submesh.BoundingBox;
+			auto& submesh_aabb = submesh.bounding_box;
 			for (size_t i = 0; i < mesh->mNumVertices; i++) {
-				ModelVertex vertex;
+				ModelVertex vertex {};
 				vertex.pos = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z };
 				vertex.normals = { mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z };
 				submesh_aabb.update(vertex.pos);
@@ -238,8 +235,9 @@ namespace Vulkan {
 					vertex.bitangents = { mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z };
 				}
 
-				if (mesh->HasTextureCoords(0))
+				if (mesh->HasTextureCoords(0)) {
 					vertex.uvs = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
+				}
 
 				vertices.push_back(vertex);
 			}
@@ -255,231 +253,229 @@ namespace Vulkan {
 		traverse_nodes(scene->mRootNode);
 
 		for (const auto& submesh : submeshes) {
-			AABB submesh_aabb = submesh.BoundingBox;
-			glm::vec3 min = glm::vec3(submesh.Transform * submesh_aabb.min_vector());
-			glm::vec3 max = glm::vec3(submesh.Transform * submesh_aabb.max_vector());
+			AABB submesh_aabb = submesh.bounding_box;
+			glm::vec3 min = glm::vec3(submesh.transform * submesh_aabb.min_vector());
+			glm::vec3 max = glm::vec3(submesh.transform * submesh_aabb.max_vector());
 
 			bounding_box.update(min, max);
 		}
 
 		// Materials
-		const auto& whiteTexture = Disarray::Renderer::get_white_texture();
+		const auto& white_texture = Renderer::get_white_texture();
 		if (scene->HasMaterials()) {
 			materials.resize(scene->mNumMaterials);
 
 			for (uint32_t i = 0; i < scene->mNumMaterials; i++) {
-				auto aiMaterial = scene->mMaterials[i];
-				auto aiMaterialName = aiMaterial->GetName();
+				auto* ai_material = scene->mMaterials[i];
+				auto ai_material_name = ai_material->GetName();
 				// convert to std::string
-				std::string materialName = aiMaterialName.C_Str();
+				std::string material_name = ai_material_name.C_Str();
 
-				auto mi = POCMaterial::construct(device,
-					{
-						.shader = UnifiedShader::construct(device,
+				auto submesh_material = POCMaterial::construct(device,
+					POCMaterialProperties {
+						UnifiedShader::construct(device,
 							{
 								.path = FS::shader("static_mesh_combined.glsl"),
 								.optimize = false,
 							}),
 					});
-				materials[i] = mi;
+				materials[i] = submesh_material;
 
-				Log::info("StaticMesh", "  {0} (Index = {1})", materialName, i);
-				aiString aiTexPath;
-				uint32_t textureCount = aiMaterial->GetTextureCount(aiTextureType_DIFFUSE);
-				Log::info("StaticMesh", "    TextureCount = {0}", textureCount);
+				Log::info("StaticMesh", "  {0} (Index = {1})", material_name, i);
+				aiString ai_tex_path;
+				std::uint32_t texture_count = ai_material->GetTextureCount(aiTextureType_DIFFUSE);
+				Log::info("StaticMesh", "    TextureCount = {0}", texture_count);
 
-				glm::vec3 albedoColor(0.8f);
-				float emission = 0.0f;
-				aiColor3D aiColor, aiEmission;
-				if (aiMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, aiColor) == AI_SUCCESS)
-					albedoColor = { aiColor.r, aiColor.g, aiColor.b };
+				glm::vec3 albedo_colour(0.8F);
+				float emission = 0.0F;
+				if (aiColor3D ai_colour; ai_material->Get(AI_MATKEY_COLOR_DIFFUSE, ai_colour) == AI_SUCCESS) {
+					albedo_colour = { ai_colour.r, ai_colour.g, ai_colour.b };
+				}
 
-				if (aiMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, aiEmission) == AI_SUCCESS)
-					emission = aiEmission.r;
+				if (aiColor3D ai_emission; ai_material->Get(AI_MATKEY_COLOR_EMISSIVE, ai_emission) == AI_SUCCESS) {
+					emission = ai_emission.r;
+				}
 
 				// TODO(edvin): Obviously
-				mi->set("u_MaterialUniforms.AlbedoColor", albedoColor);
-				mi->set("u_MaterialUniforms.Emission", emission);
+				submesh_material->set("pc.albedo_colour", albedo_colour);
+				submesh_material->set("pc.emission", emission);
 
-				float shininess, metalness;
-				if (aiMaterial->Get(AI_MATKEY_SHININESS, shininess) != aiReturn_SUCCESS)
-					shininess = 80.0f; // Default value
+				float shininess {};
+				float metalness {};
+				if (ai_material->Get(AI_MATKEY_SHININESS, shininess) != aiReturn_SUCCESS) {
+					shininess = 80.0F; // Default value
+				}
 
-				if (aiMaterial->Get(AI_MATKEY_REFLECTIVITY, metalness) != aiReturn_SUCCESS)
-					metalness = 0.0f;
+				if (ai_material->Get(AI_MATKEY_REFLECTIVITY, metalness) != aiReturn_SUCCESS) {
+					metalness = 0.0F;
+				}
 
-				float roughness = 1.0f - glm::sqrt(shininess / 100.0f);
-				Log::info("StaticMesh", "    COLOR = {0}, {1}, {2}", aiColor.r, aiColor.g, aiColor.b);
-				Log::info("StaticMesh", "    ROUGHNESS = {0}", roughness);
-				Log::info("StaticMesh", "    METALNESS = {0}", metalness);
-				bool hasAlbedoMap = aiMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &aiTexPath) == AI_SUCCESS;
-				bool fallback = !hasAlbedoMap;
-				if (hasAlbedoMap) {
+				float roughness = 1.0F - glm::sqrt(shininess / 100.0f);
+				bool has_albedo_map = ai_material->GetTexture(aiTextureType_DIFFUSE, 0, &ai_tex_path) == AI_SUCCESS;
+				bool fallback = !has_albedo_map;
+				if (has_albedo_map) {
 					Ref<Texture> texture;
-					if (auto aiTexEmbedded = scene->GetEmbeddedTexture(aiTexPath.C_Str())) {
-						DataBuffer buffer { aiTexEmbedded->pcData, aiTexEmbedded->mWidth * aiTexEmbedded->mHeight * 4 };
+					if (const auto* ai_texture_embedded = scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
+						DataBuffer buffer { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 4 };
 						texture = Texture::construct(device,
 							{
-								.extent = { aiTexEmbedded->mWidth, aiTexEmbedded->mHeight },
+								.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
 								.format = ImageFormat::RGB,
 								.data_buffer = buffer,
-								.debug_name = aiTexPath.C_Str(),
+								.debug_name = ai_tex_path.C_Str(),
 							});
 					} else {
 
-						// TODO: Temp - this should be handled by Hazel's filesystem
 						std::filesystem::path new_path = file_path;
 						auto parentPath = new_path.parent_path();
-						parentPath /= std::string(aiTexPath.data);
+						parentPath /= std::string(ai_tex_path.data);
 						std::string texturePath = parentPath.string();
 						Log::info("StaticMesh", "    Albedo map path = {0}", texturePath);
 						texture = Texture::construct(device,
 							{
 								.path = texturePath,
-								.debug_name = aiTexPath.C_Str(),
+								.debug_name = ai_tex_path.C_Str(),
 							});
 					}
 
 					if (texture) {
 						Log::info("Mesh", "Loaded albedo!");
-						mi->set("u_AlbedoTexture", texture);
-						mi->set("u_MaterialUniforms.AlbedoColor", glm::vec3(1.0f));
+						submesh_material->set("albedo_map", texture);
+						submesh_material->set("pc.albedo_colour", glm::vec3(1.0F));
 					} else {
-						Log::error("Mesh", "Could not load texture: {0}", aiTexPath.C_Str());
+						Log::error("Mesh", "Could not load texture: {0}", ai_tex_path.C_Str());
 						fallback = true;
 					}
 				}
 
 				if (fallback) {
 					Log::info("StaticMesh", "    No albedo map");
-					mi->set("u_AlbedoTexture", whiteTexture);
+					submesh_material->set("albedo_map", white_texture);
 				}
 
 				// Normal maps
-				bool hasNormalMap = aiMaterial->GetTexture(aiTextureType_NORMALS, 0, &aiTexPath) == AI_SUCCESS;
-				fallback = !hasNormalMap;
-				if (hasNormalMap) {
+				auto has_normal_map = ai_material->GetTexture(aiTextureType_NORMALS, 0, &ai_tex_path) == AI_SUCCESS;
+				fallback = !has_normal_map;
+				if (has_normal_map) {
 					Ref<Texture> texture;
-					if (auto aiTexEmbedded = scene->GetEmbeddedTexture(aiTexPath.C_Str())) {
+					if (const auto* ai_texture_embedded = scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
 						texture = Texture::construct(device,
 							{
-								.extent = { aiTexEmbedded->mWidth, aiTexEmbedded->mHeight },
+								.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
 								.format = ImageFormat::RGB,
-								.data_buffer = { aiTexEmbedded->pcData, aiTexEmbedded->mWidth * aiTexEmbedded->mHeight * 3 },
-								.debug_name = aiTexPath.C_Str(),
+								.data_buffer = { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 3 },
+								.debug_name = ai_tex_path.C_Str(),
 							});
 					} else {
 
-						// TODO: Temp - this should be handled by Hazel's filesystem
 						std::filesystem::path new_path = file_path;
 						auto parentPath = new_path.parent_path();
-						parentPath /= std::string(aiTexPath.data);
+						parentPath /= std::string(ai_tex_path.data);
 						std::string texturePath = parentPath.string();
 						Log::info("StaticMesh", "    Normal map path = {0}", texturePath);
 						texture = Texture::construct(device,
 							{
 								.path = texturePath,
-								.debug_name = aiTexPath.C_Str(),
+								.debug_name = ai_tex_path.C_Str(),
 							});
 					}
 
 					if (texture) {
 						Log::info("StaticMesh", "Loaded normal map!");
-						mi->set("u_NormalTexture", texture);
-						mi->set("u_MaterialUniforms.UseNormalMap", true);
+						submesh_material->set("normal_map", texture);
+						submesh_material->set("pc.use_normal_map", true);
 					} else {
-						Log::error("Mesh", "    Could not load texture: {0}", aiTexPath.C_Str());
+						Log::error("Mesh", "    Could not load texture: {0}", ai_tex_path.C_Str());
 						fallback = true;
 					}
 				}
 
 				if (fallback) {
 					Log::info("StaticMesh", "    No normal map");
-					mi->set("u_NormalTexture", whiteTexture);
-					mi->set("u_MaterialUniforms.UseNormalMap", false);
+					submesh_material->set("normal_map", white_texture);
+					submesh_material->set("pc.use_normal_map", false);
 				}
 
 				// Roughness map
-				bool hasRoughnessMap = aiMaterial->GetTexture(aiTextureType_SHININESS, 0, &aiTexPath) == AI_SUCCESS;
+				bool hasRoughnessMap = ai_material->GetTexture(aiTextureType_SHININESS, 0, &ai_tex_path) == AI_SUCCESS;
 				fallback = !hasRoughnessMap;
 				if (hasRoughnessMap) {
 					Ref<Texture> texture;
-					if (auto aiTexEmbedded = scene->GetEmbeddedTexture(aiTexPath.C_Str())) {
+					if (const auto* ai_texture_embedded = scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
 						texture = Texture::construct(device,
 							{
-								.extent = { aiTexEmbedded->mWidth, aiTexEmbedded->mHeight },
+								.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
 								.format = ImageFormat::RGB,
-								.data_buffer = { aiTexEmbedded->pcData, aiTexEmbedded->mWidth * aiTexEmbedded->mHeight * 3 },
-								.debug_name = aiTexPath.C_Str(),
+								.data_buffer = { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 3 },
+								.debug_name = ai_tex_path.C_Str(),
 							});
 					} else {
 
-						// TODO: Temp - this should be handled by Hazel's filesystem
 						std::filesystem::path new_path = file_path;
 						auto parentPath = new_path.parent_path();
-						parentPath /= std::string(aiTexPath.data);
+						parentPath /= std::string(ai_tex_path.data);
 						std::string texturePath = parentPath.string();
 						Log::info("StaticMesh", "    Roughness map path = {0}", texturePath);
 						texture = Texture::construct(device,
 							{
 								.path = texturePath,
-								.debug_name = aiTexPath.C_Str(),
+								.debug_name = ai_tex_path.C_Str(),
 							});
 					}
 
 					if (texture) {
 						Log::info("StaticMesh", "Loaded roughness map!");
-						mi->set("u_RoughnessTexture", texture);
-						mi->set("u_MaterialUniforms.Roughness", 1.0f);
+						submesh_material->set("roughness_map", texture);
+						submesh_material->set("pc.roughness", 1.0F);
 					} else {
-						Log::error("Mesh", "    Could not load roughness: {0}", aiTexPath.C_Str());
+						Log::error("Mesh", "    Could not load roughness: {0}", ai_tex_path.C_Str());
 						fallback = true;
 					}
 				}
 
 				if (fallback) {
 					Log::info("StaticMesh", "    No roughness map");
-					mi->set("u_RoughnessTexture", whiteTexture);
-					mi->set("u_MaterialUniforms.Roughness", roughness);
+					submesh_material->set("roughness_map", white_texture);
+					submesh_material->set("pc.roughness", roughness);
 				}
 
 				bool metalnessTextureFound = false;
-				for (std::uint32_t p = 0; p < aiMaterial->mNumProperties; p++) {
-					auto prop = aiMaterial->mProperties[p];
+				for (std::uint32_t property_index = 0; property_index < ai_material->mNumProperties; property_index++) {
+					auto* prop = ai_material->mProperties[property_index];
 
 					if (prop->mType == aiPTI_String) {
-						uint32_t strLength = *(uint32_t*)prop->mData;
-						std::string str(prop->mData + 4, strLength);
+						uint32_t str_length = *reinterpret_cast<std::uint32_t*>(prop->mData);
+						std::string str(prop->mData + 4, str_length);
 
 						std::string key = prop->mKey.data;
 						if (key == "$raw.ReflectionFactor|file") {
 							Ref<Texture> texture;
-							if (auto aiTexEmbedded = scene->GetEmbeddedTexture(str.data())) {
+							if (const auto* ai_texture_embedded = scene->GetEmbeddedTexture(str.data())) {
 								texture = Texture::construct(device,
 									{
-										.extent = { aiTexEmbedded->mWidth, aiTexEmbedded->mHeight },
+										.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
 										.format = ImageFormat::RGB,
-										.data_buffer = { aiTexEmbedded->pcData, aiTexEmbedded->mWidth * aiTexEmbedded->mHeight * 3 },
+										.data_buffer
+										= { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 3 },
 										.debug_name = str,
 									});
 							} else {
-								// TODO: Temp - this should be handled by Hazel's filesystem
 								std::filesystem::path new_path = file_path;
 								auto parentPath = new_path.parent_path();
-								parentPath /= std::string(aiTexPath.data);
+								parentPath /= std::string(ai_tex_path.data);
 								std::string texturePath = parentPath.string();
 								Log::info("StaticMesh", "    Metalnesss map path = {0}", texturePath);
 								texture = Texture::construct(device,
 									{
 										.path = texturePath,
-										.debug_name = aiTexPath.C_Str(),
+										.debug_name = ai_tex_path.C_Str(),
 									});
 							}
 
 							if (texture) {
 								metalnessTextureFound = true;
-								mi->set("u_MetalnessTexture", texture);
-								mi->set("u_MaterialUniforms.Metalness", 1.0f);
+								submesh_material->set("metalness_map", texture);
+								submesh_material->set("pc.metalness", 1.0F);
 							} else {
 								Log::error("Mesh", "    Could not load texture: {0}", str);
 							}
@@ -491,32 +487,32 @@ namespace Vulkan {
 				fallback = !metalnessTextureFound;
 				if (fallback) {
 					Log::info("StaticMesh", "    No metalness map");
-					mi->set("u_MetalnessTexture", whiteTexture);
-					mi->set("u_MaterialUniforms.Metalness", metalness);
+					submesh_material->set("metalness_map", white_texture);
+					submesh_material->set("pc.metalness", metalness);
 				}
 			}
 			Log::info("StaticMesh", "------------------------");
 		} else {
-			auto mi = POCMaterial::construct(device,
-				{
-					.shader = UnifiedShader::construct(device,
+			auto submesh_material = POCMaterial::construct(device,
+				POCMaterialProperties {
+					UnifiedShader::construct(device,
 						{
 							.path = FS::shader("static_mesh_combined.glsl"),
 							.optimize = false,
 						}),
-					.name = "Default",
+					"Default",
 				});
 
-			mi->set("u_MaterialUniforms.AlbedoColor", glm::vec3(0.8f));
-			mi->set("u_MaterialUniforms.Emission", 0.0f);
-			mi->set("u_MaterialUniforms.Metalness", 0.0f);
-			mi->set("u_MaterialUniforms.Roughness", 0.8f);
-			mi->set("u_MaterialUniforms.UseNormalMap", false);
+			submesh_material->set("pc.albedo_colour", glm::vec3(0.8F));
+			submesh_material->set("pc.emission", 0.0F);
+			submesh_material->set("pc.metalness", 0.0F);
+			submesh_material->set("pc.roughness", 0.8F);
+			submesh_material->set("pc.use_normal_map", false);
 
-			mi->set("u_AlbedoTexture", whiteTexture);
-			mi->set("u_MetalnessTexture", whiteTexture);
-			mi->set("u_RoughnessTexture", whiteTexture);
-			materials.push_back(mi);
+			submesh_material->set("albedo_map", white_texture);
+			submesh_material->set("metalness_map", white_texture);
+			submesh_material->set("roughness_map", white_texture);
+			materials.push_back(submesh_material);
 		}
 
 		vertex_buffer = VertexBuffer::construct(device,
@@ -534,7 +530,7 @@ namespace Vulkan {
 	}
 
 	namespace {
-		glm::mat4 to_mat4_from_assimp(const aiMatrix4x4& matrix)
+		constexpr auto to_mat4_from_assimp(const aiMatrix4x4& matrix) -> glm::mat4
 		{
 			glm::mat4 result;
 			result[0][0] = matrix.a1;
@@ -557,22 +553,27 @@ namespace Vulkan {
 		}
 	} // namespace
 
-	void StaticMesh::traverse_nodes(aiNode* node, const glm::mat4& parent_transform, std::uint32_t level)
+	auto StaticMesh::traverse_nodes(aiNode* node, const glm::mat4& parent_transform, std::uint32_t level) -> void
 	{
+		if (node == nullptr) {
+			return;
+		}
+
 		const glm::mat4 local_transform = to_mat4_from_assimp(node->mTransformation);
 		const glm::mat4 transform = parent_transform * local_transform;
 		node_map[node].resize(node->mNumMeshes);
 		for (uint32_t i = 0; i < node->mNumMeshes; i++) {
 			const std::uint32_t mesh = node->mMeshes[i];
 			auto& submesh = submeshes[mesh];
-			submesh.NodeName = node->mName.C_Str();
-			submesh.Transform = transform;
-			submesh.LocalTransform = local_transform;
+			submesh.node_name = node->mName.C_Str();
+			submesh.transform = transform;
+			submesh.local_transform = local_transform;
 			node_map[node][i] = mesh;
 		}
 
-		for (uint32_t i = 0; i < node->mNumChildren; i++)
+		for (uint32_t i = 0; i < node->mNumChildren; i++) {
 			traverse_nodes(node->mChildren[i], transform, level + 1);
+		}
 	}
 
 } // namespace Vulkan

@@ -7,157 +7,160 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(ENGINE_SOURCES
+        Disarray.hpp
+        include/DisarrayPCH.hpp
         include/Forward.hpp
         include/assets/Asset.hpp
         include/assets/AssetType.hpp
-        include/graphics/MaterialTable.hpp
-        include/graphics/BufferProperties.hpp
-        include/graphics/RenderPass.hpp
-        include/graphics/Renderer.hpp
-        include/graphics/Pipeline.hpp
-        include/graphics/IndexBuffer.hpp
-        include/graphics/VertexBuffer.hpp
-        include/graphics/Extent.hpp
-        include/graphics/CommandExecutor.hpp
-        include/graphics/Device.hpp
-        include/graphics/Material.hpp
-        include/graphics/ImageProperties.hpp
-        include/graphics/Surface.hpp
-        include/graphics/Swapchain.hpp
-        include/graphics/PhysicalDevice.hpp
-        include/graphics/Shader.hpp
-        include/graphics/UnifiedShader.hpp
-        include/graphics/PushConstantLayout.hpp
-        include/graphics/Image.hpp
-        include/graphics/ResourceCache.hpp
-        include/graphics/RenderCommandQueue.hpp
-        include/graphics/Texture.hpp
-        include/graphics/QueueFamilyIndex.hpp
-        include/graphics/PipelineCache.hpp
-        include/graphics/ImageLoader.hpp
-        include/graphics/RenderBatch.hpp
-        include/graphics/Mesh.hpp
-        include/graphics/VertexTypes.hpp
-        include/graphics/Framebuffer.hpp
-        include/graphics/Instance.hpp
-        include/graphics/ModelLoader.hpp
-        include/graphics/TextureCache.hpp
-        include/graphics/UniformBuffer.hpp
-        include/physics/PhysicsEngine.hpp
-        include/ui/InterfaceLayer.hpp
-        include/ui/UI.hpp
-        include/DisarrayPCH.hpp
-        include/scene/Component.hpp
-        include/scene/Camera.hpp
-        include/scene/CppScript.hpp
-        include/scene/Scripts.hpp
-        include/scene/Components.hpp
-        include/scene/Entity.hpp
-        include/scene/Serialiser.hpp
-        include/scene/ComponentSerialisers.hpp
-        include/scene/Scene.hpp
-        include/scene/SceneRenderer.hpp
-        include/core/ThreadPool.hpp
-        include/core/FileWatcher.hpp
-        include/core/App.hpp
-        include/core/exceptions/BaseException.hpp
-        include/core/exceptions/GeneralExceptions.hpp
-        include/core/Hashes.hpp
-        include/core/UsageBadge.hpp
-        include/core/ReferenceCounted.hpp
-        include/core/Window.hpp
         include/core/AllocatorConfigurator.hpp
+        include/core/App.hpp
+        include/core/CleanupAwaiter.hpp
+        include/core/Clock.hpp
+        include/core/Concepts.hpp
+        include/core/DataBuffer.hpp
+        include/core/DebugConfigurator.hpp
+        include/core/DisarrayObject.hpp
+        include/core/Ensure.hpp
+        include/core/Entry.hpp
+        include/core/FileWatcher.hpp
+        include/core/Formatters.hpp
+        include/core/Hashes.hpp
+        include/core/Input.hpp
+        include/core/KeyCode.hpp
+        include/core/Layer.hpp
+        include/core/Log.hpp
+        include/core/MouseCode.hpp
+        include/core/Panel.hpp
+        include/core/Platform.hpp
+        include/core/PointerDefinition.hpp
+        include/core/PolymorphicCast.hpp
+        include/core/ReferenceCounted.hpp
+        include/core/String.hpp
+        include/core/ThreadPool.hpp
+        include/core/Tuple.hpp
+        include/core/Types.hpp
+        include/core/UniquelyIdentifiable.hpp
+        include/core/UsageBadge.hpp
+        include/core/Window.hpp
         include/core/events/ApplicationEvent.hpp
         include/core/events/Event.hpp
         include/core/events/KeyEvent.hpp
         include/core/events/MouseEvent.hpp
-        include/core/Types.hpp
-        include/core/DebugConfigurator.hpp
-        include/core/DisarrayObject.hpp
-        include/core/Formatters.hpp
-        include/core/Layer.hpp
-        include/core/Clock.hpp
-        include/core/KeyCode.hpp
-        include/core/Log.hpp
-        include/core/Tuple.hpp
-        include/core/Platform.hpp
-        include/core/CleanupAwaiter.hpp
-        include/core/PointerDefinition.hpp
-        include/core/DataBuffer.hpp
-        include/core/Input.hpp
-        include/core/Entry.hpp
-        include/core/UniquelyIdentifiable.hpp
-        include/core/MouseCode.hpp
-        include/core/Panel.hpp
-        include/core/PolymorphicCast.hpp
-        include/core/Ensure.hpp
-        include/core/Concepts.hpp
+        include/core/exceptions/BaseException.hpp
+        include/core/exceptions/GeneralExceptions.hpp
+        include/graphics/BufferProperties.hpp
+        include/graphics/CommandExecutor.hpp
+        include/graphics/Device.hpp
+        include/graphics/Extent.hpp
+        include/graphics/Framebuffer.hpp
+        include/graphics/Image.hpp
+        include/graphics/ImageLoader.hpp
+        include/graphics/ImageProperties.hpp
+        include/graphics/IndexBuffer.hpp
+        include/graphics/Instance.hpp
+        include/graphics/Material.hpp
+        include/graphics/MaterialTable.hpp
+        include/graphics/Mesh.hpp
+        include/graphics/ModelLoader.hpp
+        include/graphics/PhysicalDevice.hpp
+        include/graphics/Pipeline.hpp
+        include/graphics/PipelineCache.hpp
+        include/graphics/PushConstantLayout.hpp
+        include/graphics/QueueFamilyIndex.hpp
+        include/graphics/RenderBatch.hpp
+        include/graphics/RenderCommandQueue.hpp
+        include/graphics/RenderPass.hpp
+        include/graphics/Renderer.hpp
+        include/graphics/ResourceCache.hpp
+        include/graphics/Shader.hpp
+        include/graphics/Surface.hpp
+        include/graphics/Swapchain.hpp
+        include/graphics/Texture.hpp
+        include/graphics/TextureCache.hpp
+        include/graphics/UnifiedShader.hpp
+        include/graphics/UniformBuffer.hpp
+        include/graphics/VertexBuffer.hpp
+        include/graphics/VertexTypes.hpp
+        include/physics/PhysicsEngine.hpp
+        include/scene/Camera.hpp
+        include/scene/Component.hpp
+        include/scene/ComponentSerialisers.hpp
+        include/scene/Components.hpp
+        include/scene/CppScript.hpp
+        include/scene/Entity.hpp
+        include/scene/Scene.hpp
+        include/scene/SceneRenderer.hpp
+        include/scene/Scripts.hpp
+        include/scene/Serialiser.hpp
+        include/ui/InterfaceLayer.hpp
+        include/ui/UI.hpp
         include/util/BitCast.hpp
         include/util/FormattingUtilities.hpp
         include/util/Timer.hpp
-        Disarray.hpp
-        src/graphics/MaterialTable.cpp
-        src/graphics/Shader.cpp
-        src/graphics/UnifiedShader.cpp
+        src/core/App.cpp
+        src/core/DataBuffer.cpp
+        src/core/FileWatcher.cpp
+        src/core/Formatters.cpp
+        src/core/Instrumentation.cpp
+        src/core/Layer.cpp
+        src/core/Log.cpp
+        src/core/ReferenceCounted.cpp
+        src/core/String.cpp
+        src/core/Types.cpp
+        src/core/Window.cpp
+        src/core/exceptions/BaseException.cpp
+        src/core/filesystem/AssetLocations.cpp
+        src/core/filesystem/FileIO.cpp
+        src/glfw/GLFWClock.cpp
+        src/glfw/GLFWInput.cpp
         src/graphics/AABB.cpp
         src/graphics/CommandExecutor.cpp
-        src/graphics/RendererProperties.cpp
-        src/graphics/RenderPass.cpp
+        src/graphics/Device.cpp
+        src/graphics/Framebuffer.cpp
+        src/graphics/Image.cpp
+        src/graphics/ImageLoader.cpp
+        src/graphics/ImageProperties.cpp
+        src/graphics/IndexBuffer.cpp
         src/graphics/Instance.cpp
-        src/graphics/PhysicalDevice.cpp
+        src/graphics/Material.cpp
+        src/graphics/MaterialTable.cpp
+        src/graphics/Maths.cpp
         src/graphics/Mesh.cpp
         src/graphics/ModelLoader.cpp
+        src/graphics/PhysicalDevice.cpp
+        src/graphics/Pipeline.cpp
+        src/graphics/PipelineCache.cpp
         src/graphics/PushConstantLayout.cpp
-        src/graphics/Framebuffer.cpp
-        src/graphics/VertexBuffer.cpp
-        src/graphics/Swapchain.cpp
         src/graphics/QueueFamilyIndex.cpp
+        src/graphics/RenderCommandQueue.cpp
+        src/graphics/RenderPass.cpp
+        src/graphics/Renderer.cpp
+        src/graphics/RendererProperties.cpp
+        src/graphics/Shader.cpp
+        src/graphics/StorageBuffer.cpp
+        src/graphics/Swapchain.cpp
+        src/graphics/Texture.cpp
+        src/graphics/UnifiedShader.cpp
         src/graphics/UniformBuffer.cpp
         src/graphics/UniformBufferSet.cpp
-        src/graphics/PipelineCache.cpp
-        src/graphics/Renderer.cpp
-        src/graphics/RenderCommandQueue.cpp
-        src/graphics/Pipeline.cpp
-        src/graphics/Device.cpp
-        src/graphics/Material.cpp
-        src/graphics/ImageLoader.cpp
-        src/graphics/IndexBuffer.cpp
-        src/graphics/ImageProperties.cpp
-        src/graphics/StorageBuffer.cpp
-        src/graphics/Texture.cpp
-        src/graphics/Image.cpp
-        src/graphics/Maths.cpp
-        src/graphics/model_loaders/TinyObjModelLoader.cpp
+        src/graphics/VertexBuffer.cpp
         src/graphics/model_loaders/AssimpModelLoader.cpp
+        src/graphics/model_loaders/TinyObjModelLoader.cpp
+        src/imgui/InterfaceLayer.cpp
         src/physics/PhysicsEngine.cpp
-        src/glfw/GLFWInput.cpp
-        src/glfw/GLFWClock.cpp
+        src/scene/Camera.cpp
+        src/scene/ComponentDeserialisers.cpp
+        src/scene/ComponentSerialisers.cpp
         src/scene/Components.cpp
+        src/scene/CppScript.cpp
+        src/scene/Deserialiser.cpp
         src/scene/Entity.cpp
         src/scene/Scene.cpp
-        src/scene/Deserialiser.cpp
         src/scene/SceneRenderer.cpp
-        src/scene/Camera.cpp
-        src/scene/CppScript.cpp
         src/scene/Scripts.cpp
-        src/scene/ComponentSerialisers.cpp
-        src/scene/ComponentDeserialisers.cpp
         src/scene/SerialisationTypeConversions.cpp
-        src/core/DataBuffer.cpp
-        src/core/exceptions/BaseException.cpp
-        src/core/filesystem/FileIO.cpp
-        src/core/filesystem/AssetLocations.cpp
-        src/core/Layer.cpp
-        src/core/Types.cpp
-        src/core/ReferenceCounted.cpp
-        src/core/App.cpp
-        src/core/FileWatcher.cpp
-        src/core/Window.cpp
-        src/core/Formatters.cpp
-        src/core/Log.cpp
-        src/core/Instrumentation.cpp
         src/util/FormattingUtilities.cpp
-        src/imgui/InterfaceLayer.cpp)
+)
 
 if (DISARRAY_OS STREQUAL "Windows")
     list(APPEND ENGINE_SOURCES src/windows/UI.cpp)

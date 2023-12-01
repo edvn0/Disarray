@@ -1,12 +1,10 @@
 #include "DisarrayPCH.hpp"
 
 #include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
 
 #include <ranges>
 
 #include "core/Types.hpp"
-#include "graphics/CommandExecutor.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/Renderer.hpp"
 #include "vulkan/CommandExecutor.hpp"
@@ -243,35 +241,54 @@ void Material::force_recreation() { recreate_material(true); }
 
 POCMaterial::POCMaterial(const Disarray::Device& dev, POCMaterialProperties properties)
 	: Disarray::POCMaterial(std::move(properties))
+	, write_descriptors { props.swapchain_image_count }
+	, dirty_descriptor_sets(props.swapchain_image_count, false)
 	, device(dev)
 {
 	recreate_material(false, {});
 }
 
-auto POCMaterial::recreate_material(bool should_clean, const Extent& extent) -> void
+auto POCMaterial::invalidate() -> void
+{
+	auto shader = props.shader.as<Vulkan::UnifiedShader>();
+	if (shader->has_descriptor_set(0)) {
+		const auto& shader_descriptor_sets = shader->get_shader_descriptor_sets();
+		if (!shader_descriptor_sets.empty()) {
+			for (auto&& [binding, descriptor] : resident_descriptors) {
+				pending_descriptors.push_back(descriptor);
+			}
+		}
+	}
+}
+
+auto POCMaterial::recreate_material(bool should_clean, const Extent&) -> void
 {
 	if (should_clean) {
 		clean_material();
 	}
 
 	allocate_buffer_storage();
+	invalidate();
 }
+
 auto POCMaterial::find_uniform_declaration(const std::string& name) -> const Reflection::ShaderUniform*
 {
 	const auto& shader_buffers = cast_to<Vulkan::UnifiedShader>(*props.shader).get_shader_buffers();
-
-	if (shader_buffers.size() > 0) {
-		const auto& [Name, Size, Uniforms] = shader_buffers.begin()->second;
-		if (!Uniforms.contains(name))
-			return nullptr;
-
-		return &Uniforms.at(name);
+	if (shader_buffers.empty()) {
+		return nullptr;
 	}
-	return nullptr;
+
+	const auto& [Name, Size, Uniforms] = shader_buffers.begin()->second;
+	if (!Uniforms.contains(name)) {
+		return nullptr;
+	}
+
+	return &Uniforms.at(name);
 }
-auto POCMaterial::find_resouce_declaration(const std::string& name) -> const Reflection::ShaderResourceDeclaration*
+
+auto POCMaterial::find_resource_declaration(const std::string& name) -> const Reflection::ShaderResourceDeclaration*
 {
-	if (const auto& resources = cast_to<Vulkan::UnifiedShader>(*props.shader).get_resources(); resources.find(name) != resources.end()) {
+	if (const auto& resources = cast_to<Vulkan::UnifiedShader>(*props.shader).get_resources(); resources.contains(name)) {
 		return &resources.at(name);
 	}
 
@@ -283,8 +300,8 @@ auto POCMaterial::clean_material() -> void { }
 auto POCMaterial::allocate_buffer_storage() -> void
 {
 
-	if (const auto& shader_buffers = cast_to<Vulkan::UnifiedShader>(*props.shader).get_shader_buffers(); shader_buffers.size() > 0) {
-		uint32_t size = 0;
+	if (const auto& shader_buffers = cast_to<Vulkan::UnifiedShader>(*props.shader).get_shader_buffers(); !shader_buffers.empty()) {
+		std::uint32_t size = 0;
 		for (auto&& [id, buffer_size, buffer] : std::ranges::views::values(shader_buffers)) {
 			size += buffer_size;
 		}
@@ -309,8 +326,199 @@ void POCMaterial::set(const std::string& name, const glm::vec4& value) { set<>(n
 void POCMaterial::set(const std::string& name, const glm::mat3& value) { set<>(name, value); }
 void POCMaterial::set(const std::string& name, const glm::mat4& value) { set<>(name, value); }
 
-void POCMaterial::set(const std::string& name, const Ref<Disarray::Texture>& value) { }
-void POCMaterial::set(const std::string& name, const Ref<Disarray::Texture>&, std::uint32_t value) { }
-void POCMaterial::set(const std::string& name, const Ref<Disarray::Image>& image) { }
+auto POCMaterial::invalidate_descriptor_sets() -> void
+{
+	for (auto i = FrameIndex { 0 }; i < props.swapchain_image_count; i++) {
+		dirty_descriptor_sets.at(i.value) = true;
+	}
+}
+
+void POCMaterial::set_vulkan_descriptor(const std::string& name, const Ref<Vulkan::Texture>& texture)
+{
+	const auto* resource = find_resource_declaration(name);
+	const std::uint32_t binding = resource->get_register();
+
+	if (binding < textures.size() && textures[binding] && texture->hash() == textures[binding]->hash() && resident_descriptors.contains(binding)) {
+		return;
+	}
+
+	if (binding >= textures.size()) {
+		textures.resize(binding + 1);
+	}
+	textures[binding] = texture;
+
+	const auto* wds = props.shader.as<Vulkan::UnifiedShader>()->get_descriptor_set(name);
+	resident_descriptors[binding]
+		= std::make_shared<PendingDescriptor>(PendingDescriptor { PendingDescriptorType::Texture2D, *wds, {}, texture, nullptr });
+	pending_descriptors.push_back(resident_descriptors.at(binding));
+
+	invalidate_descriptor_sets();
+}
+
+auto POCMaterial::set_vulkan_descriptor(const std::string& name, const Ref<Vulkan::Texture3D>& texture) -> void
+{
+	const auto* resource = find_resource_declaration(name);
+
+	const std::uint32_t binding = resource->get_register();
+	// Texture is already set
+	if (binding < textures.size() && textures[binding] && texture->hash() == textures[binding]->hash()
+		&& resident_descriptors.find(binding) != resident_descriptors.end()) {
+		return;
+	}
+
+	if (binding >= textures.size()) {
+		textures.resize(binding + 1);
+	}
+	textures[binding] = texture;
+
+	const auto* wds = props.shader.as<Vulkan::UnifiedShader>()->get_descriptor_set(name);
+	resident_descriptors[binding]
+		= std::make_shared<PendingDescriptor>(PendingDescriptor { PendingDescriptorType::TextureCube, *wds, {}, texture, nullptr });
+	pending_descriptors.push_back(resident_descriptors.at(binding));
+
+	invalidate_descriptor_sets();
+}
+
+void POCMaterial::set_vulkan_descriptor(const std::string& name, const Ref<Vulkan::Texture>& texture, uint32_t array_index)
+{
+	const auto* resource = find_resource_declaration(name);
+
+	const std::uint32_t binding = resource->get_register();
+	// Texture is already set
+	if (binding < texture_arrays.size() && texture_arrays[binding].size() < array_index
+		&& texture->hash() == texture_arrays[binding][array_index]->hash()) {
+		return;
+	}
+
+	if (binding >= texture_arrays.size()) {
+		texture_arrays.resize(binding + 1);
+	}
+
+	if (array_index >= texture_arrays[binding].size()) {
+		texture_arrays[binding].resize(array_index + 1);
+	}
+
+	texture_arrays[binding][array_index] = texture;
+
+	const auto* wds = props.shader.as<Vulkan::UnifiedShader>()->get_descriptor_set(name);
+	if (!resident_descriptor_arrays.contains(binding)) {
+		resident_descriptor_arrays[binding]
+			= std::make_shared<PendingDescriptorArray>(PendingDescriptorArray { PendingDescriptorType::Texture2D, *wds, {}, {}, {} });
+	}
+
+	const auto& resident_descriptor_array = resident_descriptor_arrays.at(binding);
+	if (array_index >= resident_descriptor_array->textures.size()) {
+		resident_descriptor_array->textures.resize(array_index + 1);
+	}
+
+	resident_descriptor_array->textures[array_index] = texture;
+
+	invalidate_descriptor_sets();
+}
+
+void POCMaterial::set_vulkan_descriptor(const std::string& name, const Ref<Vulkan::Image>& image)
+{
+	const auto* resource = find_resource_declaration(name);
+
+	const std::uint32_t binding = resource->get_register();
+	if (binding < images.size() && images[binding] && resident_descriptors.contains(binding)) {
+		return;
+	}
+
+	if (resource->get_register() >= images.size()) {
+		images.resize(resource->get_register() + 1);
+	}
+	images[resource->get_register()] = image;
+
+	const auto* wds = props.shader.as<Vulkan::UnifiedShader>()->get_descriptor_set(name);
+	resident_descriptors[binding]
+		= std::make_shared<PendingDescriptor>(PendingDescriptor { PendingDescriptorType::Image2D, *wds, {}, nullptr, image });
+	pending_descriptors.push_back(resident_descriptors.at(binding));
+
+	invalidate_descriptor_sets();
+}
+
+void POCMaterial::set(const std::string& name, const Ref<Disarray::Texture>& value)
+{
+	if (value->get_properties().dimension == Disarray::TextureDimension::Two) {
+		set_vulkan_descriptor(name, value.as<Vulkan::Texture>());
+	} else {
+		set_vulkan_descriptor(name, value.as<Vulkan::Texture3D>());
+	}
+}
+
+void POCMaterial::set(const std::string& name, const Ref<Disarray::Texture>& texture, std::uint32_t value)
+{
+	set_vulkan_descriptor(name, texture.as<Vulkan::Texture>(), value);
+}
+
+void POCMaterial::set(const std::string& name, const Ref<Disarray::Image>& image) { set_vulkan_descriptor(name, image.as<Vulkan::Image>()); }
+
+auto POCMaterial::update_for_rendering(FrameIndex frame_index, const std::vector<std::vector<VkWriteDescriptorSet>>& uniform_write_descriptors)
+	-> void
+{
+	auto* vk_device = supply_cast<Vulkan::Device>(device);
+	for (const auto& descriptor : resident_descriptors | std::views::values) {
+		if (descriptor->type == PendingDescriptorType::Image2D) {
+			if (Ref<Vulkan::Image> image = descriptor->image.as<Vulkan::Image>(); descriptor->write_set.pImageInfo != nullptr
+				&& image->get_descriptor_info().imageView != descriptor->write_set.pImageInfo->imageView) {
+				pending_descriptors.emplace_back(descriptor);
+				invalidate_descriptor_sets();
+			}
+		}
+	}
+
+	std::vector<VkDescriptorImageInfo> array_image_infos;
+
+	dirty_descriptor_sets[frame_index.value] = false;
+	write_descriptors[frame_index.value].clear();
+
+	if (!uniform_write_descriptors.empty()) {
+		for (const auto& write : uniform_write_descriptors[frame_index.value]) {
+			write_descriptors[frame_index.value].push_back(write);
+		}
+	}
+
+	for (auto&& [binding, pd] : resident_descriptors) {
+		if (pd->type == PendingDescriptorType::Texture2D) {
+			auto texture = pd->texture.as<Vulkan::Texture>();
+			pd->image_info = cast_to<Vulkan::Image>(texture->get_image(0)).get_descriptor_info();
+			pd->write_set.pImageInfo = &pd->image_info;
+		} else if (pd->type == PendingDescriptorType::TextureCube) {
+			Ref<Vulkan::Texture3D> texture = pd->texture.as<Vulkan::Texture3D>();
+			pd->image_info = cast_to<Vulkan::Image>(texture->get_image(0)).get_descriptor_info();
+			pd->write_set.pImageInfo = &pd->image_info;
+		} else if (pd->type == PendingDescriptorType::Image2D) {
+			auto image = pd->image.as<Vulkan::Image>();
+			pd->image_info = image->get_descriptor_info();
+			pd->write_set.pImageInfo = &pd->image_info;
+		}
+
+		write_descriptors[frame_index.value].push_back(pd->write_set);
+	}
+
+	for (auto&& [binding, pd] : resident_descriptor_arrays) {
+		if (pd->type == PendingDescriptorType::Texture2D) {
+			for (const auto& tex : pd->textures) {
+				auto texture = tex.as<Vulkan::Texture>();
+				array_image_infos.emplace_back(texture->get_descriptor_info());
+			}
+		}
+		pd->write_set.pImageInfo = array_image_infos.data();
+		pd->write_set.descriptorCount = static_cast<uint32_t>(array_image_infos.size());
+		write_descriptors[frame_index.value].push_back(pd->write_set);
+	}
+
+	auto shader = props.shader.as<Vulkan::UnifiedShader>();
+	const auto descriptor_set = shader->allocate_descriptor_set();
+	descriptor_sets[frame_index] = descriptor_set;
+	for (auto& write_descriptor : write_descriptors[frame_index.value]) {
+		write_descriptor.dstSet = descriptor_set.descriptor_sets[0];
+	}
+
+	vkUpdateDescriptorSets(
+		vk_device, static_cast<std::uint32_t>(write_descriptors[frame_index.value].size()), write_descriptors[frame_index.value].data(), 0, nullptr);
+	pending_descriptors.clear();
+}
 
 } // namespace Disarray::Vulkan

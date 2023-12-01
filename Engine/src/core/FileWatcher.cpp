@@ -77,8 +77,12 @@ FileWatcher::FileWatcher(Threading::ThreadPool& pool, const std::filesystem::pat
 void FileWatcher::loop_until()
 {
 	while (running) {
-		std::this_thread::sleep_for(delay);
 		update();
+
+		auto now = std::chrono::steady_clock::now();
+		while (std::chrono::steady_clock::now() - now < delay || !running) {
+			std::this_thread::yield();
+		}
 	}
 }
 
@@ -101,10 +105,7 @@ namespace {
 	auto register_callback(FileStatus status, auto& activations, auto&& function)
 	{
 		auto func = [activation = function, status = status](const FileInformation& file) {
-			const auto is_given_status = (file.status & status) != FileStatus {};
-			if (is_given_status) {
-				Log::info("FileWatcher", "Status for file '{}': Old status: '{}', New status: '{}'", file.path, magic_enum::enum_name(file.status),
-					magic_enum::enum_name(status));
+			if ((file.status & status) != FileStatus {}) {
 				activation(file);
 			}
 		};
@@ -182,7 +183,6 @@ FileWatcher::~FileWatcher() { stop(); }
 void FileWatcher::stop()
 {
 	running = false;
-	finaliser.wait();
 	activations.clear();
 }
 

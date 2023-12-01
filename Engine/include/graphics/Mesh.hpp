@@ -51,18 +51,19 @@ struct Index {
 };
 
 struct StaticSubmesh {
-	uint32_t BaseVertex;
-	uint32_t BaseIndex;
-	uint32_t MaterialIndex;
-	uint32_t IndexCount;
-	uint32_t VertexCount;
+	std::uint32_t base_vertex;
+	std::uint32_t base_index;
+	std::uint32_t material_index;
+	std::uint32_t index_count;
+	std::uint32_t vertex_count;
 
-	glm::mat4 Transform { 1.0f }; // World transform
-	glm::mat4 LocalTransform { 1.0f };
-	AABB BoundingBox;
+	glm::mat4 transform { 1.0F };
+	glm::mat4 local_transform { 1.0F };
+	AABB bounding_box;
 
-	std::string NodeName, MeshName;
-	bool IsRigged = false;
+	std::string node_name {};
+	std::string mesh_name {};
+	bool is_rigged = false;
 };
 
 class StaticMesh : public ReferenceCountable {

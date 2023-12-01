@@ -32,28 +32,18 @@ struct FontColourImage {
     uint identifier;
 };
 
-layout(push_constant) uniform PushConstantBlock {
-    mat4 object_transform;
-    vec4 colour;
-    uint max_identifiers;
-    uint max_spot_lights;
-    uint max_point_lights;
-    uint bound_textures;
-    int image_indices[MAX_PC_IMAGE_INDICES];
-}
-pc;
-
-layout(push_constant) uniform Material
+layout(push_constant) uniform PushConstantBlock
 {
-    vec3 AlbedoColor;
-    float Metalness;
-    float Roughness;
-    float Emission;
+    mat4 object_transform;
+    vec3 albedo_colour;
+    float metalness;
+    float roughness;
+    float emission;
 
     float EnvMapRotation;
 
-    bool UseNormalMap;
-} u_MaterialUniforms;
+    bool use_normal_map;
+} pc;
 
 layout(set = 0, binding = 0) uniform UniformBlock {
     mat4 view;
@@ -69,7 +59,10 @@ layout(set = 0, binding = 1) uniform CameraUniformBlock {
 }
 cbo;
 
-layout(set = 0, binding = 2) uniform PointLightBlock { PointLight[MAX_POINT_LIGHTS] lights; }
+layout(std140, set = 0, binding = 2) uniform PointLightBlock {
+    PointLight[MAX_POINT_LIGHTS] lights;
+    uvec4 max_point_lights;// To accomodate for std140 alignment
+}
 plbo;
 
 layout(set = 0, binding = 3) uniform ShadowPassBlock {
@@ -89,7 +82,10 @@ layout(set = 0, binding = 4) uniform DirectionalLightBlock {
 }
 dlu;
 
-layout(set = 0, binding = 5) uniform SpotLightBlock { SpotLight[MAX_POINT_LIGHTS] lights; }
+layout(set = 0, binding = 5) uniform SpotLightBlock {
+    SpotLight[MAX_POINT_LIGHTS] lights;
+    uvec4 max_spot_lights;// To accomodate for std140 alignment
+}
 slbo;
 
 layout(set = 0, binding = 6) uniform GlyphUBOBlock {

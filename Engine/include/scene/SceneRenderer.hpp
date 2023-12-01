@@ -61,6 +61,21 @@ template <class Buffer> struct BufferSet {
 		return storage_buffers.at(get_current_frame_index(graphics_resource)).at(DescriptorSet(0)).at(binding);
 	}
 
+	[[nodiscard]] auto for_frame(FrameIndex frame_index, DescriptorSet set, DescriptorBinding binding) const -> const Scope<Buffer>&
+	{
+		return storage_buffers.at(frame_index.value).at(set.value).at(binding.value);
+	}
+
+	[[nodiscard]] auto for_frame(DescriptorSet set, DescriptorBinding binding) const -> const Scope<Buffer>&
+	{
+		return storage_buffers.at(get_current_frame_index(graphics_resource)).at(set).at(binding);
+	}
+
+	[[nodiscard]] auto for_frame(DescriptorBinding binding) const -> const Scope<Buffer>&
+	{
+		return storage_buffers.at(get_current_frame_index(graphics_resource)).at(DescriptorSet(0)).at(binding);
+	}
+
 	auto for_each_frame(auto&& func) const { Collections::for_each_unwrapped(storage_buffers.at(get_current_frame_index(graphics_resource)), func); }
 	auto for_each_frame_and_set(DescriptorSet set, auto&& func) const
 	{
@@ -175,6 +190,7 @@ private:
 	Extent renderer_extent {};
 
 	Scope<Mesh> aabb_model;
+	Ref<Disarray::Pipeline> geometry_pipeline;
 	Ref<Disarray::CommandExecutor> command_executor {};
 
 	std::unordered_map<SceneFramebuffer, Ref<Disarray::Framebuffer>> framebuffers {};

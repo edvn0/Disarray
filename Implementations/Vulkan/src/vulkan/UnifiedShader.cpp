@@ -5,15 +5,18 @@
 
 #include <glslang/Public/ShaderLang.h>
 
+#include <utility>
 #include <vector>
 
 #include "SPIRV/GlslangToSpv.h"
 #include "SPIRV/SpvTools.h"
 #include "core/Ensure.hpp"
+#include "core/String.hpp"
 #include "core/filesystem/AssetLocations.hpp"
 #include "core/filesystem/FileIO.hpp"
 #include "graphics/ShaderCompiler.hpp"
 #include "vulkan/Device.hpp"
+#include "vulkan/Renderer.hpp"
 #include "vulkan/Shader.hpp"
 #include "vulkan/UnifiedShader.hpp"
 
@@ -21,7 +24,7 @@ namespace Disarray::Vulkan {
 
 class UnifiedIncluder final : public glslang::TShader::Includer {
 public:
-	explicit UnifiedIncluder(const std::filesystem::path& dir);
+	explicit UnifiedIncluder(std::filesystem::path dir);
 	~UnifiedIncluder() override;
 
 	auto includeSystem(const char*, const char*, std::size_t) -> IncludeResult* override;
@@ -258,33 +261,30 @@ namespace {
 		auto resources = compiler.get_shader_resources();
 
 		for (const auto& resource : resources.uniform_buffers) {
-			auto active_buffers = compiler.get_active_buffer_ranges(resource.id);
-			if (active_buffers.empty()) {
-				continue;
-			}
-			// Discard unused buffers from headers
+			// if (auto active_buffers = compiler.get_active_buffer_ranges(resource.id); active_buffers.empty()) {
+			//	continue;
+			// }
+
 			const auto& name = resource.name;
 			const auto& buffer_type = compiler.get_type(resource.base_type_id);
-			// auto member_count = static_cast<std::uint32_t>(buffer_type.member_types.size());
 			auto binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 			auto descriptor_set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 			auto size = static_cast<std::uint32_t>(compiler.get_declared_struct_size(buffer_type));
 
-			if (descriptor_set >= output.ShaderDescriptorSets.size()) {
-				output.ShaderDescriptorSets.resize(descriptor_set + 1);
+			if (descriptor_set >= output.shader_descriptor_sets.size()) {
+				output.shader_descriptor_sets.resize(descriptor_set + 1);
 			}
 
-			Reflection::ShaderDescriptorSet& shader_descriptor_set = output.ShaderDescriptorSets[descriptor_set];
+			auto& shader_descriptor_set = output.shader_descriptor_sets[descriptor_set];
 			if (!global_uniform_buffers[descriptor_set].contains(binding)) {
 				Reflection::UniformBuffer uniform_buffer;
 				uniform_buffer.BindingPoint = binding;
 				uniform_buffer.Size = size;
 				uniform_buffer.Name = name;
-				uniform_buffer.ShaderStage = VK_SHADER_STAGE_ALL;
+				uniform_buffer.ShaderStage = VK_SHADER_STAGE_ALL_GRAPHICS;
 				global_uniform_buffers.at(descriptor_set)[binding] = uniform_buffer;
 			} else {
-				Reflection::UniformBuffer& uniform_buffer = global_uniform_buffers.at(descriptor_set).at(binding);
-				if (size > uniform_buffer.Size) {
+				if (auto& uniform_buffer = global_uniform_buffers.at(descriptor_set).at(binding); size > uniform_buffer.Size) {
 					uniform_buffer.Size = size;
 				}
 			}
@@ -292,10 +292,10 @@ namespace {
 		}
 
 		for (const auto& resource : resources.storage_buffers) {
-			auto active_buffers = compiler.get_active_buffer_ranges(resource.id);
-			if (active_buffers.empty()) {
+			/* if (auto active_buffers = compiler.get_active_buffer_ranges(resource.id); active_buffers.empty()) {
 				continue;
 			}
+			*/
 
 			const auto& name = resource.name;
 			const auto& buffer_type = compiler.get_type(resource.base_type_id);
@@ -304,21 +304,20 @@ namespace {
 			auto descriptor_set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 			auto size = static_cast<std::uint32_t>(compiler.get_declared_struct_size(buffer_type));
 
-			if (descriptor_set >= output.ShaderDescriptorSets.size()) {
-				output.ShaderDescriptorSets.resize(descriptor_set + 1);
+			if (descriptor_set >= output.shader_descriptor_sets.size()) {
+				output.shader_descriptor_sets.resize(descriptor_set + 1);
 			}
 
-			Reflection::ShaderDescriptorSet& shader_descriptor_set = output.ShaderDescriptorSets[descriptor_set];
+			auto& shader_descriptor_set = output.shader_descriptor_sets[descriptor_set];
 			if (!global_storage_buffers[descriptor_set].contains(binding)) {
 				Reflection::StorageBuffer storage_buffer;
 				storage_buffer.BindingPoint = binding;
 				storage_buffer.Size = size;
 				storage_buffer.Name = name;
-				storage_buffer.ShaderStage = VK_SHADER_STAGE_ALL;
+				storage_buffer.ShaderStage = VK_SHADER_STAGE_ALL_GRAPHICS;
 				global_storage_buffers.at(descriptor_set)[binding] = storage_buffer;
 			} else {
-				Reflection::StorageBuffer& storage_buffer = global_storage_buffers.at(descriptor_set).at(binding);
-				if (size > storage_buffer.Size) {
+				if (auto& storage_buffer = global_storage_buffers.at(descriptor_set).at(binding); size > storage_buffer.Size) {
 					storage_buffer.Size = size;
 				}
 			}
@@ -332,11 +331,11 @@ namespace {
 			auto buffer_size = static_cast<std::uint32_t>(compiler.get_declared_struct_size(buffer_type));
 			auto member_count = static_cast<std::uint32_t>(buffer_type.member_types.size());
 			auto buffer_offset = 0U;
-			if (!output.PushConstantRanges.empty()) {
-				buffer_offset = output.PushConstantRanges.back().Offset + output.PushConstantRanges.back().Size;
+			if (!output.push_constant_ranges.empty()) {
+				buffer_offset = output.push_constant_ranges.back().Offset + output.push_constant_ranges.back().Size;
 			}
 
-			auto& push_constant_range = output.PushConstantRanges.emplace_back();
+			auto& push_constant_range = output.push_constant_ranges.emplace_back();
 			push_constant_range.ShaderStage = shaderStage;
 			push_constant_range.Size = buffer_size - buffer_offset;
 			push_constant_range.Offset = buffer_offset;
@@ -346,15 +345,16 @@ namespace {
 				continue;
 			}
 
-			Reflection::ShaderBuffer& buffer = output.constant_buffers[buffer_name];
+			auto& buffer = output.constant_buffers[buffer_name];
 			buffer.Name = buffer_name;
-			buffer.Size = buffer_size - buffer_offset;
+			buffer.Size = buffer_size - buffer_offset > buffer.Size ? buffer_size - buffer_offset : buffer.Size;
 
 			for (auto i = 0U; i < member_count; i++) {
 				const auto& type = compiler.get_type(buffer_type.member_types[i]);
 				const auto& member_name = compiler.get_member_name(buffer_type.self, i);
 				auto size = static_cast<std::uint32_t>(compiler.get_declared_struct_member_size(buffer_type, i));
-				auto offset = compiler.type_struct_member_offset(buffer_type, i) - buffer_offset;
+				const auto member_offset = compiler.type_struct_member_offset(buffer_type, i);
+				const auto offset = member_offset <= 0 ? member_offset - buffer_offset : buffer_offset - member_offset;
 
 				const auto uniform_name = fmt::format("{}.{}", buffer_name, member_name);
 				const auto spirv_type = spir_type_to_shader_uniform_type(type);
@@ -373,11 +373,11 @@ namespace {
 			if (array_size == 0) {
 				array_size = 1;
 			}
-			if (descriptor_set >= output.ShaderDescriptorSets.size()) {
-				output.ShaderDescriptorSets.resize(descriptor_set + 1);
+			if (descriptor_set >= output.shader_descriptor_sets.size()) {
+				output.shader_descriptor_sets.resize(descriptor_set + 1);
 			}
 
-			Reflection::ShaderDescriptorSet& shader_descriptor_set = output.ShaderDescriptorSets[descriptor_set];
+			auto& shader_descriptor_set = output.shader_descriptor_sets[descriptor_set];
 			auto& image_sampler = shader_descriptor_set.ImageSamplers[binding];
 			image_sampler.BindingPoint = binding;
 			image_sampler.DescriptorSet = descriptor_set;
@@ -399,11 +399,11 @@ namespace {
 			if (array_size == 0) {
 				array_size = 1;
 			}
-			if (descriptor_set >= output.ShaderDescriptorSets.size()) {
-				output.ShaderDescriptorSets.resize(descriptor_set + 1);
+			if (descriptor_set >= output.shader_descriptor_sets.size()) {
+				output.shader_descriptor_sets.resize(descriptor_set + 1);
 			}
 
-			Reflection::ShaderDescriptorSet& shader_descriptor_set = output.ShaderDescriptorSets[descriptor_set];
+			auto& shader_descriptor_set = output.shader_descriptor_sets[descriptor_set];
 			auto& image_sampler = shader_descriptor_set.SeparateTextures[binding];
 			image_sampler.BindingPoint = binding;
 			image_sampler.DescriptorSet = descriptor_set;
@@ -424,11 +424,11 @@ namespace {
 			if (array_size == 0) {
 				array_size = 1;
 			}
-			if (descriptor_set >= output.ShaderDescriptorSets.size()) {
-				output.ShaderDescriptorSets.resize(descriptor_set + 1);
+			if (descriptor_set >= output.shader_descriptor_sets.size()) {
+				output.shader_descriptor_sets.resize(descriptor_set + 1);
 			}
 
-			Reflection::ShaderDescriptorSet& shader_descriptor_set = output.ShaderDescriptorSets[descriptor_set];
+			auto& shader_descriptor_set = output.shader_descriptor_sets[descriptor_set];
 			auto& image_sampler = shader_descriptor_set.SeparateSamplers[binding];
 			image_sampler.BindingPoint = binding;
 			image_sampler.DescriptorSet = descriptor_set;
@@ -449,11 +449,11 @@ namespace {
 			if (array_size == 0) {
 				array_size = 1;
 			}
-			if (descriptor_set >= output.ShaderDescriptorSets.size()) {
-				output.ShaderDescriptorSets.resize(descriptor_set + 1);
+			if (descriptor_set >= output.shader_descriptor_sets.size()) {
+				output.shader_descriptor_sets.resize(descriptor_set + 1);
 			}
 
-			Reflection::ShaderDescriptorSet& shader_descriptor_set = output.ShaderDescriptorSets[descriptor_set];
+			auto& shader_descriptor_set = output.shader_descriptor_sets[descriptor_set];
 			auto& image_sampler = shader_descriptor_set.StorageImages[binding];
 			image_sampler.BindingPoint = binding;
 			image_sampler.DescriptorSet = descriptor_set;
@@ -467,35 +467,14 @@ namespace {
 
 } // namespace
 
-auto split_string(const std::string& input, const std::string& delimiter) -> std::vector<std::string>
-{
-	std::vector<std::string> split_strings;
-	std::size_t pos = 0;
-	std::size_t found;
-
-	while ((found = input.find(delimiter, pos)) != std::string::npos) {
-		if (auto token = input.substr(pos, found - pos); !token.empty()) {
-			split_strings.push_back(token);
-		}
-		pos = found + delimiter.length();
-	}
-
-	if (const auto last_token = input.substr(pos); !last_token.empty()) {
-		split_strings.push_back(last_token);
-	}
-
-	return split_strings;
-}
-
-UnifiedIncluder::UnifiedIncluder(const std::filesystem::path& dir)
-	: directory(dir)
+UnifiedIncluder::UnifiedIncluder(std::filesystem::path dir)
+	: directory(std::move(dir))
 {
 }
 
 UnifiedIncluder::~UnifiedIncluder() = default;
 
-auto UnifiedIncluder::includeSystem(const char* header_name, const char* /*includerName*/, size_t /*inclusionDepth*/)
-	-> UnifiedIncluder::IncludeResult*
+auto UnifiedIncluder::includeSystem(const char* header_name, const char*, std::size_t) -> UnifiedIncluder::IncludeResult*
 {
 	const auto& source = get_or_emplace_include(header_name);
 	return new IncludeResult { header_name, source.c_str(), source.size(), nullptr };
@@ -527,7 +506,7 @@ auto UnifiedIncluder::get_or_emplace_include(const std::string& header_name) -> 
 	return found;
 }
 
-auto UnifiedIncluder::includeLocal(const char* header_name, const char* includer_name, std::size_t depth) -> UnifiedIncluder::IncludeResult*
+auto UnifiedIncluder::includeLocal(const char* header_name, const char*, std::size_t) -> UnifiedIncluder::IncludeResult*
 {
 	const auto& source = get_or_emplace_include(header_name);
 	return new IncludeResult { header_name, source.c_str(), source.size(), nullptr };
@@ -538,6 +517,7 @@ void UnifiedIncluder::releaseInclude(IncludeResult* result) { delete result; }
 UnifiedShader::UnifiedShader(const Disarray::Device& dev, UnifiedShaderProperties in_props)
 	: Disarray::UnifiedShader(std::move(in_props))
 	, device(dev)
+	, name(props.path.filename().string())
 {
 	recreate(false, {});
 }
@@ -546,8 +526,7 @@ auto UnifiedShader::clean_shader() -> void
 {
 	sources.clear();
 	spirv_sources.clear();
-	for (const auto& kv : shader_modules) {
-		auto&& [type, module] = kv;
+	for (auto&& [type, module] : shader_modules) {
 		vkDestroyShaderModule(supply_cast<Vulkan::Device>(device), module, nullptr);
 	}
 	for (const auto& layout : descriptor_set_layouts) {
@@ -574,11 +553,11 @@ void UnifiedShader::recreate(bool should_clean, const Extent&)
 	static constexpr auto fragment_delimiter = "#pragma stage fragment"sv;
 	static constexpr auto vertex_delimiter_size = vertex_delimiter.size();
 
-	auto split = split_string(read_file, std::string { fragment_delimiter });
+	auto split = StringUtilities::split_string(read_file, std::string { fragment_delimiter });
 
-	auto vertex = split.at(0);
+	auto& vertex = split.at(0);
 	vertex.erase(0, vertex_delimiter_size);
-	auto fragment = split.at(1);
+	auto& fragment = split.at(1);
 
 	sources[ShaderType::Vertex] = vertex;
 	sources[ShaderType::Fragment] = fragment;
@@ -588,8 +567,7 @@ void UnifiedShader::recreate(bool should_clean, const Extent&)
 
 	glslang::TProgram program;
 	std::unordered_map<ShaderType, Scope<glslang::TShader>> shaders {};
-	for (const auto& kv : sources) {
-		auto&& [type, source] = kv;
+	for (auto&& [type, source] : sources) {
 		auto resources = default_resources();
 		auto& custom = resources;
 		custom.maxCombinedTextureImageUnits = 2000;
@@ -633,8 +611,7 @@ void UnifiedShader::recreate(bool should_clean, const Extent&)
 		shaders.emplace(type, std::move(shader));
 	}
 
-	for (const auto& kv : shaders) {
-		auto&& [type, shader] = kv;
+	for (auto&& [type, shader] : shaders) {
 		program.addShader(shader.get());
 	}
 
@@ -660,8 +637,7 @@ void UnifiedShader::recreate(bool should_clean, const Extent&)
 auto reflect_on_stages(const std::unordered_map<Disarray::ShaderType, std::vector<std::uint32_t>>& spirv_codes) -> ReflectionData
 {
 	ReflectionData output {};
-	for (const auto& kv : spirv_codes) {
-		auto&& [type, stage_info] = kv;
+	for (auto&& [type, stage_info] : spirv_codes) {
 		reflect_code(to_stage(type), stage_info, output);
 	}
 	return output;
@@ -669,8 +645,7 @@ auto reflect_on_stages(const std::unordered_map<Disarray::ShaderType, std::vecto
 
 auto UnifiedShader::create_vulkan_objects() -> void
 {
-	for (const auto& kv : spirv_sources) {
-		auto&& [type, spirv] = kv;
+	for (auto&& [type, spirv] : spirv_sources) {
 		VkShaderModuleCreateInfo create_info {};
 		create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		create_info.codeSize = spirv.size() * sizeof(std::uint32_t);
@@ -682,8 +657,8 @@ auto UnifiedShader::create_vulkan_objects() -> void
 			throw CouldNotCompileShaderException { "Failed to create shader module!" };
 		}
 
-		shader_modules.emplace(type, std::move(shader_module));
-		stage_infos.emplace(type,
+		shader_modules.emplace(type, shader_module);
+		stage_infos.try_emplace(type,
 			VkPipelineShaderStageCreateInfo {
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 				.stage = to_vulkan_shader_type(type),
@@ -696,117 +671,152 @@ auto UnifiedShader::create_vulkan_objects() -> void
 	create_descriptor_set_layouts();
 }
 
+auto UnifiedShader::get_descriptor_set(const std::string& descriptor_identifier, std::uint32_t set) const -> const VkWriteDescriptorSet*
+{
+	if (set >= reflection_data.shader_descriptor_sets.size()) {
+		return nullptr;
+	}
+
+	const auto& shader_descriptor_set = reflection_data.shader_descriptor_sets[set];
+	if (shader_descriptor_set.write_descriptor_sets.contains(descriptor_identifier)) {
+		return &shader_descriptor_set.write_descriptor_sets.at(descriptor_identifier);
+	}
+
+	Log::warn("Shader", "Shader {0} does not contain requested descriptor set {1}", props.path.string(), descriptor_identifier);
+	return nullptr;
+}
+
+auto UnifiedShader::allocate_descriptor_set(std::uint32_t set) const -> MaterialDescriptorSet
+{
+	MaterialDescriptorSet result;
+
+	if (reflection_data.shader_descriptor_sets.empty()) {
+		return result;
+	}
+
+	VkDescriptorSetAllocateInfo allocation_info = {};
+	allocation_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocation_info.descriptorSetCount = 1;
+	allocation_info.pSetLayouts = &descriptor_set_layouts[set];
+	auto& allocated_set = result.descriptor_sets.emplace_back();
+	GraphicsResource::allocate_descriptor_sets(allocation_info, allocated_set);
+	return result;
+}
+
 auto UnifiedShader::create_descriptor_set_layouts() -> void
 {
 	auto* vk_device = supply_cast<Vulkan::Device>(device);
 
-	for (std::uint32_t set = 0; set < reflection_data.ShaderDescriptorSets.size(); set++) {
-		auto& shader_descriptor_set = reflection_data.ShaderDescriptorSets[set];
+	for (std::uint32_t set = 0; set < reflection_data.shader_descriptor_sets.size(); set++) {
+		auto& shader_descriptor_set = reflection_data.shader_descriptor_sets[set];
 
 		std::vector<VkDescriptorSetLayoutBinding> layout_bindings {};
-		for (auto& [binding, uniformBuffer] : shader_descriptor_set.UniformBuffers) {
-			VkDescriptorSetLayoutBinding& layoutBinding = layout_bindings.emplace_back();
-			layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			layoutBinding.descriptorCount = 1;
-			layoutBinding.stageFlags = uniformBuffer.ShaderStage;
-			layoutBinding.pImmutableSamplers = nullptr;
-			layoutBinding.binding = binding;
+		for (auto& [binding, uniform_buffer] : shader_descriptor_set.UniformBuffers) {
+			VkDescriptorSetLayoutBinding& layout_binding = layout_bindings.emplace_back();
+			layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			layout_binding.descriptorCount = 1;
+			layout_binding.stageFlags = uniform_buffer.ShaderStage;
+			layout_binding.pImmutableSamplers = nullptr;
+			layout_binding.binding = binding;
 
-			VkWriteDescriptorSet& write_set = shader_descriptor_set.WriteDescriptorSets[uniformBuffer.Name];
+			VkWriteDescriptorSet& write_set = shader_descriptor_set.write_descriptor_sets[uniform_buffer.Name];
 			write_set = {};
 			write_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			write_set.descriptorType = layoutBinding.descriptorType;
+			write_set.descriptorType = layout_binding.descriptorType;
 			write_set.descriptorCount = 1;
-			write_set.dstBinding = layoutBinding.binding;
+			write_set.dstBinding = layout_binding.binding;
 		}
 
-		for (auto& [binding, storageBuffer] : shader_descriptor_set.StorageBuffers) {
-			VkDescriptorSetLayoutBinding& layoutBinding = layout_bindings.emplace_back();
-			layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			layoutBinding.descriptorCount = 1;
-			layoutBinding.stageFlags = storageBuffer.ShaderStage;
-			layoutBinding.pImmutableSamplers = nullptr;
-			layoutBinding.binding = binding;
+		for (auto& [binding, storage_buffer] : shader_descriptor_set.StorageBuffers) {
+			VkDescriptorSetLayoutBinding& layout_binding = layout_bindings.emplace_back();
+			layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			layout_binding.descriptorCount = 1;
+			layout_binding.stageFlags = storage_buffer.ShaderStage;
+			layout_binding.pImmutableSamplers = nullptr;
+			layout_binding.binding = binding;
 			ensure(!shader_descriptor_set.UniformBuffers.contains(binding), "Binding is already present!");
 
-			VkWriteDescriptorSet& write_set = shader_descriptor_set.WriteDescriptorSets[storageBuffer.Name];
+			VkWriteDescriptorSet& write_set = shader_descriptor_set.write_descriptor_sets[storage_buffer.Name];
 			write_set = {};
 			write_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			write_set.descriptorType = layoutBinding.descriptorType;
+			write_set.descriptorType = layout_binding.descriptorType;
 			write_set.descriptorCount = 1;
-			write_set.dstBinding = layoutBinding.binding;
+			write_set.dstBinding = layout_binding.binding;
 		}
 
-		for (auto& [binding, imageSampler] : shader_descriptor_set.ImageSamplers) {
-			auto& layoutBinding = layout_bindings.emplace_back();
-			layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			layoutBinding.descriptorCount = imageSampler.ArraySize;
-			layoutBinding.stageFlags = imageSampler.ShaderStage;
-			layoutBinding.pImmutableSamplers = nullptr;
-			layoutBinding.binding = binding;
+		for (auto& [binding, image_sampler] : shader_descriptor_set.ImageSamplers) {
+			auto& layout_binding = layout_bindings.emplace_back();
+			layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			layout_binding.descriptorCount = image_sampler.ArraySize;
+			layout_binding.stageFlags = image_sampler.ShaderStage;
+			layout_binding.pImmutableSamplers = nullptr;
+			layout_binding.binding = binding;
 
 			ensure(!shader_descriptor_set.UniformBuffers.contains(binding), "Binding is already present!");
 			ensure(!shader_descriptor_set.StorageBuffers.contains(binding), "Binding is already present!");
 
-			VkWriteDescriptorSet& write_set = shader_descriptor_set.WriteDescriptorSets[imageSampler.Name];
+			VkWriteDescriptorSet& write_set = shader_descriptor_set.write_descriptor_sets[image_sampler.Name];
 			write_set = {};
 			write_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			write_set.descriptorType = layoutBinding.descriptorType;
-			write_set.descriptorCount = imageSampler.ArraySize;
-			write_set.dstBinding = layoutBinding.binding;
+			write_set.descriptorType = layout_binding.descriptorType;
+			write_set.descriptorCount = image_sampler.ArraySize;
+			write_set.dstBinding = layout_binding.binding;
 		}
 
-		for (auto& [binding, imageSampler] : shader_descriptor_set.SeparateTextures) {
-			auto& layoutBinding = layout_bindings.emplace_back();
-			layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-			layoutBinding.descriptorCount = imageSampler.ArraySize;
-			layoutBinding.stageFlags = imageSampler.ShaderStage;
-			layoutBinding.pImmutableSamplers = nullptr;
-			layoutBinding.binding = binding;
+		for (auto& [binding, image_sampler] : shader_descriptor_set.SeparateTextures) {
+			auto& layout_binding = layout_bindings.emplace_back();
+			layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+			layout_binding.descriptorCount = image_sampler.ArraySize;
+			layout_binding.stageFlags = image_sampler.ShaderStage;
+			layout_binding.pImmutableSamplers = nullptr;
+			layout_binding.binding = binding;
 
 			ensure(!shader_descriptor_set.UniformBuffers.contains(binding), "Binding is already present!");
 			ensure(!shader_descriptor_set.ImageSamplers.contains(binding), "Binding is already present!");
 			ensure(!shader_descriptor_set.StorageBuffers.contains(binding), "Binding is already present!");
 
-			VkWriteDescriptorSet& write_set = shader_descriptor_set.WriteDescriptorSets[imageSampler.Name];
+			VkWriteDescriptorSet& write_set = shader_descriptor_set.write_descriptor_sets[image_sampler.Name];
 			write_set = {};
 			write_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			write_set.descriptorType = layoutBinding.descriptorType;
-			write_set.descriptorCount = imageSampler.ArraySize;
-			write_set.dstBinding = layoutBinding.binding;
+			write_set.descriptorType = layout_binding.descriptorType;
+			write_set.descriptorCount = image_sampler.ArraySize;
+			write_set.dstBinding = layout_binding.binding;
 		}
 
-		for (auto& [binding, imageSampler] : shader_descriptor_set.SeparateSamplers) {
-			auto& layoutBinding = layout_bindings.emplace_back();
-			layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-			layoutBinding.descriptorCount = imageSampler.ArraySize;
-			layoutBinding.stageFlags = imageSampler.ShaderStage;
-			layoutBinding.pImmutableSamplers = nullptr;
-			layoutBinding.binding = binding;
+		for (auto& [binding, image_sampler] : shader_descriptor_set.SeparateSamplers) {
+			auto& layout_binding = layout_bindings.emplace_back();
+			layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+			layout_binding.descriptorCount = image_sampler.ArraySize;
+			layout_binding.stageFlags = image_sampler.ShaderStage;
+			layout_binding.pImmutableSamplers = nullptr;
+			layout_binding.binding = binding;
 
 			ensure(!shader_descriptor_set.UniformBuffers.contains(binding), "Binding is already present!");
 			ensure(!shader_descriptor_set.ImageSamplers.contains(binding), "Binding is already present!");
 			ensure(!shader_descriptor_set.StorageBuffers.contains(binding), "Binding is already present!");
 			ensure(!shader_descriptor_set.SeparateTextures.contains(binding), "Binding is already present!");
 
-			VkWriteDescriptorSet& write_set = shader_descriptor_set.WriteDescriptorSets[imageSampler.Name];
+			VkWriteDescriptorSet& write_set = shader_descriptor_set.write_descriptor_sets[image_sampler.Name];
 			write_set = {};
 			write_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			write_set.descriptorType = layoutBinding.descriptorType;
-			write_set.descriptorCount = imageSampler.ArraySize;
-			write_set.dstBinding = layoutBinding.binding;
+			write_set.descriptorType = layout_binding.descriptorType;
+			write_set.descriptorCount = image_sampler.ArraySize;
+			write_set.dstBinding = layout_binding.binding;
 		}
 
 		for (auto& [bindingAndSet, imageSampler] : shader_descriptor_set.StorageImages) {
-			auto& layoutBinding = layout_bindings.emplace_back();
-			layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			layoutBinding.descriptorCount = imageSampler.ArraySize;
-			layoutBinding.stageFlags = imageSampler.ShaderStage;
-			layoutBinding.pImmutableSamplers = nullptr;
+			auto& layout_binding = layout_bindings.emplace_back();
+			layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			layout_binding.descriptorCount = imageSampler.ArraySize;
+			layout_binding.stageFlags = imageSampler.ShaderStage;
+			layout_binding.pImmutableSamplers = nullptr;
 
-			uint32_t binding = bindingAndSet & 0xffffffff;
+			// Name a variable which has the value 0xFFFFFFFF
+			static constexpr auto max_set = std::numeric_limits<std::uint32_t>::max();
+
+			std::uint32_t binding = bindingAndSet & max_set;
 			// uint32_t descriptorSet = (bindingAndSet >> 32);
-			layoutBinding.binding = binding;
+			layout_binding.binding = binding;
 
 			ensure(!shader_descriptor_set.UniformBuffers.contains(binding), "Binding is already present!");
 			ensure(!shader_descriptor_set.StorageBuffers.contains(binding), "Binding is already present!");
@@ -814,19 +824,22 @@ auto UnifiedShader::create_descriptor_set_layouts() -> void
 			ensure(!shader_descriptor_set.SeparateTextures.contains(binding), "Binding is already present!");
 			ensure(!shader_descriptor_set.SeparateSamplers.contains(binding), "Binding is already present!");
 
-			VkWriteDescriptorSet& write_set = shader_descriptor_set.WriteDescriptorSets[imageSampler.Name];
+			VkWriteDescriptorSet& write_set = shader_descriptor_set.write_descriptor_sets[imageSampler.Name];
 			write_set = {};
 			write_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			write_set.descriptorType = layoutBinding.descriptorType;
+			write_set.descriptorType = layout_binding.descriptorType;
 			write_set.descriptorCount = 1;
-			write_set.dstBinding = layoutBinding.binding;
+			write_set.dstBinding = layout_binding.binding;
 		}
 
-		VkDescriptorSetLayoutCreateInfo descriptorLayout = {};
-		descriptorLayout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorLayout.pNext = nullptr;
-		descriptorLayout.bindingCount = static_cast<std::uint32_t>(layout_bindings.size());
-		descriptorLayout.pBindings = layout_bindings.data();
+		Collections::sort(
+			layout_bindings, [](const VkDescriptorSetLayoutBinding& a, const VkDescriptorSetLayoutBinding& b) { return a.binding < b.binding; });
+
+		VkDescriptorSetLayoutCreateInfo descriptor_layout = {};
+		descriptor_layout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		descriptor_layout.pNext = nullptr;
+		descriptor_layout.bindingCount = static_cast<std::uint32_t>(layout_bindings.size());
+		descriptor_layout.pBindings = layout_bindings.data();
 
 		Log::info("Renderer",
 			"Creating descriptor set {0} with {1} ubo's, {2} ssbo's, {3} samplers, {4} separate textures, {5} separate samplers and {6} storage ",
@@ -835,7 +848,7 @@ auto UnifiedShader::create_descriptor_set_layouts() -> void
 		if (set >= descriptor_set_layouts.size()) {
 			descriptor_set_layouts.resize(static_cast<std::size_t>(set) + 1);
 		}
-		verify(vkCreateDescriptorSetLayout(vk_device, &descriptorLayout, nullptr, &descriptor_set_layouts[set]));
+		verify(vkCreateDescriptorSetLayout(vk_device, &descriptor_layout, nullptr, &descriptor_set_layouts[set]));
 	}
 }
 

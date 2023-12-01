@@ -14,12 +14,6 @@ DataBuffer::DataBuffer(std::size_t s)
 {
 }
 
-DataBuffer::DataBuffer(const void* new_data, std::size_t s)
-	: DataBuffer(s)
-{
-	std::memcpy(data.get(), new_data, s);
-}
-
 DataBuffer::DataBuffer(std::nullptr_t) { }
 
 DataBuffer::~DataBuffer() { }

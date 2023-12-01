@@ -150,6 +150,14 @@ constexpr inline auto map(Iterable auto& collection, auto&& func)
 	return output;
 }
 
+template <typename T, typename BinaryOp> constexpr auto reduce(Iterable auto& collection, BinaryOp operation, T initial = {}) -> T
+{
+	return std::accumulate(std::cbegin(collection), std::cend(collection), initial, std::forward<BinaryOp>(operation));
+}
+
+constexpr auto sort(Iterable auto& collection, auto&& func) { std::sort(std::begin(collection), std::end(collection), func); }
+constexpr auto sort(Iterable auto& collection) { std::sort(std::begin(collection), std::end(collection)); }
+
 #ifdef DISARRAY_WINDOWS
 constexpr inline void parallel_for_each(Iterable auto& collection, auto&& func)
 {

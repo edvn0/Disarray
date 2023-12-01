@@ -5,12 +5,12 @@ namespace Disarray {
 void PushConstant::reset_impl()
 {
 	object_transform = glm::mat4 { 1.0F };
-	colour = glm::vec4 { 1.0F };
-	max_identifiers = 0;
-	max_spot_lights = 0;
-	max_point_lights = 0;
-	bound_textures = 0;
-	image_indices.fill(-1);
+	albedo_colour = glm::vec3 { 1.0F };
+	metalness = 0.0F;
+	roughness = 0.0F;
+	emission = 0.0F;
+	env_map_rotation = 0.0F;
+	use_normal_map = false;
 }
 
 void ViewProjectionUBO::reset_impl()

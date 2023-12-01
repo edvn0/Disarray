@@ -75,6 +75,8 @@ public:
 	[[nodiscard]] virtual auto get_current_frame_index() const -> FrameIndex = 0;
 
 	[[nodiscard]] virtual auto get_device() const -> const Device& = 0;
+
+	virtual auto reset_pool() -> void = 0;
 };
 
 class Renderer : public ReferenceCountable {
@@ -164,7 +166,7 @@ public:
 		CommandExecutor&, std::size_t count, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&)
 		= 0;
 	virtual void draw_static_mesh(CommandExecutor&, const Pipeline&, const BufferSet<UniformBuffer>&, const BufferSet<StorageBuffer>&,
-		const StaticSubmesh&, const MaterialTable&, const TransformMatrix&)
+		const StaticSubmesh&, const Disarray::StaticMesh&, const MaterialTable&, const TransformMatrix&)
 		= 0;
 	/**
 		note: Intended usage is for submeshes, where the pipeline and descriptor sets will be constants (for now!)

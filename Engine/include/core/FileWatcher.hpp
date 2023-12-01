@@ -93,7 +93,11 @@ private:
 	Collections::StringSet extensions {};
 	std::chrono::duration<int, std::milli> delay;
 	Collections::StringMap<FileInformation> paths {};
+
 	std::atomic_bool running { true };
+	std::condition_variable exit_signal_cv;
+	std::mutex exit_signal_mutex;
+
 	std::future<void> finaliser;
 };
 

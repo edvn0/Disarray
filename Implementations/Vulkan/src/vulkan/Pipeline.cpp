@@ -17,6 +17,7 @@
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Shader.hpp"
+#include "vulkan/UnifiedShader.hpp"
 
 namespace Disarray::Vulkan {
 
@@ -321,11 +322,31 @@ void Pipeline::construct_layout(const Extent& extent)
 
 	VkPipelineLayoutCreateInfo pipeline_layout_info {};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+
+	if (props.combined_shader != nullptr) {
+		auto&& combined_shader = cast_to<Vulkan::UnifiedShader>(*props.combined_shader);
+		pipeline_layout_info.setLayoutCount = static_cast<std::uint32_t>(combined_shader.get_descriptor_set_layouts().size()); // Optional
+		pipeline_layout_info.pSetLayouts = combined_shader.get_descriptor_set_layouts().data(); // Optional
+	} else {
+		pipeline_layout_info.setLayoutCount = static_cast<std::uint32_t>(props.descriptor_set_layouts.size()); // Optional
+		pipeline_layout_info.pSetLayouts = props.descriptor_set_layouts.data(); // Optional
+	}
+
 	pipeline_layout_info.setLayoutCount = static_cast<std::uint32_t>(props.descriptor_set_layouts.size()); // Optional
 	pipeline_layout_info.pSetLayouts = props.descriptor_set_layouts.data(); // Optional
 
 	std::vector<VkPushConstantRange> result;
-	for (const auto& pc_layout : props.push_constant_layout.get_input_ranges()) {
+	std::vector<PushConstantRange> ranges;
+	if (props.combined_shader != nullptr) {
+		for (auto reflected_ranges = cast_to<Vulkan::UnifiedShader>(*props.combined_shader).get_push_constant_ranges();
+			 const auto& [ShaderStage, Offset, Size] : reflected_ranges) {
+			ranges.emplace_back(ShaderStage == VK_SHADER_STAGE_VERTEX_BIT ? PushConstantKind::Vertex : PushConstantKind::Fragment, Size, Offset);
+		}
+	} else {
+		ranges = props.push_constant_layout.get_input_ranges();
+	}
+
+	for (const auto& pc_layout : ranges) {
 		auto& out = result.emplace_back();
 		VkShaderStageFlags flags {};
 		if (pc_layout.flags == PushConstantKind::Fragment) {
@@ -347,12 +368,22 @@ void Pipeline::construct_layout(const Extent& extent)
 	pipeline_layout_info.pPushConstantRanges = result.data(); // Optional
 
 	verify(vkCreatePipelineLayout(supply_cast<Vulkan::Device>(device), &pipeline_layout_info, nullptr, &layout));
-
+	std::vector<VkPipelineShaderStageCreateInfo> stage_data {};
+	if (props.combined_shader) {
+		auto&& stages = cast_to<Vulkan::UnifiedShader>(*props.combined_shader).get_stage_data();
+		stage_data = {
+			stages.at(ShaderType::Vertex),
+			stages.at(ShaderType::Fragment),
+		};
+	} else {
+		auto&& stages = retrieve_shader_stages(props.vertex_shader, props.fragment_shader);
+		stage_data = {
+			stages.first,
+			stages.second,
+		};
+	}
 	VkGraphicsPipelineCreateInfo pipeline_create_info {};
 	pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	auto&& stages = retrieve_shader_stages(props.vertex_shader, props.fragment_shader);
-	std::vector<VkPipelineShaderStageCreateInfo> stage_data { stages.first, stages.second };
-
 	std::vector<VkSpecializationMapEntry> specialization_map_entries {};
 	if (props.specialisation_constants.valid()) {
 		// Each shader constant of a shader stage corresponds to one map entry
@@ -420,8 +451,13 @@ Pipeline::~Pipeline()
 	data.resize(size);
 	vkGetPipelineCacheData(supply_cast<Vulkan::Device>(device), cache, &size, data.data());
 
-	const auto pipeline_name = fmt::format(
-		"Pipeline-{}-{}", props.vertex_shader->get_properties().identifier.filename(), props.fragment_shader->get_properties().identifier.filename());
+	std::string pipeline_name;
+	if (props.combined_shader != nullptr) {
+		pipeline_name = fmt::format("Pipeline-{}", props.combined_shader->get_properties().path.filename().string());
+	} else {
+		pipeline_name = fmt::format("Pipeline-{}-{}", props.vertex_shader->get_properties().identifier.filename(),
+			props.fragment_shader->get_properties().identifier.filename());
+	}
 
 	const auto name = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", pipeline_name, props.hash());
 	FS::write_to_file(name, size, std::span { data });
@@ -459,8 +495,13 @@ auto Pipeline::get_render_pass() const -> const Disarray::RenderPass& { return p
 
 void Pipeline::try_find_or_recreate_cache()
 {
-	const auto pipeline_name = fmt::format(
-		"Pipeline-{}-{}", props.vertex_shader->get_properties().identifier.filename(), props.fragment_shader->get_properties().identifier.filename());
+	std::string pipeline_name;
+	if (props.combined_shader != nullptr) {
+		pipeline_name = fmt::format("Pipeline-{}", props.combined_shader->get_properties().path.filename().string());
+	} else {
+		pipeline_name = fmt::format("Pipeline-{}-{}", props.vertex_shader->get_properties().identifier.filename(),
+			props.fragment_shader->get_properties().identifier.filename());
+	}
 
 	const auto name = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", pipeline_name, props.hash());
 
@@ -473,7 +514,7 @@ void Pipeline::try_find_or_recreate_cache()
 	}
 
 	MSTimer timer;
-	std::vector<unsigned char> buffer(std::istreambuf_iterator<char>(input_stream), {});
+	const std::vector<unsigned char> buffer(std::istreambuf_iterator<char>(input_stream), {});
 
 	VkPipelineCacheCreateInfo cache_create_info {};
 	cache_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;

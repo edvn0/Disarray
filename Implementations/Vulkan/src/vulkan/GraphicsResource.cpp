@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
+#include <fmt/core.h>
 #include <magic_enum.hpp>
 #include <magic_enum_switch.hpp>
 
@@ -12,7 +13,6 @@
 #include "core/Collections.hpp"
 #include "core/Types.hpp"
 #include "core/filesystem/AssetLocations.hpp"
-#include "fmt/core.h"
 #include "graphics/Image.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Renderer.hpp"
@@ -46,6 +46,8 @@ GraphicsResource::GraphicsResource(const Disarray::Device& dev, const Disarray::
 }
 
 void GraphicsResource::recreate(bool should_clean, const Extent&) { initialise_descriptors(should_clean); }
+
+void GraphicsResource::reset_pool() { pool->reset(); }
 
 namespace {
 	auto create_set_zero_bindings()
@@ -182,7 +184,7 @@ namespace {
 		roughness_map.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		roughness_map.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-		return std::array {
+		std::array output {
 			default_binding,
 			camera_binding,
 			point_light_binding,
@@ -206,6 +208,8 @@ namespace {
 			metalness_map,
 			roughness_map,
 		};
+
+		return output;
 	}
 } // namespace
 
@@ -217,7 +221,7 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 
 	auto* vk_device = supply_cast<Vulkan::Device>(device);
 
-	auto set_zero_bindings = create_set_zero_bindings();
+	const auto set_zero_bindings = create_set_zero_bindings();
 	auto layout_create_info = vk_structures<VkDescriptorSetLayoutCreateInfo> {}();
 
 	layout_create_info.bindingCount = static_cast<std::uint32_t>(set_zero_bindings.size());
@@ -228,7 +232,7 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 	layouts = { set_zero_ubos_layout };
 	static constexpr auto descriptor_pool_max_size = 1000;
 
-	const std::array<VkDescriptorPoolSize, 12> sizes = []() {
+	constexpr std::array<VkDescriptorPoolSize, 12> sizes = []() {
 		std::array<VkDescriptorPoolSize, 12> temp {};
 		temp.at(0) = { VK_DESCRIPTOR_TYPE_SAMPLER, descriptor_pool_max_size };
 		temp.at(1) = { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, descriptor_pool_max_size };
@@ -247,13 +251,16 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 
 	auto pool_create_info = vk_structures<VkDescriptorPoolCreateInfo> {}();
 	pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	pool_create_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 	pool_create_info.poolSizeCount = static_cast<std::uint32_t>(sizes.size());
 	pool_create_info.pPoolSizes = sizes.data();
-	pool_create_info.maxSets = descriptor_pool_max_size * static_cast<std::uint32_t>(sizes.size());
+	pool_create_info.maxSets = descriptor_pool_max_size * 100ULL * static_cast<std::uint32_t>(sizes.size());
 
-	pool = make_scope<DescriptorAllocationPool>(device, swapchain_image_count);
+	pool = make_scope<DescriptorAllocationPool>(device, swapchain, swapchain_image_count);
 
-	verify(vkCreateDescriptorPool(vk_device, &pool_create_info, nullptr, &pool->pool));
+	for (auto& descriptor_pool : pool->pools) {
+		verify(vkCreateDescriptorPool(vk_device, &pool_create_info, nullptr, &descriptor_pool));
+	}
 
 	std::vector<VkDescriptorSetLayout> desc_layouts(layouts.size());
 	for (std::size_t i = 0; i < desc_layouts.size(); i++) {
@@ -262,7 +269,7 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 
 	VkDescriptorSetAllocateInfo alloc_info {};
 	alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	alloc_info.descriptorPool = pool->pool;
+	alloc_info.descriptorPool = pool->get_current();
 	alloc_info.descriptorSetCount = static_cast<std::uint32_t>(desc_layouts.size());
 	alloc_info.pSetLayouts = desc_layouts.data();
 
@@ -278,7 +285,7 @@ void GraphicsResource::allocate_descriptor_sets(VkDescriptorSetAllocateInfo& all
 {
 	auto* vk_device = supply_cast<Vulkan::Device>(pool->device);
 	allocation_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocation_info.descriptorPool = pool->pool;
+	allocation_info.descriptorPool = pool->get_current();
 
 	// TODO(EdwinC): Maybe this should not be implied
 	allocation_info.descriptorSetCount = !output.empty() ? static_cast<std::uint32_t>(output.size()) : pool->image_count;
@@ -290,11 +297,12 @@ void GraphicsResource::allocate_descriptor_sets(VkDescriptorSetAllocateInfo& all
 {
 	auto* vk_device = supply_cast<Vulkan::Device>(pool->device);
 	allocation_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocation_info.descriptorPool = pool->pool;
+	allocation_info.descriptorPool = pool->get_current();
+	ensure(allocation_info.descriptorPool != nullptr);
 
 	allocation_info.descriptorSetCount = 1;
 
-	vkAllocateDescriptorSets(vk_device, &allocation_info, &output);
+	verify(vkAllocateDescriptorSets(vk_device, &allocation_info, &output));
 }
 
 void GraphicsResource::expose_to_shaders(const Disarray::UniformBuffer& uniform_buffer, DescriptorSet set, DescriptorBinding binding)
@@ -379,7 +387,15 @@ void GraphicsResource::expose_to_shaders(std::span<const Disarray::Texture*> tex
 
 GraphicsResource::DescriptorAllocationPool::~DescriptorAllocationPool()
 {
-	vkDestroyDescriptorPool(supply_cast<Vulkan::Device>(device), pool, nullptr);
+	for (const auto& descriptor_pool : pools) {
+		vkDestroyDescriptorPool(supply_cast<Vulkan::Device>(device), descriptor_pool, nullptr);
+	}
+}
+void GraphicsResource::DescriptorAllocationPool::reset()
+{
+	for (const auto& descriptor_pool : pools) {
+		vkResetDescriptorPool(supply_cast<Vulkan::Device>(device), descriptor_pool, 0);
+	}
 }
 
 void GraphicsResource::cleanup_graphics_resource()
@@ -412,7 +428,7 @@ void GraphicsResource::internal_expose_to_shaders(
 
 	std::vector<VkWriteDescriptorSet> write_sets {};
 	auto* default_sampler = input_sampler;
-	VkDescriptorImageInfo sampler_info {
+	const VkDescriptorImageInfo sampler_info {
 		.sampler = default_sampler,
 		.imageView = nullptr,
 		.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED,

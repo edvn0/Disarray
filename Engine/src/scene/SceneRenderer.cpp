@@ -75,7 +75,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.vertex_shader_key = "shadow.vert",
 		.fragment_shader_key = "shadow.frag",
 		.framebuffer = shadow_framebuffer,
-		.layout = default_inputs,
+		.layout = {},
 		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 		.extent = renderer_extent,
 		.cull_mode = CullMode::Front,
@@ -151,12 +151,41 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.fragment_shader_key = "static_mesh.frag",
 		.framebuffer = get_framebuffer<SceneFramebuffer::Geometry>(),
 		.layout = default_inputs,
-		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
+		.push_constant_layout = { { PushConstantKind::Vertex, sizeof(PushConstant) }, { PushConstantKind::Fragment, sizeof(PushConstant) } },
 		.extent = renderer_extent,
 		.cull_mode = CullMode::Front,
 		.descriptor_set_layouts = desc_layout,
 		.specialisation_constant = specialisation_constant_description,
 	});
+
+	auto static_mesh_combined = UnifiedShader::construct(device,
+		{
+			.path = FS::shader("static_mesh_combined.glsl"),
+		});
+	geometry_pipeline = Pipeline::construct(device,
+		{
+			.combined_shader = static_mesh_combined,
+			.framebuffer = get_framebuffer<SceneFramebuffer::Geometry>(),
+			.layout = default_inputs,
+			.push_constant_layout = { { PushConstantKind::Vertex, sizeof(PushConstant) }, { PushConstantKind::Fragment, sizeof(PushConstant) } },
+			.extent = renderer_extent,
+			.cull_mode = CullMode::Front,
+			.descriptor_set_layouts = desc_layout,
+			.specialisation_constants = specialisation_constant_description,
+		});
+
+	/*{
+		.pipeline_key = "StaticMeshCombined",
+		.combined_key = "static_mesh_combined.glsl",
+		.framebuffer = get_framebuffer<SceneFramebuffer::Geometry>(),
+		.layout = default_inputs,
+		.push_constant_layout = { { PushConstantKind::Vertex, sizeof(PushConstant) }, { PushConstantKind::Fragment, sizeof(PushConstant) } },
+		.extent = renderer_extent,
+		.cull_mode = CullMode::Front,
+		.descriptor_set_layouts = desc_layout,
+		.specialisation_constant = specialisation_constant_description,
+	});*/
+
 	point_light_data.calculate_point_lights = 1;
 	resources.get_pipeline_cache().put({
 		.pipeline_key = "StaticMeshNoPointLights",
@@ -379,9 +408,9 @@ auto SceneRenderer::begin_frame(const TransformMatrix& view, const TransformMatr
 
 	camera.view = view;
 
-	auto& camera_buffer = uniform_buffer_set->for_frame(DescriptorSet(0), DescriptorBinding(3));
+	const auto& camera_buffer = uniform_buffer_set->for_frame(DescriptorSet(0), DescriptorBinding(3));
 	camera_buffer->set_data<CameraUBO>(&camera);
-	auto& default_ubo_buffer = uniform_buffer_set->for_frame(DescriptorSet(0), DescriptorBinding(3));
+	const auto& default_ubo_buffer = uniform_buffer_set->for_frame(DescriptorSet(0), DescriptorBinding(3));
 	default_ubo_buffer->set_data<ViewProjectionUBO>(&default_ubo);
 
 	renderer->begin_frame();
@@ -453,11 +482,11 @@ auto SceneRenderer::draw_static_submeshes(const Collections::ScopedStringMap<Dis
 	renderer->bind_pipeline(*command_executor, pipeline);
 	auto& editable = renderer->get_graphics_resource().get_editable_push_constant();
 	editable.object_transform = transform;
-	editable.colour = colour;
+	editable.albedo_colour = colour;
 	renderer->push_constant(*command_executor, pipeline);
 
 	Collections::for_each_unwrapped(
-		submeshes, [&](const auto&, const Scope<Disarray::Mesh>& mesh) { renderer->draw_mesh_without_bind(*command_executor, *mesh); });
+		submeshes, [this](const auto&, const Scope<Disarray::Mesh>& mesh) { renderer->draw_mesh_without_bind(*command_executor, *mesh); });
 }
 
 auto SceneRenderer::draw_single_static_mesh(const Disarray::Mesh& mesh, const Disarray::Pipeline& pipeline, const Disarray::Material& material,
@@ -509,11 +538,11 @@ void SceneRenderer::draw_static_mesh(const Disarray::StaticMesh& mesh, const Dis
 {
 	const auto& vertex_buffer = mesh.get_vertices();
 	const auto& index_buffer = mesh.get_indices();
-	// 	renderer->bind_mesh_buffers(vertex_buffer, index_buffer);
+	renderer->bind_buffer(*command_executor, index_buffer);
+	renderer->bind_buffer(*command_executor, vertex_buffer);
 
 	for (const auto& submesh : mesh.get_submeshes()) {
-		renderer->draw_static_mesh(
-			*command_executor, *get_pipeline("StaticMesh"), *uniform_buffer_set, *storage_buffer_set, submesh, table, transform);
+		renderer->draw_static_mesh(*command_executor, *geometry_pipeline, *uniform_buffer_set, *storage_buffer_set, submesh, mesh, table, transform);
 	}
 }
 

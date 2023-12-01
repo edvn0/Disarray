@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vulkan/vulkan_core.h>
+
 #include <vk_mem_alloc.h>
 
 #include <utility>
@@ -17,7 +19,21 @@ namespace Reflection {
 		std::uint32_t set { 0 };
 	};
 
-	enum class ShaderUniformType { None = 0, Bool, Int, UInt, Float, Vec2, Vec3, Vec4, Mat3, Mat4, IVec2, IVec3, IVec4 };
+	enum class ShaderUniformType : std::uint8_t {
+		None = 0,
+		Bool,
+		Int,
+		UInt,
+		Float,
+		Vec2,
+		Vec3,
+		Vec4,
+		Mat3,
+		Mat4,
+		IVec2,
+		IVec3,
+		IVec4,
+	};
 
 	class ShaderUniform {
 	public:
@@ -35,9 +51,9 @@ namespace Reflection {
 
 	private:
 		std::string name;
-		ShaderUniformType type = ShaderUniformType::None;
-		std::uint32_t size = 0;
-		std::uint32_t offset = 0;
+		ShaderUniformType type { ShaderUniformType::None };
+		std::uint32_t size { 0 };
+		std::uint32_t offset { 0 };
 	};
 
 	struct ShaderUniformBuffer {
@@ -103,7 +119,7 @@ namespace Reflection {
 		std::unordered_map<std::uint32_t, ImageSampler> SeparateTextures;
 		std::unordered_map<std::uint32_t, ImageSampler> SeparateSamplers;
 
-		std::unordered_map<std::string, VkWriteDescriptorSet> WriteDescriptorSets;
+		std::unordered_map<std::string, VkWriteDescriptorSet> write_descriptor_sets;
 	};
 
 	class ShaderResourceDeclaration {
@@ -128,13 +144,15 @@ namespace Reflection {
 	};
 } // namespace Reflection
 
+struct MaterialDescriptorSet {
+	std::vector<VkDescriptorSet> descriptor_sets {};
+};
+
 struct ReflectionData {
-	std::vector<Reflection::ShaderDescriptorSet> ShaderDescriptorSets;
-	std::vector<Reflection::PushConstantRange> PushConstantRanges;
+	std::vector<Reflection::ShaderDescriptorSet> shader_descriptor_sets {};
+	std::vector<Reflection::PushConstantRange> push_constant_ranges {};
 	Collections::StringMap<Reflection::ShaderBuffer> constant_buffers {};
 	Collections::StringMap<Reflection::ShaderResourceDeclaration> resources {};
-
-	auto operator|=(const ReflectionData& other) -> ReflectionData&;
 };
 
 class Shader : public Disarray::Shader, public PropertySupplier<VkPipelineShaderStageCreateInfo> {
@@ -152,6 +170,7 @@ public:
 	void destroy_module() override;
 
 	void create_descriptors();
+	auto get_descriptor_set(const std::string& name, std::uint32_t set) const -> const VkWriteDescriptorSet*;
 
 private:
 	static auto read_file(const std::filesystem::path&) -> std::string;

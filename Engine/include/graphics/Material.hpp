@@ -2,13 +2,13 @@
 
 #include "Forward.hpp"
 
-#include "UnifiedShader.hpp"
 #include "core/Collections.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "graphics/Shader.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/Texture.hpp"
+#include "graphics/UnifiedShader.hpp"
 
 namespace Disarray {
 
@@ -27,12 +27,25 @@ public:
 
 struct POCMaterialProperties {
 	Ref<UnifiedShader> shader;
+	std::uint32_t swapchain_image_count;
 	std::string name;
+
+	explicit POCMaterialProperties(Ref<UnifiedShader> input_shader, std::string input_name = "Empty", std::uint32_t input_image_count = 3)
+		: shader { std::move(input_shader) }
+		, swapchain_image_count { input_image_count }
+		, name { std::move(input_name) }
+	{
+		if (name == "Empty") {
+			name = shader->get_name();
+		}
+	}
 };
 
 class POCMaterial : public ReferenceCountable {
 	DISARRAY_OBJECT_PROPS(POCMaterial, POCMaterialProperties)
 public:
+	virtual auto get_uniform_storage_buffer() const -> const DataBuffer& = 0;
+
 	virtual void set(const std::string&, float) = 0;
 	virtual void set(const std::string&, int) = 0;
 	virtual void set(const std::string&, std::uint32_t) = 0;

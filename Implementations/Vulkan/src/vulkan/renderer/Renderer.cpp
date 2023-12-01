@@ -58,6 +58,7 @@ void Renderer::on_resize()
 
 void Renderer::begin_frame()
 {
+	get_graphics_resource().reset_pool();
 	batch_renderer.reset();
 
 	if (swapchain.needs_recreation()) {

@@ -16,13 +16,15 @@
 
 namespace Disarray::Vulkan {
 
-class GraphicsResource : public IGraphicsResource {
+class GraphicsResource final : public IGraphicsResource {
 	DISARRAY_MAKE_NONCOPYABLE(GraphicsResource)
+
 public:
 	GraphicsResource(const Disarray::Device&, const Disarray::Swapchain&);
 	~GraphicsResource() override;
 
 	void recreate(bool should_clean, const Extent& extent) override;
+	auto reset_pool() -> void override;
 
 	[[nodiscard]] auto get_pipeline_cache() -> PipelineCache& override { return pipeline_cache; }
 	[[nodiscard]] auto get_texture_cache() -> TextureCache& override { return texture_cache; }
@@ -75,19 +77,27 @@ private:
 	const Disarray::Swapchain& swapchain;
 	std::uint32_t swapchain_image_count { 0 };
 
-	Disarray::PipelineCache pipeline_cache;
-	Disarray::TextureCache texture_cache;
+	PipelineCache pipeline_cache;
+	TextureCache texture_cache;
 
 	struct DescriptorAllocationPool {
-		DescriptorAllocationPool(const Disarray::Device& dev, std::uint32_t count) noexcept
+		DescriptorAllocationPool(const Disarray::Device& dev, const Disarray::Swapchain& sc, std::uint32_t count) noexcept
 			: device(dev)
-			, image_count(count) {};
+			, swapchain(sc)
+			, image_count(count)
+			, pools(count) {};
 
 		~DescriptorAllocationPool();
 
+		[[nodiscard]] auto get_current() const { return pools.at(swapchain.get_current_frame()); }
+
+		void reset();
+
 		const Disarray::Device& device;
+		const Disarray::Swapchain& swapchain;
 		std::uint32_t image_count;
-		VkDescriptorPool pool;
+		std::vector<VkDescriptorPool> pools {};
+		using FrameIndexFunction = std::function<FrameIndex()>;
 	};
 	static inline Scope<DescriptorAllocationPool> pool {};
 
