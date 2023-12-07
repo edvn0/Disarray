@@ -1,7 +1,5 @@
 #include "DisarrayPCH.hpp"
 
-#include "core/Log.hpp"
-
 #include <fmt/chrono.h>
 #include <magic_enum.hpp>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -12,6 +10,7 @@
 #include <cstddef>
 #include <vector>
 
+#include "core/Log.hpp"
 #include "core/PointerDefinition.hpp"
 #include "core/exceptions/GeneralExceptions.hpp"
 #include "spdlog/common.h"
@@ -24,7 +23,7 @@ namespace Logging {
 	struct Logger::LoggerDataPimpl {
 		spdlog::logger logger;
 
-		LoggerDataPimpl(spdlog::logger&& in_logger)
+		explicit LoggerDataPimpl(spdlog::logger&& in_logger)
 			: logger(in_logger)
 		{
 		}
@@ -48,6 +47,10 @@ namespace Logging {
 	auto Logger::Logger::to_file(const std::string& message) -> void { logger_data->logger.trace(message); }
 
 	auto Logger::Logger::info(const std::string& message) -> void { logger_data->logger.info(message); }
+
+	auto Logger::Logger::trace(const std::string& message) -> void { logger_data->logger.trace(message); }
+
+	auto Logger::Logger::warn(const std::string& message) -> void { logger_data->logger.warn(message); }
 
 	auto Logger::Logger::error(const std::string& message) -> void { logger_data->logger.error(message); }
 

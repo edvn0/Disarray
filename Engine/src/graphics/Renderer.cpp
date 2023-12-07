@@ -26,7 +26,7 @@ Renderer::Renderer(Scope<IGraphicsResource> resource)
 	data_buffer.allocate(sizeof(std::uint32_t));
 	data_buffer.write(0xFFFFFFFF);
 
-	white_texture = Texture::construct_scoped(graphics_resource->get_device(),
+	white_texture = Texture::construct(graphics_resource->get_device(),
 		{
 			.extent = { 1, 1 },
 			.data_buffer = data_buffer,
@@ -36,7 +36,7 @@ Renderer::Renderer(Scope<IGraphicsResource> resource)
 	data_buffer.allocate(sizeof(std::uint32_t));
 	data_buffer.write(0x00000000);
 
-	black_texture = Texture::construct_scoped(graphics_resource->get_device(),
+	black_texture = Texture::construct(graphics_resource->get_device(),
 		{
 			.extent = { 1, 1 },
 			.data_buffer = data_buffer,

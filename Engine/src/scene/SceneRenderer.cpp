@@ -523,13 +523,8 @@ auto SceneRenderer::draw_identifiers(std::size_t count) -> void
 	renderer->draw_mesh_instanced(*command_executor, count, vb, ib, *get_pipeline("Identity"));
 }
 
-auto SceneRenderer::draw_aabb(const Disarray::AABB& aabb, const glm::vec4& colour, const glm::mat4& transform) -> void
+auto SceneRenderer::draw_aabb(const Disarray::AABB&, const glm::vec4& colour, const glm::mat4& transform) -> void
 {
-	const auto scale_matrix = aabb.calculate_scale_matrix();
-	// Calculate the center of the AABB
-	glm::vec3 aabb_center = aabb.middle_point();
-	glm::vec3 translation = -aabb_center;
-
 	draw_single_static_mesh(*aabb_model, *get_pipeline("AABB"), transform, colour);
 }
 

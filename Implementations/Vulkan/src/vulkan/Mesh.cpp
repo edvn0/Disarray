@@ -103,7 +103,7 @@ auto Mesh::get_vertices() const -> Disarray::VertexBuffer&
 
 void Mesh::force_recreation() { load_and_initialise_model(); }
 
-auto Mesh::get_textures() const -> const RefVector<Disarray::Texture>& { return mesh_textures; }
+auto Mesh::get_textures() const -> const Collections::RefVector<Disarray::Texture>& { return mesh_textures; }
 
 auto Mesh::get_submeshes() const -> const Collections::ScopedStringMap<Disarray::MeshSubstructure>& { return submeshes; }
 

@@ -30,6 +30,8 @@ public:
 	auto operator=(DataBuffer&&) noexcept -> DataBuffer&;
 	~DataBuffer();
 
+	[[nodiscard]] auto get_data() const { return data.get(); }
+
 	void allocate(std::size_t);
 	void copy_from(const DataBuffer&);
 	template <class T> auto read(const std::size_t offset) const -> T&
@@ -49,9 +51,6 @@ public:
 	friend void swap(DataBuffer& first, DataBuffer& second) noexcept;
 
 	[[nodiscard]] auto get_size() const -> std::size_t { return size; }
-	[[nodiscard]] auto get_data() const { return data.get(); }
-
-	explicit(false) operator bool() const { return is_valid(); }
 	[[nodiscard]] auto is_valid() const -> bool { return size != 0 && data != nullptr; }
 
 	auto operator[](std::size_t index) -> decltype(auto) { return data[index]; }

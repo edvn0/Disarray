@@ -15,9 +15,7 @@ public:
 	virtual ~ReferenceCountable() = default;
 
 	void increment_reference_count() { ++reference_count; }
-
 	void decrement_reference_count() { --reference_count; }
-
 	auto get_reference_count() const -> std::uint32_t { return reference_count; }
 
 private:
@@ -35,22 +33,25 @@ namespace MemoryTracking {
 } // namespace MemoryTracking
 
 template <class T> class ReferenceCounted {
-	static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
 
 public:
 	ReferenceCounted()
 		: instance(nullptr)
 	{
+		static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
 	}
 
 	ReferenceCounted(std::nullptr_t)
 		: instance(nullptr)
 	{
+		static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
 	}
 
 	ReferenceCounted(T* inst)
 		: instance(inst)
 	{
+		static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
+
 		increment_reference_count();
 	}
 
@@ -59,6 +60,8 @@ public:
 		requires(std::is_constructible_v<T, Args...>)
 		: instance(new T { std::forward<Args>(args)... })
 	{
+		static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
+
 		increment_reference_count();
 	}
 
@@ -80,7 +83,6 @@ public:
 	ReferenceCounted(const ReferenceCounted<Other>& other)
 		: instance(static_cast<T*>(other.instance))
 	{
-
 		increment_reference_count();
 	}
 

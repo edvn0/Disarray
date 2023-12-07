@@ -7,22 +7,13 @@
 #include <imgui_internal.h>
 
 #include <array>
-#include <filesystem>
-#include <initializer_list>
 #include <memory>
-#include <utility>
 
-#include "core/Random.hpp"
-#include "graphics/Pipeline.hpp"
-#include "graphics/PipelineCache.hpp"
-#include "graphics/RendererProperties.hpp"
+#include "core/filesystem/AssetLocations.hpp"
 #include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
 #include "panels/PipelineEditorPanel.hpp"
 #include "panels/StatisticsPanel.hpp"
-#include "scene/Components.hpp"
-#include "scene/Scene.hpp"
-#include "ui/UI.hpp"
 
 namespace {
 template <std::size_t Count>
@@ -81,6 +72,22 @@ void ClientLayer::construct(App& app)
 	pipeline_editor_panel->construct(app);
 	scene_panel->construct(app);
 	// log_panel->construct(app);
+
+	auto shader = SingleShader::construct(device,
+		{
+			.path = FS::shader("basic_combined.glsl"),
+			.optimize = false,
+		});
+	auto material = MeshMaterial::construct(device,
+		MeshMaterialProperties {
+			shader,
+			"BasicCombinedMaterial",
+			app.get_swapchain().image_count(),
+		});
+	auto dumb_mesh = StaticMesh::construct(device,
+		{
+			.path = FS::model("viking-room/source/viking_room.fbx"),
+		});
 }
 
 void ClientLayer::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)

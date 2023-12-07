@@ -132,12 +132,13 @@ public:
 	[[nodiscard]] auto construct_textures(const Device&) -> std::vector<Ref<Disarray::Texture>>;
 
 	[[nodiscard]] auto get_mesh_data() -> const ImportedMesh& { return mesh_data; }
-	[[nodiscard]] auto get_aabb() const -> AABB;
+	[[nodiscard]] auto get_aabb() const -> AABB { return aabb; }
 
 private:
 	Scope<IModelImporter> importer { nullptr };
 	std::filesystem::path mesh_path {};
 	ImportedMesh mesh_data {};
+	AABB aabb {};
 };
 
 } // namespace Disarray

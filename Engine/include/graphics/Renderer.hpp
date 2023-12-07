@@ -65,7 +65,7 @@ public:
 	[[nodiscard]] virtual auto get_push_constant() const -> const PushConstant* = 0;
 	virtual auto get_editable_push_constant() -> PushConstant& = 0;
 
-	virtual auto get_device() const -> const Disarray::Device& = 0;
+	[[nodiscard]] virtual auto get_device() const -> const Disarray::Device& = 0;
 };
 
 class Renderer : public ReferenceCountable {
@@ -205,8 +205,8 @@ public:
 
 	static auto get_render_command_queue() -> RenderCommandQueue& { return command_queue; }
 
-	auto get_white_texture() const -> const Disarray::Texture& { return *white_texture; }
-	auto get_black_texture() const -> const Disarray::Texture& { return *black_texture; }
+	static auto get_white_texture() -> const auto& { return white_texture; }
+	static auto get_black_texture() -> const auto& { return black_texture; }
 
 protected:
 	explicit Renderer(Scope<IGraphicsResource> resource);
@@ -214,9 +214,8 @@ protected:
 private:
 	Scope<IGraphicsResource> graphics_resource { nullptr };
 
-	Scope<Disarray::Texture> white_texture { nullptr };
-	Scope<Disarray::Texture> black_texture { nullptr };
-
+	static inline Ref<Disarray::Texture> white_texture { nullptr };
+	static inline Ref<Disarray::Texture> black_texture { nullptr };
 	static inline RenderCommandQueue command_queue { {} };
 };
 

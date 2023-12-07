@@ -1,12 +1,11 @@
 #include "DisarrayPCH.hpp"
 
-#include "graphics/PipelineCache.hpp"
-
 #include <filesystem>
 
 #include "core/Log.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Pipeline.hpp"
+#include "graphics/PipelineCache.hpp"
 #include "graphics/Shader.hpp"
 #include "graphics/ShaderCompiler.hpp"
 #include "graphics/Swapchain.hpp"
@@ -14,7 +13,7 @@
 namespace Disarray {
 
 PipelineCache::PipelineCache(const Disarray::Device& dev, const std::filesystem::path& base)
-	: ResourceCache(dev, base, { ".vert", ".frag", ".glsl" })
+	: ResourceCache(dev, base, { ".vert", ".frag" })
 {
 	const auto all_files = get_unique_files_recursively();
 

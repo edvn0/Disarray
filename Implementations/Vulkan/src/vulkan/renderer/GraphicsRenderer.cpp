@@ -39,13 +39,13 @@ struct VkDescriptorSetHash {
 
 // Define a hash function for std::span of VkDescriptorSets
 struct VkDescriptorSetsSpanHash {
-	std::size_t operator()(const std::span<const VkDescriptorSet>& sets) const
+	auto operator()(const std::span<const VkDescriptorSet>& sets) const -> std::size_t
 	{
 		std::size_t hash_value = 0;
 
 		// Combine hash values of individual VkDescriptorSets in the span
-		for (const auto& descriptorSet : sets) {
-			hash_value ^= VkDescriptorSetHash {}(descriptorSet) + 0x9e3779b9 + (hash_value << 6) + (hash_value >> 2);
+		for (const auto& descriptor_set : sets) {
+			hash_value ^= VkDescriptorSetHash {}(descriptor_set) + 0x9e3779b9 + (hash_value << 6) + (hash_value >> 2);
 		}
 
 		return hash_value;

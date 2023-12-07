@@ -21,13 +21,13 @@ template <> struct std::hash<Disarray::SingleShader> {
 
 namespace Disarray {
 
-struct UnifiedShaderProperties {
+struct SingleShaderProperties {
 	std::filesystem::path path;
 	bool optimize { true };
 };
 
 class SingleShader : public ReferenceCountable {
-	DISARRAY_OBJECT_PROPS(SingleShader, UnifiedShaderProperties)
+	DISARRAY_OBJECT_PROPS(SingleShader, SingleShaderProperties)
 public:
 	virtual auto get_name() const -> std::string_view = 0;
 	auto hash() const noexcept -> std::size_t { return std::hash<SingleShader> {}(*this); }
