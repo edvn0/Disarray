@@ -280,6 +280,8 @@ namespace Vulkan {
 							}),
 					});
 				materials[i] = submesh_material;
+				submesh_material->set("diffuse_map", white_texture);
+				submesh_material->set("specular_map", white_texture);
 
 				Log::info("StaticMesh", "  {0} (Index = {1})", material_name, i);
 				aiString ai_tex_path;
@@ -510,6 +512,7 @@ namespace Vulkan {
 			submesh_material->set("pc.use_normal_map", false);
 
 			submesh_material->set("albedo_map", white_texture);
+			submesh_material->set("normal_map", white_texture);
 			submesh_material->set("metalness_map", white_texture);
 			submesh_material->set("roughness_map", white_texture);
 			materials.push_back(submesh_material);

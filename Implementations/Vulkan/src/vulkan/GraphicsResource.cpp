@@ -25,6 +25,7 @@
 #include "vulkan/GraphicsResource.hpp"
 #include "vulkan/IndexBuffer.hpp"
 #include "vulkan/Mesh.hpp"
+#include "vulkan/PhysicalDevice.hpp"
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Renderer.hpp"
@@ -254,7 +255,9 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 	pool_create_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 	pool_create_info.poolSizeCount = static_cast<std::uint32_t>(sizes.size());
 	pool_create_info.pPoolSizes = sizes.data();
-	pool_create_info.maxSets = descriptor_pool_max_size * 100ULL * static_cast<std::uint32_t>(sizes.size());
+
+	const auto& physical_device = cast_to<Vulkan::PhysicalDevice>(device.get_physical_device());
+	pool_create_info.maxSets = 144U * 10;
 
 	pool = make_scope<DescriptorAllocationPool>(device, swapchain, swapchain_image_count);
 
@@ -293,16 +296,21 @@ void GraphicsResource::allocate_descriptor_sets(VkDescriptorSetAllocateInfo& all
 	vkAllocateDescriptorSets(vk_device, &allocation_info, output.data());
 }
 
-void GraphicsResource::allocate_descriptor_sets(VkDescriptorSetAllocateInfo& allocation_info, VkDescriptorSet& output)
+void GraphicsResource::DescriptorAllocationPool::allocate(VkDescriptorSetAllocateInfo& allocation_info, VkDescriptorSet& output)
 {
-	auto* vk_device = supply_cast<Vulkan::Device>(pool->device);
+	auto* vk_device = supply_cast<Vulkan::Device>(device);
 	allocation_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocation_info.descriptorPool = pool->get_current();
-	ensure(allocation_info.descriptorPool != nullptr);
-
+	allocation_info.descriptorPool = get_current();
 	allocation_info.descriptorSetCount = 1;
 
 	verify(vkAllocateDescriptorSets(vk_device, &allocation_info, &output));
+
+	allocation_debug_info[swapchain.get_current_frame_index()][allocation_info.descriptorPool]++;
+}
+
+void GraphicsResource::allocate_descriptor_sets(VkDescriptorSetAllocateInfo& allocation_info, VkDescriptorSet& output)
+{
+	pool->allocate(allocation_info, output);
 }
 
 void GraphicsResource::expose_to_shaders(const Disarray::UniformBuffer& uniform_buffer, DescriptorSet set, DescriptorBinding binding)
@@ -395,6 +403,15 @@ void GraphicsResource::DescriptorAllocationPool::reset()
 {
 	for (const auto& descriptor_pool : pools) {
 		vkResetDescriptorPool(supply_cast<Vulkan::Device>(device), descriptor_pool, 0);
+	}
+
+	for (auto& kv : allocation_debug_info) {
+		auto&& [key, value] = kv;
+
+		for (auto& pool_kv : value) {
+			auto&& [pool_key, pool_value] = pool_kv;
+			pool_value = 0;
+		}
 	}
 }
 

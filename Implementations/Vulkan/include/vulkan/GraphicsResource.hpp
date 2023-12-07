@@ -85,10 +85,12 @@ private:
 			: device(dev)
 			, swapchain(sc)
 			, image_count(count)
-			, pools(count) {};
+			, pools(count)
+			, allocation_debug_info(image_count) {};
 
 		~DescriptorAllocationPool();
 
+		void allocate(VkDescriptorSetAllocateInfo& allocate_info, VkDescriptorSet& output);
 		[[nodiscard]] auto get_current() const { return pools.at(swapchain.get_current_frame()); }
 
 		void reset();
@@ -98,6 +100,8 @@ private:
 		std::uint32_t image_count;
 		std::vector<VkDescriptorPool> pools {};
 		using FrameIndexFunction = std::function<FrameIndex()>;
+
+		std::unordered_map<FrameIndex, std::unordered_map<VkDescriptorPool, std::size_t>> allocation_debug_info {};
 	};
 	static inline Scope<DescriptorAllocationPool> pool {};
 

@@ -63,7 +63,7 @@ template <class Buffer> struct BufferSet {
 
 	[[nodiscard]] auto for_frame(FrameIndex frame_index, DescriptorSet set, DescriptorBinding binding) const -> const Scope<Buffer>&
 	{
-		return storage_buffers.at(frame_index.value).at(set.value).at(binding.value);
+		return storage_buffers.at(frame_index).at(set).at(binding);
 	}
 
 	[[nodiscard]] auto for_frame(DescriptorSet set, DescriptorBinding binding) const -> const Scope<Buffer>&

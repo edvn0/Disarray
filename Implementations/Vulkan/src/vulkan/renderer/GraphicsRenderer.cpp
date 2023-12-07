@@ -122,7 +122,7 @@ void Renderer::update_material_for_rendering(
 		auto write_descriptors = rt_retrieve_or_create_uniform_buffer_write_descriptors(frame_count, material, ubo_buffer);
 
 		if (sbo_buffer != nullptr) {
-			const auto& storage_buffer_write_descriptors = rt_retrieve_or_create_storage_buffer_write_descriptors(frame_count, sbo_buffer, material);
+			auto storage_buffer_write_descriptors = rt_retrieve_or_create_storage_buffer_write_descriptors(frame_count, sbo_buffer, material);
 
 			for (uint32_t frame = 0; frame < frame_count; frame++) {
 				write_descriptors[frame].reserve(write_descriptors[frame].size() + storage_buffer_write_descriptors[frame].size());
@@ -576,7 +576,7 @@ void Renderer::draw_static_mesh(Disarray::CommandExecutor& executor, const Disar
 	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, supply_cast<Vulkan::Pipeline>(pipeline));
 
 	const auto vk_material = mesh.get_materials().at(submesh.material_index).as<Vulkan::POCMaterial>();
-	update_material_for_rendering(vk_material, &uniform_buffer_set, &storage_buffer_set);
+	update_material_for_rendering(vk_material, &uniform_buffer_set, nullptr);
 
 	// NOTE: Descriptor Set 0 is owned by the renderer
 	const std::array descriptor_sets {
@@ -588,7 +588,9 @@ void Renderer::draw_static_mesh(Disarray::CommandExecutor& executor, const Disar
 		descriptor_sets.data(), 0, nullptr);
 
 	const auto& uniform_storage_buffer = vk_material->get_uniform_storage_buffer();
-	vkCmdPushConstants(command_buffer, layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, uniform_storage_buffer.get_size(), uniform_storage_buffer.get_data());
+	vkCmdPushConstants(command_buffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, uniform_storage_buffer.get_size(), uniform_storage_buffer.get_data());
+	vkCmdPushConstants(command_buffer, layout, VK_SHADER_STAGE_FRAGMENT_BIT, uniform_storage_buffer.get_size(), uniform_storage_buffer.get_size(),
+		uniform_storage_buffer.get_data());
 
 	// add instance count!
 	vkCmdDrawIndexed(command_buffer, submesh.index_count, 1, submesh.base_index, submesh.base_vertex, 0);
