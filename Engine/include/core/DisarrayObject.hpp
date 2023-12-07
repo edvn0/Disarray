@@ -27,7 +27,8 @@ public:                                                                         
 	virtual ~Type() override = default;                                                                                                              \
 	DISARRAY_MAKE_NONCOPYABLE(Type)                                                                                                                  \
 	virtual auto recreate(bool, const Extent&)->void {};                                                                                             \
-	virtual auto force_recreation()->void {};                                                                                                        \
+	virtual auto recreate(bool should_clean)->void { recreate(should_clean, {}); };                                                                  \
+	virtual auto force_recreation()->void { recreate(true, {}); };                                                                                   \
 	auto get_properties() const->const PropertiesType& { return props; };                                                                            \
 	auto get_properties()->PropertiesType& { return props; };                                                                                        \
 	static auto construct(const Disarray::Device& device, PropertiesType properties)->Ref<Disarray::Type>;                                           \

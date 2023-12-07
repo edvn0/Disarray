@@ -29,10 +29,11 @@ struct ModelVertex {
 
 namespace std {
 template <> struct hash<Disarray::ModelVertex> {
-	auto operator()(Disarray::ModelVertex const& vertex) const -> size_t
+	auto operator()(const Disarray::ModelVertex& vertex) const -> size_t
 	{
-		return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.uvs) << 1)
-			^ ((hash<glm::vec3>()(vertex.normals) << 1) >> 1);
+		size_t seed = 0;
+		Disarray::hash_combine(seed, vertex.pos, vertex.color, vertex.uvs, vertex.normals, vertex.tangents, vertex.bitangents);
+		return seed;
 	}
 };
 } // namespace std

@@ -86,10 +86,7 @@ void QuadVertexBatch::submit_impl(Renderer& renderer, CommandExecutor& command_e
 
 	prepare_data();
 
-	auto& resources = renderer.get_graphics_resource();
-
-	resources.get_editable_push_constant().max_identifiers = submitted_objects;
-
+	const auto& resources = renderer.get_graphics_resource();
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
 
 	const auto& vb = vertex_buffer;
@@ -184,10 +181,7 @@ void LineVertexBatch::submit_impl(Disarray::Renderer& renderer, Disarray::Comman
 
 	prepare_data();
 
-	auto& resources = renderer.get_graphics_resource();
-
-	resources.get_editable_push_constant().max_identifiers = this->submitted_objects;
-
+	const auto& resources = renderer.get_graphics_resource();
 	auto* command_buffer = supply_cast<Vulkan::CommandExecutor>(command_executor);
 
 	const auto& vb = vertex_buffer;

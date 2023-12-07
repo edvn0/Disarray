@@ -1,12 +1,13 @@
 #pragma once
 
+#include "Forward.hpp"
+
 #include <entt/entt.hpp>
 
 #include <concepts>
 #include <utility>
 #include <variant>
 
-#include "Forward.hpp"
 #include "core/Collections.hpp"
 #include "core/Concepts.hpp"
 #include "core/PointerDefinition.hpp"
@@ -59,7 +60,7 @@ public:
 
 	void update_entity(Scene*, entt::entity);
 	auto get_parameters() -> Collections::StringViewMap<Parameter>& { return parameters; }
-	auto get_parameter_or(std::string_view key, const Parameter& default_value = std::monostate {}) -> const Parameter&
+	auto get_parameter_or(std::string_view key, const Parameter& default_value = std::monostate {}) -> Parameter
 	{
 		if (parameters.contains(key)) {
 			return parameters.at(key);

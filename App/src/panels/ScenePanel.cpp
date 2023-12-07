@@ -4,7 +4,6 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtx/dual_quaternion.hpp>
 
-#include <fmt/format.h>
 #include <imgui.h>
 #include <imgui_internal.h>
 
@@ -20,6 +19,8 @@
 #include "ui/UI.hpp"
 
 namespace Disarray::Client {
+
+static constexpr std::size_t string_buffer_size = 256;
 
 ScenePanel::ScenePanel(Device& dev, Window&, Swapchain&, Scene* s)
 	: device(dev)
@@ -105,9 +106,9 @@ void ScenePanel::interface()
 	UI::begin("Scene");
 	const auto& tag = scene->get_name();
 	std::string buffer = tag;
-	buffer.resize(256);
+	buffer.resize(string_buffer_size);
 
-	if (ImGui::InputText("Scene name", buffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+	if (ImGui::InputText("Scene name", buffer.data(), string_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue)) {
 		buffer.shrink_to_fit();
 
 		if (!buffer.empty() && tag != buffer) {
@@ -158,14 +159,15 @@ void Client::ScenePanel::update(float)
 	}
 }
 
+// NOLINTBEGIN
 void ScenePanel::for_all_components(Entity& entity)
 {
 	if (entity.has_component<Components::Tag>()) {
 		auto& tag = entity.get_components<Components::Tag>();
 		std::string buffer = tag.name;
-		buffer.resize(256);
+		buffer.resize(string_buffer_size);
 
-		if (ImGui::InputText("Tag", buffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+		if (ImGui::InputText("Tag", buffer.data(), string_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue)) {
 			buffer.shrink_to_fit();
 
 			if (!buffer.empty() && tag.name != buffer) {
@@ -241,7 +243,12 @@ void ScenePanel::for_all_components(Entity& entity)
 	});
 
 	draw_component<Components::PointLight>(entity, [](Components::PointLight& point) {
-		if (UI::Input::drag("Factors", point.factors, 0.1F, 0.F, 10.F)) { }
+		glm::vec2 factors = { point.factors.y, point.factors.z };
+
+		if (UI::Input::drag("Factors", factors, 0.1F, 0.F, 10.F)) {
+			point.factors.y = factors.x;
+			point.factors.z = factors.y;
+		}
 		if (ImGui::ColorEdit4("Ambient", glm::value_ptr(point.ambient))) { }
 		if (ImGui::ColorEdit4("Diffuse", glm::value_ptr(point.diffuse))) { }
 		if (ImGui::ColorEdit4("Specular", glm::value_ptr(point.specular))) { }
@@ -249,23 +256,32 @@ void ScenePanel::for_all_components(Entity& entity)
 
 	draw_component<Components::SpotLight>(entity, [](Components::SpotLight& spot) {
 		if (ImGui::DragFloat3("Direction", glm::value_ptr(spot.direction), 0.1F, -glm::pi<float>(), glm::pi<float>())) { }
-		if (ImGui::DragFloat("Cutoff", &spot.cutoff_angle_degrees, 2.F, -90.F, 90.F)) { }
-		if (ImGui::DragFloat("Outer Cutoff", &spot.outer_cutoff_angle_degrees, 2.F, -90.F, 90.F)) { }
-		if (UI::Input::drag("Factors", spot.factors, 0.1F, 0.F, 10.F)) { }
+		glm::vec2 factors = { spot.factors.y, spot.factors.z };
+
+		if (UI::Input::drag("Factors", factors, 0.1F, 0.F, 10.F)) {
+			spot.factors.y = factors.x;
+			spot.factors.z = factors.y;
+		}
 		if (ImGui::ColorEdit4("Ambient", glm::value_ptr(spot.ambient))) { }
 		if (ImGui::ColorEdit4("Diffuse", glm::value_ptr(spot.diffuse))) { }
 		if (ImGui::ColorEdit4("Specular", glm::value_ptr(spot.specular))) { }
+		if (ImGui::DragFloat("Cutoff", &spot.cutoff_angle_degrees, 1.5F, 2.0F, 85.F)) { }
+		if (ImGui::DragFloat("Outer Cutoff", &spot.outer_cutoff_angle_degrees, 1.5F, 2.0F, 85.F)) { }
+		if (spot.cutoff_angle_degrees > spot.outer_cutoff_angle_degrees) {
+			std::swap(spot.cutoff_angle_degrees, spot.outer_cutoff_angle_degrees);
+		}
 	});
 
 	draw_component<Components::Text>(entity, [](Components::Text& text) {
 		std::string buffer = text.text_data;
-		buffer.resize(256);
+		buffer.resize(string_buffer_size);
 
-		if (ImGui::InputText("Text", buffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+		if (ImGui::InputText("Text", buffer.data(), string_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue)) {
 			buffer.shrink_to_fit();
 
 			if (!buffer.empty() && text.text_data != buffer) {
-				text.text_data = buffer.c_str();
+				const auto* buffer_c_str = buffer.c_str();
+				text.text_data = buffer_c_str;
 			}
 		}
 		if (ImGui::ColorEdit4("Colour", glm::value_ptr(text.colour))) { }
@@ -273,14 +289,40 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (UI::combo_choice<Components::TextProjection>("Space Choice", std::ref(text.projection))) { }
 	});
 
-	draw_component<Components::Material>(entity, [](Components::Material& mat) {
-		const auto& props = mat.material->get_properties();
-		UI::text_wrapped("VS: {}", props.vertex_shader->get_properties().identifier.string());
-		UI::text_wrapped("FS: {}", props.fragment_shader->get_properties().identifier.string());
-		for (const auto& text : props.textures) {
-			UI::text("{}", text->get_properties().debug_name);
-			UI::image(text->get_image());
+	draw_component<Components::Material>(entity, [&](Components::Material& mat) {
+		if (!mat.material) {
+			mat.material = Material::construct(device, {});
 		}
+
+		auto& properties = mat.material->get_properties();
+		Collections::for_each_unwrapped(properties.textures, [](const auto& key, Ref<Disarray::Texture>& texture) {
+			ImGui::PushID(key.c_str());
+			UI::text("{}:", key);
+			UI::image(*texture);
+			ImGui::PopID();
+		});
+
+		ImGui::NewLine();
+		std::optional<std::filesystem::path> selected { std::nullopt };
+		if (ImGui::Button("Choose path", { 80, 30 })) {
+			selected = UI::Popup::select_file(
+				{
+					"*.png",
+					"*.bmp",
+				},
+				FS::texture_directory());
+		}
+		if (!selected.has_value()) {
+			return;
+		}
+		const auto& path = *selected;
+
+		properties.textures.try_emplace(path.filename().string(),
+			Texture::construct(device,
+				{
+					.path = path,
+					.debug_name = path.filename().string(),
+				}));
 	});
 
 	draw_component<Components::Skybox>(entity, [&current = scene, &dev = device](Components::Skybox& skybox) {
@@ -292,7 +334,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		}
 
 		if (any_changed && selected.has_value()) {
-			const auto value = *selected;
+			const auto& value = *selected;
 
 			auto new_cubemap = Texture::construct(dev,
 				{
@@ -307,7 +349,7 @@ void ScenePanel::for_all_components(Entity& entity)
 
 			skybox.texture = std::move(new_cubemap);
 			current->submit_preframe_work([](Scene& this_scene, SceneRenderer& renderer) {
-				auto texture_cube = this_scene.get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
+				const auto& texture_cube = this_scene.get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
 
 				auto& graphics_resource = renderer.get_graphics_resource();
 				graphics_resource.expose_to_shaders(texture_cube->get_image(), DescriptorSet(2), DescriptorBinding(2));
@@ -328,7 +370,7 @@ void ScenePanel::for_all_components(Entity& entity)
 					.debug_name = texture_path.string(),
 				});
 			current->submit_preframe_work([](Scene& this_scene, SceneRenderer& renderer) {
-				auto texture_cube = this_scene.get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
+				const auto& texture_cube = this_scene.get_by_components<Components::Skybox>()->get_components<Components::Skybox>().texture;
 
 				auto& graphics_resource = renderer.get_graphics_resource();
 				graphics_resource.expose_to_shaders(texture_cube->get_image(), DescriptorSet(2), DescriptorBinding(2));
@@ -357,7 +399,13 @@ void ScenePanel::for_all_components(Entity& entity)
 		bool any_changed = false;
 		std::optional<std::filesystem::path> selected { std::nullopt };
 		if (ImGui::Button("Choose path", { 80, 30 })) {
-			selected = UI::Popup::select_file({ "*.mesh", "*.obj", "*.fbx" }, "Assets/Models");
+			selected = UI::Popup::select_file(
+				{
+					"*.mesh",
+					"*.obj",
+					"*.fbx",
+				},
+				"Assets/Models");
 			any_changed |= selected.has_value();
 		}
 		if (ImGui::Checkbox("Draw AABB", &mesh_component.draw_aabb)) { };
@@ -385,29 +433,33 @@ void ScenePanel::for_all_components(Entity& entity)
 		auto& parameters = script_component.get_script().get_parameters();
 		bool any_changed = false;
 		for (auto&& [key, value] : parameters) {
-			any_changed |= switch_parameter<glm::vec2>(value, [key](glm::vec2& vector) { return UI::Input::slider(key, vector, 0.1F); });
-			any_changed |= switch_parameter<glm::vec3>(value, [key](glm::vec3& vector) { return UI::Input::slider(key, vector, 0.1F); });
-			any_changed |= switch_parameter<glm::vec4>(value, [key](glm::vec4& vector) { return UI::Input::slider(key, vector, 0.1F); });
-			any_changed |= switch_parameter<std::uint32_t>(value, [key](std::uint32_t& vector) {
+			any_changed |= switch_parameter<glm::vec2>(
+				value, [&variant_key = key](glm::vec2& vector) { return UI::Input::slider(variant_key, vector, 0.1F); });
+			any_changed |= switch_parameter<glm::vec3>(
+				value, [&variant_key = key](glm::vec3& vector) { return UI::Input::slider(variant_key, vector, 0.1F); });
+			any_changed |= switch_parameter<glm::vec4>(
+				value, [&variant_key = key](glm::vec4& vector) { return UI::Input::slider(variant_key, vector, 0.1F); });
+			any_changed |= switch_parameter<std::uint32_t>(value, [&variant_key = key](std::uint32_t& vector) {
 				auto as_int = static_cast<std::int32_t>(vector);
-				const bool changed = ImGui::DragInt(key.data(), &as_int);
+				const bool changed = ImGui::DragInt(variant_key.data(), &as_int);
 				if (changed) {
 					vector = static_cast<std::uint32_t>(as_int);
 				}
 				return changed;
 			});
-			any_changed |= switch_parameter<std::uint8_t>(value, [key](std::uint8_t& vector) {
+			any_changed |= switch_parameter<std::uint8_t>(value, [&variant_key = key](std::uint8_t& vector) {
 				auto as_int = static_cast<std::int32_t>(vector);
-				const bool changed = ImGui::DragInt(key.data(), &as_int);
+				const bool changed = ImGui::DragInt(variant_key.data(), &as_int);
 				if (changed) {
 					vector = static_cast<std::uint8_t>(as_int);
 				}
 				return changed;
 			});
-			any_changed |= switch_parameter<float>(value, [key](float& vector) { return UI::Input::slider<1>(key, &vector, 0.1F); });
-			any_changed |= switch_parameter<double>(value, [key](double& vector) {
+			any_changed
+				|= switch_parameter<float>(value, [&variant_key = key](float& vector) { return UI::Input::slider<1>(variant_key, &vector, 0.1F); });
+			any_changed |= switch_parameter<double>(value, [&variant_key = key](double& vector) {
 				auto as_float = static_cast<float>(vector);
-				bool changed = ImGui::DragFloat(key.data(), &as_float, 0.1F);
+				bool changed = ImGui::DragFloat(variant_key.data(), &as_float, 0.1F);
 				if (changed) {
 					vector = static_cast<double>(as_float);
 				}
@@ -451,6 +503,7 @@ void ScenePanel::for_all_components(Entity& entity)
 		if (UI::checkbox("Kinematic", body.is_kinematic)) { }
 	});
 }
+// NOLINTEND
 
 void ScenePanel::on_event(Event& event) { }
 

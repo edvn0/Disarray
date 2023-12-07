@@ -117,6 +117,8 @@ public:
 	auto get_layout() const -> const VkDescriptorSetLayout& { return layout; }
 
 	auto supply() const -> VkImage override { return get_image(); }
+	auto supply() -> VkImage override { return get_image(); }
+
 	auto get_descriptor_info() const -> const VkDescriptorImageInfo& { return descriptor_info; }
 
 	auto hash() const -> Identifier override;

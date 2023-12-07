@@ -83,12 +83,12 @@ namespace {
 
 } // namespace
 
-struct PhysicsEngine::EngineImpl {
+struct EngineImpl {
 	reactphysics3d::PhysicsCommon common;
 	reactphysics3d::PhysicsWorld* world { nullptr };
 };
 
-template <> auto PimplDeleter<PhysicsEngine::EngineImpl>::operator()(PhysicsEngine::EngineImpl* ptr) noexcept -> void { delete ptr; }
+template <> auto PimplDeleter<EngineImpl>::operator()(EngineImpl* ptr) noexcept -> void { delete ptr; }
 
 PhysicsEngine::PhysicsEngine(std::uint32_t velocity_its, std::uint32_t position_its)
 	: velocity_iterations(velocity_its)
@@ -100,7 +100,7 @@ PhysicsEngine::PhysicsEngine(std::uint32_t velocity_its, std::uint32_t position_
 auto PhysicsEngine::restart() -> void
 {
 	engine.reset();
-	engine = make_scope<PhysicsEngine::EngineImpl, PimplDeleter<PhysicsEngine::EngineImpl>>();
+	engine = make_scope<EngineImpl, PimplDeleter<EngineImpl>>();
 
 	engine->world = engine->common.createPhysicsWorld();
 	engine->world->setNbIterationsVelocitySolver(velocity_iterations);

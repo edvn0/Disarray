@@ -16,12 +16,15 @@
 
 namespace Disarray {
 
+using ColourVector = glm::vec4;
+using TransformMatrix = glm::mat4;
+
 using DescriptorSet = TypeSafeWrapper<std::uint32_t>;
 using DescriptorBinding = TypeSafeWrapper<std::uint16_t>;
 
 enum class UBOIdentifier : std::uint8_t {
 	Missing,
-	Default,
+	ViewProjection,
 	Camera,
 	PointLight,
 	ShadowPass,
@@ -84,15 +87,15 @@ template <class Child> struct Resettable {
 };
 
 struct PushConstant : Resettable<PushConstant> {
-	static constexpr auto max_image_indices = 8;
+	glm::mat4 object_transform;
+	glm::vec3 albedo_colour;
+	float metalness;
+	float roughness;
+	float emission;
 
-	glm::mat4 object_transform { 1.0F };
-	glm::vec4 colour { 1.0F };
-	std::uint32_t max_identifiers {};
-	std::uint32_t max_spot_lights {};
-	std::uint32_t max_point_lights {};
-	std::uint32_t bound_textures { 0 };
-	std::array<std::int32_t, max_image_indices> image_indices { -1 };
+	float env_map_rotation;
+
+	bool use_normal_map;
 
 	void reset_impl();
 };
@@ -119,11 +122,13 @@ template <> inline constexpr UBOIdentifier identifier_for<SpotLight> = UBOIdenti
 namespace Detail {
 	template <std::size_t N> struct PointLights : Resettable<PointLights<N>> {
 		std::array<PointLight, N> lights {};
+		glm::uvec4 count_and_padding {};
 		void reset_impl() { lights.fill(PointLight {}); }
 	};
 
 	template <std::size_t N> struct SpotLights : Resettable<SpotLights<N>> {
 		std::array<SpotLight, N> lights {};
+		glm::uvec4 count_and_padding {};
 		void reset_impl() { lights.fill(SpotLight {}); }
 	};
 } // namespace Detail
@@ -140,14 +145,14 @@ static_assert(count_spot_lights <= max_spot_lights);
 using SpotLights = Detail::SpotLights<max_spot_lights>;
 template <> inline constexpr UBOIdentifier identifier_for<SpotLights> = UBOIdentifier::SpotLight;
 
-struct UBO : Resettable<UBO> {
+struct ViewProjectionUBO : Resettable<ViewProjectionUBO> {
 	glm::mat4 view;
 	glm::mat4 proj;
 	glm::mat4 view_projection;
 
 	void reset_impl();
 };
-template <> inline constexpr UBOIdentifier identifier_for<UBO> = UBOIdentifier::Default;
+template <> inline constexpr UBOIdentifier identifier_for<ViewProjectionUBO> = UBOIdentifier::ViewProjection;
 
 struct CameraUBO : Resettable<CameraUBO> {
 	glm::vec4 position { 0 };

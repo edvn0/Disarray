@@ -75,21 +75,11 @@ void Scene::begin_frame(const Camera& camera, SceneRenderer& scene_renderer)
 void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_proj, SceneRenderer& scene_renderer)
 {
 	execute_callbacks(scene_renderer);
-
 	scene_renderer.begin_frame(view, proj, view_proj);
 
-	auto directional_transaction = scene_renderer.begin_uniform_transaction<DirectionalLightUBO>();
-	auto point_lights_transaction = scene_renderer.begin_uniform_transaction<PointLights>();
-	auto spot_lights_transaction = scene_renderer.begin_uniform_transaction<SpotLights>();
-	auto shadow_pass_transaction = scene_renderer.begin_uniform_transaction<ShadowPassUBO>();
-
-	auto& shadow_pass = shadow_pass_transaction.get_buffer();
-	auto& directional = directional_transaction.get_buffer();
-	auto& point_lights = point_lights_transaction.get_buffer();
-	auto& spot_lights = spot_lights_transaction.get_buffer();
-
+	ShadowPassUBO shadow_pass {};
+	DirectionalLightUBO directional {};
 	auto& push_constant = scene_renderer.get_graphics_resource().get_editable_push_constant();
-
 	{
 		for (auto sun_component_view = registry.view<const Components::Transform, Components::DirectionalLight>();
 			 auto&& [entity, transform, sun] : sun_component_view.each()) {
@@ -125,53 +115,58 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 		shadow_pass.view_projection = view_projection;
 	}
 
-	std::size_t point_light_index { 0 };
-	auto& lights = point_lights.lights;
-	auto point_light_ssbo = scene_renderer.get_point_light_transforms().get_mutable<glm::mat4>();
-	auto point_light_ssbo_colour = scene_renderer.get_point_light_colours().get_mutable<glm::vec4>();
-	for (auto&& [entity, point_light, pos, texture] :
-		registry.view<const Components::PointLight, const Components::Transform, Components::Texture>().each()) {
-		auto& light = lights.at(point_light_index);
-		light.position = glm::vec4 { pos.position, 0.F };
-		light.ambient = point_light.ambient;
-		light.diffuse = point_light.diffuse;
-		light.specular = point_light.specular;
-		light.factors = point_light.factors;
-		texture.colour = light.ambient;
+	const auto point_light_count = registry.view<const Components::PointLight>().size();
+	const auto spot_light_count = registry.view<const Components::SpotLight>().size();
 
-		point_light_ssbo[point_light_index] = pos.compute();
-		point_light_ssbo_colour[point_light_index] = texture.colour;
-		point_light_index++;
+	if (point_light_count > 0) {
+		PointLights lights {};
+		std::size_t point_light_index { 0 };
+		for (auto&& [entity, point_light, pos, texture] :
+			registry.view<const Components::PointLight, const Components::Transform, Components::Texture>().each()) {
+			auto& light = lights.lights.at(point_light_index);
+			light.position = glm::vec4 { pos.position, 0.F };
+			light.ambient = point_light.ambient;
+			light.diffuse = point_light.diffuse;
+			light.specular = point_light.specular;
+			light.factors = point_light.factors;
+			texture.colour = light.ambient;
+
+			point_light_index++;
+		}
+		lights.count_and_padding.x = static_cast<std::uint32_t>(point_light_index);
+
+		auto& point_light_buffer = scene_renderer.get_point_light_data();
+		point_light_buffer.set_data(&lights);
 	}
-	push_constant.max_point_lights = static_cast<std::uint32_t>(point_light_index);
 
-	std::size_t spot_light_index { 0 };
-	auto& spot_light_array = spot_lights.lights;
-	auto spot_light_ssbo = scene_renderer.get_spot_light_transforms().get_mutable<glm::mat4>();
-	auto spot_light_ssbo_colour = scene_renderer.get_spot_light_colours().get_mutable<glm::vec4>();
-	for (auto&& [entity, spot_light, pos, texture] :
-		registry.view<const Components::SpotLight, Components::Transform, Components::Texture>().each()) {
-		auto& light = spot_light_array.at(spot_light_index);
-		pos.rotation = glm::quat { spot_light.direction };
-		light.position = glm::vec4 { pos.position, 0.F };
-		light.ambient = spot_light.ambient;
-		light.diffuse = spot_light.diffuse;
-		light.specular = spot_light.specular;
-		light.direction_and_cutoff = {
-			-glm::normalize(spot_light.direction),
-			glm::cos(glm::radians(spot_light.cutoff_angle_degrees)),
-		};
-		light.factors_and_outer_cutoff = {
-			glm::vec3(spot_light.factors),
-			glm::cos(glm::radians(spot_light.outer_cutoff_angle_degrees)),
-		};
-		texture.colour = light.ambient;
+	if (spot_light_count > 0) {
+		SpotLights lights {};
+		std::size_t spot_light_index { 0 };
+		for (auto&& [entity, spot_light, pos, texture] :
+			registry.view<const Components::SpotLight, Components::Transform, Components::Texture>().each()) {
+			auto& light = lights.lights.at(spot_light_index);
+			pos.rotation = glm::quat { spot_light.direction };
+			light.position = glm::vec4 { pos.position, 0.F };
+			light.ambient = spot_light.ambient;
+			light.diffuse = spot_light.diffuse;
+			light.specular = spot_light.specular;
+			light.direction_and_cutoff = {
+				-glm::normalize(spot_light.direction),
+				glm::cos(glm::radians(spot_light.cutoff_angle_degrees)),
+			};
+			light.factors_and_outer_cutoff = {
+				glm::vec3(spot_light.factors),
+				glm::cos(glm::radians(spot_light.outer_cutoff_angle_degrees)),
+			};
+			texture.colour = light.ambient;
 
-		spot_light_ssbo[spot_light_index] = pos.compute();
-		spot_light_ssbo_colour[spot_light_index] = texture.colour;
-		spot_light_index++;
+			spot_light_index++;
+		}
+		lights.count_and_padding.x = static_cast<std::uint32_t>(spot_light_index);
+
+		auto& spot_light_buffer = scene_renderer.get_spot_light_data();
+		spot_light_buffer.set_data(&lights);
 	}
-	push_constant.max_spot_lights = static_cast<std::uint32_t>(spot_light_index);
 
 	std::size_t identifier_index { 0 };
 	auto ssbo_identifiers = scene_renderer.get_entity_identifiers().get_mutable<std::uint32_t>();
@@ -206,9 +201,9 @@ void Scene::update(float)
 
 void Scene::render(SceneRenderer& renderer)
 {
-	auto render_planar_geometry = [](auto& ren) { ren.planar_geometry_pass(); };
+	static constexpr auto render_planar_geometry = [](auto& ren) { ren.planar_geometry_pass(); };
 
-	auto render_text = [](auto& scene_renderer, entt::registry& reg) {
+	static constexpr auto render_text = [](auto& scene_renderer, entt::registry& reg) {
 		for (auto&& [entity, text, transform] : reg.template view<const Components::Text, const Components::Transform>().each()) {
 			auto colour = text.colour;
 			if (reg.any_of<Components::Texture>(entity)) {
@@ -266,58 +261,19 @@ void Scene::draw_identifiers(SceneRenderer& scene_renderer)
 
 void Scene::draw_skybox(SceneRenderer& scene_renderer)
 {
-	auto skybox_view = registry.view<const Components::Skybox, const Components::Mesh>();
-	Ref<Disarray::Mesh> skybox_ptr = nullptr;
-	for (auto&& [entity, skybox, mesh] : skybox_view.each()) {
-		if (mesh.mesh == nullptr) {
-			continue;
-		}
-		skybox_ptr = mesh.mesh;
-	}
-	if (skybox_ptr == nullptr) {
+	auto skybox_view = registry.view<const Components::Skybox>();
+	if (skybox_view.empty()) {
 		return;
 	}
 
-	scene_renderer.draw_skybox(*skybox_ptr);
+	scene_renderer.draw_skybox();
 }
 
 void Scene::draw_geometry(SceneRenderer& scene_renderer)
 {
-	{
-		auto point_light_view = registry.view<const Components::PointLight, const Components::Mesh>();
-		Ref<Disarray::Mesh> point_light_mesh = nullptr;
-
-		for (auto&& [entity, point_light, mesh] : point_light_view.each()) {
-			point_light_mesh = mesh.mesh;
-			break;
-		}
-
-		auto point_light_view_for_count = registry.view<const Components::PointLight>().size();
-		if (point_light_view_for_count > 0 && point_light_mesh != nullptr) {
-			const auto& pipeline = *scene_renderer.get_pipeline("PointLight");
-			scene_renderer.draw_point_lights(*point_light_mesh, point_light_view_for_count, pipeline);
-		}
-	}
-
-	{
-		auto spot_light_view = registry.view<const Components::SpotLight, const Components::Mesh>();
-		Ref<Disarray::Mesh> spot_light_mesh = nullptr;
-
-		for (auto&& [entity, point_light, mesh] : spot_light_view.each()) {
-			spot_light_mesh = mesh.mesh;
-			break;
-		}
-
-		auto spot_light_view_for_count = registry.view<const Components::SpotLight>().size();
-		if (spot_light_view_for_count > 0 && spot_light_mesh != nullptr) {
-			const auto& pipeline = *scene_renderer.get_pipeline("SpotLight");
-			scene_renderer.draw_point_lights(*spot_light_mesh, spot_light_view_for_count, pipeline);
-		}
-	}
-
 	for (auto line_view = registry.view<const Components::LineGeometry, const Components::Transform>();
 		 auto&& [entity, geom, transform] : line_view.each()) {
-		glm::vec4 colour = { 0.9F, 0.2F, 0.6F, 1.0F };
+		glm::vec4 colour { 1.0F };
 		if (registry.any_of<Components::Texture>(entity)) {
 			colour = registry.get<Components::Texture>(entity).colour;
 		}
@@ -330,22 +286,45 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 			});
 	}
 
-	for (auto rect_view = registry.view<const Components::Texture, const Components::QuadGeometry, const Components::Transform>();
-		 auto&& [entity, tex, geom, transform] : rect_view.each()) {
+	for (auto rect_view = registry.view<const Components::QuadGeometry, const Components::Transform>();
+		 auto&& [entity, geom, transform] : rect_view.each()) {
+		glm::vec4 colour { 1.0F };
+		if (registry.any_of<Components::Texture>(entity)) {
+			colour = registry.get<Components::Texture>(entity).colour;
+		}
 		scene_renderer.draw_planar_geometry(Geometry::Rectangle,
 			{
 				.position = transform.position,
-				.colour = tex.colour,
+				.colour = colour,
 				.rotation = transform.rotation,
 				.dimensions = transform.scale,
 				.identifier = static_cast<std::uint32_t>(entity),
 			});
 	}
 
-	for (auto mesh_view = registry.view<const Components::Mesh, const Components::Texture, const Components::Transform>(
-			 entt::exclude<Components::PointLight, Components::SpotLight, Components::DirectionalLight, Components::Skybox>);
+	for (auto mesh_view
+		 = registry.view<const Components::Mesh, const Components::Texture, const Components::Transform>(entt::exclude<Components::Skybox>);
 		 auto&& [entity, mesh, texture, transform] : mesh_view.each()) {
+		if (mesh.mesh == nullptr) {
+			continue;
+		}
+		const auto& actual_pipeline = *scene_renderer.get_pipeline("StaticMesh");
+		const auto computed_transform = transform.compute();
+		if (mesh.draw_aabb) {
+			scene_renderer.draw_aabb(mesh.mesh->get_aabb(), texture.colour, computed_transform);
+		}
+		if (mesh.mesh->has_children()) {
+			scene_renderer.draw_static_submeshes(mesh.mesh->get_submeshes(), actual_pipeline, computed_transform, texture.colour);
+		} else {
+			scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, computed_transform, texture.colour);
+		}
+	}
 
+	for (auto&& [entity, mesh, texture, transform] :
+		registry
+			.view<const Components::Mesh, const Components::Texture, const Components::Transform>(
+				entt::exclude<Components::DirectionalLight, Components::PointLight, Components::SpotLight, Components::Skybox>)
+			.each()) {
 		if (mesh.mesh == nullptr) {
 			continue;
 		}
@@ -362,27 +341,20 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 		}
 	}
 
-	for (auto&& [entity, mesh, transform] :
-		registry
-			.view<const Components::Mesh, const Components::Transform>(
-				entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight, Components::SpotLight, Components::Skybox>)
-			.each()) {
-		if (mesh.mesh == nullptr) {
+	auto view = registry.view<const Components::StaticMesh, const Components::Transform>();
+	for (auto&& [handle, mesh, transform] : view.each()) {
+		if (mesh.mesh == nullptr || mesh.material_table == nullptr) {
 			continue;
 		}
-
-		const auto& actual_pipeline = *scene_renderer.get_pipeline("StaticMesh");
-		const auto transform_computed = transform.compute();
-		scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
-		if (mesh.draw_aabb) {
-			scene_renderer.draw_aabb(mesh.mesh->get_aabb(), { 1, 1, 1, 1 }, transform_computed);
-		}
+		Entity entity { this, handle };
+		auto entity_transform = entity.compute_transform();
+		scene_renderer.draw_static_mesh(*mesh.mesh, *mesh.material_table, entity_transform);
 	}
 }
 
 void Scene::draw_shadows(SceneRenderer& scene_renderer)
 {
-	for (auto shadow_view = registry.view<const Components::Mesh, Components::Texture, const Components::Transform>(
+	for (auto shadow_view = registry.view<const Components::Mesh, const Components::Texture, const Components::Transform>(
 			 entt::exclude<Components::PointLight, Components::SpotLight, Components::Skybox>);
 		 auto&& [entity, mesh, texture, transform] : shadow_view.each()) {
 		if (mesh.mesh == nullptr) {
@@ -397,10 +369,10 @@ void Scene::draw_shadows(SceneRenderer& scene_renderer)
 		}
 	}
 
-	for (auto&& [entity, mesh, transform] :
+	for (auto&& [entity, mesh, texture, transform] :
 		registry
-			.view<const Components::Mesh, const Components::Transform>(
-				entt::exclude<Components::Texture, Components::DirectionalLight, Components::SpotLight, Components::PointLight, Components::Skybox>)
+			.view<const Components::Mesh, const Components::Texture, const Components::Transform>(
+				entt::exclude<Components::DirectionalLight, Components::SpotLight, Components::PointLight, Components::Skybox>)
 			.each()) {
 		if (mesh.mesh == nullptr) {
 			continue;
@@ -408,7 +380,11 @@ void Scene::draw_shadows(SceneRenderer& scene_renderer)
 
 		const auto& actual_pipeline = *scene_renderer.get_pipeline("Shadow");
 		const auto transform_computed = transform.compute();
-		scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
+		if (mesh.mesh->has_children()) {
+			scene_renderer.draw_static_submeshes(mesh.mesh->get_submeshes(), actual_pipeline, transform_computed, texture.colour);
+		} else {
+			scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, transform_computed, texture.colour);
+		}
 	}
 }
 
@@ -417,7 +393,7 @@ void Scene::on_event(Event& event)
 	EventDispatcher dispatcher { event };
 	dispatcher.dispatch<KeyPressedEvent>([scene = this](KeyPressedEvent&) {
 		if (Input::all<KeyCode::LeftControl, KeyCode::S>()) {
-			SceneSerialiser scene_serialiser(scene);
+			const SceneSerialiser scene_serialiser(scene);
 			return true;
 		}
 
@@ -510,11 +486,11 @@ void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoTyp
 		glm::value_ptr(transform), nullptr, snap ? snap_values.data() : nullptr);
 
 	if (ImGuizmo::IsUsing()) {
-		glm::vec3 scale;
-		glm::quat rotation;
-		glm::vec3 translation;
-		glm::vec3 skew;
-		glm::vec4 perspective;
+		glm::vec3 scale {};
+		glm::quat rotation {};
+		glm::vec3 translation {};
+		glm::vec3 skew {};
+		glm::vec4 perspective {};
 		glm::decompose(transform, scale, rotation, translation, skew, perspective);
 
 		auto delta_rotation = rotation - entity_transform.rotation;

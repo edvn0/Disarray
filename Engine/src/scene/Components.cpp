@@ -35,28 +35,6 @@ Mesh::Mesh(Ref<Disarray::Mesh> input_mesh)
 {
 }
 
-Material::Material(Device& device, std::string_view vertex, std::string_view fragment)
-	: material(Disarray::Material::construct(device,
-		MaterialProperties {
-			.vertex_shader = Shader::construct(device,
-				{
-					.path = std::filesystem::path { vertex },
-					.identifier = vertex,
-				}),
-			.fragment_shader = Shader::construct(device,
-				{
-					.path = std::filesystem::path { fragment },
-					.identifier = fragment,
-				}),
-		}))
-{
-}
-
-Material::Material(Ref<Disarray::Material> input)
-	: material(std::move(input))
-{
-}
-
 Texture::Texture(Device& device, std::string_view path)
 	: texture(Disarray::Texture::construct(device,
 		TextureProperties {
@@ -111,28 +89,8 @@ auto DirectionalLight::ProjectionParameters::compute() const -> glm::mat4
 auto Controller::on_update(float time_step, Transform& transform) -> void { }
 
 auto Camera::compute(const Disarray::Components::Transform& transform, const Disarray::Extent& extent) const
-	-> const std::tuple<glm::mat4, glm::mat4, glm::mat4>&
+	-> std::tuple<glm::mat4, glm::mat4, glm::mat4>
 {
-	static auto pre_computed_for_parameters = std::unordered_map<std::size_t, std::tuple<glm::mat4, glm::mat4, glm::mat4>> {};
-	static auto hash_this = [](auto... to_combine) {
-		std::size_t seed { 0x1A16B09F };
-		hash_combine(seed, to_combine...);
-		return seed;
-	};
-
-	const auto hash = hash_this(fov_degrees, static_cast<std::uint8_t>(type), transform.position, transform.rotation, extent.width, extent.height,
-		near_perspective, far_perspective, reverse);
-
-	bool should_skip = false;
-	if (Input::all<KeyCode::R, KeyCode::LeftShift>()) {
-		should_skip = true;
-	}
-
-	const auto did_contain = pre_computed_for_parameters.contains(hash);
-	if (!should_skip && did_contain) {
-		return pre_computed_for_parameters.at(hash);
-	}
-
 	const auto rotation = glm::mat4_cast(transform.rotation);
 	const auto position = rotation * glm::vec4 { transform.position, 1.0F };
 
@@ -148,12 +106,7 @@ auto Camera::compute(const Disarray::Components::Transform& transform, const Dis
 			-aspect, aspect, -1, 1, reverse ? far_orthographic : near_orthographic, reverse ? near_orthographic : far_orthographic);
 	}
 
-	if (should_skip && did_contain) {
-		pre_computed_for_parameters[hash] = { view, projection, projection * view };
-	} else {
-		pre_computed_for_parameters.try_emplace(hash, view, projection, projection * view);
-	}
-	return pre_computed_for_parameters.at(hash);
+	return { view, projection, view * projection };
 }
 
 Skybox::Skybox(Ref<Disarray::Texture> tex, const glm::vec4& col)

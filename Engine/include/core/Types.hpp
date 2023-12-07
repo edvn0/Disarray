@@ -16,11 +16,11 @@ namespace Disarray {
 template <std::integral T> struct TypeSafeWrapper {
 	T value { 0 };
 
-	constexpr explicit TypeSafeWrapper(std::integral auto input)
+	constexpr explicit TypeSafeWrapper(std::integral auto input) noexcept
 		: value(static_cast<T>(input))
 	{
 	}
-	constexpr TypeSafeWrapper() = default;
+	constexpr TypeSafeWrapper() noexcept = default;
 
 	constexpr auto operator+(std::integral auto addend) -> TypeSafeWrapper { return TypeSafeWrapper { value + addend }; }
 	constexpr auto operator-(std::integral auto addend) -> TypeSafeWrapper { return TypeSafeWrapper { value - addend }; }
@@ -82,9 +82,6 @@ template <class T, class D = DefaultDelete<T>, class... Args> inline auto make_s
 	return Scope<T, D> { new T { std::forward<Args>(args)... }, D {} };
 }
 
-template <class T> using RefVector = std::vector<Ref<T>>;
-template <class T> using ScopeVector = std::vector<Scope<T>>;
-
 template <class To, class From>
 	requires(std::is_base_of_v<From, To>)
 auto cast_to(From&& obj) -> decltype(auto)
@@ -114,14 +111,14 @@ auto supply_cast(From&& obj) -> decltype(auto)
 }
 
 template <class To, class From>
-	requires(std::is_base_of_v<From, To> && requires(To t) { t.supply(); })
+	requires(std::is_base_of_v<From, To> && requires(To& t) { t.supply(); })
 auto supply_cast(From& obj) -> decltype(auto)
 {
 	return polymorphic_cast<To>(obj).supply();
 }
 
 template <class To, class From>
-	requires(std::is_base_of_v<From, To> && requires(To t) { t.supply(); })
+	requires(std::is_base_of_v<From, To> && requires(const To& t) { t.supply(); })
 auto supply_cast(const From& obj) -> decltype(auto)
 {
 	return polymorphic_cast<To>(obj).supply();

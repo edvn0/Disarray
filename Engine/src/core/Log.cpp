@@ -1,9 +1,8 @@
 #include "DisarrayPCH.hpp"
 
-#include "core/Log.hpp"
-
 #include <fmt/chrono.h>
 #include <magic_enum.hpp>
+#include <spdlog/common.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
@@ -12,23 +11,24 @@
 #include <cstddef>
 #include <vector>
 
+#include "core/Log.hpp"
 #include "core/PointerDefinition.hpp"
 #include "core/exceptions/GeneralExceptions.hpp"
-#include "spdlog/common.h"
 
 namespace Disarray {
 
 namespace Logging {
 
-	using LoggerType = std::shared_ptr<spdlog::logger>;
-	struct Logger::LoggerDataPimpl {
+	struct LoggerDataPimpl {
 		spdlog::logger logger;
 
-		LoggerDataPimpl(spdlog::logger&& in_logger)
+		explicit LoggerDataPimpl(spdlog::logger&& in_logger)
 			: logger(in_logger)
 		{
 		}
 	};
+
+	using LoggerType = std::shared_ptr<spdlog::logger>;
 
 	Logger::Logger()
 	{
@@ -45,9 +45,13 @@ namespace Logging {
 
 	auto Logger::Logger::debug(const std::string& message) -> void { logger_data->logger.debug(message); }
 
+	auto Logger::Logger::trace(const std::string& message) -> void { logger_data->logger.trace(message); }
+
 	auto Logger::Logger::to_file(const std::string& message) -> void { logger_data->logger.trace(message); }
 
 	auto Logger::Logger::info(const std::string& message) -> void { logger_data->logger.info(message); }
+
+	auto Logger::Logger::warn(const std::string& message) -> void { logger_data->logger.warn(message); }
 
 	auto Logger::Logger::error(const std::string& message) -> void { logger_data->logger.error(message); }
 
@@ -59,7 +63,7 @@ namespace Logging {
 
 } // namespace Logging
 
-template <> auto PimplDeleter<Logging::Logger::LoggerDataPimpl>::operator()(Logging::Logger::LoggerDataPimpl* ptr) noexcept -> void { delete ptr; }
+template <> auto PimplDeleter<Logging::LoggerDataPimpl>::operator()(Logging::LoggerDataPimpl* ptr) noexcept -> void { delete ptr; }
 
 namespace Log {
 	auto current_time(bool include_ms) -> std::string

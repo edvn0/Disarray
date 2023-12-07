@@ -14,8 +14,10 @@ namespace Disarray::Vulkan {
 template <class T> class PropertySupplier {
 public:
 	virtual ~PropertySupplier() = default;
-	virtual T supply() const = 0;
-	virtual T operator*() const { return supply(); }
+	virtual auto supply() const -> T = 0;
+	virtual auto supply() -> T = 0;
+	virtual auto operator*() const -> T { return supply(); }
+	virtual auto operator*() -> T  { return supply(); }
 };
 
 } // namespace Disarray::Vulkan

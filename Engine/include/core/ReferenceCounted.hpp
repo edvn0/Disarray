@@ -12,16 +12,15 @@ namespace Disarray {
 
 class ReferenceCountable {
 public:
-	virtual ~ReferenceCountable() = default;
+	virtual ~ReferenceCountable();
 
-	void increment_reference_count() { ++reference_count; }
+	void increment_reference_count();
+	void decrement_reference_count();
 
-	void decrement_reference_count() { --reference_count; }
-
-	auto get_reference_count() const -> std::uint32_t { return reference_count; }
+	auto get_reference_count() const -> std::uint32_t;
 
 private:
-	std::atomic<uint32_t> reference_count = 0;
+	std::atomic<std::uint32_t> reference_count = 0;
 };
 
 namespace MemoryTracking {
@@ -35,22 +34,25 @@ namespace MemoryTracking {
 } // namespace MemoryTracking
 
 template <class T> class ReferenceCounted {
-	static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
 
 public:
 	ReferenceCounted()
 		: instance(nullptr)
 	{
+		static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
 	}
 
 	ReferenceCounted(std::nullptr_t)
 		: instance(nullptr)
 	{
+		static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
 	}
 
 	ReferenceCounted(T* inst)
 		: instance(inst)
 	{
+		static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
+
 		increment_reference_count();
 	}
 
@@ -59,18 +61,24 @@ public:
 		requires(std::is_constructible_v<T, Args...>)
 		: instance(new T { std::forward<Args>(args)... })
 	{
+		static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
+
 		increment_reference_count();
 	}
 
 	ReferenceCounted(ReferenceCounted<T>&& other) noexcept
 		: instance(std::move(other.instance))
 	{
+		static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
+
 		increment_reference_count();
 	}
 
 	ReferenceCounted(const ReferenceCounted<T>& other)
 		: instance(other.instance)
 	{
+		static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
+
 		increment_reference_count();
 	}
 
@@ -80,12 +88,15 @@ public:
 	ReferenceCounted(const ReferenceCounted<Other>& other)
 		: instance(static_cast<T*>(other.instance))
 	{
+		static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
 
 		increment_reference_count();
 	}
 
 	template <class Other> ReferenceCounted(ReferenceCounted<Other>&& other)
 	{
+		static_assert(std::is_base_of_v<ReferenceCountable, T>, "T must inherit from ReferenceCountable");
+
 		auto* other_instance = std::move(other.instance);
 		instance = static_cast<T*>(other_instance);
 		increment_reference_count();
@@ -107,6 +118,10 @@ public:
 
 	auto operator=(const ReferenceCounted<T>& other) -> ReferenceCounted&
 	{
+		if (this == &other) {
+			return *this;
+		}
+
 		other.increment_reference_count();
 		decrement_reference_count();
 

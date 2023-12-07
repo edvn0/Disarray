@@ -43,7 +43,8 @@ public:
 
 	auto get_views() const -> const auto& { return swapchain_image_views; }
 
-	auto supply() const -> VkSwapchainKHR override { return swapchain; }
+	[[nodiscard]] auto supply() const -> VkSwapchainKHR override { return swapchain; }
+	[[nodiscard]] auto supply() -> VkSwapchainKHR override { return swapchain; }
 
 	auto get_image_format() const { return format.format; }
 

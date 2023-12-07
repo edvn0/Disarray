@@ -10,6 +10,8 @@ void setup_default_asset_path(std::filesystem::path asset_path);
 
 auto asset_path() -> std::filesystem::path;
 
+inline auto exists(Pathlike auto path) { return std::filesystem::exists(path); }
+
 inline auto texture_directory() { return asset_path() / std::filesystem::path { "Textures" }; }
 inline auto texture(Pathlike auto path) -> std::filesystem::path { return texture_directory() / std::filesystem::path { path }; }
 

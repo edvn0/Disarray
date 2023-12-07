@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include "UnifiedShader.hpp"
 #include "core/Types.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/PushConstantLayout.hpp"
@@ -25,6 +26,7 @@ struct PipelineCacheCreationProperties {
 	std::string pipeline_key;
 	std::string vertex_shader_key;
 	std::string fragment_shader_key;
+	std::optional<std::string> combined_shader_key {};
 	Ref<Framebuffer> framebuffer { nullptr };
 	VertexLayout layout {};
 	PushConstantLayout push_constant_layout {};
@@ -41,7 +43,7 @@ struct PipelineCacheCreationProperties {
 	SpecialisationConstantDescription specialisation_constant {};
 };
 
-class PipelineCache : public ResourceCache<Ref<Disarray::Pipeline>, PipelineCacheCreationProperties, PipelineCache, std::string, StringHash> {
+class PipelineCache : public ResourceCache<Ref<Disarray::Pipeline>, PipelineCacheCreationProperties, PipelineCache> {
 public:
 	PipelineCache(const Disarray::Device& device, const std::filesystem::path&);
 	~PipelineCache() { clear_storage(); };
@@ -56,6 +58,10 @@ public:
 
 	auto create_from_impl(const PipelineCacheCreationProperties& props) -> Ref<Disarray::Pipeline>
 	{
+		if (!shader_cache.contains(props.vertex_shader_key) || !shader_cache.contains(props.fragment_shader_key)) {
+			return nullptr;
+		}
+
 		PipelineProperties properties {
 			.vertex_shader = shader_cache[props.vertex_shader_key],
 			.fragment_shader = shader_cache[props.fragment_shader_key],

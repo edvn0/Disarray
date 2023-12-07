@@ -23,11 +23,13 @@
 
 namespace Disarray::Runtime {
 
-static auto was_initialised() -> bool&
-{
-	static bool initialised { false };
-	return std::ref(initialised);
-}
+namespace {
+	auto was_initialised() -> bool&
+	{
+		static bool initialised { false };
+		return std::ref(initialised);
+	}
+} // namespace
 
 struct Detail::CompilerIntrinsics {
 	Scope<IncludeDirectoryIncluder> include_dir_includer = make_scope<IncludeDirectoryIncluder>("Assets/Shaders/Include");
@@ -177,7 +179,7 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	custom.maxTextureImageUnits = 2000;
 
 	auto glslang_type = Detail::CompilerIntrinsics::to_glslang_type(type);
-	Scope<glslang::TShader> shader = make_scope<glslang::TShader>(glslang_type);
+	auto shader = make_scope<glslang::TShader>(glslang_type);
 
 	std::string output;
 	if (!FS::read_from_file(path_to_shader.string(), output)) {
@@ -194,16 +196,16 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	shader->setStrings(sources.data(), 1);
 
 	// Use appropriate Vulkan version
-	glslang::EShTargetClientVersion target_api_version = glslang::EShTargetVulkan_1_3;
+	const glslang::EShTargetClientVersion target_api_version = glslang::EShTargetVulkan_1_3;
 	shader->setEnvClient(glslang::EShClientVulkan, target_api_version);
 
-	glslang::EShTargetLanguageVersion target_spirv_version = glslang::EShTargetSpv_1_6;
+	const glslang::EShTargetLanguageVersion target_spirv_version = glslang::EShTargetSpv_1_6;
 	shader->setEnvTarget(glslang::EshTargetSpv, target_spirv_version);
 
 	shader->setEntryPoint("main");
 	const int default_version = 460;
 	const bool forward_compatible = false;
-	EProfile default_profile = ECoreProfile;
+	const EProfile default_profile = ECoreProfile;
 
 	std::string preprocessed_str;
 	if (glslang::TShader::ForbidIncluder forbid_includer {}; !shader->preprocess(
@@ -230,8 +232,8 @@ auto ShaderCompiler::compile(const std::filesystem::path& path_to_shader, Shader
 	const auto& intermediate_ref = *(program.getIntermediate(shader->getStage()));
 	std::vector<uint32_t> spirv;
 	glslang::SpvOptions options {};
-	options.validate = true;
-	options.generateDebugInfo = true;
+	options.stripDebugInfo = true;
+	options.optimizeSize = true;
 	spv::SpvBuildLogger logger;
 	glslang::GlslangToSpv(intermediate_ref, spirv, &logger, &options);
 
@@ -271,7 +273,7 @@ void ShaderCompiler::destroy()
 
 static auto replace(std::string& output, const std::string_view from, const std::string& replacement) -> bool
 {
-	size_t start_pos = output.find(from);
+	const std::size_t start_pos = output.find(from);
 	if (start_pos == std::string::npos) {
 		return false;
 	}
@@ -281,7 +283,7 @@ static auto replace(std::string& output, const std::string_view from, const std:
 
 auto BasicIncluder::check_and_replace(std::string& io_string, std::string_view to_find)
 {
-	const auto include = fmt::format("#include \"{}\"\n", to_find);
+	const auto include = fmt::format("#include \"{}\"", to_find);
 	if (io_string.find(include) == std::string::npos) {
 		return;
 	}
@@ -317,7 +319,8 @@ void BasicIncluder::replace_all_includes(std::string& io_string)
 void ShaderCompiler::add_include_extension(std::string& glsl_code)
 {
 	ensure(glsl_code.find("#version") == std::string::npos, "Shader already has a #version directive");
-	static constexpr std::string_view extension = "#version 460\n#extension GL_EXT_control_flow_attributes : require\n";
+	static constexpr std::string_view extension
+		= "#version 460\n#extension GL_EXT_control_flow_attributes : require\n#extension GL_GOOGLE_include_directive : require\n";
 	glsl_code.insert(0, extension);
 
 	using namespace std::string_view_literals;

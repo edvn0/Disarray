@@ -1,6 +1,7 @@
 #include "DisarrayPCH.hpp"
 
 #include "graphics/Mesh.hpp"
+#include "graphics/ModelLoader.hpp"
 #include "vulkan/Mesh.hpp"
 
 namespace Disarray {
@@ -18,6 +19,11 @@ auto Mesh::construct_scoped(const Disarray::Device& device, Disarray::MeshProper
 auto Mesh::construct_deferred(const Device& device, MeshProperties properties) -> std::future<Ref<Mesh>>
 {
 	return Vulkan::Mesh::construct_deferred(device, std::move(properties));
+}
+
+auto StaticMesh::construct(const Device& device, PipelineCache& cache, const std::filesystem::path& path) -> Ref<Disarray::StaticMesh>
+{
+	return make_ref<Vulkan::StaticMesh>(device, cache, path);
 }
 
 } // namespace Disarray

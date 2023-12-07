@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "graphics/BufferProperties.hpp"
@@ -24,14 +26,14 @@ public:
 	virtual auto get_raw() const -> void* = 0;
 
 	template <class T>
-		requires(sizeof(T) > 0)
+		requires(!std::is_empty_v<T>)
 	void set_data(T* data)
 	{
 		set_data<T>(data, 1);
 	};
 
 	template <class T>
-		requires(sizeof(T) > 0)
+		requires(!std::is_empty_v<T>)
 	void set_data(T* data, std::size_t count)
 	{
 		set_data(Disarray::bit_cast<const void*>(data), count * sizeof(T));

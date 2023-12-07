@@ -3,7 +3,6 @@
 #include <glm/gtx/matrix_decompose.hpp>
 
 #include <Disarray.hpp>
-#include <fmt/format.h>
 #include <imgui_internal.h>
 
 #include <array>
@@ -56,6 +55,19 @@ void ClientLayer::construct(App& app)
 	setup_filewatcher_and_threadpool(app.get_thread_pool());
 
 	scene = make_ref<Scene>(device, "Default scene");
+	auto sponza = scene->create("StaticMesh");
+
+	auto sponza_mesh = StaticMesh::construct(device, scene_renderer.get_pipeline_cache(), "Assets/Models/sponza/sponza.obj");
+	sponza.add_component<Components::StaticMesh>(sponza_mesh);
+	/*const auto combined_shader = UnifiedShader::construct(device,
+		{
+			.path = "Assets/Shaders/static_mesh_combined.glsl",
+		});
+	auto material = POCMaterial::construct(device,
+		{
+			.shader = combined_shader,
+		});*/
+
 	scene->construct(app);
 	icon_play = scene_renderer.get_texture_cache().get("Play");
 	icon_stop = scene_renderer.get_texture_cache().get("Stop");

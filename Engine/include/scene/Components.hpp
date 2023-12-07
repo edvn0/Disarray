@@ -19,6 +19,7 @@
 #include "core/Types.hpp"
 #include "core/UniquelyIdentifiable.hpp"
 #include "graphics/Material.hpp"
+#include "graphics/MaterialTable.hpp"
 #include "graphics/Mesh.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/Renderer.hpp"
@@ -76,13 +77,24 @@ struct Mesh {
 	explicit Mesh(Ref<Disarray::Mesh>);
 
 	Ref<Disarray::Mesh> mesh { nullptr };
+	Ref<Disarray::MaterialTable> material_table { MaterialTable::construct() };
 	bool draw_aabb { false };
 };
 template <> inline constexpr std::string_view component_name<Mesh> = "Mesh";
 
+struct StaticMesh {
+	StaticMesh() = default;
+	explicit StaticMesh(Ref<Disarray::StaticMesh> input)
+		: mesh(std::move(input)) {};
+
+	Ref<Disarray::StaticMesh> mesh { nullptr };
+	Ref<Disarray::MaterialTable> material_table { MaterialTable::construct() };
+	bool draw_aabb { false };
+};
+template <> inline constexpr std::string_view component_name<StaticMesh> = "StaticMesh";
+
 struct Material {
 	Material() = default;
-	explicit Material(Device&, std::string_view vertex_path, std::string_view fragment_path);
 	explicit Material(Ref<Disarray::Material>);
 	Ref<Disarray::Material> material { nullptr };
 };
@@ -221,7 +233,7 @@ template <> inline constexpr std::string_view component_name<Script> = "Script";
 
 struct Inheritance {
 	std::unordered_set<Identifier> children {};
-	Identifier parent {};
+	Identifier parent { invalid_identifier };
 
 	void add_child(Entity&);
 
@@ -252,14 +264,14 @@ struct Camera {
 	bool reverse { false };
 	CameraType type { CameraType::Perspective };
 
-	[[nodiscard]] auto compute(const Transform& transform, const Extent& extent) const -> const std::tuple<glm::mat4, glm::mat4, glm::mat4>&;
+	[[nodiscard]] auto compute(const Transform& transform, const Extent& extent) const -> std::tuple<glm::mat4, glm::mat4, glm::mat4>;
 };
 template <> inline constexpr std::string_view component_name<Camera> = "Camera";
 
 struct RigidBody {
 	void* engine_body_storage { nullptr };
 
-	BodyType body_type { BodyType::Static };
+	BodyType body_type { BodyType::Dynamic };
 	float mass { 1.0F };
 	float linear_drag { 0.01F };
 	float angular_drag { 0.05F };

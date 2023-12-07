@@ -25,6 +25,8 @@ public:
 		: Entity(input_scene, static_cast<entt::entity>(input_id)) {};
 	explicit Entity(Scene*);
 
+	auto compute_transform() const -> glm::mat4;
+
 	static auto deserialise(Scene&, Identifier, std::string_view = "Empty") -> Entity;
 
 	auto get_registry() -> entt::registry&;

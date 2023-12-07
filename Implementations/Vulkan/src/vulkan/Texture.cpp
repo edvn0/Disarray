@@ -64,6 +64,8 @@ Texture::Texture(const CommandExecutor* command_executor, const Disarray::Device
 
 Texture::~Texture() = default;
 
+auto Texture::hash() const -> std::size_t { return image->hash(); }
+
 void Texture::recreate_texture(bool should_clean)
 {
 	auto pixels = load_pixels();
@@ -150,9 +152,8 @@ Texture3D::Texture3D(const Device& dev, TextureProperties properties)
 			extract_cubemap_faces(props.path);
 			Log::error("Texture3D", "Cannot load PNGs just yet.");
 			return;
-		} else {
-			result = ktxTexture_CreateFromNamedFile(props.path.string().c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &texture_data);
 		}
+		result = ktxTexture_CreateFromNamedFile(props.path.string().c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &texture_data);
 
 		ensure(result == KTX_SUCCESS, "Could not load image.");
 
@@ -202,6 +203,8 @@ Texture3D::Texture3D(const Device& dev, TextureProperties properties)
 	};
 	image = make_scope<Vulkan::Image>(device, std::move(image_properties));
 }
+
+auto Texture3D::hash() const -> std::size_t { return image->hash(); }
 
 void Texture3D::recreate_texture(bool should_clean) { }
 

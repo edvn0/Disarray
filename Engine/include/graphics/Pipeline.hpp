@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "PushConstantLayout.hpp"
+#include "UnifiedShader.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/Hashes.hpp"
 #include "core/ReferenceCounted.hpp"
@@ -214,6 +215,7 @@ struct PipelineProperties {
 	Ref<Shader> vertex_shader { nullptr };
 	Ref<Shader> fragment_shader { nullptr };
 	Ref<Shader> compute_shader { nullptr };
+	Ref<UnifiedShader> combined_shader { nullptr };
 	Ref<Framebuffer> framebuffer { nullptr };
 	VertexLayout layout {};
 	PushConstantLayout push_constant_layout {};
@@ -275,6 +277,9 @@ public:
 	virtual auto get_framebuffer() -> Disarray::Framebuffer& = 0;
 	virtual auto get_render_pass() const -> const Disarray::RenderPass& = 0;
 	virtual auto get_framebuffer() const -> const Disarray::Framebuffer& = 0;
+
+	auto get_vertex_shader() const -> const Ref<Shader>& { return get_properties().vertex_shader; };
+	auto get_fragment_shader() const -> const Ref<Shader>& { return get_properties().fragment_shader; };
 
 	[[nodiscard]] auto is_valid() const -> bool { return props.is_valid(); };
 

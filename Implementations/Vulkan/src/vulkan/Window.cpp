@@ -124,7 +124,7 @@ void Window::register_event_handler(Disarray::App& app)
 
 	glfwSetWindowIconifyCallback(window, [](GLFWwindow* win, int iconified) {
 		auto& data = *static_cast<UserData*>(glfwGetWindowUserPointer(win));
-		WindowMinimizeEvent event((bool)iconified);
+		WindowMinimizeEvent event(static_cast<bool>(iconified));
 		data.callback(event);
 	});
 }
@@ -169,7 +169,7 @@ Window::Window(const Disarray::WindowProperties& properties)
 		glfwShowWindow(window);
 	}
 
-	{
+	if (FS::exists(FS::icon("Disarray_Logo.png"))) {
 		DataBuffer buffer;
 		ImageLoader loader { FS::icon("Disarray_Logo.png"), buffer };
 		std::array<GLFWimage, 1> images {};

@@ -18,6 +18,7 @@ public:
 	~Instance() override;
 
 	[[nodiscard]] auto supply() const -> VkInstance override { return instance; }
+	[[nodiscard]] auto supply() -> VkInstance override { return instance; }
 
 private:
 	[[nodiscard]] auto check_validation_layer_support() const -> bool;

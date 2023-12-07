@@ -1,7 +1,6 @@
 #include "vulkan/Material.hpp"
 
 #include "graphics/Material.hpp"
-#include "graphics/Mesh.hpp"
 
 namespace Disarray {
 
@@ -15,4 +14,8 @@ auto Material::construct_scoped(const Disarray::Device& device, MaterialProperti
 	return make_scope<Vulkan::Material>(device, properties);
 }
 
+auto POCMaterial::construct(const Device& device, POCMaterialProperties properties) -> Ref<POCMaterial>
+{
+	return make_ref<Vulkan::POCMaterial>(device, std::move(properties));
+}
 } // namespace Disarray

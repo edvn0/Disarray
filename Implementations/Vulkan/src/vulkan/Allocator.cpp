@@ -1,10 +1,9 @@
 #include "DisarrayPCH.hpp"
 
-#include "vulkan/Allocator.hpp"
-
 #include "core/AllocatorConfigurator.hpp"
 #include "core/Ensure.hpp"
 #include "core/Log.hpp"
+#include "vulkan/Allocator.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Instance.hpp"
 #include "vulkan/PhysicalDevice.hpp"
@@ -97,4 +96,5 @@ void Allocator::deallocate_image(VmaAllocation allocation, VkImage& image)
 }
 
 void Allocator::unmap_memory(VmaAllocation allocation) { vmaUnmapMemory(allocator, allocation); }
+
 } // namespace Disarray::Vulkan

@@ -19,8 +19,11 @@ public:
 
 	auto force_recreation() -> void override { recreate(true, {}); };
 
-	auto supply() const -> VkPipeline override { return pipeline; }
+	[[nodiscard]] auto supply() const -> VkPipeline override { return pipeline; }
+	[[nodiscard]] auto supply() -> VkPipeline override { return pipeline; }
+
 	auto get_layout() const -> VkPipelineLayout { return layout; }
+	auto get_layout() -> VkPipelineLayout { return layout; }
 
 	auto get_framebuffer() -> Disarray::Framebuffer& override;
 	auto get_render_pass() -> Disarray::RenderPass& override;

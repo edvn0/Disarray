@@ -21,9 +21,10 @@ constexpr auto operator&(PushConstantKind left, PushConstantKind right) -> PushC
 struct PushConstantRange {
 
 	template <std::integral SizeType>
-	constexpr explicit(false) PushConstantRange(PushConstantKind in_flags, SizeType in_size)
+	constexpr explicit(false) PushConstantRange(PushConstantKind in_flags, SizeType in_size, SizeType offset = SizeType { 0 })
 		: size(static_cast<std::uint32_t>(in_size))
 		, flags(in_flags)
+		, offset(static_cast<std::uint32_t>(offset))
 	{
 	}
 
@@ -43,6 +44,8 @@ struct PushConstantLayout {
 	PushConstantLayout(std::vector<PushConstantRange>&& ranges_in);
 	[[nodiscard]] auto get_input_ranges() const -> const std::vector<PushConstantRange>&;
 	[[nodiscard]] auto size() const -> std::size_t;
+
+	[[nodiscard]] auto empty() const -> bool { return ranges.empty(); }
 
 private:
 	std::vector<PushConstantRange> ranges;

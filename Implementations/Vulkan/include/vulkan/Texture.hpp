@@ -29,8 +29,11 @@ public:
 
 	auto get_image(std::uint32_t) const -> const Disarray::Image& override { return *image; }
 	auto valid() const -> bool override { return image != nullptr; }
+	auto hash() const -> std::size_t override;
 
 	void construct_using(Disarray::CommandExecutor&) override {};
+
+	auto get_descriptor_info() const -> const VkDescriptorImageInfo& { return image->get_descriptor_info(); }
 
 private:
 	void recreate_texture(bool should_clean = true);
@@ -61,6 +64,7 @@ public:
 
 	auto get_image(std::uint32_t) const -> const Disarray::Image& override { return *image; }
 	auto valid() const -> bool override { return image != nullptr; }
+	auto hash() const -> std::size_t override;
 
 	void construct_using(Disarray::CommandExecutor&) override {};
 

@@ -53,6 +53,8 @@ template <class Value> using ReferencedStringViewMap = Detail::StringlikeUnorder
 template <class Value> using ReferencedStringMap = Detail::StringlikeUnorderedMap<std::string, Ref<Value>>;
 using StringViewSet = std::unordered_set<std::string_view, StringHash, std::equal_to<>, DefaultAllocator<std::string_view>>;
 using StringSet = std::unordered_set<std::string, StringHash, std::equal_to<>, DefaultAllocator<std::string>>;
+template <class T> using RefVector = std::vector<Ref<T>>;
+template <class T> using ScopeVector = std::vector<Scope<T>>;
 
 template <class T>
 concept Iterable = requires(T collection) {
@@ -100,14 +102,23 @@ template <class T, std::size_t BatchSize> auto split_into_batches(Iterable auto&
 	return rtn;
 }
 
-constexpr inline auto for_each(Iterable auto& collection, auto&& func) { std::for_each(std::begin(collection), std::end(collection), func); }
+template <bool Index = false> constexpr inline auto for_each(Iterable auto& collection, auto&& func)
+{
+	if constexpr (Index) {
+		auto indexed_iteration = [&func, i = 0](auto&& kv) mutable { func(kv, i++); };
+		std::for_each(std::begin(collection), std::end(collection), indexed_iteration);
+	} else {
+		std::for_each(std::begin(collection), std::end(collection), func);
+	}
+}
+
 constexpr inline auto for_each_unwrapped(Iterable auto& collection, auto&& func)
 {
 	auto unwrapper = [&func](auto&& kv) {
 		auto&& [key, value] = kv;
 		func(key, value);
 	};
-	std::for_each(std::begin(collection), std::end(collection), unwrapper);
+	Collections::for_each(collection, unwrapper);
 }
 constexpr inline auto remove_if(Iterable auto& collection, auto&& predicate)
 {
@@ -138,6 +149,14 @@ constexpr inline auto map(Iterable auto& collection, auto&& func)
 
 	return output;
 }
+
+template <typename T, typename BinaryOp> constexpr auto reduce(Iterable auto& collection, BinaryOp operation, T initial = {}) -> T
+{
+	return std::accumulate(std::cbegin(collection), std::cend(collection), initial, std::forward<BinaryOp>(operation));
+}
+
+constexpr auto sort(Iterable auto& collection, auto&& func) { std::sort(std::begin(collection), std::end(collection), func); }
+constexpr auto sort(Iterable auto& collection) { std::sort(std::begin(collection), std::end(collection)); }
 
 #ifdef DISARRAY_WINDOWS
 constexpr inline void parallel_for_each(Iterable auto& collection, auto&& func)

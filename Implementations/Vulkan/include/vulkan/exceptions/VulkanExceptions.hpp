@@ -6,10 +6,7 @@ namespace Disarray {
 
 class ResultException : public BaseException {
 public:
-	explicit ResultException(std::string_view msg)
-		: BaseException("ResultException", msg)
-	{
-	}
+	explicit ResultException(std::string_view msg);
 };
 
 class NoSuitableDeviceException : public BaseException {

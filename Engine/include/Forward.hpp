@@ -4,63 +4,67 @@
 
 namespace Disarray {
 
+class AABB;
 class App;
 class CommandExecutor;
 class Device;
-class Layer;
 class Entity;
 class Framebuffer;
+class IGraphicsResource;
 class Image;
-class PhysicsEngine;
 class IndexBuffer;
-class StorageBuffer;
 class Instance;
+class Layer;
+class Material;
+class POCMaterial;
 class Mesh;
-struct Submesh;
-class AABB;
+class StaticMesh;
+class MaterialTable;
+struct StaticSubmesh;
 class PhysicalDevice;
+class PhysicsEngine;
 class Pipeline;
+class PipelineCache;
 class QueueFamilyIndex;
-class RenderPass;
 class Renderer;
+class RenderPass;
 class Scene;
 class Scene;
 class Shader;
+class StorageBuffer;
 class Surface;
 class Swapchain;
+class TextRenderer;
 class Texture;
+class TextureCache;
 class VertexBuffer;
 class Window;
-class PipelineCache;
-class TextureCache;
-class IGraphicsResource;
-class TextRenderer;
 struct BatchRenderer;
-struct MeshSubstructure;
+struct Submesh;
 
 class CppScript;
 class Camera;
 
 namespace Components {
-	struct Tag;
-	struct Transform;
+	struct BoxCollider;
+	struct Controller;
+	struct DirectionalLight;
 	struct ID;
 	struct Inheritance;
 	struct LineGeometry;
-	struct QuadGeometry;
-	struct Mesh;
 	struct Material;
-	struct Texture;
-	struct DirectionalLight;
-	struct PointLight;
-	struct SpotLight;
-	struct Script;
-	struct Controller;
+	struct Mesh;
 	struct PillCollider;
-	struct BoxCollider;
-	struct SphereCollider;
+	struct PointLight;
+	struct QuadGeometry;
+	struct Script;
 	struct Skybox;
+	struct SphereCollider;
+	struct SpotLight;
+	struct Tag;
 	struct Text;
+	struct Texture;
+	struct Transform;
 } // namespace Components
 
 } // namespace Disarray

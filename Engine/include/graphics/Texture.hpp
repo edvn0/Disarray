@@ -53,6 +53,7 @@ public:
 
 	virtual void construct_using(CommandExecutor&) = 0;
 
+	virtual auto hash() const -> std::size_t = 0;
 	virtual auto valid() const -> bool = 0;
 
 protected:

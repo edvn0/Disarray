@@ -31,6 +31,8 @@ public:
 	void recreate(bool should_clean, const Extent&) override { return recreate_executor(should_clean); }
 
 	auto supply() const -> VkCommandBuffer override { return active; }
+	auto supply() -> VkCommandBuffer override { return active; }
+
 	auto get_buffer(std::uint32_t index) -> VkCommandBuffer { return command_buffers[index]; }
 
 	auto buffer_index() -> std::uint32_t

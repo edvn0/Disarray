@@ -141,7 +141,7 @@ namespace Detail {
 	};
 } // namespace Detail
 
-using SceneSerialiser = Detail::Serialiser<ScriptSerialiser, MeshSerialiser, SkyboxSerialiser, TextSerialiser, BoxColliderSerialiser,
+using SceneSerialiser = Detail::Serialiser<ScriptSerialiser, MaterialSerialiser, MeshSerialiser, SkyboxSerialiser, TextSerialiser, BoxColliderSerialiser,
 	SphereColliderSerialiser, CapsuleColliderSerialiser, ColliderMaterialSerialiser, RigidBodySerialiser, TextureSerialiser, TransformSerialiser,
 	LineGeometrySerialiser, QuadGeometrySerialiser, DirectionalLightSerialiser, PointLightSerialiser, SpotLightSerialiser, InheritanceSerialiser>;
 

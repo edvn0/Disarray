@@ -16,7 +16,8 @@ public:
 	Surface(Instance&, GLFWwindow*);
 	~Surface() override;
 
-	VkSurfaceKHR supply() const override { return surface; }
+	[[nodiscard]] auto supply() const -> VkSurfaceKHR override { return surface; }
+	[[nodiscard]] auto supply() -> VkSurfaceKHR override { return surface; }
 
 private:
 	Instance& instance;

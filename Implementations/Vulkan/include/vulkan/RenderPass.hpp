@@ -16,9 +16,10 @@ public:
 
 	void create_with(VkRenderPassCreateInfo);
 
-	VkRenderPass supply() const override { return render_pass; }
+	[[nodiscard]] auto supply() const -> VkRenderPass override { return render_pass; }
+	[[nodiscard]] auto supply() -> VkRenderPass override { return render_pass; }
 
-	void recreate(bool should_clean, const Extent& extent) override { recreate_renderpass(should_clean); }
+	void recreate(bool should_clean, const Extent&) override { recreate_renderpass(should_clean); }
 	void force_recreation() override { recreate_renderpass(); };
 
 private:

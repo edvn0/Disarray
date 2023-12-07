@@ -1,15 +1,14 @@
 #include "DisarrayPCH.hpp"
 
-#include "graphics/TextRenderer.hpp"
-
-// clang-format off
 #include <ft2build.h>
+
 #include <vector>
+
 #include "core/DataBuffer.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Pipeline.hpp"
+#include "graphics/TextRenderer.hpp"
 #include FT_FREETYPE_H
-// clang-format on
 
 #include "core/Log.hpp"
 #include "core/filesystem/FileIO.hpp"
@@ -31,7 +30,7 @@ struct TextColourAndImage {
 static_assert(alignof(TextColourAndImage) == 16);
 static_assert(sizeof(TextColourAndImage) == 32);
 
-struct TextRenderer::TextRenderingAPI {
+struct TextRenderingAPI {
 	FT_Library library;
 	std::vector<FT_Face> faces {};
 
@@ -49,7 +48,7 @@ struct TextRenderer::TextRenderingAPI {
 	Disarray::Renderer* renderer { nullptr };
 };
 
-template <> auto PimplDeleter<TextRenderer::TextRenderingAPI>::operator()(TextRenderer::TextRenderingAPI* ptr) noexcept -> void
+template <> auto PimplDeleter<TextRenderingAPI>::operator()(TextRenderingAPI* ptr) noexcept -> void
 {
 	FT_Done_FreeType(ptr->library);
 	delete ptr;
@@ -156,12 +155,12 @@ void TextRenderer::construct(Disarray::Renderer& renderer, const Disarray::Devic
 			.always_mapped = true,
 		});
 
-	renderer.get_graphics_resource().expose_to_shaders(*renderer_api->colour_image_data, DescriptorSet { 3 }, DescriptorBinding { 6 });
+	renderer.get_graphics_resource().expose_to_shaders(*renderer_api->colour_image_data, DescriptorSet { 0 }, DescriptorBinding { 9 });
 
 	renderer_api->glyph_framebuffer = Framebuffer::construct(device,
 		{
 			.extent = extent,
-			.attachments = { { ImageFormat::SBGR, true }, { ImageFormat::Depth } },
+			.attachments = { { ImageFormat::SRGB32, true }, { ImageFormat::Depth } },
 			.clear_colour_on_load = true,
 			.clear_depth_on_load = true,
 			.should_blend = true,
@@ -242,8 +241,8 @@ auto TextRenderer::recreate(bool, const Extent&) -> void
 	for (const auto& tex : font_data) {
 		textures.at(i++) = tex.texture == nullptr ? nullptr : tex.texture.get();
 	}
-	resources.expose_to_shaders(textures, DescriptorSet { 2 }, DescriptorBinding { 0 });
-	resources.expose_to_shaders(renderer_api->glyph_framebuffer->get_image(0), DescriptorSet { 1 }, DescriptorBinding { 2 });
+	resources.expose_to_shaders(renderer_api->glyph_framebuffer->get_image(0), DescriptorSet { 0 }, DescriptorBinding { 12 });
+	resources.expose_to_shaders(textures, DescriptorSet { 0 }, DescriptorBinding { 13 });
 }
 
 auto TextRenderer::get_pipelines() -> std::array<Disarray::Pipeline*, 2>

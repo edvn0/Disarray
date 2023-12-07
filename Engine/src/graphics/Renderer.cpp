@@ -20,6 +20,37 @@ RenderAreaExtent::RenderAreaExtent(const Disarray::Extent& offset, const Disarra
 {
 }
 
+Renderer::Renderer(Scope<IGraphicsResource> resource)
+	: graphics_resource { std::move(resource) }
+{
+	DataBuffer data_buffer;
+	data_buffer.allocate(sizeof(std::uint32_t));
+	data_buffer.write(0xFFFFFFFF);
+
+	white_texture = Texture::construct(graphics_resource->get_device(),
+		{
+			.extent = { 1, 1 },
+			.data_buffer = data_buffer,
+			.debug_name = "White Texture",
+		});
+
+	data_buffer.allocate(sizeof(std::uint32_t));
+	data_buffer.write(0x00000000);
+
+	black_texture = Texture::construct(graphics_resource->get_device(),
+		{
+			.extent = { 1, 1 },
+			.data_buffer = data_buffer,
+			.debug_name = "Black Texture",
+		});
+}
+
+Renderer::~Renderer()
+{
+	white_texture.reset();
+	black_texture.reset();
+}
+
 auto Renderer::construct(const Disarray::Device& device, const Disarray::Swapchain& swapchain, const RendererProperties& props)
 	-> Ref<Disarray::Renderer>
 {
