@@ -1,10 +1,9 @@
 #include "DisarrayPCH.hpp"
 
-#include "core/DataBuffer.hpp"
-
 #include <cstring>
 #include <utility>
 
+#include "core/DataBuffer.hpp"
 #include "core/Log.hpp"
 
 namespace Disarray {
@@ -15,10 +14,10 @@ DataBuffer::DataBuffer(std::size_t s)
 {
 }
 
-DataBuffer::DataBuffer(const void* new_data, std::size_t s)
-	: DataBuffer(s)
+void DataBuffer::zero_initialise() const
 {
-	std::memcpy(data.get(), new_data, s);
+	// Write zeroes into data
+	std::memset(data.get(), 0U, size);
 }
 
 DataBuffer::DataBuffer(std::nullptr_t) { }

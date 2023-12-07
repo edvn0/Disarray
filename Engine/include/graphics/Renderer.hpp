@@ -64,10 +64,14 @@ public:
 
 	[[nodiscard]] virtual auto get_push_constant() const -> const PushConstant* = 0;
 	virtual auto get_editable_push_constant() -> PushConstant& = 0;
+
+	virtual auto get_device() const -> const Disarray::Device& = 0;
 };
 
 class Renderer : public ReferenceCountable {
 public:
+	~Renderer() override;
+
 	virtual void construct_sub_renderers(const Disarray::Device&, Disarray::App&) = 0;
 
 	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear, const RenderAreaExtent&) = 0;
@@ -201,14 +205,17 @@ public:
 
 	static auto get_render_command_queue() -> RenderCommandQueue& { return command_queue; }
 
+	auto get_white_texture() const -> const Disarray::Texture& { return *white_texture; }
+	auto get_black_texture() const -> const Disarray::Texture& { return *black_texture; }
+
 protected:
-	explicit Renderer(Scope<IGraphicsResource> resource)
-		: graphics_resource { std::move(resource) }
-	{
-	}
+	explicit Renderer(Scope<IGraphicsResource> resource);
 
 private:
 	Scope<IGraphicsResource> graphics_resource { nullptr };
+
+	Scope<Disarray::Texture> white_texture { nullptr };
+	Scope<Disarray::Texture> black_texture { nullptr };
 
 	static inline RenderCommandQueue command_queue { {} };
 };

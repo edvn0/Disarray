@@ -12,10 +12,17 @@ namespace Disarray {
 class DataBuffer {
 public:
 	DataBuffer() = default;
-	explicit DataBuffer(std::size_t);
-	DataBuffer(std::nullptr_t);
+	explicit DataBuffer(std::integral auto input_size)
+		: DataBuffer(nullptr, static_cast<std::size_t>(input_size))
+	{
+	}
+	DataBuffer(const void* data, std::integral auto input_size)
+		: DataBuffer(static_cast<std::size_t>(input_size))
+	{
+		std::memcpy(this->data.get(), data, size);
+	}
 
-	DataBuffer(const void* data, std::size_t);
+	explicit DataBuffer(std::nullptr_t);
 
 	DataBuffer(const DataBuffer&);
 	DataBuffer(DataBuffer&&) noexcept;
@@ -25,6 +32,17 @@ public:
 
 	void allocate(std::size_t);
 	void copy_from(const DataBuffer&);
+	template <class T> auto read(const std::size_t offset) const -> T&
+	{
+		T* result = nullptr;
+		std::memcpy(result, get_data() + offset, sizeof(T));
+		return *result;
+	}
+
+	void write(const auto& data, auto size, auto offset) { std::memcpy(get_data() + offset, &data, size); }
+	void write(const auto& data, auto size) { std::memcpy(get_data(), &data, size); }
+	void write(const auto& data) { std::memcpy(get_data(), &data, sizeof(data)); }
+	void zero_initialise() const;
 
 	void reset();
 
@@ -41,6 +59,8 @@ public:
 	auto as_span() -> std::span<std::byte> { return { data.get(), size }; }
 
 private:
+	explicit DataBuffer(std::size_t);
+
 	std::unique_ptr<std::byte[]> data { nullptr };
 	std::size_t size { 0 };
 };

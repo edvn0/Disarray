@@ -29,7 +29,7 @@ namespace Disarray::Vulkan {
 
 // Define a hash function for VkDescriptorSet
 struct VkDescriptorSetHash {
-	std::size_t operator()(const VkDescriptorSet& descriptorSet) const
+	auto operator()(const VkDescriptorSet& descriptorSet) const -> std::size_t
 	{
 		// You can customize the hash function based on your specific needs
 		// For simplicity, this example uses std::hash directly
