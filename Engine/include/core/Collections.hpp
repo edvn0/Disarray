@@ -142,6 +142,9 @@ constexpr inline auto map(Iterable auto& collection, auto&& func)
 	return output;
 }
 
+constexpr auto sort(Iterable auto& collection) { std::sort(std::begin(collection), std::end(collection)); }
+constexpr auto sort(Iterable auto& collection, auto&& sorter) { std::sort(std::begin(collection), std::end(collection), sorter); }
+
 #ifdef DISARRAY_WINDOWS
 constexpr inline void parallel_for_each(Iterable auto& collection, auto&& func)
 {

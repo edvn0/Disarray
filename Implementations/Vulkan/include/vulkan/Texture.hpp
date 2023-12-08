@@ -25,10 +25,13 @@ public:
 		}
 		recreate_texture(should_clean);
 	}
-	auto get_view() -> VkImageView { return image->get_descriptor_info().imageView; }
+	auto get_view() const -> VkImageView { return image->get_descriptor_info().imageView; }
+	auto get_descriptor_info() const -> VkDescriptorImageInfo { return image->get_descriptor_info(); }
 
 	auto get_image(std::uint32_t) const -> const Disarray::Image& override { return *image; }
 	auto valid() const -> bool override { return image != nullptr; }
+
+	auto hash() const -> std::size_t override { return image->hash(); }
 
 	void construct_using(Disarray::CommandExecutor&) override {};
 
@@ -61,6 +64,8 @@ public:
 
 	auto get_image(std::uint32_t) const -> const Disarray::Image& override { return *image; }
 	auto valid() const -> bool override { return image != nullptr; }
+
+	auto hash() const -> std::size_t override { return image->hash(); }
 
 	void construct_using(Disarray::CommandExecutor&) override {};
 

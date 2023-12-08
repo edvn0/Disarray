@@ -66,6 +66,8 @@ public:
 	virtual auto get_editable_push_constant() -> PushConstant& = 0;
 
 	[[nodiscard]] virtual auto get_device() const -> const Disarray::Device& = 0;
+
+	[[nodiscard]] virtual auto get_current_frame_index() const -> FrameIndex = 0;
 };
 
 class Renderer : public ReferenceCountable {
@@ -143,6 +145,9 @@ public:
 		= 0;
 	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&,
 		const glm::vec4& colour, const glm::mat4& transform = glm::identity<glm::mat4>(), const std::uint32_t identifier = 0)
+		= 0;
+	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::StaticMesh&, const Disarray::Pipeline&, const glm::vec4& colour,
+		const glm::mat4& transform = glm::identity<glm::mat4>())
 		= 0;
 
 	virtual void draw_mesh_instanced(

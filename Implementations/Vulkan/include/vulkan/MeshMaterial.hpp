@@ -7,6 +7,8 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
+#include "ShaderReflectionData.hpp"
+#include "core/Ensure.hpp"
 #include "graphics/MeshMaterial.hpp"
 #include "graphics/Swapchain.hpp"
 #include "vulkan/Texture.hpp"
@@ -22,26 +24,25 @@ public:
 
 	auto get_uniform_storage_buffer() const -> const DataBuffer& override { return uniform_storage_buffer; };
 
-	void set(const std::string&, float) override {};
-	void set(const std::string&, int) override {};
-	void set(const std::string&, std::uint32_t) override {};
-	void set(const std::string&, bool) override {};
-	void set(const std::string&, const glm::ivec2&) override {};
-	void set(const std::string&, const glm::ivec3&) override {};
-	void set(const std::string&, const glm::ivec4&) override {};
-	void set(const std::string&, const glm::uvec2&) override {};
-	void set(const std::string&, const glm::uvec3&) override {};
-	void set(const std::string&, const glm::uvec4&) override {};
-	void set(const std::string&, const glm::vec2&) override {};
-	void set(const std::string&, const glm::vec3&) override {};
-	void set(const std::string&, const glm::vec4&) override {};
-	void set(const std::string&, const glm::mat3&) override {};
-	void set(const std::string&, const glm::mat4&) override {};
-	void set(const std::string&, const Ref<Disarray::Texture>&) override {};
-	void set(const std::string&, const Ref<Disarray::Texture>&, std::uint32_t) override {};
-	void set(const std::string&, const Ref<Disarray::Image>& image) override {};
+	void set(const std::string&, float) override;
+	void set(const std::string&, int) override;
+	void set(const std::string&, std::uint32_t) override;
+	void set(const std::string&, bool) override;
+	void set(const std::string&, const glm::ivec2&) override;
+	void set(const std::string&, const glm::ivec3&) override;
+	void set(const std::string&, const glm::ivec4&) override;
+	void set(const std::string&, const glm::uvec2&) override;
+	void set(const std::string&, const glm::uvec3&) override;
+	void set(const std::string&, const glm::uvec4&) override;
+	void set(const std::string&, const glm::vec2&) override;
+	void set(const std::string&, const glm::vec3&) override;
+	void set(const std::string&, const glm::vec4&) override;
+	void set(const std::string&, const glm::mat3&) override;
+	void set(const std::string&, const glm::mat4&) override;
+	void set(const std::string&, const Ref<Disarray::Texture>&) override;
+	void set(const std::string&, const Ref<Disarray::Texture>&, std::uint32_t) override;
+	void set(const std::string&, const Ref<Disarray::Image>& image) override;
 
-	/*
 	template <typename T> void set(const std::string& name, const T& value)
 	{
 		const auto* decl = find_uniform_declaration(name);
@@ -90,16 +91,16 @@ public:
 	{
 		return !descriptor_sets.at(index).descriptor_sets.empty() ? descriptor_sets.at(index).descriptor_sets[0] : nullptr;
 	}
-	*/
+
 	auto update_for_rendering(FrameIndex frame_index, const std::vector<std::vector<VkWriteDescriptorSet>>&) -> void;
-	auto update_for_rendering(FrameIndex frame_index) -> void { update_for_rendering(frame_index, {}); }
+	auto update_for_rendering(const FrameIndex frame_index) -> void { update_for_rendering(frame_index, {}); }
 
 private:
 	auto clean_material() -> void;
 	auto allocate_buffer_storage() -> void;
 	auto recreate_material(bool should_clean, const Extent& extent) -> void;
-	// auto find_uniform_declaration(const std::string& name) -> const Reflection::ShaderUniform*;
-	// auto find_resource_declaration(const std::string& name) -> const Reflection::ShaderResourceDeclaration*;
+	auto find_uniform_declaration(const std::string& name) -> const Reflection::ShaderUniform*;
+	auto find_resource_declaration(const std::string& name) -> const Reflection::ShaderResourceDeclaration*;
 
 	auto invalidate_descriptor_sets() -> void;
 	auto invalidate() -> void;
@@ -109,7 +110,44 @@ private:
 	auto set_vulkan_descriptor(const std::string&, const Ref<Vulkan::Texture>&, std::uint32_t) -> void;
 	auto set_vulkan_descriptor(const std::string&, const Ref<Vulkan::Image>& image) -> void;
 
+	enum class PendingDescriptorType : std::uint8_t {
+		None = 0,
+		Texture2D = 1,
+		TextureCube = 2,
+		Image2D = 3,
+	};
+
+	struct PendingDescriptor {
+		PendingDescriptorType type = PendingDescriptorType::None;
+		VkWriteDescriptorSet write_set;
+		VkDescriptorImageInfo image_info;
+		Ref<Disarray::Texture> texture;
+		Ref<Vulkan::Image> image;
+		VkDescriptorImageInfo descriptor_image_info {};
+	};
+
+	struct PendingDescriptorArray {
+		PendingDescriptorType type = PendingDescriptorType::None;
+		VkWriteDescriptorSet write_set;
+		std::vector<VkDescriptorImageInfo> image_infos;
+		std::vector<Ref<Vulkan::Texture>> textures;
+		std::vector<Ref<Vulkan::Image>> images;
+		VkDescriptorImageInfo descriptor_image_info {};
+	};
+	std::unordered_map<uint32_t, std::shared_ptr<PendingDescriptor>> resident_descriptors;
+	std::unordered_map<uint32_t, std::shared_ptr<PendingDescriptorArray>> resident_descriptor_arrays;
+	std::vector<std::shared_ptr<PendingDescriptor>> pending_descriptors;
+
 	DataBuffer uniform_storage_buffer;
+
+	std::vector<Ref<Disarray::Texture>> textures;
+	std::vector<std::vector<Ref<Vulkan::Texture>>> texture_arrays;
+	std::vector<Ref<Vulkan::Image>> images;
+
+	std::unordered_map<FrameIndex, MaterialDescriptorSet> descriptor_sets {};
+
+	std::vector<std::vector<VkWriteDescriptorSet>> write_descriptors;
+	std::vector<bool> dirty_descriptor_sets;
 
 	const Disarray::Device& device;
 };

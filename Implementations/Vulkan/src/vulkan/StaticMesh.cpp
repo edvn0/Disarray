@@ -30,8 +30,6 @@ namespace Vulkan {
 		: device(dev)
 		, file_path(path)
 	{
-		Log::info("Mesh", "Loading mesh: {0}", file_path.string());
-
 		importer = make_scope<Assimp::Importer, PimplDeleter<Assimp::Importer>>();
 		importer->SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
 
@@ -99,9 +97,9 @@ namespace Vulkan {
 		traverse_nodes(scene->mRootNode);
 
 		for (const auto& submesh : submeshes) {
-			AABB submesh_aabb = submesh.bounding_box;
-			glm::vec3 min = glm::vec3(submesh.transform * submesh_aabb.min_vector());
-			glm::vec3 max = glm::vec3(submesh.transform * submesh_aabb.max_vector());
+			const auto& submesh_aabb = submesh.bounding_box;
+			const auto min = glm::vec3(submesh.transform * submesh_aabb.min_vector());
+			const auto max = glm::vec3(submesh.transform * submesh_aabb.max_vector());
 
 			bounding_box.update(min, max);
 		}
@@ -111,7 +109,7 @@ namespace Vulkan {
 		if (scene->HasMaterials()) {
 			materials.resize(scene->mNumMaterials);
 
-			for (uint32_t i = 0; i < scene->mNumMaterials; i++) {
+			for (std::uint32_t i = 0; i < scene->mNumMaterials; i++) {
 				auto* ai_material = scene->mMaterials[i];
 				auto ai_material_name = ai_material->GetName();
 				// convert to std::string
@@ -121,7 +119,7 @@ namespace Vulkan {
 					MeshMaterialProperties {
 						SingleShader::construct(device,
 							{
-								.path = FS::shader("static_mesh_combined.glsl"),
+								.path = FS::shader("basic_combined.glsl"),
 								.optimize = false,
 							}),
 					});
@@ -129,11 +127,8 @@ namespace Vulkan {
 				submesh_material->set("diffuse_map", white_texture);
 				submesh_material->set("specular_map", white_texture);
 
-				Log::info("StaticMesh", "  {0} (Index = {1})", material_name, i);
 				aiString ai_tex_path;
 				std::uint32_t texture_count = ai_material->GetTextureCount(aiTextureType_DIFFUSE);
-				Log::info("StaticMesh", "    TextureCount = {0}", texture_count);
-
 				glm::vec3 albedo_colour(0.8F);
 				float emission = 0.0F;
 				if (aiColor3D ai_colour; ai_material->Get(AI_MATKEY_COLOR_DIFFUSE, ai_colour) == AI_SUCCESS) {
@@ -144,7 +139,6 @@ namespace Vulkan {
 					emission = ai_emission.r;
 				}
 
-				// TODO(edvin): Obviously
 				submesh_material->set("pc.albedo_colour", albedo_colour);
 				submesh_material->set("pc.emission", emission);
 
@@ -178,7 +172,6 @@ namespace Vulkan {
 						auto parent_path = new_path.parent_path();
 						parent_path /= std::string(ai_tex_path.data);
 						std::string texture_path = parent_path.string();
-						Log::info("StaticMesh", "    Albedo map path = {0}", texture_path);
 						texture = Texture::construct(device,
 							{
 								.path = texture_path,
@@ -187,17 +180,14 @@ namespace Vulkan {
 					}
 
 					if (texture) {
-						Log::info("Mesh", "Loaded albedo!");
 						submesh_material->set("albedo_map", texture);
 						submesh_material->set("pc.albedo_colour", glm::vec3(1.0F));
 					} else {
-						Log::error("Mesh", "Could not load texture: {0}", ai_tex_path.C_Str());
 						fallback = true;
 					}
 				}
 
 				if (fallback) {
-					Log::info("StaticMesh", "    No albedo map");
 					submesh_material->set("albedo_map", white_texture);
 				}
 
@@ -220,7 +210,6 @@ namespace Vulkan {
 						auto parent_path = new_path.parent_path();
 						parent_path /= std::string(ai_tex_path.data);
 						std::string texture_path = parent_path.string();
-						Log::info("StaticMesh", "    Normal map path = {0}", texture_path);
 						texture = Texture::construct(device,
 							{
 								.path = texture_path,
@@ -229,17 +218,14 @@ namespace Vulkan {
 					}
 
 					if (texture) {
-						Log::info("StaticMesh", "Loaded normal map!");
 						submesh_material->set("normal_map", texture);
 						submesh_material->set("pc.use_normal_map", true);
 					} else {
-						Log::error("Mesh", "    Could not load texture: {0}", ai_tex_path.C_Str());
 						fallback = true;
 					}
 				}
 
 				if (fallback) {
-					Log::info("StaticMesh", "    No normal map");
 					submesh_material->set("normal_map", white_texture);
 					submesh_material->set("pc.use_normal_map", false);
 				}
@@ -263,7 +249,6 @@ namespace Vulkan {
 						auto parent_path = new_path.parent_path();
 						parent_path /= std::string(ai_tex_path.data);
 						std::string texture_path = parent_path.string();
-						Log::info("StaticMesh", "    Roughness map path = {0}", texture_path);
 						texture = Texture::construct(device,
 							{
 								.path = texture_path,
@@ -272,31 +257,25 @@ namespace Vulkan {
 					}
 
 					if (texture) {
-						Log::info("StaticMesh", "Loaded roughness map!");
 						submesh_material->set("roughness_map", texture);
 						submesh_material->set("pc.roughness", 1.0F);
 					} else {
-						Log::error("Mesh", "    Could not load roughness: {0}", ai_tex_path.C_Str());
 						fallback = true;
 					}
 				}
 
 				if (fallback) {
-					Log::info("StaticMesh", "    No roughness map");
 					submesh_material->set("roughness_map", white_texture);
 					submesh_material->set("pc.roughness", roughness);
 				}
 
 				bool has_metalness_texture = false;
 				for (std::uint32_t property_index = 0; property_index < ai_material->mNumProperties; property_index++) {
-					auto* prop = ai_material->mProperties[property_index];
-
-					if (prop->mType == aiPTI_String) {
+					if (auto* prop = ai_material->mProperties[property_index]; prop->mType == aiPTI_String) {
 						uint32_t str_length = *reinterpret_cast<std::uint32_t*>(prop->mData);
 						std::string str(prop->mData + 4, str_length);
 
-						std::string key = prop->mKey.data;
-						if (key == "$raw.ReflectionFactor|file") {
+						if (std::string key = prop->mKey.data; key == "$raw.ReflectionFactor|file") {
 							Ref<Disarray::Texture> texture;
 							if (const auto* ai_texture_embedded = scene->GetEmbeddedTexture(str.data())) {
 								texture = Texture::construct(device,
@@ -312,7 +291,6 @@ namespace Vulkan {
 								auto parent_path = new_path.parent_path();
 								parent_path /= std::string(ai_tex_path.data);
 								std::string texture_path = parent_path.string();
-								Log::info("StaticMesh", "    Metalnesss map path = {0}", texture_path);
 								texture = Texture::construct(device,
 									{
 										.path = texture_path,
@@ -325,7 +303,7 @@ namespace Vulkan {
 								submesh_material->set("metalness_map", texture);
 								submesh_material->set("pc.metalness", 1.0F);
 							} else {
-								Log::error("Mesh", "    Could not load texture: {0}", str);
+								Log::error("Mesh", "Could not load texture: {0}", str);
 							}
 							break;
 						}
@@ -334,18 +312,16 @@ namespace Vulkan {
 
 				fallback = !has_metalness_texture;
 				if (fallback) {
-					Log::info("StaticMesh", "    No metalness map");
 					submesh_material->set("metalness_map", white_texture);
 					submesh_material->set("pc.metalness", metalness);
 				}
 			}
-			Log::info("StaticMesh", "------------------------");
 		} else {
 			auto submesh_material = MeshMaterial::construct(device,
 				MeshMaterialProperties {
 					SingleShader::construct(device,
 						{
-							.path = FS::shader("static_mesh_combined.glsl"),
+							.path = FS::shader("basic_combined.glsl"),
 							.optimize = false,
 						}),
 					"Default",
@@ -413,7 +389,7 @@ namespace Vulkan {
 		const glm::mat4 local_transform = to_mat4_from_assimp(node->mTransformation);
 		const glm::mat4 transform = parent_transform * local_transform;
 		node_map[node].resize(node->mNumMeshes);
-		for (uint32_t i = 0; i < node->mNumMeshes; i++) {
+		for (std::uint32_t i = 0; i < node->mNumMeshes; i++) {
 			const std::uint32_t mesh = node->mMeshes[i];
 			auto& submesh = submeshes[mesh];
 			submesh.node_name = node->mName.C_Str();
@@ -422,7 +398,7 @@ namespace Vulkan {
 			node_map[node][i] = mesh;
 		}
 
-		for (uint32_t i = 0; i < node->mNumChildren; i++) {
+		for (std::uint32_t i = 0; i < node->mNumChildren; i++) {
 			traverse_nodes(node->mChildren[i], transform, level + 1);
 		}
 	}

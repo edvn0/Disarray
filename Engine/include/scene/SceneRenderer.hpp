@@ -69,6 +69,9 @@ public:
 		-> void;
 	auto draw_single_static_mesh(const Disarray::VertexBuffer& vertices, const Disarray::IndexBuffer& indices, const Disarray::Pipeline& pipeline,
 		const glm::mat4& transform, const glm::vec4& colour) -> void;
+
+	auto draw_static_mesh(const Disarray::StaticMesh& mesh, const Disarray::Pipeline& pipeline, const glm::mat4& transform, const glm::vec4& colour)
+		-> void;
 	/**
 	 * END ACTUAL DRAWING
 	 */

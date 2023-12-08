@@ -3,6 +3,11 @@
 #include "graphics/StaticMesh.hpp"
 #include "vulkan/SingleShader.hpp"
 
+auto std::hash<Disarray::SingleShader>::operator()(const Disarray::SingleShader& shader) const noexcept -> std::size_t
+{
+	return hash_value(shader.get_properties().path);
+}
+
 namespace Disarray {
 
 auto SingleShader::construct(const Disarray::Device& device, SingleShaderProperties properties) -> Ref<Disarray::SingleShader>

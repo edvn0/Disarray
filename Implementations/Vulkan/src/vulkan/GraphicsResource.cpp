@@ -392,4 +392,6 @@ void GraphicsResource::internal_expose_to_shaders(
 	vkUpdateDescriptorSets(supply_cast<Vulkan::Device>(device), static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
 }
 
+auto GraphicsResource::allocate_descriptor_sets(const VkDescriptorSetAllocateInfo& allocation_info, VkDescriptorSet& vk_descriptors) -> void { }
+
 } // namespace Disarray::Vulkan

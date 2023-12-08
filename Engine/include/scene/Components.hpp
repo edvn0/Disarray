@@ -23,6 +23,7 @@
 #include "graphics/Pipeline.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
+#include "graphics/StaticMesh.hpp"
 #include "graphics/Texture.hpp"
 #include "physics/PhysicsProperties.hpp"
 #include "scene/Camera.hpp"
@@ -32,15 +33,15 @@ namespace Disarray::Components {
 
 template <class T> static inline constexpr std::string_view component_name;
 
-namespace {
+namespace Detail {
 	const auto default_rotation = glm::angleAxis(0.0F, glm::vec3 { 0.0F, 0.0F, 1.0F });
 	constexpr auto identity = glm::identity<glm::mat4>();
 	inline auto scale_matrix(const auto& vec) { return glm::scale(identity, vec); }
 	inline auto translate_matrix(const auto& vec) { return glm::translate(identity, vec); }
-} // namespace
+} // namespace Detail
 
 struct Transform {
-	glm::quat rotation { default_rotation };
+	glm::quat rotation { Detail::default_rotation };
 	glm::vec3 position { 0.0F };
 	glm::vec3 scale { 1.0F };
 
@@ -65,7 +66,7 @@ struct Transform {
 	{
 	}
 
-	[[nodiscard]] auto compute() const { return translate_matrix(position) * glm::mat4_cast(rotation) * scale_matrix(scale); }
+	[[nodiscard]] auto compute() const { return Detail::translate_matrix(position) * glm::mat4_cast(rotation) * Detail::scale_matrix(scale); }
 };
 template <> inline constexpr std::string_view component_name<Transform> = "Transform";
 
@@ -79,6 +80,16 @@ struct Mesh {
 	bool draw_aabb { false };
 };
 template <> inline constexpr std::string_view component_name<Mesh> = "Mesh";
+
+struct StaticMesh {
+	StaticMesh() = default;
+	// Deserialisation constructor :)
+	explicit StaticMesh(Device&, std::string_view path);
+	explicit StaticMesh(Ref<Disarray::StaticMesh>);
+
+	Ref<Disarray::StaticMesh> static_mesh { nullptr };
+};
+template <> inline constexpr std::string_view component_name<StaticMesh> = "StaticMesh";
 
 struct Material {
 	Material() = default;

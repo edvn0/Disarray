@@ -44,7 +44,7 @@ ClientLayer::~ClientLayer() = default;
 void ClientLayer::construct(App& app)
 {
 	scene_renderer.construct(app);
-	setup_filewatcher_and_threadpool(app.get_thread_pool());
+	setup_filewatcher_and_threadpool(Disarray::App::get_thread_pool());
 
 	scene = make_ref<Scene>(device, "Default scene");
 	scene->construct(app);
@@ -53,6 +53,7 @@ void ClientLayer::construct(App& app)
 	icon_pause = scene_renderer.get_texture_cache().get("Pause");
 	icon_step = scene_renderer.get_texture_cache().get("Step");
 	icon_simulate = scene_renderer.get_texture_cache().get("Simulate");
+
 	// create_entities();
 
 	extent = app.get_swapchain().get_extent();
@@ -72,22 +73,6 @@ void ClientLayer::construct(App& app)
 	pipeline_editor_panel->construct(app);
 	scene_panel->construct(app);
 	// log_panel->construct(app);
-
-	auto shader = SingleShader::construct(device,
-		{
-			.path = FS::shader("basic_combined.glsl"),
-			.optimize = false,
-		});
-	auto material = MeshMaterial::construct(device,
-		MeshMaterialProperties {
-			shader,
-			"BasicCombinedMaterial",
-			app.get_swapchain().image_count(),
-		});
-	auto dumb_mesh = StaticMesh::construct(device,
-		{
-			.path = FS::model("viking-room/source/viking_room.fbx"),
-		});
 }
 
 void ClientLayer::setup_filewatcher_and_threadpool(Threading::ThreadPool& pool)

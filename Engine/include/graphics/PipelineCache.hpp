@@ -25,6 +25,7 @@ struct PipelineCacheCreationProperties {
 	std::string pipeline_key;
 	std::string vertex_shader_key;
 	std::string fragment_shader_key;
+	std::optional<Ref<SingleShader>> single_shader { std::nullopt };
 	Ref<Framebuffer> framebuffer { nullptr };
 	VertexLayout layout {};
 	PushConstantLayout push_constant_layout {};
@@ -56,24 +57,46 @@ public:
 
 	auto create_from_impl(const PipelineCacheCreationProperties& props) -> Ref<Disarray::Pipeline>
 	{
-		PipelineProperties properties {
-			.vertex_shader = shader_cache[props.vertex_shader_key],
-			.fragment_shader = shader_cache[props.fragment_shader_key],
-			.framebuffer = props.framebuffer,
-			.layout = props.layout,
-			.push_constant_layout = props.push_constant_layout,
-			.extent = props.extent,
-			.polygon_mode = props.polygon_mode,
-			.line_width = props.line_width,
-			.samples = props.samples,
-			.depth_comparison_operator = props.depth_comparison_operator,
-			.cull_mode = props.cull_mode,
-			.face_mode = props.face_mode,
-			.write_depth = props.write_depth,
-			.test_depth = props.test_depth,
-			.descriptor_set_layouts = props.descriptor_set_layouts,
-			.specialisation_constants = props.specialisation_constant,
-		};
+		PipelineProperties properties;
+
+		if (!props.single_shader.has_value()) {
+			properties = {
+				.vertex_shader = shader_cache[props.vertex_shader_key],
+				.fragment_shader = shader_cache[props.fragment_shader_key],
+				.framebuffer = props.framebuffer,
+				.layout = props.layout,
+				.push_constant_layout = props.push_constant_layout,
+				.extent = props.extent,
+				.polygon_mode = props.polygon_mode,
+				.line_width = props.line_width,
+				.samples = props.samples,
+				.depth_comparison_operator = props.depth_comparison_operator,
+				.cull_mode = props.cull_mode,
+				.face_mode = props.face_mode,
+				.write_depth = props.write_depth,
+				.test_depth = props.test_depth,
+				.descriptor_set_layouts = props.descriptor_set_layouts,
+				.specialisation_constants = props.specialisation_constant,
+			};
+		} else {
+			properties = {
+				.single_shader = *props.single_shader,
+				.framebuffer = props.framebuffer,
+				.layout = props.layout,
+				.push_constant_layout = props.push_constant_layout,
+				.extent = props.extent,
+				.polygon_mode = props.polygon_mode,
+				.line_width = props.line_width,
+				.samples = props.samples,
+				.depth_comparison_operator = props.depth_comparison_operator,
+				.cull_mode = props.cull_mode,
+				.face_mode = props.face_mode,
+				.write_depth = props.write_depth,
+				.test_depth = props.test_depth,
+				.descriptor_set_layouts = props.descriptor_set_layouts,
+				.specialisation_constants = props.specialisation_constant,
+			};
+		}
 
 		return Pipeline::construct(get_device(), properties);
 	}

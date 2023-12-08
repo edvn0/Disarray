@@ -409,6 +409,25 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 	pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" } };
 	get_pipeline_cache().put(pipeline_properties);
 
+	const auto shader = SingleShader::construct(device,
+		{
+			.path = FS::shader("basic_combined.glsl"),
+			.optimize = false,
+		});
+	const auto material = MeshMaterial::construct(device,
+		MeshMaterialProperties {
+			shader,
+			"BasicCombinedMaterial",
+			app.get_swapchain().image_count(),
+		});
+
+	get_pipeline_cache().put({
+		.pipeline_key = "BasicCombined",
+		.single_shader = shader,
+		.framebuffer = get_framebuffer<SceneFramebuffer::Geometry>(),
+		.extent = renderer_extent,
+	});
+
 	renderer->construct_sub_renderers(device, app);
 }
 
@@ -602,6 +621,11 @@ auto SceneRenderer::draw_single_static_mesh(
 auto SceneRenderer::begin_pass(const Disarray::Framebuffer& framebuffer, bool explicit_clear) -> void
 {
 	renderer->begin_pass(*command_executor, const_cast<Disarray::Framebuffer&>(framebuffer), explicit_clear);
+}
+
+auto SceneRenderer::draw_static_mesh(const StaticMesh& mesh, const Pipeline& pipeline, const glm::mat4& transform, const glm::vec4& colour) -> void
+{
+	renderer->draw_mesh(*command_executor, mesh, pipeline, colour, transform);
 }
 
 void SceneRenderer::clear_pass(RenderPasses render_pass) { renderer->clear_pass(*command_executor, render_pass); }

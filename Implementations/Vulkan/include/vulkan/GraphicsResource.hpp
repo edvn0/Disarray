@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "ShaderReflectionData.hpp"
 #include "core/DisarrayObject.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Renderer.hpp"
@@ -17,6 +18,7 @@ namespace Disarray::Vulkan {
 
 class GraphicsResource : public IGraphicsResource {
 	DISARRAY_MAKE_NONCOPYABLE(GraphicsResource)
+
 public:
 	GraphicsResource(const Disarray::Device&, const Disarray::Swapchain&);
 	~GraphicsResource() override;
@@ -54,6 +56,10 @@ public:
 	auto get_editable_push_constant() -> PushConstant& override { return pc; }
 
 	auto get_device() const -> const Disarray::Device& override { return device; }
+
+	[[nodiscard]] auto get_current_frame_index() const -> FrameIndex { return swapchain.get_current_frame_index(); }
+
+	static auto allocate_descriptor_sets(const VkDescriptorSetAllocateInfo& allocation_info, VkDescriptorSet& vk_descriptors) -> void;
 
 private:
 	void cleanup_graphics_resource();

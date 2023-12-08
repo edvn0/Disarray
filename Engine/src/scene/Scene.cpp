@@ -26,6 +26,7 @@
 #include "core/events/MouseEvent.hpp"
 #include "core/filesystem/AssetLocations.hpp"
 #include "graphics/RendererProperties.hpp"
+#include "graphics/StaticMesh.hpp"
 #include "physics/PhysicsEngine.hpp"
 #include "scene/Camera.hpp"
 #include "scene/Components.hpp"
@@ -48,7 +49,18 @@ Scene::Scene(const Device& dev, std::string_view name)
 	selected_entity = make_scope<Entity>(this);
 }
 
-void Scene::construct(Disarray::App& app) { extent = app.get_swapchain().get_extent(); }
+void Scene::construct(Disarray::App& app)
+{
+	extent = app.get_swapchain().get_extent();
+
+	auto dumb_mesh = StaticMesh::construct(device,
+		{
+			.path = FS::model("textured_cube.fbx"),
+		});
+
+	auto dumb_entity = create("Dumb");
+	dumb_entity.add_component<Components::StaticMesh>(dumb_mesh);
+}
 
 Scene::~Scene() = default;
 
@@ -283,6 +295,16 @@ void Scene::draw_skybox(SceneRenderer& scene_renderer)
 
 void Scene::draw_geometry(SceneRenderer& scene_renderer)
 {
+	for (auto&& [entity, mesh, transform] : registry.view<const Components::StaticMesh, const Components::Transform>().each()) {
+		if (mesh.static_mesh == nullptr) {
+			continue;
+		}
+
+		const auto& actual_pipeline = *scene_renderer.get_pipeline("BasicCombined");
+		const auto transform_computed = transform.compute();
+		scene_renderer.draw_static_mesh(*mesh.static_mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
+	}
+
 	{
 		auto point_light_view = registry.view<const Components::PointLight, const Components::Mesh>();
 		Ref<Disarray::Mesh> point_light_mesh = nullptr;
@@ -382,7 +404,7 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 
 void Scene::draw_shadows(SceneRenderer& scene_renderer)
 {
-	for (auto shadow_view = registry.view<const Components::Mesh, Components::Texture, const Components::Transform>(
+	for (const auto shadow_view = registry.view<const Components::Mesh, Components::Texture, const Components::Transform>(
 			 entt::exclude<Components::PointLight, Components::SpotLight, Components::Skybox>);
 		 auto&& [entity, mesh, texture, transform] : shadow_view.each()) {
 		if (mesh.mesh == nullptr) {

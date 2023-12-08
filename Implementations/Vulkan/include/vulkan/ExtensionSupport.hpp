@@ -8,9 +8,9 @@ namespace Disarray::Vulkan {
 
 class ExtensionSupport {
 public:
-	ExtensionSupport(VkPhysicalDevice device);
+	explicit ExtensionSupport(VkPhysicalDevice device);
 
-	operator bool() const { return valid; }
+	explicit operator bool() const { return valid; }
 
 private:
 	bool valid { false };

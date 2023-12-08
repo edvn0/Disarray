@@ -11,7 +11,6 @@
 #include "core/Concepts.hpp"
 #include "core/Hashes.hpp"
 #include "core/Log.hpp"
-#include "core/filesystem/FileIO.hpp"
 #include "util/BitCast.hpp"
 
 namespace Disarray::FS {
@@ -122,5 +121,8 @@ auto for_each_in_directory(auto path, Func&& func, const Collections::StringView
 		std::forward<Func>(func)(entry);
 	}
 }
+
+auto exists(const std::filesystem::path&) -> bool;
+auto exists(Pathlike auto path) -> bool { return exists(std::filesystem::path { path }); }
 
 } // namespace Disarray::FS
