@@ -149,6 +149,20 @@ namespace Vulkan {
 			}
 		}
 
+		vertex_buffer = VertexBuffer::construct(device,
+			{
+				.data = vertices.data(),
+				.size = vertices.size() * sizeof(ModelVertex),
+				.always_mapped = false,
+			});
+
+		index_buffer = IndexBuffer::construct(device,
+			{
+				.data = indices.data(),
+				.size = indices.size() * sizeof(Index),
+				.always_mapped = false,
+			});
+
 		traverse_nodes(submeshes, importer, importer->scene->mRootNode);
 
 		for (const auto& submesh : submeshes) {
@@ -161,216 +175,10 @@ namespace Vulkan {
 
 		// Materials
 		const auto& white_texture = Renderer::get_white_texture();
-		if (importer->scene->HasMaterials()) {
-			materials.resize(importer->scene->mNumMaterials);
+		const auto num_materials = importer->scene->mNumMaterials;
+		std::span materials_span { importer->scene->mMaterials, num_materials };
 
-			for (std::uint32_t i = 0; i < importer->scene->mNumMaterials; i++) {
-				auto* ai_material = importer->scene->mMaterials[i];
-				auto ai_material_name = ai_material->GetName();
-				// convert to std::string
-				std::string material_name = ai_material_name.C_Str();
-
-				auto submesh_material = MeshMaterial::construct(device,
-					MeshMaterialProperties {
-						SingleShader::construct(device,
-							{
-								.path = FS::shader("basic_combined.glsl"),
-								.optimize = false,
-							}),
-					});
-				materials[i] = submesh_material;
-				submesh_material->set("diffuse_map", white_texture);
-				submesh_material->set("specular_map", white_texture);
-
-				aiString ai_tex_path;
-				glm::vec3 albedo_colour(0.8F);
-				float emission = 0.0F;
-				if (aiColor3D ai_colour; ai_material->Get(AI_MATKEY_COLOR_DIFFUSE, ai_colour) == AI_SUCCESS) {
-					albedo_colour = { ai_colour.r, ai_colour.g, ai_colour.b };
-				}
-
-				if (aiColor3D ai_emission; ai_material->Get(AI_MATKEY_COLOR_EMISSIVE, ai_emission) == AI_SUCCESS) {
-					emission = ai_emission.r;
-				}
-
-				submesh_material->set("pc.albedo_colour", albedo_colour);
-				submesh_material->set("pc.emission", emission);
-
-				float shininess {};
-				float metalness {};
-				if (ai_material->Get(AI_MATKEY_SHININESS, shininess) != aiReturn_SUCCESS) {
-					shininess = 80.0F; // Default value
-				}
-
-				if (ai_material->Get(AI_MATKEY_REFLECTIVITY, metalness) != aiReturn_SUCCESS) {
-					metalness = 0.0F;
-				}
-
-				float roughness = 1.0F - glm::sqrt(shininess / 100.0f);
-				bool has_albedo_map = ai_material->GetTexture(aiTextureType_DIFFUSE, 0, &ai_tex_path) == AI_SUCCESS;
-				bool fallback = !has_albedo_map;
-				if (has_albedo_map) {
-					Ref<Disarray::Texture> texture;
-					if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
-						DataBuffer buffer { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 4 };
-						texture = Texture::construct(device,
-							{
-								.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
-								.format = ImageFormat::RGB,
-								.data_buffer = buffer,
-								.debug_name = std::filesystem::path { ai_tex_path.C_Str() }.filename().string(),
-							});
-					} else {
-
-						std::filesystem::path new_path = file_path;
-						auto parent_path = new_path.parent_path();
-						parent_path /= std::string(ai_tex_path.data);
-						std::string texture_path = parent_path.string();
-						texture = Texture::construct(device,
-							{
-								.path = texture_path,
-								.debug_name = ai_tex_path.C_Str(),
-							});
-					}
-
-					if (texture) {
-						submesh_material->set("albedo_map", texture);
-						submesh_material->set("pc.albedo_colour", glm::vec3(1.0F));
-					} else {
-						fallback = true;
-					}
-				}
-
-				if (fallback) {
-					submesh_material->set("albedo_map", white_texture);
-				}
-
-				// Normal maps
-				auto has_normal_map = ai_material->GetTexture(aiTextureType_NORMALS, 0, &ai_tex_path) == AI_SUCCESS;
-				fallback = !has_normal_map;
-				if (has_normal_map) {
-					Ref<Disarray::Texture> texture;
-					if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
-						texture = Texture::construct(device,
-							{
-								.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
-								.format = ImageFormat::RGB,
-								.data_buffer = { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 3 },
-								.debug_name = ai_tex_path.C_Str(),
-							});
-					} else {
-
-						std::filesystem::path new_path = file_path;
-						auto parent_path = new_path.parent_path();
-						parent_path /= std::string(ai_tex_path.data);
-						std::string texture_path = parent_path.string();
-						texture = Texture::construct(device,
-							{
-								.path = texture_path,
-								.debug_name = ai_tex_path.C_Str(),
-							});
-					}
-
-					if (texture) {
-						submesh_material->set("normal_map", texture);
-						submesh_material->set("pc.use_normal_map", true);
-					} else {
-						fallback = true;
-					}
-				}
-
-				if (fallback) {
-					submesh_material->set("normal_map", white_texture);
-					submesh_material->set("pc.use_normal_map", false);
-				}
-
-				// Roughness map
-				bool has_roughness_map = ai_material->GetTexture(aiTextureType_SHININESS, 0, &ai_tex_path) == AI_SUCCESS;
-				fallback = !has_roughness_map;
-				if (has_roughness_map) {
-					Ref<Disarray::Texture> texture;
-					if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
-						texture = Texture::construct(device,
-							{
-								.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
-								.format = ImageFormat::RGB,
-								.data_buffer = { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 3 },
-								.debug_name = ai_tex_path.C_Str(),
-							});
-					} else {
-
-						std::filesystem::path new_path = file_path;
-						auto parent_path = new_path.parent_path();
-						parent_path /= std::string(ai_tex_path.data);
-						std::string texture_path = parent_path.string();
-						texture = Texture::construct(device,
-							{
-								.path = texture_path,
-								.debug_name = ai_tex_path.C_Str(),
-							});
-					}
-
-					if (texture) {
-						submesh_material->set("roughness_map", texture);
-						submesh_material->set("pc.roughness", 1.0F);
-					} else {
-						fallback = true;
-					}
-				}
-
-				if (fallback) {
-					submesh_material->set("roughness_map", white_texture);
-					submesh_material->set("pc.roughness", roughness);
-				}
-
-				bool has_metalness_texture = false;
-				for (std::uint32_t property_index = 0; property_index < ai_material->mNumProperties; property_index++) {
-					if (auto* prop = ai_material->mProperties[property_index]; prop->mType == aiPTI_String) {
-						uint32_t str_length = *reinterpret_cast<std::uint32_t*>(prop->mData);
-						std::string str(prop->mData + 4, str_length);
-
-						if (std::string key = prop->mKey.data; key == "$raw.ReflectionFactor|file") {
-							Ref<Disarray::Texture> texture;
-							if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(str.data())) {
-								texture = Texture::construct(device,
-									{
-										.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
-										.format = ImageFormat::RGB,
-										.data_buffer
-										= { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 3 },
-										.debug_name = str,
-									});
-							} else {
-								std::filesystem::path new_path = file_path;
-								auto parent_path = new_path.parent_path();
-								parent_path /= std::string(ai_tex_path.data);
-								std::string texture_path = parent_path.string();
-								texture = Texture::construct(device,
-									{
-										.path = texture_path,
-										.debug_name = ai_tex_path.C_Str(),
-									});
-							}
-
-							if (texture) {
-								has_metalness_texture = true;
-								submesh_material->set("metalness_map", texture);
-								submesh_material->set("pc.metalness", 1.0F);
-							} else {
-								Log::error("Mesh", "Could not load texture: {0}", str);
-							}
-							break;
-						}
-					}
-				}
-
-				fallback = !has_metalness_texture;
-				if (fallback) {
-					submesh_material->set("metalness_map", white_texture);
-					submesh_material->set("pc.metalness", metalness);
-				}
-			}
-		} else {
+		if (materials_span.empty()) {
 			auto submesh_material = MeshMaterial::construct(device,
 				MeshMaterialProperties {
 					SingleShader::construct(device,
@@ -394,20 +202,217 @@ namespace Vulkan {
 			submesh_material->set("metalness_map", white_texture);
 			submesh_material->set("roughness_map", white_texture);
 			materials.push_back(submesh_material);
+
+			return;
 		}
 
-		vertex_buffer = VertexBuffer::construct(device,
-			{
-				.data = vertices.data(),
-				.size = vertices.size() * sizeof(ModelVertex),
-				.always_mapped = false,
-			});
-		index_buffer = IndexBuffer::construct(device,
-			{
-				.data = indices.data(),
-				.size = indices.size() * sizeof(Index),
-				.always_mapped = false,
-			});
+		materials.resize(num_materials);
+
+		std::size_t i = 0;
+		for (const auto* ai_material : materials_span) {
+			auto ai_material_name = ai_material->GetName();
+			// convert to std::string
+			std::string material_name = ai_material_name.C_Str();
+
+			auto submesh_material = MeshMaterial::construct(device,
+				MeshMaterialProperties {
+					SingleShader::construct(device,
+						{
+							.path = FS::shader("basic_combined.glsl"),
+							.optimize = false,
+						}),
+				});
+			materials[i++] = submesh_material;
+			submesh_material->set("diffuse_map", white_texture);
+			submesh_material->set("specular_map", white_texture);
+
+			aiString ai_tex_path;
+			glm::vec3 albedo_colour(0.8F);
+			float emission = 0.0F;
+			if (aiColor3D ai_colour; ai_material->Get(AI_MATKEY_COLOR_DIFFUSE, ai_colour) == AI_SUCCESS) {
+				albedo_colour = { ai_colour.r, ai_colour.g, ai_colour.b };
+			}
+
+			if (aiColor3D ai_emission; ai_material->Get(AI_MATKEY_COLOR_EMISSIVE, ai_emission) == AI_SUCCESS) {
+				emission = ai_emission.r;
+			}
+
+			submesh_material->set("pc.albedo_colour", albedo_colour);
+			submesh_material->set("pc.emission", emission);
+
+			float shininess {};
+			float metalness {};
+			if (ai_material->Get(AI_MATKEY_SHININESS, shininess) != aiReturn_SUCCESS) {
+				shininess = 80.0F; // Default value
+			}
+
+			if (ai_material->Get(AI_MATKEY_REFLECTIVITY, metalness) != aiReturn_SUCCESS) {
+				metalness = 0.0F;
+			}
+
+			float roughness = 1.0F - glm::sqrt(shininess / 100.0f);
+			bool has_albedo_map = ai_material->GetTexture(aiTextureType_DIFFUSE, 0, &ai_tex_path) == AI_SUCCESS;
+			bool fallback = !has_albedo_map;
+			if (has_albedo_map) {
+				Ref<Disarray::Texture> texture;
+				if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
+					DataBuffer buffer { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 4 };
+					texture = Texture::construct(device,
+						{
+							.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
+							.format = ImageFormat::RGB,
+							.data_buffer = buffer,
+							.debug_name = std::filesystem::path { ai_tex_path.C_Str() }.filename().string(),
+						});
+				} else {
+
+					std::filesystem::path new_path = file_path;
+					auto parent_path = new_path.parent_path();
+					parent_path /= std::string(ai_tex_path.data);
+					std::string texture_path = parent_path.string();
+					texture = Texture::construct(device,
+						{
+							.path = texture_path,
+							.debug_name = ai_tex_path.C_Str(),
+						});
+				}
+
+				if (texture) {
+					submesh_material->set("albedo_map", texture);
+					submesh_material->set("pc.albedo_colour", glm::vec3(1.0F));
+				} else {
+					fallback = true;
+				}
+			}
+
+			if (fallback) {
+				submesh_material->set("albedo_map", white_texture);
+			}
+
+			// Normal maps
+			auto has_normal_map = ai_material->GetTexture(aiTextureType_NORMALS, 0, &ai_tex_path) == AI_SUCCESS;
+			fallback = !has_normal_map;
+			if (has_normal_map) {
+				Ref<Disarray::Texture> texture;
+				if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
+					texture = Texture::construct(device,
+						{
+							.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
+							.format = ImageFormat::RGB,
+							.data_buffer = { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 3 },
+							.debug_name = ai_tex_path.C_Str(),
+						});
+				} else {
+
+					std::filesystem::path new_path = file_path;
+					auto parent_path = new_path.parent_path();
+					parent_path /= std::string(ai_tex_path.data);
+					std::string texture_path = parent_path.string();
+					texture = Texture::construct(device,
+						{
+							.path = texture_path,
+							.debug_name = ai_tex_path.C_Str(),
+						});
+				}
+
+				if (texture) {
+					submesh_material->set("normal_map", texture);
+					submesh_material->set("pc.use_normal_map", true);
+				} else {
+					fallback = true;
+				}
+			}
+
+			if (fallback) {
+				submesh_material->set("normal_map", white_texture);
+				submesh_material->set("pc.use_normal_map", false);
+			}
+
+			// Roughness map
+			bool has_roughness_map = ai_material->GetTexture(aiTextureType_SHININESS, 0, &ai_tex_path) == AI_SUCCESS;
+			fallback = !has_roughness_map;
+			if (has_roughness_map) {
+				Ref<Disarray::Texture> texture;
+				if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
+					texture = Texture::construct(device,
+						{
+							.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
+							.format = ImageFormat::RGB,
+							.data_buffer = { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 3 },
+							.debug_name = ai_tex_path.C_Str(),
+						});
+				} else {
+
+					std::filesystem::path new_path = file_path;
+					auto parent_path = new_path.parent_path();
+					parent_path /= std::string(ai_tex_path.data);
+					std::string texture_path = parent_path.string();
+					texture = Texture::construct(device,
+						{
+							.path = texture_path,
+							.debug_name = ai_tex_path.C_Str(),
+						});
+				}
+
+				if (texture) {
+					submesh_material->set("roughness_map", texture);
+					submesh_material->set("pc.roughness", 1.0F);
+				} else {
+					fallback = true;
+				}
+			}
+
+			if (fallback) {
+				submesh_material->set("roughness_map", white_texture);
+				submesh_material->set("pc.roughness", roughness);
+			}
+
+			bool has_metalness_texture = false;
+			for (std::uint32_t property_index = 0; property_index < ai_material->mNumProperties; property_index++) {
+				if (auto* prop = ai_material->mProperties[property_index]; prop->mType == aiPTI_String) {
+					uint32_t str_length = *reinterpret_cast<std::uint32_t*>(prop->mData);
+					std::string str(prop->mData + 4, str_length);
+
+					if (std::string key = prop->mKey.data; key == "$raw.ReflectionFactor|file") {
+						Ref<Disarray::Texture> texture;
+						if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(str.data())) {
+							texture = Texture::construct(device,
+								{
+									.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
+									.format = ImageFormat::RGB,
+									.data_buffer = { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 3 },
+									.debug_name = str,
+								});
+						} else {
+							std::filesystem::path new_path = file_path;
+							auto parent_path = new_path.parent_path();
+							parent_path /= std::string(ai_tex_path.data);
+							std::string texture_path = parent_path.string();
+							texture = Texture::construct(device,
+								{
+									.path = texture_path,
+									.debug_name = ai_tex_path.C_Str(),
+								});
+						}
+
+						if (texture) {
+							has_metalness_texture = true;
+							submesh_material->set("metalness_map", texture);
+							submesh_material->set("pc.metalness", 1.0F);
+						} else {
+							Log::error("Mesh", "Could not load texture: {0}", str);
+						}
+						break;
+					}
+				}
+			}
+
+			fallback = !has_metalness_texture;
+			if (fallback) {
+				submesh_material->set("metalness_map", white_texture);
+				submesh_material->set("pc.metalness", metalness);
+			}
+		}
 	}
 
 } // namespace Vulkan

@@ -2,6 +2,8 @@
 
 #include <spirv_cross/spirv_cross.hpp>
 
+#include <magic_enum.hpp>
+
 #include "core/Ensure.hpp"
 #include "vulkan/ShaderReflectionData.hpp"
 
@@ -51,7 +53,8 @@ namespace {
 			}
 			break;
 		default: {
-			ensure(false, "Unknown type!");
+			Log::error("ShaderReflectionData", "Unknown type for {}", magic_enum::enum_name(type.basetype));
+			ensure(false);
 			return Reflection::ShaderUniformType::None;
 		}
 		}
@@ -65,10 +68,10 @@ namespace {
 
 auto reflect_code(VkShaderStageFlagBits shader_stage, const std::vector<std::uint32_t>& spirv, ReflectionData& output) -> void
 {
-	const spirv_cross::Compiler compiler(spirv);
+	spirv_cross::Compiler compiler(spirv);
 	auto resources = compiler.get_shader_resources();
 
-	for (const auto& resource : resources.stage_inputs) {
+	/*for (const auto& resource : resources.stage_inputs) {
 		uint32_t location = compiler.get_decoration(resource.id, spv::DecorationLocation);
 		const auto& type = compiler.get_type(resource.type_id);
 		const std::string& name = compiler.get_name(resource.id);
@@ -90,7 +93,7 @@ auto reflect_code(VkShaderStageFlagBits shader_stage, const std::vector<std::uin
 			name,
 			spir_type_to_shader_uniform_type(type),
 		});
-	}
+	}*/
 
 	for (const auto& resource : resources.uniform_buffers) {
 		// if (auto active_buffers = compiler.get_active_buffer_ranges(resource.id); active_buffers.empty()) {

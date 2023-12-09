@@ -32,6 +32,29 @@
 			"name": "Debug Benchmark",
 			"program": "${workspaceFolder}/build/Benchmarks/RelWithDebInfo/DisarrayBenchmarks.exe",
 			"cwd": "${workspaceFolder}/App",
+		},
+		{
+			"type": "gdb",
+			"request": "launch",
+			"name": "Debug (gdb)",
+			"target": "${workspaceFolder}/build/App/Debug/App.exe",
+			"arguments": "--wd ${workspaceFolder}/App",
+			"cwd": "${workspaceFolder}",
+		},
+		{
+			"type": "gdb",
+			"request": "launch",
+			"name": "Debug Clang (gdb)",
+			"target": "${workspaceFolder}/build-clang/App/Debug/App.exe",
+			"arguments": "--wd ${workspaceFolder}/App",
+			"cwd": "${workspaceFolder}",
+		},
+		{
+			"type": "gdb",
+			"request": "launch",
+			"name": "Debug Benchmark (gdb)",
+			"target": "${workspaceFolder}/build/Benchmarks/RelWithDebInfo/DisarrayBenchmarks.exe",
+			"cwd": "${workspaceFolder}/App",
 		}
 	]
 }

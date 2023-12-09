@@ -56,17 +56,17 @@ namespace Reflection {
 
 	struct ShaderUniformBuffer {
 		std::string name;
-		std::uint32_t index;
-		std::uint32_t binding_point;
-		std::uint32_t size;
-		std::vector<ShaderUniform> uniforms;
+		std::uint32_t index { 0 };
+		std::uint32_t binding_point { 0 };
+		std::uint32_t size { 0 };
+		std::vector<ShaderUniform> uniforms {};
 	};
 
 	struct ShaderStorageBuffer {
 		std::string name;
-		std::uint32_t index;
-		std::uint32_t binding_point;
-		std::uint32_t size;
+		std::uint32_t index { 0 };
+		std::uint32_t binding_point { 0 };
+		std::uint32_t size { 0 };
 		// std::vector<ShaderUniform> Uniforms;
 	};
 
@@ -77,7 +77,7 @@ namespace Reflection {
 	};
 
 	struct UniformBuffer {
-		VkDescriptorBufferInfo descriptor;
+		VkDescriptorBufferInfo descriptor {};
 		std::uint32_t size { 0 };
 		std::uint32_t binding_point { 0 };
 		std::string name;
@@ -86,7 +86,7 @@ namespace Reflection {
 
 	struct StorageBuffer {
 		VmaAllocation allocation = nullptr;
-		VkDescriptorBufferInfo descriptor;
+		VkDescriptorBufferInfo descriptor {};
 		std::uint32_t size { 0 };
 		std::uint32_t binding_point { 0 };
 		std::string name;
@@ -108,18 +108,19 @@ namespace Reflection {
 	};
 
 	struct ShaderDescriptorSet {
-		std::unordered_map<std::uint32_t, UniformBuffer> uniform_buffers;
-		std::unordered_map<std::uint32_t, StorageBuffer> storage_buffers;
-		std::unordered_map<std::uint32_t, ImageSampler> sampled_images;
-		std::unordered_map<std::uint32_t, ImageSampler> storage_images;
-		std::unordered_map<std::uint32_t, ImageSampler> separate_textures;
-		std::unordered_map<std::uint32_t, ImageSampler> separate_samplers;
+		std::unordered_map<std::uint32_t, UniformBuffer> uniform_buffers {};
+		std::unordered_map<std::uint32_t, StorageBuffer> storage_buffers {};
+		std::unordered_map<std::uint32_t, ImageSampler> sampled_images {};
+		std::unordered_map<std::uint32_t, ImageSampler> storage_images {};
+		std::unordered_map<std::uint32_t, ImageSampler> separate_textures {};
+		std::unordered_map<std::uint32_t, ImageSampler> separate_samplers {};
 
-		std::unordered_map<std::string, VkWriteDescriptorSet> write_descriptor_sets;
+		std::unordered_map<std::string, VkWriteDescriptorSet> write_descriptor_sets {};
 	};
 
-	class ShaderResourceDeclaration {
+	class ShaderResourceDeclaration final {
 	public:
+		~ShaderResourceDeclaration() = default;
 		ShaderResourceDeclaration() = default;
 		ShaderResourceDeclaration(std::string input_name, std::uint32_t reg, std::uint32_t input_count)
 			: name(std::move(input_name))
@@ -127,11 +128,10 @@ namespace Reflection {
 			, count(input_count)
 		{
 		}
-		~ShaderResourceDeclaration() = default;
 
-		[[nodiscard]] virtual auto get_name() const -> const std::string& { return name; }
-		[[nodiscard]] virtual auto get_register() const -> std::uint32_t { return resource_register; }
-		[[nodiscard]] virtual auto get_count() const -> std::uint32_t { return count; }
+		[[nodiscard]] auto get_name() const -> const std::string& { return name; }
+		[[nodiscard]] auto get_register() const -> std::uint32_t { return resource_register; }
+		[[nodiscard]] auto get_count() const -> std::uint32_t { return count; }
 
 	private:
 		std::string name;
@@ -145,7 +145,7 @@ namespace Reflection {
 	};
 
 	struct ShaderInOut {
-		std::uint32_t location;
+		std::uint32_t location { 0 };
 		std::string name;
 		ShaderUniformType type;
 	};

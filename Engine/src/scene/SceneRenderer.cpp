@@ -370,8 +370,14 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.vertex_shader_key = "static_mesh.vert",
 		.fragment_shader_key = "static_mesh.frag",
 		.framebuffer = geometry_framebuffer,
-		.layout = { { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float4, "colour" },
-			{ ElementType::Float3, "normals" }, { ElementType::Float3, "tangents" }, { ElementType::Float3, "bitangents" } },
+		.layout = {
+			{ ElementType::Float3, "position", },
+			{ ElementType::Float2, "uvs", },
+			{ ElementType::Float4, "colour", },
+			{ ElementType::Float3, "normals", },
+			{ ElementType::Float3, "tangents", },
+			{ ElementType::Float3, "bitangents", },
+		},
 		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 		.extent = renderer_extent,
 		.polygon_mode = PolygonMode::Line,
@@ -425,6 +431,14 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.pipeline_key = "BasicCombined",
 		.single_shader = shader,
 		.framebuffer = get_framebuffer<SceneFramebuffer::Geometry>(),
+		.layout = {
+			{ ElementType::Float3, "position", },
+			{ ElementType::Float2, "uvs", },
+			{ ElementType::Float4, "colour", },
+			{ ElementType::Float3, "normals", },
+			{ ElementType::Float3, "tangents", },
+			{ ElementType::Float3, "bitangents", },
+		},
 		.extent = renderer_extent,
 	});
 
