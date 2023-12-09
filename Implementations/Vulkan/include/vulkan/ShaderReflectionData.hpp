@@ -9,6 +9,7 @@
 #include "core/Collections.hpp"
 
 namespace Disarray::Vulkan {
+
 namespace Reflection {
 
 	struct Uniform {

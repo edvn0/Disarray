@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 
+#include "assimp/Importer.hpp"
 #include "core/Ensure.hpp"
 #include "core/Log.hpp"
 #include "core/filesystem/AssetLocations.hpp"
@@ -16,9 +17,62 @@
 
 namespace Disarray {
 
-template <> auto PimplDeleter<Assimp::Importer>::operator()(Assimp::Importer* ptr) noexcept -> void { delete ptr; }
+struct ImporterPimpl {
+	Scope<Assimp::Importer> importer { nullptr };
+	std::unordered_map<aiNode*, std::vector<std::uint32_t>> node_map;
+	const aiScene* scene;
+};
+template <> auto PimplDeleter<ImporterPimpl>::operator()(ImporterPimpl* ptr) noexcept -> void { delete ptr; }
 
 namespace Vulkan {
+
+	namespace {
+		constexpr auto to_mat4_from_assimp(const aiMatrix4x4& matrix) -> glm::mat4
+		{
+			glm::mat4 result;
+			result[0][0] = matrix.a1;
+			result[1][0] = matrix.a2;
+			result[2][0] = matrix.a3;
+			result[3][0] = matrix.a4;
+			result[0][1] = matrix.b1;
+			result[1][1] = matrix.b2;
+			result[2][1] = matrix.b3;
+			result[3][1] = matrix.b4;
+			result[0][2] = matrix.c1;
+			result[1][2] = matrix.c2;
+			result[2][2] = matrix.c3;
+			result[3][2] = matrix.c4;
+			result[0][3] = matrix.d1;
+			result[1][3] = matrix.d2;
+			result[2][3] = matrix.d3;
+			result[3][3] = matrix.d4;
+			return result;
+		}
+	} // namespace
+
+	auto traverse_nodes(
+		auto& submeshes, auto& importer, aiNode* node, const glm::mat4& parent_transform = glm::mat4 { 1.0F }, std::uint32_t level = 0) -> void
+	{
+		if (node == nullptr) {
+			return;
+		}
+
+		const glm::mat4 local_transform = to_mat4_from_assimp(node->mTransformation);
+		const glm::mat4 transform = parent_transform * local_transform;
+		importer->node_map[node].resize(node->mNumMeshes);
+		for (std::uint32_t i = 0; i < node->mNumMeshes; i++) {
+			const std::uint32_t mesh = node->mMeshes[i];
+			auto& submesh = submeshes[mesh];
+			submesh.node_name = node->mName.C_Str();
+			submesh.transform = transform;
+			submesh.local_transform = local_transform;
+			importer->node_map[node][i] = mesh;
+		}
+
+		for (std::uint32_t i = 0; i < node->mNumChildren; i++) {
+			traverse_nodes(submeshes, importer, node->mChildren[i], transform, level + 1);
+		}
+	}
 
 	static constexpr uint32_t mesh_import_flags = aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_SortByPType | aiProcess_GenNormals
 		| aiProcess_GenUVCoords |
@@ -30,27 +84,28 @@ namespace Vulkan {
 		: device(dev)
 		, file_path(path)
 	{
-		importer = make_scope<Assimp::Importer, PimplDeleter<Assimp::Importer>>();
-		importer->SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
+		importer = make_scope<ImporterPimpl, PimplDeleter<ImporterPimpl>>();
+		importer->importer = make_scope<Assimp::Importer>();
+		importer->importer->SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
 
-		const aiScene* loaded_scene = importer->ReadFile(file_path.string(), mesh_import_flags);
+		const aiScene* loaded_scene = importer->importer->ReadFile(file_path.string(), mesh_import_flags);
 		if (loaded_scene == nullptr) {
 			Log::error("Mesh", "Failed to load mesh file: {0}", file_path.string());
 			return;
 		}
 
-		scene = loaded_scene;
+		importer->scene = loaded_scene;
 
-		if (!scene->HasMeshes()) {
+		if (!importer->scene->HasMeshes()) {
 			return;
 		}
 
 		uint32_t vertex_count = 0;
 		uint32_t index_count = 0;
 
-		submeshes.reserve(scene->mNumMeshes);
-		for (std::uint32_t submesh_index = 0; submesh_index < scene->mNumMeshes; submesh_index++) {
-			aiMesh* mesh = scene->mMeshes[submesh_index];
+		submeshes.reserve(importer->scene->mNumMeshes);
+		for (std::uint32_t submesh_index = 0; submesh_index < importer->scene->mNumMeshes; submesh_index++) {
+			aiMesh* mesh = importer->scene->mMeshes[submesh_index];
 
 			StaticSubmesh& submesh = submeshes.emplace_back();
 			submesh.base_vertex = vertex_count;
@@ -94,7 +149,7 @@ namespace Vulkan {
 			}
 		}
 
-		traverse_nodes(scene->mRootNode);
+		traverse_nodes(submeshes, importer, importer->scene->mRootNode);
 
 		for (const auto& submesh : submeshes) {
 			const auto& submesh_aabb = submesh.bounding_box;
@@ -106,11 +161,11 @@ namespace Vulkan {
 
 		// Materials
 		const auto& white_texture = Renderer::get_white_texture();
-		if (scene->HasMaterials()) {
-			materials.resize(scene->mNumMaterials);
+		if (importer->scene->HasMaterials()) {
+			materials.resize(importer->scene->mNumMaterials);
 
-			for (std::uint32_t i = 0; i < scene->mNumMaterials; i++) {
-				auto* ai_material = scene->mMaterials[i];
+			for (std::uint32_t i = 0; i < importer->scene->mNumMaterials; i++) {
+				auto* ai_material = importer->scene->mMaterials[i];
 				auto ai_material_name = ai_material->GetName();
 				// convert to std::string
 				std::string material_name = ai_material_name.C_Str();
@@ -128,7 +183,6 @@ namespace Vulkan {
 				submesh_material->set("specular_map", white_texture);
 
 				aiString ai_tex_path;
-				std::uint32_t texture_count = ai_material->GetTextureCount(aiTextureType_DIFFUSE);
 				glm::vec3 albedo_colour(0.8F);
 				float emission = 0.0F;
 				if (aiColor3D ai_colour; ai_material->Get(AI_MATKEY_COLOR_DIFFUSE, ai_colour) == AI_SUCCESS) {
@@ -157,14 +211,14 @@ namespace Vulkan {
 				bool fallback = !has_albedo_map;
 				if (has_albedo_map) {
 					Ref<Disarray::Texture> texture;
-					if (const auto* ai_texture_embedded = scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
+					if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
 						DataBuffer buffer { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 4 };
 						texture = Texture::construct(device,
 							{
 								.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
 								.format = ImageFormat::RGB,
 								.data_buffer = buffer,
-								.debug_name = ai_tex_path.C_Str(),
+								.debug_name = std::filesystem::path { ai_tex_path.C_Str() }.filename().string(),
 							});
 					} else {
 
@@ -196,7 +250,7 @@ namespace Vulkan {
 				fallback = !has_normal_map;
 				if (has_normal_map) {
 					Ref<Disarray::Texture> texture;
-					if (const auto* ai_texture_embedded = scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
+					if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
 						texture = Texture::construct(device,
 							{
 								.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
@@ -235,7 +289,7 @@ namespace Vulkan {
 				fallback = !has_roughness_map;
 				if (has_roughness_map) {
 					Ref<Disarray::Texture> texture;
-					if (const auto* ai_texture_embedded = scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
+					if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
 						texture = Texture::construct(device,
 							{
 								.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
@@ -277,7 +331,7 @@ namespace Vulkan {
 
 						if (std::string key = prop->mKey.data; key == "$raw.ReflectionFactor|file") {
 							Ref<Disarray::Texture> texture;
-							if (const auto* ai_texture_embedded = scene->GetEmbeddedTexture(str.data())) {
+							if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(str.data())) {
 								texture = Texture::construct(device,
 									{
 										.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
@@ -354,53 +408,6 @@ namespace Vulkan {
 				.size = indices.size() * sizeof(Index),
 				.always_mapped = false,
 			});
-	}
-
-	namespace {
-		constexpr auto to_mat4_from_assimp(const aiMatrix4x4& matrix) -> glm::mat4
-		{
-			glm::mat4 result;
-			result[0][0] = matrix.a1;
-			result[1][0] = matrix.a2;
-			result[2][0] = matrix.a3;
-			result[3][0] = matrix.a4;
-			result[0][1] = matrix.b1;
-			result[1][1] = matrix.b2;
-			result[2][1] = matrix.b3;
-			result[3][1] = matrix.b4;
-			result[0][2] = matrix.c1;
-			result[1][2] = matrix.c2;
-			result[2][2] = matrix.c3;
-			result[3][2] = matrix.c4;
-			result[0][3] = matrix.d1;
-			result[1][3] = matrix.d2;
-			result[2][3] = matrix.d3;
-			result[3][3] = matrix.d4;
-			return result;
-		}
-	} // namespace
-
-	auto StaticMesh::traverse_nodes(aiNode* node, const glm::mat4& parent_transform, std::uint32_t level) -> void
-	{
-		if (node == nullptr) {
-			return;
-		}
-
-		const glm::mat4 local_transform = to_mat4_from_assimp(node->mTransformation);
-		const glm::mat4 transform = parent_transform * local_transform;
-		node_map[node].resize(node->mNumMeshes);
-		for (std::uint32_t i = 0; i < node->mNumMeshes; i++) {
-			const std::uint32_t mesh = node->mMeshes[i];
-			auto& submesh = submeshes[mesh];
-			submesh.node_name = node->mName.C_Str();
-			submesh.transform = transform;
-			submesh.local_transform = local_transform;
-			node_map[node][i] = mesh;
-		}
-
-		for (std::uint32_t i = 0; i < node->mNumChildren; i++) {
-			traverse_nodes(node->mChildren[i], transform, level + 1);
-		}
 	}
 
 } // namespace Vulkan

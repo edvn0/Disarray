@@ -29,7 +29,7 @@
     ],
     "cmake.configureOnEdit": false,
     "cmake.configureOnOpen": false,
-    "editor.formatOnSave": true,
+    "editor.formatOnSave": false,
     "editor.formatOnType": false,
     "editor.detectIndentation": true,
     "editor.tabSize": 4,
