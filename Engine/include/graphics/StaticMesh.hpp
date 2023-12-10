@@ -45,6 +45,7 @@ public:
 
 	[[nodiscard]] virtual auto get_submeshes() const -> const std::vector<StaticSubmesh>& = 0;
 	[[nodiscard]] virtual auto get_materials() const -> const Collections::RefVector<Disarray::MeshMaterial>& = 0;
+	[[nodiscard]] virtual auto get_materials() -> Collections::RefVector<Disarray::MeshMaterial>& = 0;
 
 	virtual auto get_aabb() const -> const AABB& = 0;
 

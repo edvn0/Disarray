@@ -1,7 +1,5 @@
 #pragma stage vertex
 
-#include "PC.glsl"
-
 layout(push_constant) uniform PushConstantBlock
 {
     mat4 object_transform;
@@ -44,8 +42,6 @@ void main() {
 
 #pragma stage fragment
 
-#include "PC.glsl"
-
 layout(push_constant) uniform PushConstantBlock
 {
     mat4 object_transform;
@@ -73,5 +69,6 @@ layout(binding = 20) uniform sampler2D metalness_map;
 layout(binding = 21) uniform sampler2D roughness_map;
 
 void main() {
-    out_colour = frag_colour;
+    vec3 albedo = texture(albedo_map, frag_uv).rgb * pc.albedo_colour;
+    out_colour = vec4(albedo, 1.0f);
 }

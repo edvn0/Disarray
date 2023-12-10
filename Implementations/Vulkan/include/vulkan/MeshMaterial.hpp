@@ -8,6 +8,7 @@
 #include <assimp/scene.h>
 
 #include "ShaderReflectionData.hpp"
+#include "SingleShader.hpp"
 #include "core/Ensure.hpp"
 #include "graphics/MeshMaterial.hpp"
 #include "graphics/Swapchain.hpp"
@@ -149,6 +150,7 @@ private:
 	std::vector<std::vector<VkWriteDescriptorSet>> write_descriptors;
 	std::vector<bool> dirty_descriptor_sets;
 
+	Ref<Vulkan::SingleShader> shader { nullptr };
 	const Disarray::Device& device;
 };
 } // namespace Disarray::Vulkan

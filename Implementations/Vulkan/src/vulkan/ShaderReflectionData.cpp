@@ -1,6 +1,6 @@
 #include "DisarrayPCH.hpp"
 
-#include <spirv_cross/spirv_cross.hpp>
+#include <spirv_cross.hpp>
 
 #include <magic_enum.hpp>
 
@@ -71,7 +71,7 @@ auto reflect_code(VkShaderStageFlagBits shader_stage, const std::vector<std::uin
 	spirv_cross::Compiler compiler(spirv);
 	auto resources = compiler.get_shader_resources();
 
-	/*for (const auto& resource : resources.stage_inputs) {
+	for (const auto& resource : resources.stage_inputs) {
 		uint32_t location = compiler.get_decoration(resource.id, spv::DecorationLocation);
 		const auto& type = compiler.get_type(resource.type_id);
 		const std::string& name = compiler.get_name(resource.id);
@@ -93,12 +93,12 @@ auto reflect_code(VkShaderStageFlagBits shader_stage, const std::vector<std::uin
 			name,
 			spir_type_to_shader_uniform_type(type),
 		});
-	}*/
+	}
 
 	for (const auto& resource : resources.uniform_buffers) {
-		// if (auto active_buffers = compiler.get_active_buffer_ranges(resource.id); active_buffers.empty()) {
-		//	continue;
-		// }
+		if (auto active_buffers = compiler.get_active_buffer_ranges(resource.id); active_buffers.empty()) {
+			continue;
+		}
 
 		const auto& name = resource.name;
 		const auto& buffer_type = compiler.get_type(resource.base_type_id);
@@ -127,10 +127,9 @@ auto reflect_code(VkShaderStageFlagBits shader_stage, const std::vector<std::uin
 	}
 
 	for (const auto& resource : resources.storage_buffers) {
-		/* if (auto active_buffers = compiler.get_active_buffer_ranges(resource.id); active_buffers.empty()) {
+		if (auto active_buffers = compiler.get_active_buffer_ranges(resource.id); active_buffers.empty()) {
 			continue;
 		}
-		*/
 
 		const auto& name = resource.name;
 		const auto& buffer_type = compiler.get_type(resource.base_type_id);
@@ -160,39 +159,36 @@ auto reflect_code(VkShaderStageFlagBits shader_stage, const std::vector<std::uin
 		shader_descriptor_set.storage_buffers[binding] = global_storage_buffers.at(descriptor_set).at(binding);
 	}
 
+	Log::trace("ShaderReflectionData", "Push Constant Buffers:");
 	for (const auto& resource : resources.push_constant_buffers) {
+
 		const auto& buffer_name = resource.name;
-		const auto& buffer_type = compiler.get_type(resource.base_type_id);
-		auto buffer_size = static_cast<std::uint32_t>(compiler.get_declared_struct_size(buffer_type));
-		auto member_count = static_cast<std::uint32_t>(buffer_type.member_types.size());
-		auto buffer_offset = 0U;
-		if (!output.push_constant_ranges.empty()) {
-			buffer_offset = output.push_constant_ranges.back().offset + output.push_constant_ranges.back().size;
-		}
-
-		auto& push_constant_range = output.push_constant_ranges.emplace_back();
-		push_constant_range.shader_stage = shader_stage;
-		push_constant_range.size = buffer_size - buffer_offset;
-		push_constant_range.offset = buffer_offset;
-
-		if (buffer_name.empty()) {
+		if (output.constant_buffers.contains(buffer_name))
 			continue;
-		}
+
+		auto& buffer_type = compiler.get_type(resource.base_type_id);
+		auto buffer_size = static_cast<std::uint32_t>(compiler.get_declared_struct_size(buffer_type));
+		std::uint32_t member_count = static_cast<std::uint32_t>(buffer_type.member_types.size());
+		auto& push_constant_range = output.push_constant_ranges.emplace_back();
+		push_constant_range.shader_stage = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		push_constant_range.size = buffer_size;
+		push_constant_range.offset = 0;
+
+		if (buffer_name.empty())
+			continue;
 
 		auto& buffer = output.constant_buffers[buffer_name];
 		buffer.name = buffer_name;
-		buffer.size = buffer_size - buffer_offset > buffer.size ? buffer_size - buffer_offset : buffer.size;
+		buffer.size = buffer_size;
 
-		for (auto i = 0U; i < member_count; i++) {
-			const auto& type = compiler.get_type(buffer_type.member_types[i]);
-			const auto& member_name = compiler.get_member_name(buffer_type.self, i);
-			auto size = static_cast<std::uint32_t>(compiler.get_declared_struct_member_size(buffer_type, i));
-			const auto member_offset = compiler.type_struct_member_offset(buffer_type, i);
-			const auto offset = member_offset <= 0 ? member_offset - buffer_offset : buffer_offset - member_offset;
+		for (std::uint32_t i = 0; i < member_count; i++) {
+			auto type = compiler.get_type(buffer_type.member_types[i]);
+			const auto& memberName = compiler.get_member_name(buffer_type.self, i);
+			auto size = static_cast<uint32_t>(compiler.get_declared_struct_member_size(buffer_type, i));
+			auto offset = compiler.type_struct_member_offset(buffer_type, i);
 
-			const auto uniform_name = fmt::format("{}.{}", buffer_name, member_name);
-			const auto spirv_type = spir_type_to_shader_uniform_type(type);
-			buffer.uniforms[uniform_name] = Reflection::ShaderUniform(uniform_name, spirv_type, size, offset);
+			std::string uniform_name = fmt::format("{}.{}", buffer_name, memberName);
+			buffer.uniforms[uniform_name] = Reflection::ShaderUniform(uniform_name, spir_type_to_shader_uniform_type(type), size, offset);
 		}
 	}
 

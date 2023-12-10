@@ -62,7 +62,7 @@ public:
 		const std::uint32_t) override;
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&, const glm::vec4&,
 		const glm::mat4&, const std::uint32_t) override;
-	void draw_mesh(Disarray::CommandExecutor&, const Disarray::StaticMesh&, const Disarray::Pipeline&, const glm::vec4&, const glm::mat4&) override;
+	void draw_mesh(Disarray::CommandExecutor&, Ref<Disarray::StaticMesh>&, const Disarray::Pipeline&, const glm::vec4&, const glm::mat4&) override;
 
 	void draw_billboarded_text(std::string_view text, const glm::mat4& transform, float size, const glm::vec4& colour) override;
 	void draw_text(std::string_view text, const glm::uvec2& position, float size, const glm::vec4& colour) override;

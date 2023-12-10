@@ -322,36 +322,43 @@ void Pipeline::construct_layout(const Extent& extent)
 
 	VkPipelineLayoutCreateInfo pipeline_layout_info {};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	std::vector<VkPushConstantRange> result;
 
 	if (props.single_shader != nullptr) {
 		const auto& vulkan_single_shader = cast_to<Vulkan::SingleShader>(*props.single_shader);
 		const auto& layouts = vulkan_single_shader.get_descriptor_set_layouts();
 		pipeline_layout_info.setLayoutCount = static_cast<std::uint32_t>(layouts.size());
 		pipeline_layout_info.pSetLayouts = layouts.data();
+		const auto& push_constant_layout = vulkan_single_shader.get_push_constant_ranges();
+		for (const auto& pc_layout : push_constant_layout) {
+			auto& out = result.emplace_back();
+			out.offset = pc_layout.offset;
+			out.size = pc_layout.size;
+			out.stageFlags = pc_layout.shader_stage;
+		}
 	} else {
 		pipeline_layout_info.setLayoutCount = static_cast<std::uint32_t>(props.descriptor_set_layouts.size());
 		pipeline_layout_info.pSetLayouts = props.descriptor_set_layouts.data();
+		for (const auto& pc_layout : props.push_constant_layout.get_input_ranges()) {
+			auto& out = result.emplace_back();
+			VkShaderStageFlags flags {};
+			if (pc_layout.flags == PushConstantKind::Fragment) {
+				flags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			}
+			if (pc_layout.flags == PushConstantKind::Vertex) {
+				flags = VK_SHADER_STAGE_VERTEX_BIT;
+			}
+			if (pc_layout.flags == PushConstantKind::Both) {
+				flags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+			}
+			out = {
+				.stageFlags = flags,
+				.offset = pc_layout.offset,
+				.size = pc_layout.size,
+			};
+		}
 	}
 
-	std::vector<VkPushConstantRange> result;
-	for (const auto& pc_layout : props.push_constant_layout.get_input_ranges()) {
-		auto& out = result.emplace_back();
-		VkShaderStageFlags flags {};
-		if (pc_layout.flags == PushConstantKind::Fragment) {
-			flags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		}
-		if (pc_layout.flags == PushConstantKind::Vertex) {
-			flags = VK_SHADER_STAGE_VERTEX_BIT;
-		}
-		if (pc_layout.flags == PushConstantKind::Both) {
-			flags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-		}
-		out = {
-			.stageFlags = flags,
-			.offset = pc_layout.offset,
-			.size = pc_layout.size,
-		};
-	}
 	pipeline_layout_info.pushConstantRangeCount = static_cast<std::uint32_t>(result.size()); // Optional
 	pipeline_layout_info.pPushConstantRanges = result.data(); // Optional
 
@@ -367,8 +374,8 @@ void Pipeline::construct_layout(const Extent& extent)
 		const std::array stages_data { stages.at(ShaderType::Vertex), stages.at(ShaderType::Fragment) };
 		stage_data = { stages_data[0], stages_data[1] };
 	} else {
-		const auto&& stages = retrieve_shader_stages(props.vertex_shader, props.fragment_shader);
-		stage_data = { stages.first, stages.second };
+		const auto&& [fst, snd] = retrieve_shader_stages(props.vertex_shader, props.fragment_shader);
+		stage_data = { fst, snd };
 	}
 
 	std::vector<VkSpecializationMapEntry> specialization_map_entries {};

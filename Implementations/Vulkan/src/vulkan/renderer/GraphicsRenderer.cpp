@@ -207,21 +207,26 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(indices.size()), 1, 0, 0, 0);
 }
 
-void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::StaticMesh& static_mesh, const Disarray::Pipeline& pipeline,
+void Renderer::draw_mesh(Disarray::CommandExecutor& executor, Ref<Disarray::StaticMesh>& static_mesh, const Disarray::Pipeline& pipeline,
 	const glm::vec4&, const glm::mat4&)
 {
 	bind_pipeline(executor, pipeline);
 
-	const auto& vertex_buffer = static_mesh.get_vertices();
+	const auto& vertex_buffer = static_mesh->get_vertices();
 	const std::array arr { supply_cast<Vulkan::VertexBuffer>(vertex_buffer) };
-	const auto& index_buffer = static_mesh.get_indices();
+	const auto& index_buffer = static_mesh->get_indices();
 	constexpr std::array<VkDeviceSize, 1> offsets = { 0 };
 
 	vkCmdBindVertexBuffers(supply_cast<Vulkan::CommandExecutor>(executor), 0, 1, arr.data(), offsets.data());
 	vkCmdBindIndexBuffer(supply_cast<Vulkan::CommandExecutor>(executor), supply_cast<Vulkan::IndexBuffer>(index_buffer), 0, VK_INDEX_TYPE_UINT32);
 
-	for (const auto& static_submesh : static_mesh.get_submeshes()) {
-		const auto& material = static_mesh.get_materials().at(static_submesh.material_index);
+	for (auto& material : static_mesh->get_materials()) {
+		auto& vk_material = cast_to<Vulkan::MeshMaterial>(*material);
+		vk_material.update_for_rendering(get_graphics_resource().get_current_frame_index(), {});
+	}
+
+	for (const auto& static_submesh : static_mesh->get_submeshes()) {
+		const auto& material = static_mesh->get_materials().at(static_submesh.material_index);
 		const auto& descriptor_set = cast_to<Vulkan::MeshMaterial>(*material).get_descriptor_set(get_graphics_resource().get_current_frame_index());
 
 		const std::array desc {
@@ -235,8 +240,8 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::St
 		bind_descriptor_sets(executor, pipeline, span);
 
 		// TODO: Instancing!
-		vkCmdDrawIndexed(supply_cast<Vulkan::CommandExecutor>(executor), static_cast<std::uint32_t>(static_submesh.index_count), 1,
-			static_cast<std::uint32_t>(static_submesh.base_index), static_cast<std::int32_t>(static_submesh.base_vertex), 0);
+		vkCmdDrawIndexed(supply_cast<Vulkan::CommandExecutor>(executor), static_submesh.index_count, 1, static_submesh.base_index,
+			static_cast<std::int32_t>(static_submesh.base_vertex), 0);
 	}
 }
 

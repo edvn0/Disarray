@@ -1,6 +1,7 @@
 #include "vulkan/SingleShader.hpp"
 
 #include <SPIRV/GlslangToSpv.h>
+#include <vulkan/vulkan_core.h>
 
 #include <glslang/Public/ShaderLang.h>
 
@@ -362,12 +363,53 @@ auto SingleShader::recreate_shader(bool should_clean) -> void
 
 SingleShader::~SingleShader() { clean_shader(); }
 
+// Hash combining function
+template <typename T> void hash_combine(std::size_t& seed, const T& value)
+{
+	seed ^= std::hash<T> {}(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+// Hash function for vector of any type
+template <typename T> struct VectorHash {
+	std::size_t operator()(const std::vector<T>& vec) const
+	{
+		std::size_t hash = 0;
+		for (const auto& elem : vec) {
+			hash_combine(hash, elem);
+		}
+		return hash;
+	}
+};
+
+// Hash function for unordered_map of ShaderType to vector
+template <typename T> struct UnorderedMapHash {
+	std::size_t operator()(const std::unordered_map<Disarray::ShaderType, std::vector<T>>& map) const
+	{
+		std::size_t hash = 0;
+		for (const auto& pair : map) {
+			hash_combine(hash, static_cast<std::size_t>(pair.first));
+			hash_combine(hash, VectorHash<T> {}(pair.second));
+		}
+		return hash;
+	}
+};
+
 auto reflect_on_stages(const std::unordered_map<Disarray::ShaderType, std::vector<std::uint32_t>>& spirv_codes) -> ReflectionData
 {
 	ReflectionData output {};
+
+	const auto hash = UnorderedMapHash<std::uint32_t> {}(spirv_codes);
+	static std::unordered_map<std::size_t, ReflectionData> cache {};
+	if (cache.contains(hash)) {
+		return cache.at(hash);
+	}
+
 	for (auto&& [type, stage_info] : spirv_codes) {
 		reflect_code(to_stage(type), stage_info, output);
 	}
+
+	cache.emplace(hash, output);
+
 	return output;
 }
 
@@ -389,9 +431,11 @@ auto SingleShader::create_vulkan_objects() -> void
 		stage_infos.try_emplace(type,
 			VkPipelineShaderStageCreateInfo {
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+				.pNext = nullptr,
 				.stage = to_vulkan_shader_type(type),
 				.module = shader_modules.at(type),
 				.pName = "main",
+				.pSpecializationInfo = nullptr,
 			});
 	}
 

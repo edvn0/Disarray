@@ -102,9 +102,9 @@ namespace Reflection {
 	};
 
 	struct PushConstantRange {
-		VkShaderStageFlagBits shader_stage = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
 		std::uint32_t offset { 0 };
 		std::uint32_t size { 0 };
+		VkShaderStageFlags shader_stage {};
 	};
 
 	struct ShaderDescriptorSet {

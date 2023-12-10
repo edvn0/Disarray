@@ -30,11 +30,14 @@ public:
 	auto get_index_vector() const -> const auto& { return indices; }
 
 	auto get_materials() const -> const Collections::RefVector<Disarray::MeshMaterial>& override { return materials; }
+	auto get_materials() -> Collections::RefVector<Disarray::MeshMaterial>& override { return materials; }
 	auto get_path() const -> const auto& { return file_path; }
 
 	auto get_aabb() const -> const AABB& override { return bounding_box; }
 
 private:
+	[[nodiscard]] auto read_texture_from_file_path(const std::string& texture_path) const -> Ref<Disarray::Texture>;
+
 	const Disarray::Device& device;
 	std::vector<StaticSubmesh> submeshes {};
 

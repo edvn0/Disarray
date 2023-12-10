@@ -13,6 +13,7 @@ MeshMaterial::MeshMaterial(const Disarray::Device& dev, MeshMaterialProperties p
 	, device(dev)
 	, dirty_descriptor_sets(props.swapchain_image_count, false)
 	, write_descriptors(props.swapchain_image_count)
+	, shader(props.shader.as<Vulkan::SingleShader>())
 {
 	recreate(false, {});
 }
@@ -31,7 +32,7 @@ void MeshMaterial::set_vulkan_descriptor(const std::string& name, const Ref<Vulk
 	}
 	textures[binding] = texture;
 
-	const auto* wds = props.shader.as<Vulkan::SingleShader>()->get_descriptor_set(name);
+	const auto* wds = shader->get_descriptor_set(name);
 	resident_descriptors[binding]
 		= std::make_shared<PendingDescriptor>(PendingDescriptor { PendingDescriptorType::Texture2D, *wds, {}, texture, nullptr });
 	pending_descriptors.push_back(resident_descriptors.at(binding));
@@ -55,7 +56,7 @@ auto MeshMaterial::set_vulkan_descriptor(const std::string& name, const Ref<Vulk
 	}
 	textures[binding] = texture;
 
-	const auto* wds = props.shader.as<Vulkan::SingleShader>()->get_descriptor_set(name);
+	const auto* wds = shader->get_descriptor_set(name);
 	resident_descriptors[binding]
 		= std::make_shared<PendingDescriptor>(PendingDescriptor { PendingDescriptorType::TextureCube, *wds, {}, texture, nullptr });
 	pending_descriptors.push_back(resident_descriptors.at(binding));
@@ -84,7 +85,7 @@ void MeshMaterial::set_vulkan_descriptor(const std::string& name, const Ref<Vulk
 
 	texture_arrays[binding][array_index] = texture;
 
-	const auto* wds = props.shader.as<Vulkan::SingleShader>()->get_descriptor_set(name);
+	const auto* wds = shader->get_descriptor_set(name);
 	if (!resident_descriptor_arrays.contains(binding)) {
 		resident_descriptor_arrays[binding]
 			= std::make_shared<PendingDescriptorArray>(PendingDescriptorArray { PendingDescriptorType::Texture2D, *wds, {}, {}, {} });
@@ -114,7 +115,7 @@ void MeshMaterial::set_vulkan_descriptor(const std::string& name, const Ref<Vulk
 	}
 	images[resource->get_register()] = image;
 
-	const auto* wds = props.shader.as<Vulkan::SingleShader>()->get_descriptor_set(name);
+	const auto* wds = shader->get_descriptor_set(name);
 	resident_descriptors[binding]
 		= std::make_shared<PendingDescriptor>(PendingDescriptor { PendingDescriptorType::Image2D, *wds, {}, nullptr, image });
 	pending_descriptors.push_back(resident_descriptors.at(binding));
@@ -157,7 +158,7 @@ auto MeshMaterial::clean_material() -> void { }
 
 auto MeshMaterial::allocate_buffer_storage() -> void
 {
-	if (const auto& shader_buffers = cast_to<Vulkan::SingleShader>(*props.shader).get_shader_buffers(); !shader_buffers.empty()) {
+	if (const auto& shader_buffers = shader->get_shader_buffers(); !shader_buffers.empty()) {
 		std::uint32_t size = 0;
 		for (auto&& [id, buffer_size, buffer] : std::ranges::views::values(shader_buffers)) {
 			size += buffer_size;
@@ -179,7 +180,6 @@ auto MeshMaterial::recreate_material(bool should_clean, const Extent&) -> void
 
 auto MeshMaterial::invalidate() -> void
 {
-	auto shader = props.shader.as<Vulkan::SingleShader>();
 	if (!shader->has_descriptor_set(0)) {
 		return;
 	}
@@ -193,7 +193,7 @@ auto MeshMaterial::invalidate() -> void
 
 auto MeshMaterial::find_uniform_declaration(const std::string& name) -> const Reflection::ShaderUniform*
 {
-	const auto& shader_buffers = cast_to<Vulkan::SingleShader>(*props.shader).get_shader_buffers();
+	const auto& shader_buffers = shader->get_shader_buffers();
 	if (shader_buffers.empty()) {
 		return nullptr;
 	}
@@ -208,7 +208,7 @@ auto MeshMaterial::find_uniform_declaration(const std::string& name) -> const Re
 
 auto MeshMaterial::find_resource_declaration(const std::string& name) -> const Reflection::ShaderResourceDeclaration*
 {
-	if (const auto& resources = cast_to<Vulkan::SingleShader>(*props.shader).get_resources(); resources.contains(name)) {
+	if (const auto& resources = shader->get_resources(); resources.contains(name)) {
 		return &resources.at(name);
 	}
 
@@ -277,7 +277,6 @@ auto MeshMaterial::update_for_rendering(FrameIndex frame_index, const std::vecto
 		write_descriptors[frame_index.value].push_back(pd->write_set);
 	}
 
-	auto shader = props.shader.as<Vulkan::SingleShader>();
 	const auto descriptor_set = shader->allocate_descriptor_set();
 	descriptor_sets[frame_index] = descriptor_set;
 	for (auto& write_descriptor : write_descriptors[frame_index.value]) {

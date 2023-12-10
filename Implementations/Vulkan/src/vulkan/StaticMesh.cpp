@@ -6,6 +6,7 @@
 #include "assimp/Importer.hpp"
 #include "core/Ensure.hpp"
 #include "core/Log.hpp"
+#include "core/String.hpp"
 #include "core/filesystem/AssetLocations.hpp"
 #include "graphics/MeshMaterial.hpp"
 #include "graphics/ModelVertex.hpp"
@@ -14,6 +15,7 @@
 #include "graphics/model_loaders/AssimpModelLoader.hpp"
 #include "vulkan/MeshMaterial.hpp"
 #include "vulkan/StaticMesh.hpp"
+#include "vulkan/exceptions/VulkanExceptions.hpp"
 
 namespace Disarray {
 
@@ -265,16 +267,7 @@ namespace Vulkan {
 							.debug_name = std::filesystem::path { ai_tex_path.C_Str() }.filename().string(),
 						});
 				} else {
-
-					std::filesystem::path new_path = file_path;
-					auto parent_path = new_path.parent_path();
-					parent_path /= std::string(ai_tex_path.data);
-					std::string texture_path = parent_path.string();
-					texture = Texture::construct(device,
-						{
-							.path = texture_path,
-							.debug_name = ai_tex_path.C_Str(),
-						});
+					texture = read_texture_from_file_path(ai_tex_path.C_Str());
 				}
 
 				if (texture) {
@@ -300,19 +293,10 @@ namespace Vulkan {
 							.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
 							.format = ImageFormat::RGB,
 							.data_buffer = { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 3 },
-							.debug_name = ai_tex_path.C_Str(),
+							.debug_name = std::filesystem::path { ai_tex_path.C_Str() }.filename().string(),
 						});
 				} else {
-
-					std::filesystem::path new_path = file_path;
-					auto parent_path = new_path.parent_path();
-					parent_path /= std::string(ai_tex_path.data);
-					std::string texture_path = parent_path.string();
-					texture = Texture::construct(device,
-						{
-							.path = texture_path,
-							.debug_name = ai_tex_path.C_Str(),
-						});
+					texture = read_texture_from_file_path(ai_tex_path.C_Str());
 				}
 
 				if (texture) {
@@ -339,19 +323,10 @@ namespace Vulkan {
 							.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
 							.format = ImageFormat::RGB,
 							.data_buffer = { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 3 },
-							.debug_name = ai_tex_path.C_Str(),
+							.debug_name = std::filesystem::path { ai_tex_path.C_Str() }.filename().string(),
 						});
 				} else {
-
-					std::filesystem::path new_path = file_path;
-					auto parent_path = new_path.parent_path();
-					parent_path /= std::string(ai_tex_path.data);
-					std::string texture_path = parent_path.string();
-					texture = Texture::construct(device,
-						{
-							.path = texture_path,
-							.debug_name = ai_tex_path.C_Str(),
-						});
+					texture = read_texture_from_file_path(ai_tex_path.C_Str());
 				}
 
 				if (texture) {
@@ -370,7 +345,7 @@ namespace Vulkan {
 			bool has_metalness_texture = false;
 			for (std::uint32_t property_index = 0; property_index < ai_material->mNumProperties; property_index++) {
 				if (auto* prop = ai_material->mProperties[property_index]; prop->mType == aiPTI_String) {
-					uint32_t str_length = *reinterpret_cast<std::uint32_t*>(prop->mData);
+					auto str_length = *bit_cast<std::uint32_t*>(prop->mData);
 					std::string str(prop->mData + 4, str_length);
 
 					if (std::string key = prop->mKey.data; key == "$raw.ReflectionFactor|file") {
@@ -384,15 +359,7 @@ namespace Vulkan {
 									.debug_name = str,
 								});
 						} else {
-							std::filesystem::path new_path = file_path;
-							auto parent_path = new_path.parent_path();
-							parent_path /= std::string(ai_tex_path.data);
-							std::string texture_path = parent_path.string();
-							texture = Texture::construct(device,
-								{
-									.path = texture_path,
-									.debug_name = ai_tex_path.C_Str(),
-								});
+							texture = read_texture_from_file_path(str);
 						}
 
 						if (texture) {
@@ -412,6 +379,23 @@ namespace Vulkan {
 				submesh_material->set("metalness_map", white_texture);
 				submesh_material->set("pc.metalness", metalness);
 			}
+		}
+	}
+
+	auto StaticMesh::read_texture_from_file_path(const std::string& texture_path) const -> Ref<Disarray::Texture>
+	{
+		using namespace std::filesystem;
+		const auto path_to_texture = FS::texture(path { texture_path }.filename());
+
+		try {
+			return Texture::construct(device,
+				{
+					.path = path_to_texture,
+					.debug_name = path { path_to_texture }.filename().string(),
+				});
+		} catch (const ResultException& e) {
+			Log::error("Mesh", "Could not load texture: {0}. Exception: {1}", path_to_texture, e.what());
+			return nullptr;
 		}
 	}
 

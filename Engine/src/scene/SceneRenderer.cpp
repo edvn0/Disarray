@@ -637,7 +637,7 @@ auto SceneRenderer::begin_pass(const Disarray::Framebuffer& framebuffer, bool ex
 	renderer->begin_pass(*command_executor, const_cast<Disarray::Framebuffer&>(framebuffer), explicit_clear);
 }
 
-auto SceneRenderer::draw_static_mesh(const StaticMesh& mesh, const Pipeline& pipeline, const glm::mat4& transform, const glm::vec4& colour) -> void
+auto SceneRenderer::draw_static_mesh(Ref<StaticMesh>& mesh, const Pipeline& pipeline, const glm::mat4& transform, const glm::vec4& colour) -> void
 {
 	renderer->draw_mesh(*command_executor, mesh, pipeline, colour, transform);
 }

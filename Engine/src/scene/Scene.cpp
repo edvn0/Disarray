@@ -295,14 +295,14 @@ void Scene::draw_skybox(SceneRenderer& scene_renderer)
 
 void Scene::draw_geometry(SceneRenderer& scene_renderer)
 {
-	for (auto&& [entity, mesh, transform] : registry.view<const Components::StaticMesh, const Components::Transform>().each()) {
+	for (auto&& [entity, mesh, transform] : registry.view<Components::StaticMesh, const Components::Transform>().each()) {
 		if (mesh.static_mesh == nullptr) {
 			continue;
 		}
 
 		const auto& actual_pipeline = *scene_renderer.get_pipeline("BasicCombined");
 		const auto transform_computed = transform.compute();
-		scene_renderer.draw_static_mesh(*mesh.static_mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
+		scene_renderer.draw_static_mesh(mesh.static_mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
 	}
 
 	{
