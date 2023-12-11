@@ -29,6 +29,93 @@
 
 namespace Disarray::Vulkan {
 
+namespace {
+	// UniformBufferSet -> Shader Hash -> Frame -> WriteDescriptor
+	std::unordered_map<BufferSet<Disarray::UniformBuffer>*, std::unordered_map<std::size_t, std::vector<std::vector<VkWriteDescriptorSet>>>>
+		uniform_buffer_write_descriptor_cache;
+	std::unordered_map<BufferSet<Disarray::StorageBuffer>*, std::unordered_map<std::size_t, std::vector<std::vector<VkWriteDescriptorSet>>>>
+		storage_buffer_write_descriptor_cache;
+
+} // namespace
+
+static const std::vector<std::vector<VkWriteDescriptorSet>>& RT_RetrieveOrCreateUniformBufferWriteDescriptors(
+	BufferSet<Disarray::UniformBuffer>* uniformBufferSet, Ref<Vulkan::MeshMaterial> vulkanMaterial)
+{
+	size_t shaderHash = vulkanMaterial->get_properties().shader->hash();
+	if (uniform_buffer_write_descriptor_cache.contains(uniformBufferSet)) {
+		const auto& shaderMap = uniform_buffer_write_descriptor_cache.at(uniformBufferSet);
+		if (shaderMap.find(shaderHash) != shaderMap.end()) {
+			const auto& writeDescriptors = shaderMap.at(shaderHash);
+			return writeDescriptors;
+		}
+	}
+
+	uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
+	Ref<VulkanShader> vulkanShader = vulkanMaterial->GetShader().As<VulkanShader>();
+	if (vulkanShader->HasDescriptorSet(0)) {
+		const auto& shaderDescriptorSets = vulkanShader->GetShaderDescriptorSets();
+		if (!shaderDescriptorSets.empty()) {
+			for (auto&& [binding, shaderUB] : shaderDescriptorSets[0].UniformBuffers) {
+				auto& writeDescriptors = uniform_buffer_write_descriptor_cache[uniformBufferSet][shaderHash];
+				writeDescriptors.resize(framesInFlight);
+				for (uint32_t frame = 0; frame < framesInFlight; frame++) {
+					Ref<VulkanUniformBuffer> uniformBuffer = uniformBufferSet->Get(binding, 0, frame); // set = 0 for now
+
+					VkWriteDescriptorSet writeDescriptorSet = {};
+					writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+					writeDescriptorSet.descriptorCount = 1;
+					writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+					writeDescriptorSet.pBufferInfo = &uniformBuffer->GetDescriptorBufferInfo();
+					writeDescriptorSet.dstBinding = uniformBuffer->GetBinding();
+					writeDescriptors[frame].push_back(writeDescriptorSet);
+				}
+			}
+		}
+	}
+
+	return uniform_buffer_write_descriptor_cache[uniformBufferSet][shaderHash];
+}
+
+static const std::vector<std::vector<VkWriteDescriptorSet>>& RT_RetrieveOrCreateStorageBufferWriteDescriptors(
+	Ref<StorageBufferSet> storageBufferSet, Ref<VulkanMaterial> vulkanMaterial)
+{
+	HZ_PROFILE_FUNC();
+
+	size_t shaderHash = vulkanMaterial->GetShader()->GetHash();
+	if (storage_buffer_write_descriptor_cache.find(storageBufferSet) != storage_buffer_write_descriptor_cache.end()) {
+		const auto& shaderMap = storage_buffer_write_descriptor_cache.at(storageBufferSet);
+		if (shaderMap.find(shaderHash) != shaderMap.end()) {
+			const auto& writeDescriptors = shaderMap.at(shaderHash);
+			return writeDescriptors;
+		}
+	}
+
+	uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
+	Ref<VulkanShader> vulkanShader = vulkanMaterial->GetShader().As<VulkanShader>();
+	if (vulkanShader->HasDescriptorSet(0)) {
+		const auto& shaderDescriptorSets = vulkanShader->GetShaderDescriptorSets();
+		if (!shaderDescriptorSets.empty()) {
+			for (auto&& [binding, shaderSB] : shaderDescriptorSets[0].StorageBuffers) {
+				auto& writeDescriptors = storage_buffer_write_descriptor_cache[storageBufferSet][shaderHash];
+				writeDescriptors.resize(framesInFlight);
+				for (uint32_t frame = 0; frame < framesInFlight; frame++) {
+					Ref<VulkanStorageBuffer> storageBuffer = storageBufferSet->Get(binding, 0, frame); // set = 0 for now
+
+					VkWriteDescriptorSet writeDescriptorSet = {};
+					writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+					writeDescriptorSet.descriptorCount = 1;
+					writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+					writeDescriptorSet.pBufferInfo = &storageBuffer->GetDescriptorBufferInfo();
+					writeDescriptorSet.dstBinding = storageBuffer->GetBinding();
+					writeDescriptors[frame].push_back(writeDescriptorSet);
+				}
+			}
+		}
+	}
+
+	return storage_buffer_write_descriptor_cache[storageBufferSet][shaderHash];
+}
+
 // Define a hash function for VkDescriptorSet
 struct VkDescriptorSetHash {
 	auto operator()(const VkDescriptorSet& descriptorSet) const -> std::size_t
@@ -207,10 +294,33 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(indices.size()), 1, 0, 0, 0);
 }
 
+void Renderer::update_material_for_rendering(FrameIndex frame_index, Ref<Vulkan::MeshMaterial> material,
+	BufferSet<Disarray::UniformBuffer>* uniformBufferSet, BufferSet<Disarray::StorageBuffer>* storageBufferSet)
+{
+	if (uniformBufferSet != nullptr) {
+		auto writeDescriptors = RT_RetrieveOrCreateUniformBufferWriteDescriptors(uniformBufferSet, material);
+		if (storageBufferSet != nullptr) {
+			const auto& storageBufferWriteDescriptors = RT_RetrieveOrCreateStorageBufferWriteDescriptors(storageBufferSet, material);
+
+			constexpr auto framesInFlight = 3;
+			for (uint32_t frame = 0; frame < framesInFlight; frame++) {
+				writeDescriptors[frame].reserve(writeDescriptors[frame].size() + storageBufferWriteDescriptors[frame].size());
+				writeDescriptors[frame].insert(
+					writeDescriptors[frame].end(), storageBufferWriteDescriptors[frame].begin(), storageBufferWriteDescriptors[frame].end());
+			}
+		}
+		material->update_for_rendering(frame_index, writeDescriptors);
+	} else {
+		material->update_for_rendering(frame_index);
+	}
+}
+
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, Ref<Disarray::StaticMesh>& static_mesh, const Disarray::Pipeline& pipeline,
-	const glm::vec4&, const glm::mat4&)
+	BufferSet<Disarray::UniformBuffer>& uniform_buffer_set, Disarray::BufferSet<Disarray::StorageBuffer>& storage_buffer_set, const glm::vec4&,
+	const glm::mat4&)
 {
 	bind_pipeline(executor, pipeline);
+	const auto frame_index = get_graphics_resource().get_current_frame_index();
 
 	const auto& vertex_buffer = static_mesh->get_vertices();
 	const std::array arr { supply_cast<Vulkan::VertexBuffer>(vertex_buffer) };
@@ -222,22 +332,29 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, Ref<Disarray::Stat
 
 	for (auto& material : static_mesh->get_materials()) {
 		auto& vk_material = cast_to<Vulkan::MeshMaterial>(*material);
-		vk_material.update_for_rendering(get_graphics_resource().get_current_frame_index(), {});
+		update_material_for_rendering(frame_index, material.as<Vulkan::MeshMaterial>(), &uniform_buffer_set, &storage_buffer_set);
 	}
 
 	for (const auto& static_submesh : static_mesh->get_submeshes()) {
 		const auto& material = static_mesh->get_materials().at(static_submesh.material_index);
-		const auto& descriptor_set = cast_to<Vulkan::MeshMaterial>(*material).get_descriptor_set(get_graphics_resource().get_current_frame_index());
+		const auto& descriptor_set = cast_to<Vulkan::MeshMaterial>(*material).get_descriptor_set(frame_index);
 
 		const std::array desc {
-			get_graphics_resource().get_descriptor_set(DescriptorSet(0)),
-			get_graphics_resource().get_descriptor_set(DescriptorSet(1)),
-			get_graphics_resource().get_descriptor_set(DescriptorSet(2)),
-			get_graphics_resource().get_descriptor_set(DescriptorSet(3)),
 			descriptor_set,
 		};
 		const auto span = std::span { desc.data(), desc.size() };
 		bind_descriptor_sets(executor, pipeline, span);
+
+		struct PC {
+			glm::mat4 object_transform;
+			glm::vec3 albedo_colour;
+			float metalness;
+			float roughness;
+			float emission;
+			bool use_normal_map;
+		} pc {};
+		vkCmdPushConstants(supply_cast<Vulkan::CommandExecutor>(executor), cast_to<Vulkan::Pipeline>(pipeline).get_layout(),
+			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PC), &pc);
 
 		// TODO: Instancing!
 		vkCmdDrawIndexed(supply_cast<Vulkan::CommandExecutor>(executor), static_submesh.index_count, 1, static_submesh.base_index,

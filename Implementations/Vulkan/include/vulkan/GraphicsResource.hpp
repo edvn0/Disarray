@@ -58,8 +58,10 @@ public:
 	auto get_device() const -> const Disarray::Device& override { return device; }
 
 	[[nodiscard]] auto get_current_frame_index() const -> FrameIndex { return swapchain.get_current_frame_index(); }
+	auto begin_frame() -> void override;
+	auto end_frame() -> void override;
 
-	static auto allocate_descriptor_sets(const VkDescriptorSetAllocateInfo& allocation_info, VkDescriptorSet& vk_descriptors) -> void;
+	static auto allocate_descriptor_sets(VkDescriptorSetAllocateInfo& allocation_info, VkDescriptorSet& vk_descriptors) -> void;
 
 private:
 	void cleanup_graphics_resource();
@@ -74,6 +76,14 @@ private:
 
 	VkDescriptorPool pool { nullptr };
 	PushConstant pc {};
+
+	struct Pool {
+		VkDescriptorPool pool { nullptr };
+		VkDevice device { nullptr };
+		std::size_t allocation_count { 0 };
+		std::size_t allocation_size { 0 };
+	};
+	static inline Scope<Pool> descriptor_pool { nullptr };
 
 	std::unordered_map<FrameIndex, std::vector<VkDescriptorSet>> descriptor_sets;
 	std::vector<VkDescriptorSetLayout> layouts;

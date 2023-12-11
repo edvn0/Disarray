@@ -14,6 +14,7 @@ StorageBuffer::StorageBuffer(const Disarray::Device& dev, BufferProperties prope
 }
 
 auto StorageBuffer::size() const -> std::size_t { return base_buffer.size(); }
+auto StorageBuffer::get_binding() const -> DescriptorBinding { return base_buffer.get_binding(); }
 void StorageBuffer::set_data(const void* data, std::size_t size, std::size_t offset) { return base_buffer.set_data(data, size, offset); }
 void StorageBuffer::set_data(const void* data, std::size_t size) { return base_buffer.set_data(data, size, 0); }
 auto StorageBuffer::count() const -> std::size_t { return base_buffer.count(); }

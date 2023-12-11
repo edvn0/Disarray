@@ -158,6 +158,8 @@ auto BaseBuffer::size() const -> std::size_t
 	return props.count;
 }
 
+auto BaseBuffer::get_binding() const -> DescriptorBinding { return DescriptorBinding(props.binding); }
+
 auto BaseBuffer::count() const -> std::size_t { return props.count; }
 
 auto BaseBuffer::get_raw() -> void*

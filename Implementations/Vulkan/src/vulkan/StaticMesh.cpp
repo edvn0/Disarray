@@ -1,9 +1,13 @@
 #include "DisarrayPCH.hpp"
 
+#include <assimp/DefaultLogger.hpp>
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
+
 #include <cstdint>
 #include <string>
 
-#include "assimp/Importer.hpp"
 #include "core/Ensure.hpp"
 #include "core/Log.hpp"
 #include "core/String.hpp"

@@ -19,6 +19,7 @@
 #include "graphics/UniformBuffer.hpp"
 #include "graphics/VertexBuffer.hpp"
 #include "graphics/VertexTypes.hpp"
+#include "vulkan/MeshMaterial.hpp"
 
 using VkPipelineLayout = struct VkPipelineLayout_T*;
 using VkDevice = struct VkDevice_T*;
@@ -62,7 +63,8 @@ public:
 		const std::uint32_t) override;
 	void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&, const glm::vec4&,
 		const glm::mat4&, const std::uint32_t) override;
-	void draw_mesh(Disarray::CommandExecutor&, Ref<Disarray::StaticMesh>&, const Disarray::Pipeline&, const glm::vec4&, const glm::mat4&) override;
+	void draw_mesh(Disarray::CommandExecutor&, Ref<Disarray::StaticMesh>&, const Disarray::Pipeline&, BufferSet<Disarray::UniformBuffer>&,
+		Disarray::BufferSet<Disarray::StorageBuffer>&, const glm::vec4&, const glm::mat4&) override;
 
 	void draw_billboarded_text(std::string_view text, const glm::mat4& transform, float size, const glm::vec4& colour) override;
 	void draw_text(std::string_view text, const glm::uvec2& position, float size, const glm::vec4& colour) override;
@@ -98,7 +100,8 @@ private:
 	void add_geometry_to_batch(Geometry, const GeometryProperties&);
 	void draw_billboard_quad(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline);
 	void bind_descriptor_sets(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const std::span<const VkDescriptorSet>& span);
-
+	void update_material_for_rendering(FrameIndex frame_index, Ref<Vulkan::MeshMaterial> material, BufferSet<Disarray::UniformBuffer>* = nullptr,
+		BufferSet<Disarray::StorageBuffer>* = nullptr);
 	const Disarray::Device& device;
 	const Disarray::Swapchain& swapchain;
 

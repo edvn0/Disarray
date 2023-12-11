@@ -11,13 +11,16 @@
 #include <tuple>
 
 #include "core/Types.hpp"
+#include "graphics/BufferSet.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/IndexBuffer.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/RenderCommandQueue.hpp"
 #include "graphics/RendererProperties.hpp"
+#include "graphics/StorageBuffer.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/TextRenderer.hpp"
+#include "graphics/UniformBuffer.hpp"
 #include "graphics/UniformBufferSet.hpp"
 #include "graphics/VertexBuffer.hpp"
 
@@ -68,6 +71,9 @@ public:
 	[[nodiscard]] virtual auto get_device() const -> const Disarray::Device& = 0;
 
 	[[nodiscard]] virtual auto get_current_frame_index() const -> FrameIndex = 0;
+
+	virtual auto begin_frame() -> void = 0;
+	virtual auto end_frame() -> void = 0;
 };
 
 class Renderer : public ReferenceCountable {
@@ -146,8 +152,8 @@ public:
 	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&,
 		const glm::vec4& colour, const glm::mat4& transform = glm::identity<glm::mat4>(), const std::uint32_t identifier = 0)
 		= 0;
-	virtual void draw_mesh(Disarray::CommandExecutor&, Ref<Disarray::StaticMesh>&, const Disarray::Pipeline&, const glm::vec4& colour,
-		const glm::mat4& transform = glm::identity<glm::mat4>())
+	virtual void draw_mesh(Disarray::CommandExecutor&, Ref<Disarray::StaticMesh>&, const Disarray::Pipeline&, BufferSet<Disarray::UniformBuffer>&,
+		Disarray::BufferSet<Disarray::StorageBuffer>&, const glm::vec4& colour, const glm::mat4& transform = glm::identity<glm::mat4>())
 		= 0;
 
 	virtual void draw_mesh_instanced(

@@ -6,7 +6,7 @@
 
 #include "core/Collections.hpp"
 #include "core/PointerDefinition.hpp"
-#include "core/Types.hpp"
+#include "graphics/BufferSet.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/RendererProperties.hpp"
@@ -145,6 +145,11 @@ private:
 	Scope<Disarray::StorageBuffer> spot_light_colours {};
 	Scope<Disarray::StorageBuffer> entity_identifiers {};
 	Scope<Disarray::StorageBuffer> entity_transforms {};
+
+	using UniformSet = BufferSet<Disarray::UniformBuffer>;
+	using StorageSet = BufferSet<Disarray::StorageBuffer>;
+	UniformSet uniform_buffer_set;
+	StorageSet storage_buffer_set;
 
 	struct PointLightData {
 		std::uint32_t calculate_point_lights { 0 };

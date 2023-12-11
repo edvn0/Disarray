@@ -113,6 +113,5 @@ target_link_libraries(
         ktx
 )
 
-set(ASSIMP_THREEPP "${THIRD_PARTY}/assimp/include")
-target_include_directories(${PROJECT_NAME} PUBLIC include ${ASSIMP_THREEPP})
+target_include_directories(${PROJECT_NAME} PUBLIC include PRIVATE inline)
 default_compile_flags()

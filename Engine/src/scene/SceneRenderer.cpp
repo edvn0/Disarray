@@ -1,10 +1,9 @@
 #include "DisarrayPCH.hpp"
 
-#include <magic_enum_switch.hpp>
-
 #include "core/App.hpp"
 #include "core/filesystem/AssetLocations.hpp"
 #include "graphics/BufferProperties.hpp"
+#include "graphics/BufferSet.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/GLM.hpp"
@@ -18,6 +17,7 @@
 #include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "graphics/ShaderCompiler.hpp"
+#include "graphics/StaticMesh.hpp"
 #include "graphics/StorageBuffer.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/Texture.hpp"
@@ -31,6 +31,8 @@ namespace Disarray {
 
 SceneRenderer::SceneRenderer(const Disarray::Device& dev)
 	: device(dev)
+	, uniform_buffer_set(dev)
+	, storage_buffer_set(dev)
 {
 }
 
@@ -443,6 +445,9 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 	});
 
 	renderer->construct_sub_renderers(device, app);
+
+	uniform_buffer_set.set_frame_count(app.get_swapchain().image_count());
+	uniform_buffer_set.create(sizeof(UBO), DescriptorBinding(0));
 }
 
 auto SceneRenderer::interface() -> void
@@ -541,7 +546,6 @@ auto SceneRenderer::begin_frame(const glm::mat4& view, const glm::mat4& projecti
 	default_ubo.view_projection = view_projection;
 
 	camera.view = view;
-
 	renderer->begin_frame();
 }
 
@@ -639,7 +643,7 @@ auto SceneRenderer::begin_pass(const Disarray::Framebuffer& framebuffer, bool ex
 
 auto SceneRenderer::draw_static_mesh(Ref<StaticMesh>& mesh, const Pipeline& pipeline, const glm::mat4& transform, const glm::vec4& colour) -> void
 {
-	renderer->draw_mesh(*command_executor, mesh, pipeline, colour, transform);
+	renderer->draw_mesh(*command_executor, mesh, pipeline, uniform_buffer_set, storage_buffer_set, colour, transform);
 }
 
 void SceneRenderer::clear_pass(RenderPasses render_pass) { renderer->clear_pass(*command_executor, render_pass); }

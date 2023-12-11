@@ -233,6 +233,14 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 
 	verify(vkCreateDescriptorPool(vk_device, &pool_create_info, nullptr, &pool));
 
+	if (descriptor_pool == nullptr) {
+		{
+			descriptor_pool = make_scope<Pool>();
+			descriptor_pool->device = vk_device;
+		}
+		verify(vkCreateDescriptorPool(descriptor_pool->device, &pool_create_info, nullptr, &descriptor_pool->pool));
+	}
+
 	std::vector<VkDescriptorSetLayout> desc_layouts(layouts.size());
 	for (std::size_t i = 0; i < desc_layouts.size(); i++) {
 		desc_layouts[i] = layouts[i];
@@ -392,11 +400,17 @@ void GraphicsResource::internal_expose_to_shaders(
 	vkUpdateDescriptorSets(supply_cast<Vulkan::Device>(device), static_cast<std::uint32_t>(write_sets.size()), write_sets.data(), 0, nullptr);
 }
 
-auto GraphicsResource::allocate_descriptor_sets(const VkDescriptorSetAllocateInfo& allocation_info, VkDescriptorSet& vk_descriptors) -> void
+auto GraphicsResource::begin_frame() -> void { vkResetDescriptorPool(supply_cast<Vulkan::Device>(device), pool, 0); }
+
+auto GraphicsResource::end_frame() -> void { }
+
+auto GraphicsResource::allocate_descriptor_sets(VkDescriptorSetAllocateInfo& allocation_info, VkDescriptorSet& vk_descriptors) -> void
 {
-	allocation_info.descriptorPool = pool->descriptor_pool;
+	allocation_info.descriptorPool = descriptor_pool->pool;
 	allocation_info.descriptorSetCount = 1;
-	vkAllocateDescriptorSets(supply_cast<Vulkan::Device>(device), &allocation_info, &vk_descriptors);
+	allocation_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+
+	verify(vkAllocateDescriptorSets(descriptor_pool->device, &allocation_info, &vk_descriptors));
 }
 
 } // namespace Disarray::Vulkan

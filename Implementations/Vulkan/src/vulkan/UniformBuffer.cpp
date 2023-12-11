@@ -25,6 +25,7 @@ void UniformBuffer::create_buffer_info()
 }
 
 auto UniformBuffer::size() const -> std::size_t { return base_buffer.size(); }
+auto UniformBuffer::get_binding() const -> DescriptorBinding { return base_buffer.get_binding(); }
 void UniformBuffer::set_data(const void* data, std::size_t size, std::size_t offset) { return base_buffer.set_data(data, size, offset); }
 void UniformBuffer::set_data(const void* data, std::size_t size) { return base_buffer.set_data(data, size, 0); }
 auto UniformBuffer::count() const -> std::size_t { return base_buffer.count(); }

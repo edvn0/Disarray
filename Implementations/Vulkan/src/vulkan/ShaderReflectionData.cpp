@@ -163,19 +163,21 @@ auto reflect_code(VkShaderStageFlagBits shader_stage, const std::vector<std::uin
 	for (const auto& resource : resources.push_constant_buffers) {
 
 		const auto& buffer_name = resource.name;
-		if (output.constant_buffers.contains(buffer_name))
+		if (output.constant_buffers.contains(buffer_name)) {
 			continue;
+		}
 
 		auto& buffer_type = compiler.get_type(resource.base_type_id);
 		auto buffer_size = static_cast<std::uint32_t>(compiler.get_declared_struct_size(buffer_type));
-		std::uint32_t member_count = static_cast<std::uint32_t>(buffer_type.member_types.size());
+		auto member_count = static_cast<std::uint32_t>(buffer_type.member_types.size());
 		auto& push_constant_range = output.push_constant_ranges.emplace_back();
 		push_constant_range.shader_stage = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		push_constant_range.size = buffer_size;
 		push_constant_range.offset = 0;
 
-		if (buffer_name.empty())
+		if (buffer_name.empty()) {
 			continue;
+		}
 
 		auto& buffer = output.constant_buffers[buffer_name];
 		buffer.name = buffer_name;
@@ -183,11 +185,11 @@ auto reflect_code(VkShaderStageFlagBits shader_stage, const std::vector<std::uin
 
 		for (std::uint32_t i = 0; i < member_count; i++) {
 			auto type = compiler.get_type(buffer_type.member_types[i]);
-			const auto& memberName = compiler.get_member_name(buffer_type.self, i);
+			const auto& member_name = compiler.get_member_name(buffer_type.self, i);
 			auto size = static_cast<uint32_t>(compiler.get_declared_struct_member_size(buffer_type, i));
 			auto offset = compiler.type_struct_member_offset(buffer_type, i);
 
-			std::string uniform_name = fmt::format("{}.{}", buffer_name, memberName);
+			std::string uniform_name = fmt::format("{}.{}", buffer_name, member_name);
 			buffer.uniforms[uniform_name] = Reflection::ShaderUniform(uniform_name, spir_type_to_shader_uniform_type(type), size, offset);
 		}
 	}

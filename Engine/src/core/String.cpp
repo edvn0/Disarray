@@ -29,6 +29,25 @@ namespace Detail {
 
 		return split_strings;
 	}
+
+	auto human_readable_size(std::size_t size) -> std::string
+	{
+		using namespace std::string_view_literals;
+		static constexpr auto suffixes = std::array { "B"sv, "KB"sv, "MB"sv, "GB"sv, "TB"sv, "PB"sv, "EB"sv, "ZB"sv, "YB"sv };
+		static constexpr auto size_suffixes = sizeof(suffixes) / sizeof(suffixes[0]) - 1;
+
+		int suffix_index = 0;
+		auto double_size = static_cast<double>(size);
+
+		static constexpr auto megabyte = 1024.0;
+
+		while (double_size >= megabyte && suffix_index < size_suffixes) {
+			double_size /= megabyte;
+			suffix_index++;
+		}
+
+		return fmt::format("{:.2f}{}", double_size, suffixes[suffix_index]);
+	}
 } // namespace Detail
 
 } // namespace Disarray::StringUtilities

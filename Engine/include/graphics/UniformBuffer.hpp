@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+
+#include "RendererProperties.hpp"
 #include "core/DisarrayObject.hpp"
 #include "core/ReferenceCounted.hpp"
 #include "graphics/BufferProperties.hpp"
@@ -11,6 +15,7 @@ class UniformBuffer : public ReferenceCountable {
 public:
 	[[nodiscard]] virtual auto size() const -> std::size_t = 0;
 	[[nodiscard]] virtual auto count() const -> std::size_t = 0;
+	[[nodiscard]] virtual auto get_binding() const -> DescriptorBinding = 0;
 	virtual void set_data(const void* data, std::size_t size, std::size_t offset) = 0;
 	virtual void set_data(const void* data, std::size_t size) = 0;
 

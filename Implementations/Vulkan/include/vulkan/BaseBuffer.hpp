@@ -2,9 +2,12 @@
 
 #include <vk_mem_alloc.h>
 
+#include <cstddef>
+
 #include "core/DisarrayObject.hpp"
 #include "graphics/BufferProperties.hpp"
 #include "graphics/Device.hpp"
+#include "graphics/RendererProperties.hpp"
 
 namespace Disarray::Vulkan {
 
@@ -22,6 +25,7 @@ protected:
 
 	[[nodiscard]] auto size() const -> std::size_t;
 	[[nodiscard]] auto count() const -> std::size_t;
+	[[nodiscard]] auto get_binding() const -> DescriptorBinding;
 
 	auto get_raw() -> void*;
 	[[nodiscard]] auto get_raw() const -> void*;

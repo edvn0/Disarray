@@ -1,12 +1,5 @@
 #pragma once
 
-#include <vulkan/vulkan_core.h>
-
-#include <assimp/Importer.hpp>
-#include <assimp/LogStream.hpp>
-#include <assimp/postprocess.h>
-#include <assimp/scene.h>
-
 #include "ShaderReflectionData.hpp"
 #include "SingleShader.hpp"
 #include "core/Ensure.hpp"

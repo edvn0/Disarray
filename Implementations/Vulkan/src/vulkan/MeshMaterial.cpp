@@ -10,10 +10,10 @@ namespace Disarray::Vulkan {
 
 MeshMaterial::MeshMaterial(const Disarray::Device& dev, MeshMaterialProperties properties)
 	: Disarray::MeshMaterial(std::move(properties))
-	, device(dev)
-	, dirty_descriptor_sets(props.swapchain_image_count, false)
 	, write_descriptors(props.swapchain_image_count)
+	, dirty_descriptor_sets(props.swapchain_image_count, false)
 	, shader(props.shader.as<Vulkan::SingleShader>())
+	, device(dev)
 {
 	recreate(false, {});
 }
@@ -23,14 +23,15 @@ void MeshMaterial::set_vulkan_descriptor(const std::string& name, const Ref<Vulk
 	const auto* resource = find_resource_declaration(name);
 	const std::uint32_t binding = resource->get_register();
 
-	if (binding < textures.size() && textures[binding] && texture->hash() == textures[binding]->hash() && resident_descriptors.contains(binding)) {
+	if (binding < textures.size() && textures.at(binding) && texture->hash() == textures.at(binding)->hash()
+		&& resident_descriptors.contains(binding)) {
 		return;
 	}
 
 	if (binding >= textures.size()) {
 		textures.resize(binding + 1);
 	}
-	textures[binding] = texture;
+	textures.at(binding) = texture;
 
 	const auto* wds = shader->get_descriptor_set(name);
 	resident_descriptors[binding]
@@ -46,18 +47,18 @@ auto MeshMaterial::set_vulkan_descriptor(const std::string& name, const Ref<Vulk
 
 	const std::uint32_t binding = resource->get_register();
 	// Texture is already set
-	if (binding < textures.size() && textures[binding] && texture->hash() == textures[binding]->hash()
-		&& resident_descriptors.find(binding) != resident_descriptors.end()) {
+	if (binding < textures.size() && textures.at(binding) && texture->hash() == textures.at(binding)->hash()
+		&& resident_descriptors.contains(binding)) {
 		return;
 	}
 
 	if (binding >= textures.size()) {
 		textures.resize(binding + 1);
 	}
-	textures[binding] = texture;
+	textures.at(binding) = texture;
 
 	const auto* wds = shader->get_descriptor_set(name);
-	resident_descriptors[binding]
+	resident_descriptors.at(binding)
 		= std::make_shared<PendingDescriptor>(PendingDescriptor { PendingDescriptorType::TextureCube, *wds, {}, texture, nullptr });
 	pending_descriptors.push_back(resident_descriptors.at(binding));
 
@@ -70,8 +71,8 @@ void MeshMaterial::set_vulkan_descriptor(const std::string& name, const Ref<Vulk
 
 	const std::uint32_t binding = resource->get_register();
 	// Texture is already set
-	if (binding < texture_arrays.size() && texture_arrays[binding].size() < array_index
-		&& texture->hash() == texture_arrays[binding][array_index]->hash()) {
+	if (binding < texture_arrays.size() && texture_arrays.at(binding).size() < array_index
+		&& texture->hash() == texture_arrays.at(binding).at(array_index)->hash()) {
 		return;
 	}
 
@@ -79,15 +80,15 @@ void MeshMaterial::set_vulkan_descriptor(const std::string& name, const Ref<Vulk
 		texture_arrays.resize(binding + 1);
 	}
 
-	if (array_index >= texture_arrays[binding].size()) {
-		texture_arrays[binding].resize(array_index + 1);
+	if (array_index >= texture_arrays.at(binding).size()) {
+		texture_arrays.at(binding).resize(array_index + 1);
 	}
 
-	texture_arrays[binding][array_index] = texture;
+	texture_arrays.at(binding).at(array_index) = texture;
 
 	const auto* wds = shader->get_descriptor_set(name);
 	if (!resident_descriptor_arrays.contains(binding)) {
-		resident_descriptor_arrays[binding]
+		resident_descriptor_arrays.at(binding)
 			= std::make_shared<PendingDescriptorArray>(PendingDescriptorArray { PendingDescriptorType::Texture2D, *wds, {}, {}, {} });
 	}
 
@@ -96,7 +97,7 @@ void MeshMaterial::set_vulkan_descriptor(const std::string& name, const Ref<Vulk
 		resident_descriptor_array->textures.resize(array_index + 1);
 	}
 
-	resident_descriptor_array->textures[array_index] = texture;
+	resident_descriptor_array->textures.at(array_index) = texture;
 
 	invalidate_descriptor_sets();
 }
@@ -106,7 +107,7 @@ void MeshMaterial::set_vulkan_descriptor(const std::string& name, const Ref<Vulk
 	const auto* resource = find_resource_declaration(name);
 
 	const std::uint32_t binding = resource->get_register();
-	if (binding < images.size() && images[binding] && resident_descriptors.contains(binding)) {
+	if (binding < images.size() && images.at(binding) && resident_descriptors.contains(binding)) {
 		return;
 	}
 
@@ -116,7 +117,7 @@ void MeshMaterial::set_vulkan_descriptor(const std::string& name, const Ref<Vulk
 	images[resource->get_register()] = image;
 
 	const auto* wds = shader->get_descriptor_set(name);
-	resident_descriptors[binding]
+	resident_descriptors.at(binding)
 		= std::make_shared<PendingDescriptor>(PendingDescriptor { PendingDescriptorType::Image2D, *wds, {}, nullptr, image });
 	pending_descriptors.push_back(resident_descriptors.at(binding));
 
@@ -283,8 +284,9 @@ auto MeshMaterial::update_for_rendering(FrameIndex frame_index, const std::vecto
 		write_descriptor.dstSet = descriptor_set.descriptor_sets[0];
 	}
 
+	const auto& write_descriptors_current_frame = write_descriptors[frame_index.value];
 	vkUpdateDescriptorSets(
-		vk_device, static_cast<std::uint32_t>(write_descriptors[frame_index.value].size()), write_descriptors[frame_index.value].data(), 0, nullptr);
+		vk_device, static_cast<std::uint32_t>(write_descriptors_current_frame.size()), write_descriptors_current_frame.data(), 0, nullptr);
 	pending_descriptors.clear();
 }
 

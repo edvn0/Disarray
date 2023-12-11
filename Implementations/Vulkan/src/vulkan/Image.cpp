@@ -7,6 +7,7 @@
 #include "core/Collections.hpp"
 #include "core/Ensure.hpp"
 #include "core/Formatters.hpp"
+#include "core/String.hpp"
 #include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
@@ -266,7 +267,7 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor*)
 		buffer.allocate(size);
 	}
 
-	Log::info("Image", "Creating image '{}' of extent: {} and size {}.", props.debug_name, props.extent, size);
+	Log::info("Image", "Creating image '{}' of extent: {} and size {}.", props.debug_name, props.extent, StringUtilities::human_readable_size(size));
 
 	VkBuffer staging {};
 	VkBufferCreateInfo staging_create_info {};
