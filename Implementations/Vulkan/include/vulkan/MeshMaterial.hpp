@@ -1,10 +1,12 @@
 #pragma once
 
-#include "ShaderReflectionData.hpp"
-#include "SingleShader.hpp"
+#include <glm/gtc/type_ptr.hpp>
+
 #include "core/Ensure.hpp"
 #include "graphics/MeshMaterial.hpp"
 #include "graphics/Swapchain.hpp"
+#include "vulkan/ShaderReflectionData.hpp"
+#include "vulkan/SingleShader.hpp"
 #include "vulkan/Texture.hpp"
 
 namespace Disarray::Vulkan {
@@ -47,6 +49,18 @@ public:
 
 		auto& buffer = uniform_storage_buffer;
 		buffer.write(Disarray::bit_cast<std::byte*>(&value), decl->get_size(), decl->get_offset());
+	}
+
+	template <std::int32_t L, typename T> void set(const std::string& name, const glm::vec<L, T>& value)
+	{
+		const auto* decl = find_uniform_declaration(name);
+		ensure(decl != nullptr, "Could not find uniform!");
+		if (!decl) {
+			return;
+		}
+
+		auto& buffer = uniform_storage_buffer;
+		buffer.write(Disarray::bit_cast<std::byte*>(glm::value_ptr(value)), decl->get_size(), decl->get_offset());
 	}
 
 	template <typename T> auto get(const std::string& name) -> T&

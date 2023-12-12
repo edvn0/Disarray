@@ -236,26 +236,26 @@ void Scene::render(SceneRenderer& renderer)
 	{
 		// Skybox pass
 		renderer.begin_pass<SceneFramebuffer::Geometry>(true);
-		draw_skybox(renderer);
+		// draw_skybox(renderer);
 		renderer.end_pass();
 	}
 	{
 		// Shadow pass
 		renderer.begin_pass<SceneFramebuffer::Shadow>();
-		draw_shadows(renderer);
-		render_planar_geometry(renderer);
+		// draw_shadows(renderer);
+		// render_planar_geometry(renderer);
 		renderer.end_pass();
 	}
 	{
 		// Geometry pass
 		renderer.begin_pass<SceneFramebuffer::Geometry>();
 		draw_geometry(renderer);
-		render_planar_geometry(renderer);
+		// render_planar_geometry(renderer);
 		renderer.end_pass();
 	}
 	{
 		renderer.begin_pass<SceneFramebuffer::Identity>();
-		draw_identifiers(renderer);
+		// draw_identifiers(renderer);
 		renderer.end_pass();
 	}
 	{
@@ -304,102 +304,101 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 		const auto transform_computed = transform.compute();
 		scene_renderer.draw_static_mesh(mesh.static_mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
 	}
+	/*
+		{
+			auto point_light_view = registry.view<const Components::PointLight, const Components::Mesh>();
+			Ref<Disarray::Mesh> point_light_mesh = nullptr;
 
-	{
-		auto point_light_view = registry.view<const Components::PointLight, const Components::Mesh>();
-		Ref<Disarray::Mesh> point_light_mesh = nullptr;
+			for (auto&& [entity, point_light, mesh] : point_light_view.each()) {
+				point_light_mesh = mesh.mesh;
+				break;
+			}
 
-		for (auto&& [entity, point_light, mesh] : point_light_view.each()) {
-			point_light_mesh = mesh.mesh;
-			break;
+			auto point_light_view_for_count = registry.view<const Components::PointLight>().size();
+			if (point_light_view_for_count > 0 && point_light_mesh != nullptr) {
+				const auto& pipeline = *scene_renderer.get_pipeline("PointLight");
+				scene_renderer.draw_point_lights(*point_light_mesh, point_light_view_for_count, pipeline);
+			}
 		}
 
-		auto point_light_view_for_count = registry.view<const Components::PointLight>().size();
-		if (point_light_view_for_count > 0 && point_light_mesh != nullptr) {
-			const auto& pipeline = *scene_renderer.get_pipeline("PointLight");
-			scene_renderer.draw_point_lights(*point_light_mesh, point_light_view_for_count, pipeline);
-		}
-	}
+		{
+			auto spot_light_view = registry.view<const Components::SpotLight, const Components::Mesh>();
+			Ref<Disarray::Mesh> spot_light_mesh = nullptr;
 
-	{
-		auto spot_light_view = registry.view<const Components::SpotLight, const Components::Mesh>();
-		Ref<Disarray::Mesh> spot_light_mesh = nullptr;
+			for (auto&& [entity, point_light, mesh] : spot_light_view.each()) {
+				spot_light_mesh = mesh.mesh;
+				break;
+			}
 
-		for (auto&& [entity, point_light, mesh] : spot_light_view.each()) {
-			spot_light_mesh = mesh.mesh;
-			break;
-		}
-
-		auto spot_light_view_for_count = registry.view<const Components::SpotLight>().size();
-		if (spot_light_view_for_count > 0 && spot_light_mesh != nullptr) {
-			const auto& pipeline = *scene_renderer.get_pipeline("SpotLight");
-			scene_renderer.draw_point_lights(*spot_light_mesh, spot_light_view_for_count, pipeline);
-		}
-	}
-
-	for (auto line_view = registry.view<const Components::LineGeometry, const Components::Transform>();
-		 auto&& [entity, geom, transform] : line_view.each()) {
-		glm::vec4 colour = { 0.9F, 0.2F, 0.6F, 1.0F };
-		if (registry.any_of<Components::Texture>(entity)) {
-			colour = registry.get<Components::Texture>(entity).colour;
-		}
-		scene_renderer.draw_planar_geometry(Geometry::Line,
-			{
-				.position = transform.position,
-				.to_position = geom.to_position,
-				.colour = colour,
-				.identifier = static_cast<std::uint32_t>(entity),
-			});
-	}
-
-	for (auto rect_view = registry.view<const Components::Texture, const Components::QuadGeometry, const Components::Transform>();
-		 auto&& [entity, tex, geom, transform] : rect_view.each()) {
-		scene_renderer.draw_planar_geometry(Geometry::Rectangle,
-			{
-				.position = transform.position,
-				.colour = tex.colour,
-				.rotation = transform.rotation,
-				.dimensions = transform.scale,
-				.identifier = static_cast<std::uint32_t>(entity),
-			});
-	}
-
-	for (auto mesh_view = registry.view<const Components::Mesh, const Components::Texture, const Components::Transform>(
-			 entt::exclude<Components::PointLight, Components::SpotLight, Components::DirectionalLight, Components::Skybox>);
-		 auto&& [entity, mesh, texture, transform] : mesh_view.each()) {
-
-		if (mesh.mesh == nullptr) {
-			continue;
+			auto spot_light_view_for_count = registry.view<const Components::SpotLight>().size();
+			if (spot_light_view_for_count > 0 && spot_light_mesh != nullptr) {
+				const auto& pipeline = *scene_renderer.get_pipeline("SpotLight");
+				scene_renderer.draw_point_lights(*spot_light_mesh, spot_light_view_for_count, pipeline);
+			}
 		}
 
-		const auto& actual_pipeline = *scene_renderer.get_pipeline("StaticMesh");
-		const auto computed_transform = transform.compute();
-		if (mesh.draw_aabb) {
-			scene_renderer.draw_aabb(mesh.mesh->get_aabb(), texture.colour, computed_transform);
-		}
-		if (mesh.mesh->has_children()) {
-			scene_renderer.draw_static_submeshes(mesh.mesh->get_submeshes(), actual_pipeline, computed_transform, texture.colour);
-		} else {
-			scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, computed_transform, texture.colour);
-		}
-	}
-
-	for (auto&& [entity, mesh, transform] :
-		registry
-			.view<const Components::Mesh, const Components::Transform>(
-				entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight, Components::SpotLight, Components::Skybox>)
-			.each()) {
-		if (mesh.mesh == nullptr) {
-			continue;
+		for (auto line_view = registry.view<const Components::LineGeometry, const Components::Transform>();
+			 auto&& [entity, geom, transform] : line_view.each()) {
+			glm::vec4 colour = { 0.9F, 0.2F, 0.6F, 1.0F };
+			if (registry.any_of<Components::Texture>(entity)) {
+				colour = registry.get<Components::Texture>(entity).colour;
+			}
+			scene_renderer.draw_planar_geometry(Geometry::Line,
+				{
+					.position = transform.position,
+					.to_position = geom.to_position,
+					.colour = colour,
+					.identifier = static_cast<std::uint32_t>(entity),
+				});
 		}
 
-		const auto& actual_pipeline = *scene_renderer.get_pipeline("StaticMesh");
-		const auto transform_computed = transform.compute();
-		scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
-		if (mesh.draw_aabb) {
-			scene_renderer.draw_aabb(mesh.mesh->get_aabb(), { 1, 1, 1, 1 }, transform_computed);
+		for (auto rect_view = registry.view<const Components::Texture, const Components::QuadGeometry, const Components::Transform>();
+			 auto&& [entity, tex, geom, transform] : rect_view.each()) {
+			scene_renderer.draw_planar_geometry(Geometry::Rectangle,
+				{
+					.position = transform.position,
+					.colour = tex.colour,
+					.rotation = transform.rotation,
+					.dimensions = transform.scale,
+					.identifier = static_cast<std::uint32_t>(entity),
+				});
 		}
-	}
+
+		for (auto mesh_view = registry.view<const Components::Mesh, const Components::Texture, const Components::Transform>(
+				 entt::exclude<Components::PointLight, Components::SpotLight, Components::DirectionalLight, Components::Skybox>);
+			 auto&& [entity, mesh, texture, transform] : mesh_view.each()) {
+
+			if (mesh.mesh == nullptr) {
+				continue;
+			}
+
+			const auto& actual_pipeline = *scene_renderer.get_pipeline("StaticMesh");
+			const auto computed_transform = transform.compute();
+			if (mesh.draw_aabb) {
+				scene_renderer.draw_aabb(mesh.mesh->get_aabb(), texture.colour, computed_transform);
+			}
+			if (mesh.mesh->has_children()) {
+				scene_renderer.draw_static_submeshes(mesh.mesh->get_submeshes(), actual_pipeline, computed_transform, texture.colour);
+			} else {
+				scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, computed_transform, texture.colour);
+			}
+		}
+
+		for (auto&& [entity, mesh, transform] :
+			registry
+				.view<const Components::Mesh, const Components::Transform>(
+					entt::exclude<Components::Texture, Components::DirectionalLight, Components::PointLight, Components::SpotLight,
+	   Components::Skybox>) .each()) { if (mesh.mesh == nullptr) { continue;
+			}
+
+			const auto& actual_pipeline = *scene_renderer.get_pipeline("StaticMesh");
+			const auto transform_computed = transform.compute();
+			scene_renderer.draw_single_static_mesh(*mesh.mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
+			if (mesh.draw_aabb) {
+				scene_renderer.draw_aabb(mesh.mesh->get_aabb(), { 1, 1, 1, 1 }, transform_computed);
+			}
+		}
+	 */
 }
 
 void Scene::draw_shadows(SceneRenderer& scene_renderer)

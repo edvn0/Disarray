@@ -202,7 +202,7 @@ auto reflect_code(VkShaderStageFlagBits shader_stage, const std::vector<std::uin
 		auto descriptor_set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 		// auto dimension = base_type.image.dim;
 		auto array_size = type.array[0];
-		if (array_size == 0) {
+		if (array_size == 0 || array_size > 16) {
 			array_size = 1;
 		}
 		if (descriptor_set >= output.shader_descriptor_sets.size()) {
@@ -228,7 +228,7 @@ auto reflect_code(VkShaderStageFlagBits shader_stage, const std::vector<std::uin
 		auto descriptor_set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 		// auto dimension = base_type.image.dim;
 		auto array_size = type.array[0];
-		if (array_size == 0) {
+		if (array_size == 0 || array_size > 16) {
 			array_size = 1;
 		}
 		if (descriptor_set >= output.shader_descriptor_sets.size()) {
@@ -253,7 +253,7 @@ auto reflect_code(VkShaderStageFlagBits shader_stage, const std::vector<std::uin
 		auto binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 		auto descriptor_set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 		auto array_size = type.array[0];
-		if (array_size == 0) {
+		if (array_size == 0 || array_size > 16) {
 			array_size = 1;
 		}
 		if (descriptor_set >= output.shader_descriptor_sets.size()) {
@@ -278,7 +278,7 @@ auto reflect_code(VkShaderStageFlagBits shader_stage, const std::vector<std::uin
 		auto descriptor_set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 		// auto dimension = type.image.dim;
 		auto array_size = type.array[0];
-		if (array_size == 0) {
+		if (array_size == 0 || array_size > 16) {
 			array_size = 1;
 		}
 		if (descriptor_set >= output.shader_descriptor_sets.size()) {

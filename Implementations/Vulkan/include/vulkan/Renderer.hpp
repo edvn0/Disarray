@@ -100,7 +100,7 @@ private:
 	void add_geometry_to_batch(Geometry, const GeometryProperties&);
 	void draw_billboard_quad(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline);
 	void bind_descriptor_sets(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const std::span<const VkDescriptorSet>& span);
-	void update_material_for_rendering(FrameIndex frame_index, Ref<Vulkan::MeshMaterial> material, BufferSet<Disarray::UniformBuffer>* = nullptr,
+	void update_material_for_rendering(FrameIndex frame_index, Vulkan::MeshMaterial& material, BufferSet<Disarray::UniformBuffer>* = nullptr,
 		BufferSet<Disarray::StorageBuffer>* = nullptr);
 	const Disarray::Device& device;
 	const Disarray::Swapchain& swapchain;

@@ -153,6 +153,7 @@ public:
 	}
 
 	template <class Other> auto as() const -> ReferenceCounted<Other> { return ReferenceCounted<Other>(*this); }
+	template <class Other> auto as() -> ReferenceCounted<Other> { return ReferenceCounted<Other>(*this); }
 
 	auto operator==(const ReferenceCounted<T>& other) const -> bool { return instance == other.instance; }
 	auto operator!=(const ReferenceCounted<T>& other) const -> bool { return !this->operator==(other); }

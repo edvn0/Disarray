@@ -208,7 +208,7 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 	layouts = { set_zero_ubos_layout, set_one_images_layout, set_two_image_array_layout, set_three_ssbo_layout };
 	static constexpr auto descriptor_pool_max_size = 1000;
 
-	const std::array<VkDescriptorPoolSize, 12> sizes = [](auto size) {
+	constexpr std::array<VkDescriptorPoolSize, 12> sizes = [](auto size) {
 		std::array<VkDescriptorPoolSize, 12> temp {};
 		temp.at(0) = { VK_DESCRIPTOR_TYPE_SAMPLER, descriptor_pool_max_size };
 		temp.at(1) = { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, descriptor_pool_max_size };
@@ -252,11 +252,11 @@ void GraphicsResource::initialise_descriptors(bool should_clean)
 	alloc_info.descriptorSetCount = static_cast<std::uint32_t>(desc_layouts.size());
 	alloc_info.pSetLayouts = desc_layouts.data();
 
-	for (auto i = FrameIndex { 0 }; i < swapchain_image_count; i++) {
+	for (auto i = FrameIndex { 0 }; i < swapchain_image_count; ++i) {
 		std::vector<VkDescriptorSet> desc_sets {};
 		desc_sets.resize(layouts.size());
 		vkAllocateDescriptorSets(vk_device, &alloc_info, desc_sets.data());
-		descriptor_sets.try_emplace(i, std::move(desc_sets));
+		descriptor_sets.try_emplace(i, desc_sets);
 	}
 }
 
@@ -270,7 +270,7 @@ void GraphicsResource::expose_to_shaders(const Disarray::UniformBuffer& uniform_
 		write_set.dstSet = frame_descriptor_sets.at(set.value);
 		write_set.dstBinding = binding.value;
 		const auto& cast = cast_to<Vulkan::UniformBuffer>(uniform_buffer);
-		write_set.pBufferInfo = &cast.get_buffer_info();
+		write_set.pBufferInfo = &cast.get_descriptor_info();
 		write_set.descriptorType = Vulkan::UniformBuffer::get_descriptor_type();
 		write_set.descriptorCount = 1;
 
@@ -328,7 +328,7 @@ void GraphicsResource::expose_to_shaders(const Disarray::StorageBuffer& buffer, 
 
 void GraphicsResource::expose_to_shaders(std::span<const Disarray::Texture*> textures, DescriptorSet set, DescriptorBinding binding)
 {
-	auto image_infos = Collections::map(textures, [](const Disarray::Texture* texture) -> VkDescriptorImageInfo {
+	const auto image_infos = Collections::map(textures, [](const Disarray::Texture* texture) -> VkDescriptorImageInfo {
 		const auto& desc_info = cast_to<Vulkan::Image>(texture->get_image()).get_descriptor_info();
 		return {
 			.sampler = nullptr,

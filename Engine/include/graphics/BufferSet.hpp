@@ -10,13 +10,14 @@
 #include "core/Ensure.hpp"
 #include "core/PointerDefinition.hpp"
 #include "graphics/BufferProperties.hpp"
+#include "graphics/Device.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "graphics/Swapchain.hpp"
 
 namespace Disarray {
 
 template <typename T>
-concept BufferLike = requires(T t, const Device& device) {
+concept BufferLike = requires(T& t, const Device& device) {
 	{
 		t.size()
 	} -> std::convertible_to<std::size_t>;

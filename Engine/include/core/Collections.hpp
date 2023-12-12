@@ -142,6 +142,10 @@ constexpr inline auto map(Iterable auto& collection, auto&& func)
 	return output;
 }
 
+template <class T> struct Less {
+	constexpr auto operator()(const T& lhs, const T& rhs) const { return lhs < rhs; }
+};
+
 constexpr auto sort(Iterable auto& collection) { std::sort(std::begin(collection), std::end(collection)); }
 constexpr auto sort(Iterable auto& collection, auto&& sorter) { std::sort(std::begin(collection), std::end(collection), sorter); }
 

@@ -18,6 +18,7 @@ namespace Disarray {
 
 using DescriptorSet = TypeSafeWrapper<std::uint32_t>;
 using DescriptorBinding = TypeSafeWrapper<std::uint16_t>;
+using FrameIndex = TypeSafeWrapper<std::uint32_t>;
 
 enum class UBOIdentifier : std::uint8_t {
 	Missing,

@@ -18,6 +18,18 @@ layout(set = 0, binding = 0) uniform UniformBlock {
 }
 ubo;
 
+struct IdentifierObject {
+    uint identifier;
+};
+layout(std430, set = 3, binding = 2) readonly buffer Identifiers { IdentifierObject ssbo_objects[]; }
+IdentifierSSBO;
+
+struct TransformObject {
+    mat4 transform;
+};
+layout(std140, set = 3, binding = 3) readonly buffer Transforms { TransformObject ssbo_objects[]; }
+TransformSSBO;
+
 layout(location = 0) in vec3 pos;
 layout(location = 1) in vec2 uv;
 layout(location = 2) in vec4 colour;
@@ -38,6 +50,9 @@ void main() {
     frag_normals = normals;
     frag_tangent = tangent;
     frag_bitangent = bitangent;
+
+    mat4 object_matrix = TransformSSBO.ssbo_objects[gl_InstanceIndex].transform;
+    uint object_identifier = IdentifierSSBO.ssbo_objects[gl_InstanceIndex].identifier;
 }
 
 #pragma stage fragment

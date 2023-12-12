@@ -22,7 +22,7 @@ public:
 	auto get_raw() -> void* override;
 	auto get_raw() const -> void* override;
 
-	auto get_buffer_info() const -> const auto& { return buffer_info; }
+	auto get_descriptor_info() const -> const auto& { return buffer_info; }
 	static auto get_descriptor_type() { return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; }
 
 	void set_data(const void*, std::size_t size, std::size_t offset) override;
