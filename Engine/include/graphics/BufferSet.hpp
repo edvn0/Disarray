@@ -48,14 +48,13 @@ public:
 		frame_count = frames;
 	}
 
-	auto create(std::integral auto size, DescriptorBinding binding) -> void
+	auto create(std::integral auto size, DescriptorBinding binding, std::size_t count = 0U) -> void
 	{
-		ensure(frame_count > 0, "BufferSet must be initialized with a frame count greater than 0");
-		ensure(frame_set_binding_buffers.empty(), "BufferSet must be initialized before creating buffers");
 		for (auto frame = FrameIndex(0); frame < frame_count; ++frame) {
 			auto buffer = B::construct(device,
 				BufferProperties {
 					.size = static_cast<std::size_t>(size),
+					.count = count,
 					.binding = binding.value,
 					.always_mapped = true,
 				});
@@ -79,7 +78,7 @@ private:
 	using BindingBuffers = std::unordered_map<DescriptorBinding, Ref<B>>;
 	using SetBindingBuffers = std::unordered_map<DescriptorSet, BindingBuffers>;
 
-	std::unordered_map<FrameIndex, SetBindingBuffers> frame_set_binding_buffers { 0 };
+	std::unordered_map<FrameIndex, SetBindingBuffers> frame_set_binding_buffers {};
 };
 
 } // namespace Disarray

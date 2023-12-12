@@ -448,6 +448,14 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 
 	uniform_buffer_set.set_frame_count(app.get_swapchain().image_count());
 	uniform_buffer_set.create(sizeof(UBO), DescriptorBinding(0));
+
+	Log::info("SceneRenderer", "Created uniform buffer set");
+
+	storage_buffer_set.set_frame_count(app.get_swapchain().image_count());
+	storage_buffer_set.create(max_identifier_objects * sizeof(std::uint32_t), DescriptorBinding(1), max_identifier_objects);
+	storage_buffer_set.create(max_identifier_objects * sizeof(glm::mat4), DescriptorBinding(2), max_identifier_objects);
+
+	Log::info("SceneRenderer", "Created storage buffer set");
 }
 
 auto SceneRenderer::interface() -> void
@@ -555,6 +563,9 @@ void SceneRenderer::end_pass() { renderer->end_pass(*command_executor); }
 
 auto SceneRenderer::draw_identifiers(std::size_t count) -> void
 {
+	if (count == 0) {
+		return;
+	}
 	const auto& vb = aabb_model->get_vertices();
 	const auto& ib = aabb_model->get_indices();
 	renderer->draw_mesh_instanced(*command_executor, count, vb, ib, *get_pipeline("Identity"));

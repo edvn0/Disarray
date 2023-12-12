@@ -7,6 +7,8 @@ namespace Disarray::Vulkan {
 
 class StorageBuffer : public Disarray::StorageBuffer {
 public:
+	using base_type = Disarray::StorageBuffer;
+
 	StorageBuffer(const Disarray::Device& dev, BufferProperties properties);
 	~StorageBuffer() override = default;
 	auto size() const -> std::size_t override;

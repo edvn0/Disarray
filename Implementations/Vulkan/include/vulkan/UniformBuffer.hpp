@@ -11,6 +11,8 @@ namespace Disarray::Vulkan {
 
 class UniformBuffer : public Disarray::UniformBuffer {
 public:
+	using base_type = Disarray::UniformBuffer;
+
 	UniformBuffer(const Disarray::Device&, BufferProperties);
 	~UniformBuffer() override = default;
 

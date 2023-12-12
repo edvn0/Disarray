@@ -181,9 +181,12 @@ auto SingleShader::recreate_shader(bool should_clean) -> void
 	std::unordered_map<ShaderType, Scope<glslang::TShader>> shaders {};
 	for (auto&& [type, source] : sources) {
 		auto resources = default_resources();
+
+		static constexpr auto max_texture_units = 2000;
+
 		auto& custom = resources;
-		custom.maxCombinedTextureImageUnits = 2000;
-		custom.maxTextureImageUnits = 2000;
+		custom.maxCombinedTextureImageUnits = max_texture_units;
+		custom.maxTextureImageUnits = max_texture_units;
 
 		auto glslang_type = to_glslang_type(type);
 		auto shader = make_scope<glslang::TShader>(glslang_type);
@@ -251,7 +254,8 @@ SingleShader::~SingleShader() { clean_shader(); }
 // Hash combining function
 template <typename T> void hash_combine(std::size_t& seed, const T& value)
 {
-	seed ^= std::hash<T> {}(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+	static constexpr auto prime_number = 0x9e3779b9;
+	seed ^= std::hash<T> {}(value) + prime_number + (seed << 6) + (seed >> 2);
 }
 
 template <typename T> struct VectorHash {

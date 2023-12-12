@@ -21,13 +21,13 @@ ubo;
 struct IdentifierObject {
     uint identifier;
 };
-layout(std430, set = 3, binding = 2) readonly buffer Identifiers { IdentifierObject ssbo_objects[]; }
+layout(std430, set = 0, binding = 1) readonly buffer Identifiers { IdentifierObject ssbo_objects[]; }
 IdentifierSSBO;
 
 struct TransformObject {
     mat4 transform;
 };
-layout(std140, set = 3, binding = 3) readonly buffer Transforms { TransformObject ssbo_objects[]; }
+layout(std140, set = 0, binding = 2) readonly buffer Transforms { TransformObject ssbo_objects[]; }
 TransformSSBO;
 
 layout(location = 0) in vec3 pos;
