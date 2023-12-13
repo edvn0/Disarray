@@ -99,6 +99,9 @@ public:
 	auto get_entity_identifiers() -> auto& { return *entity_identifiers; }
 	auto get_entity_transforms() -> auto& { return *entity_transforms; }
 
+	auto get_uniform_buffer_set() -> auto& { return uniform_buffer_set; }
+	auto get_storage_buffer_set() -> auto& { return storage_buffer_set; }
+
 	template <SceneFramebuffer Framebuffer> auto get_framebuffer() const { return framebuffers.at(Framebuffer); }
 
 	void begin_execution();

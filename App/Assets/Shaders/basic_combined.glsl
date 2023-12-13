@@ -1,34 +1,7 @@
 #pragma stage vertex
 
-layout(push_constant) uniform PushConstantBlock
-{
-    mat4 object_transform;
-    vec3 albedo_colour;
-    float metalness;
-    float roughness;
-    float emission;
-    bool use_normal_map;
-}
-pc;
-
-layout(binding = 0) uniform UniformBlock {
-    mat4 view;
-    mat4 proj;
-    mat4 view_projection;
-}
-ubo;
-
-struct IdentifierObject {
-    uint identifier;
-};
-layout(std430, binding = 1) readonly buffer Identifiers { IdentifierObject ssbo_objects[]; }
-IdentifierSSBO;
-
-struct TransformObject {
-    mat4 transform;
-};
-layout(std140, binding = 2) readonly buffer Transforms { TransformObject ssbo_objects[]; }
-TransformSSBO;
+#include <Buffers.glsl>
+#include <MathHelpers.glsl>
 
 layout(location = 0) in vec3 pos;
 layout(location = 1) in vec2 uv;
@@ -42,37 +15,35 @@ layout(location = 1) out vec4 frag_colour;
 layout(location = 2) out vec3 frag_normals;
 layout(location = 3) out vec3 frag_tangent;
 layout(location = 4) out vec3 frag_bitangent;
+layout(location = 5) out vec3 frag_position;
+layout(location = 6) out vec4 frag_pos_light_space;
 
 void main() {
-    gl_Position = ubo.view_projection * pc.object_transform * vec4(pos, 1.0);
-    frag_uv = uv;
-    frag_colour = colour;
-    frag_normals = normals;
-    frag_tangent = tangent;
-    frag_bitangent = bitangent;
-
+    vec4 model_position = pc.object_transform * vec4(pos, 1.0);
     mat4 object_matrix = TransformSSBO.ssbo_objects[gl_InstanceIndex].transform;
     uint object_identifier = IdentifierSSBO.ssbo_objects[gl_InstanceIndex].identifier;
+
+    gl_Position = ubo.view_projection * model_position;
+    frag_position = vec3(model_position);
+    frag_uv = uv;
+    frag_colour = colour;
+    frag_normals = correct_normals(pc.object_transform, normals);
+    frag_tangent = tangent;
+    frag_bitangent = bitangent;
+    frag_pos_light_space = bias_matrix() * spu.view_projection * model_position;
 }
 
 #pragma stage fragment
 
-layout(push_constant) uniform PushConstantBlock
-{
-    mat4 object_transform;
-    vec3 albedo_colour;
-    float metalness;
-    float roughness;
-    float emission;
-    bool use_normal_map;
-}
-pc;
+#include <Buffers.glsl>
 
 layout(location = 0) in vec2 frag_uv;
 layout(location = 1) in vec4 frag_colour;
 layout(location = 2) in vec3 frag_normals;
 layout(location = 3) in vec3 frag_tangent;
 layout(location = 4) in vec3 frag_bitangent;
+layout(location = 5) in vec3 frag_position;
+layout(location = 6) in vec4 frag_pos_light_space;
 
 layout(location = 0) out vec4 out_colour;
 

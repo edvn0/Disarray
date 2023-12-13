@@ -448,12 +448,17 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 
 	uniform_buffer_set.set_frame_count(app.get_swapchain().image_count());
 	uniform_buffer_set.create(sizeof(UBO), DescriptorBinding(0));
+	uniform_buffer_set.create(sizeof(CameraUBO), DescriptorBinding(1));
+	uniform_buffer_set.create(sizeof(ShadowPassUBO), DescriptorBinding(2));
+	uniform_buffer_set.create(sizeof(DirectionalLightUBO), DescriptorBinding(3));
+	uniform_buffer_set.create(sizeof(PointLights), DescriptorBinding(4));
+	uniform_buffer_set.create(sizeof(SpotLights), DescriptorBinding(5));
 
 	Log::info("SceneRenderer", "Created uniform buffer set");
 
 	storage_buffer_set.set_frame_count(app.get_swapchain().image_count());
-	storage_buffer_set.create(max_identifier_objects * sizeof(std::uint32_t), DescriptorBinding(1), max_identifier_objects);
-	storage_buffer_set.create(max_identifier_objects * sizeof(glm::mat4), DescriptorBinding(2), max_identifier_objects);
+	storage_buffer_set.create(max_identifier_objects * sizeof(std::uint32_t), DescriptorBinding(6), max_identifier_objects);
+	storage_buffer_set.create(max_identifier_objects * sizeof(glm::mat4), DescriptorBinding(7), max_identifier_objects);
 
 	Log::info("SceneRenderer", "Created storage buffer set");
 }
@@ -482,6 +487,7 @@ auto SceneRenderer::interface() -> void
 		}
 	});
 }
+
 auto SceneRenderer::recreate(bool should_clean, const Extent& extent) -> void
 {
 	renderer_extent = extent;
@@ -516,9 +522,13 @@ auto SceneRenderer::destruct() -> void
 }
 
 auto SceneRenderer::get_pipeline(const std::string& key) -> Ref<Disarray::Pipeline>& { return get_pipeline_cache().get(key); }
+
 auto SceneRenderer::get_graphics_resource() -> IGraphicsResource& { return renderer->get_graphics_resource(); }
+
 auto SceneRenderer::get_texture_cache() -> TextureCache& { return renderer->get_texture_cache(); }
+
 auto SceneRenderer::get_pipeline_cache() -> PipelineCache& { return renderer->get_pipeline_cache(); }
+
 auto SceneRenderer::get_command_executor() -> CommandExecutor& { return *command_executor; }
 
 auto SceneRenderer::fullscreen_quad_pass() -> void { renderer->fullscreen_quad_pass(*command_executor, *get_pipeline("FullScreen")); }
@@ -552,10 +562,11 @@ auto SceneRenderer::begin_frame(const glm::mat4& view, const glm::mat4& projecti
 	default_ubo.view = view;
 	default_ubo.proj = projection;
 	default_ubo.view_projection = view_projection;
+	camera.view = view;
 
 	uniform_buffer_set.get(DescriptorBinding(0), get_graphics_resource().get_current_frame_index())->set_data(&default_ubo);
+	uniform_buffer_set.get(DescriptorBinding(1), get_graphics_resource().get_current_frame_index())->set_data(&camera);
 
-	camera.view = view;
 	renderer->begin_frame();
 }
 

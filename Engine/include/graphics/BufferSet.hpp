@@ -62,7 +62,7 @@ public:
 		}
 	}
 
-	auto get(DescriptorBinding binding, FrameIndex frame = FrameIndex { 0 }, DescriptorSet set = DescriptorSet { 0 }) -> Ref<B>
+	auto get(DescriptorBinding binding, FrameIndex frame = FrameIndex { 0 }, DescriptorSet set = DescriptorSet { 0 }) -> auto&
 	{
 		return frame_set_binding_buffers.at(frame).at(set).at(binding);
 	}

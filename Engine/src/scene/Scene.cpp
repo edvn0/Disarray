@@ -89,6 +89,7 @@ void Scene::begin_frame(const Camera& camera, SceneRenderer& scene_renderer)
 void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_proj, SceneRenderer& scene_renderer)
 {
 	execute_callbacks(scene_renderer);
+	const auto current_frame_index = scene_renderer.get_graphics_resource().get_current_frame_index();
 
 	scene_renderer.begin_frame(view, proj, view_proj);
 
@@ -101,6 +102,9 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 	auto& directional = directional_transaction.get_buffer();
 	auto& point_lights = point_lights_transaction.get_buffer();
 	auto& spot_lights = spot_lights_transaction.get_buffer();
+
+	auto& shadow_buffer_set = scene_renderer.get_uniform_buffer_set().get(DescriptorBinding { 2 }, current_frame_index);
+	auto& directional_buffer_set = scene_renderer.get_uniform_buffer_set().get(DescriptorBinding { 3 }, current_frame_index);
 
 	auto& push_constant = scene_renderer.get_graphics_resource().get_editable_push_constant();
 
@@ -139,6 +143,9 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 		shadow_pass.view_projection = view_projection;
 	}
 
+	directional_buffer_set->set_data(&directional);
+	shadow_buffer_set->set_data(&shadow_pass);
+
 	std::size_t point_light_index { 0 };
 	auto& lights = point_lights.lights;
 	auto point_light_ssbo = scene_renderer.get_point_light_transforms().get_mutable<glm::mat4>();
@@ -157,6 +164,7 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 		point_light_ssbo_colour[point_light_index] = texture.colour;
 		point_light_index++;
 	}
+	point_lights.count = static_cast<std::uint32_t>(point_light_index);
 	push_constant.max_point_lights = static_cast<std::uint32_t>(point_light_index);
 
 	std::size_t spot_light_index { 0 };
@@ -185,7 +193,14 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 		spot_light_ssbo_colour[spot_light_index] = texture.colour;
 		spot_light_index++;
 	}
+	spot_lights.count = static_cast<std::uint32_t>(spot_light_index);
 	push_constant.max_spot_lights = static_cast<std::uint32_t>(spot_light_index);
+
+	auto& point_light_buffer = scene_renderer.get_uniform_buffer_set().get(DescriptorBinding { 4 }, current_frame_index);
+	auto& spot_light_buffer = scene_renderer.get_uniform_buffer_set().get(DescriptorBinding { 5 }, current_frame_index);
+
+	point_light_buffer->set_data(&point_lights);
+	spot_light_buffer->set_data(&spot_lights);
 
 	std::size_t identifier_index { 0 };
 	auto ssbo_identifiers = scene_renderer.get_entity_identifiers().get_mutable<std::uint32_t>();
