@@ -59,6 +59,7 @@ void Scene::construct(Disarray::App& app)
 		});
 
 	auto dumb_entity = create("Dumb");
+	dumb_entity.get_transform().scale *= 100.0F;
 	dumb_entity.get_components<Components::ID>().can_interact_with = false;
 	dumb_entity.add_component<Components::StaticMesh>(dumb_mesh);
 }
@@ -264,7 +265,7 @@ void Scene::render(SceneRenderer& renderer)
 	}
 	{
 		// This is the composite pass!
-		renderer.fullscreen_quad_pass();
+		// renderer.fullscreen_quad_pass();
 	}
 }
 
@@ -296,14 +297,16 @@ void Scene::draw_skybox(SceneRenderer& scene_renderer)
 
 void Scene::draw_geometry(SceneRenderer& scene_renderer)
 {
-	for (auto&& [entity, mesh, transform] : registry.view<Components::StaticMesh, const Components::Transform>().each()) {
-		if (mesh.static_mesh == nullptr) {
-			continue;
-		}
+	{
+		for (auto&& [entity, mesh, transform] : registry.view<Components::StaticMesh, const Components::Transform>().each()) {
+			if (mesh.static_mesh == nullptr) {
+				continue;
+			}
 
-		const auto& actual_pipeline = *scene_renderer.get_pipeline("BasicCombined");
-		const auto transform_computed = transform.compute();
-		scene_renderer.draw_static_mesh(mesh.static_mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
+			const auto& actual_pipeline = *scene_renderer.get_pipeline("BasicCombined");
+			const auto transform_computed = transform.compute();
+			scene_renderer.draw_static_mesh(mesh.static_mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
+		}
 	}
 
 	{

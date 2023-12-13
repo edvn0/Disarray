@@ -80,11 +80,9 @@ namespace Vulkan {
 		}
 	}
 
-	static constexpr uint32_t mesh_import_flags = aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_SortByPType | aiProcess_GenNormals
-		| aiProcess_GenUVCoords |
-		//		aiProcess_OptimizeGraph |
-		aiProcess_OptimizeMeshes | aiProcess_JoinIdenticalVertices | aiProcess_LimitBoneWeights | aiProcess_ValidateDataStructure
-		| aiProcess_GlobalScale;
+	static constexpr std::uint32_t mesh_import_flags = aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_SortByPType
+		| aiProcess_GenNormals | aiProcess_GenUVCoords | aiProcess_FlipWindingOrder | aiProcess_FlipUVs | aiProcess_OptimizeMeshes
+		| aiProcess_JoinIdenticalVertices | aiProcess_LimitBoneWeights | aiProcess_ValidateDataStructure | aiProcess_GlobalScale;
 
 	StaticMesh::StaticMesh(const Disarray::Device& dev, const std::filesystem::path& path)
 		: device(dev)

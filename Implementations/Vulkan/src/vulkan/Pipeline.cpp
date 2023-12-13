@@ -380,10 +380,6 @@ void Pipeline::construct_layout(const Extent& extent)
 
 	std::vector<VkSpecializationMapEntry> specialization_map_entries {};
 	if (props.specialisation_constants.valid()) {
-		// Each shader constant of a shader stage corresponds to one map entry
-		// Shader bindings based on specialization constants are marked by the new "constant_id" layout qualifier:
-		//	layout (constant_id = 0) const int LIGHTING_MODEL = 0;
-		//	layout (constant_id = 1) const float PARAM_TOON_DESATURATION = 0.0f;
 #ifdef IS_DEBUG
 		std::unordered_set<std::uint32_t> constant_ids {};
 #endif
@@ -445,10 +441,14 @@ Pipeline::~Pipeline()
 	data.resize(size);
 	vkGetPipelineCacheData(supply_cast<Vulkan::Device>(device), cache, &size, data.data());
 
-	const auto pipeline_name = fmt::format(
-		"Pipeline-{}-{}", props.vertex_shader->get_properties().identifier.filename(), props.fragment_shader->get_properties().identifier.filename());
-
-	const auto name = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", pipeline_name, props.hash());
+	std::string name;
+	if (props.vertex_shader != nullptr && props.fragment_shader != nullptr) {
+		auto pipeline_name = fmt::format("Pipeline-{}-{}", props.vertex_shader->get_properties().identifier.filename(),
+			props.fragment_shader->get_properties().identifier.filename());
+		name = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", pipeline_name, props.hash());
+	} else {
+		name = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", props.single_shader->get_properties().path.filename(), props.hash());
+	}
 	FS::write_to_file(name, size, std::span { data });
 
 	vkDestroyPipelineCache(supply_cast<Vulkan::Device>(device), cache, nullptr);

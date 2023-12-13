@@ -19,7 +19,7 @@ public:
 	auto get_reference_count() const -> std::uint32_t { return reference_count; }
 
 private:
-	std::atomic<uint32_t> reference_count = 0;
+	std::atomic<std::uint32_t> reference_count = 0;
 };
 
 namespace MemoryTracking {

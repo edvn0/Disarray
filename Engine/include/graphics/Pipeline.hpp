@@ -235,6 +235,7 @@ struct PipelineProperties {
 	auto hash() const -> std::size_t;
 	void set_shader_with_type(ShaderType type, const Ref<Disarray::Shader>& shader);
 	auto is_valid() const -> bool;
+	auto is_single_shader() const -> bool;
 };
 
 class Pipeline : public ReferenceCountable {

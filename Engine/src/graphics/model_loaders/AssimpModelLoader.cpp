@@ -57,7 +57,7 @@ auto AssimpModelLoader::process_mesh(aiMesh* mesh, const std::filesystem::path& 
 	const auto has_tangents = !mesh_tangents.empty() && mesh_tangents.data() != nullptr;
 	const auto has_bitangents = !mesh_bitangents.empty() && mesh_bitangents.data() != nullptr;
 
-	std::unordered_map<ModelVertex, uint32_t> unique_vertices {};
+	std::unordered_map<ModelVertex, std::uint32_t> unique_vertices {};
 	std::vector<ModelVertex> vertices;
 	std::vector<std::uint32_t> indices;
 	std::vector<Disarray::TextureProperties> textures;

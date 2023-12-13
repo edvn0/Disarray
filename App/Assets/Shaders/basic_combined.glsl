@@ -11,7 +11,7 @@ layout(push_constant) uniform PushConstantBlock
 }
 pc;
 
-layout(set = 0, binding = 0) uniform UniformBlock {
+layout(binding = 0) uniform UniformBlock {
     mat4 view;
     mat4 proj;
     mat4 view_projection;
@@ -21,13 +21,13 @@ ubo;
 struct IdentifierObject {
     uint identifier;
 };
-layout(std430, set = 0, binding = 1) readonly buffer Identifiers { IdentifierObject ssbo_objects[]; }
+layout(std430, binding = 1) readonly buffer Identifiers { IdentifierObject ssbo_objects[]; }
 IdentifierSSBO;
 
 struct TransformObject {
     mat4 transform;
 };
-layout(std140, set = 0, binding = 2) readonly buffer Transforms { TransformObject ssbo_objects[]; }
+layout(std140, binding = 2) readonly buffer Transforms { TransformObject ssbo_objects[]; }
 TransformSSBO;
 
 layout(location = 0) in vec3 pos;
@@ -85,5 +85,12 @@ layout(binding = 21) uniform sampler2D roughness_map;
 
 void main() {
     vec3 albedo = texture(albedo_map, frag_uv).rgb * pc.albedo_colour;
-    out_colour = vec4(albedo, 1.0f);
+    vec3 diffuse = texture(diffuse_map, frag_uv).rgb;
+    vec3 specular = texture(specular_map, frag_uv).rgb;
+    vec3 normal = texture(normal_map, frag_uv).rgb;
+    float metalness = texture(metalness_map, frag_uv).r;
+    float roughness = texture(roughness_map, frag_uv).r;
+
+    // Combine all sampler2Ds please
+    out_colour = vec4(albedo, 1.0f) * vec4(diffuse, 1.0f) * vec4(specular, 1.0f) * vec4(normal, 1.0f);
 }

@@ -24,6 +24,7 @@ namespace Disarray {
 struct SingleShaderProperties {
 	std::filesystem::path path;
 	bool optimize { true };
+	auto identifier() const -> std::string { return path.filename().string(); }
 };
 
 class SingleShader : public ReferenceCountable {

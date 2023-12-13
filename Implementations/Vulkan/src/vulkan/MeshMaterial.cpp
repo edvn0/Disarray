@@ -155,7 +155,12 @@ auto MeshMaterial::set(const std::string& name, const glm::mat3& value) -> void 
 auto MeshMaterial::set(const std::string& name, const glm::mat4& value) -> void { set<>(name, value); }
 auto MeshMaterial::set(const std::string& name, const Ref<Disarray::Image>& image) -> void { set_vulkan_descriptor(name, image.as<Vulkan::Image>()); }
 
-auto MeshMaterial::clean_material() -> void { }
+auto MeshMaterial::clean_material() -> void
+{
+	resident_descriptors.clear();
+	resident_descriptor_arrays.clear();
+	descriptor_sets.clear();
+}
 
 auto MeshMaterial::allocate_buffer_storage() -> void
 {

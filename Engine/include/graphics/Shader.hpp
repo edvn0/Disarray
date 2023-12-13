@@ -13,7 +13,12 @@
 
 namespace Disarray {
 
-enum class ShaderType : std::uint8_t { Vertex, Fragment, Compute, Include };
+enum class ShaderType : std::uint8_t {
+	Vertex,
+	Fragment,
+	Compute,
+	Include,
+};
 
 static constexpr auto shader_type_extension(ShaderType shader_type)
 {

@@ -82,6 +82,8 @@ private:
 		VkDevice device { nullptr };
 		std::size_t allocation_count { 0 };
 		std::size_t allocation_size { 0 };
+
+		~Pool();
 	};
 	static inline Scope<Pool> descriptor_pool { nullptr };
 

@@ -500,7 +500,8 @@ auto SingleShader::create_descriptor_set_layouts() -> void
 		descriptor_layout.pBindings = layout_bindings.data();
 
 		Log::info("Renderer",
-			"Creating descriptor set {0} with {1} ubo's, {2} ssbo's, {3} samplers, {4} separate textures, {5} separate samplers and {6} storage ",
+			"Creating descriptor set ['{0}'] with {1} ubo's, {2} ssbo's, {3} samplers, {4} separate textures, {5} separate samplers and {6} storage "
+			"images.",
 			set, shader_descriptor_set.uniform_buffers.size(), shader_descriptor_set.storage_buffers.size(),
 			shader_descriptor_set.sampled_images.size(), shader_descriptor_set.separate_textures.size(),
 			shader_descriptor_set.separate_samplers.size(), shader_descriptor_set.storage_images.size());

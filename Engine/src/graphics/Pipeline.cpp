@@ -42,6 +42,8 @@ void PipelineProperties::set_shader_with_type(ShaderType type, const Ref<Disarra
 
 auto PipelineProperties::is_valid() const -> bool { return framebuffer != nullptr; }
 
+auto PipelineProperties::is_single_shader() const -> bool { return single_shader != nullptr; }
+
 auto Pipeline::construct(const Disarray::Device& device, Disarray::PipelineProperties properties) -> Ref<Disarray::Pipeline>
 {
 	return make_ref<Vulkan::Pipeline>(device, std::move(properties));

@@ -58,18 +58,18 @@ public:
 					.binding = binding.value,
 					.always_mapped = true,
 				});
-			set(std::move(buffer), DescriptorSet(0), frame);
+			set(std::move(buffer), frame);
 		}
 	}
 
-	auto get(DescriptorBinding binding, DescriptorSet set = DescriptorSet { 0 }, FrameIndex frame = FrameIndex { 0 }) -> Ref<B>
+	auto get(DescriptorBinding binding, FrameIndex frame = FrameIndex { 0 }, DescriptorSet set = DescriptorSet { 0 }) -> Ref<B>
 	{
 		return frame_set_binding_buffers.at(frame).at(set).at(binding);
 	}
 
-	auto set(Ref<B>&& buffer, DescriptorSet set = DescriptorSet { 0 }, FrameIndex frame = FrameIndex { 0 }) -> void
+	auto set(Ref<B>&& buffer, FrameIndex frame = FrameIndex { 0 }, DescriptorSet set = DescriptorSet { 0 }) -> void
 	{
-		frame_set_binding_buffers[frame][set][buffer->get_binding()] = buffer;
+		frame_set_binding_buffers[frame][set].try_emplace(buffer->get_binding(), std::move(buffer));
 	}
 
 private:

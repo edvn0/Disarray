@@ -347,8 +347,13 @@ void GraphicsResource::cleanup_graphics_resource()
 	Collections::for_each(layouts, [&vk_device](VkDescriptorSetLayout& layout) { vkDestroyDescriptorSetLayout(vk_device, layout, nullptr); });
 	layouts = {};
 	vkDestroyDescriptorPool(vk_device, pool, nullptr);
+	Log::info("GraphicsResource", "Cleaned up graphics resource.");
+
+	descriptor_pool.reset();
+	Log::info("GraphicsResource", "Cleaned up static descriptor pool.");
 }
 
+GraphicsResource::Pool::~Pool() { vkDestroyDescriptorPool(device, pool, nullptr); }
 GraphicsResource::~GraphicsResource() { cleanup_graphics_resource(); }
 
 auto GraphicsResource::descriptor_write_sets_per_frame(DescriptorSet descriptor_set) -> std::vector<VkWriteDescriptorSet>

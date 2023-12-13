@@ -17,7 +17,7 @@ concept SubmeshMember = AnyOf<T, ModelVertex, std::uint32_t, Disarray::TexturePr
 
 struct Submesh {
 	std::vector<ModelVertex> vertices {};
-	std::vector<uint32_t> indices {};
+	std::vector<std::uint32_t> indices {};
 	std::vector<Disarray::TextureProperties> texture_properties {};
 	std::vector<Ref<Disarray::Texture>> textures {};
 

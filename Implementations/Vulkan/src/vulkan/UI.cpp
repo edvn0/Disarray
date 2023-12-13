@@ -19,6 +19,7 @@
 #include "ui/UI.hpp"
 #include "util/BitCast.hpp"
 #include "vulkan/Image.hpp"
+#include "vulkan/SingleShader.hpp"
 #include "vulkan/Texture.hpp"
 
 namespace Disarray::UI {
@@ -238,6 +239,42 @@ auto shader_drop_button(Device& device, const std::string& button_name, ShaderTy
 			auto shader = Shader::compile(device, shader_path);
 			out_shader = shader;
 			return true;
+		}
+	}
+
+	return false;
+}
+
+auto shader_drop_button(Disarray::Device& device, const std::string& button_name, Ref<SingleShader>& out_shader) -> bool
+{
+	UI::text_wrapped("Current shader: {}", out_shader->get_properties().identifier());
+	ImGui::Button(button_name.c_str());
+	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".glsl" })) {
+		const auto& shader_path = *dropped;
+		try {
+			auto shader = SingleShader::construct(device, { .path = shader_path });
+			out_shader = shader;
+			return true;
+		} catch (const std::exception&) {
+			return false;
+		}
+	}
+
+	return false;
+}
+
+auto shader_drop_button(const Disarray::Device& device, const std::string& button_name, Ref<SingleShader>& out_shader) -> bool
+{
+	UI::text_wrapped("Current shader: {}", out_shader->get_properties().identifier());
+	ImGui::Button(button_name.c_str());
+	if (const auto dropped = UI::accept_drag_drop("Disarray::DragDropItem", { ".glsl" })) {
+		const auto& shader_path = *dropped;
+		try {
+			auto shader = SingleShader::construct(device, { .path = shader_path });
+			out_shader = shader;
+			return true;
+		} catch (const std::exception&) {
+			return false;
 		}
 	}
 

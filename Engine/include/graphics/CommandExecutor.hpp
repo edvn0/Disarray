@@ -38,8 +38,8 @@ public:
 
 	virtual void wait_indefinite() = 0;
 
-	virtual auto get_gpu_execution_time(uint32_t frame_index, uint32_t query_index = 0) const -> float = 0;
-	virtual auto get_pipeline_statistics(uint32_t frame_index) const -> const PipelineStatistics& = 0;
+	virtual auto get_gpu_execution_time(std::uint32_t frame_index, std::uint32_t query_index = 0) const -> float = 0;
+	virtual auto get_pipeline_statistics(std::uint32_t frame_index) const -> const PipelineStatistics& = 0;
 
 	virtual auto has_stats() const -> bool = 0;
 

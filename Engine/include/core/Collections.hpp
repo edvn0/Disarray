@@ -33,8 +33,8 @@ public:
 	template <class Other> DefaultAllocator(const DefaultAllocator<Other>& other) noexcept {};
 	template <class Other> using rebind = DefaultAllocator<Other>;
 
-	void deallocate(T* const ptr, const size_t count) { std::allocator<T>::deallocate(ptr, count); };
-	auto allocate(const size_t count) -> T* { return std::allocator<T>::allocate(count); };
+	void deallocate(T* const ptr, const std::size_t count) { std::allocator<T>::deallocate(ptr, count); };
+	auto allocate(const std::size_t count) -> T* { return std::allocator<T>::allocate(count); };
 };
 
 namespace Detail {

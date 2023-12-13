@@ -1,6 +1,6 @@
 #include "DisarrayPCH.hpp"
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 #include <array>
 #include <cstddef>
@@ -37,12 +37,11 @@ namespace Disarray::Vulkan {
 
 namespace {
 
-	template <class VulkanType>
-	auto create_or_get_write_descriptor_for(std::uint32_t frames_in_flight, BufferSet<typename VulkanType::base_type>* buffer_set,
-		Vulkan::MeshMaterial& vulkan_material) -> const std::vector<std::vector<VkWriteDescriptorSet>>&
+	template <class VulkanType, typename T = VulkanType::base_type>
+	auto create_or_get_write_descriptor_for(std::uint32_t frames_in_flight, BufferSet<T>* buffer_set, Vulkan::MeshMaterial& vulkan_material)
+		-> const std::vector<std::vector<VkWriteDescriptorSet>>&
 	{
-		static std::unordered_map<BufferSet<typename VulkanType::base_type>*,
-			std::unordered_map<std::size_t, std::vector<std::vector<VkWriteDescriptorSet>>>>
+		static std::unordered_map<BufferSet<T>*, std::unordered_map<std::size_t, std::vector<std::vector<VkWriteDescriptorSet>>>>
 			buffer_set_write_descriptor_cache;
 
 		constexpr auto get_descriptor_set_vector = [](auto& map, auto* key, auto hash) -> auto& { return map[key][hash]; };
@@ -71,11 +70,11 @@ namespace {
 		const auto& uniform_buffers = shader_descriptor_set.uniform_buffers;
 
 		if constexpr (std::is_same_v<VulkanType, Vulkan::StorageBuffer>) {
-			for (const auto& binding : shader_descriptor_sets[0].storage_buffers | std::views::keys) {
+			for (const auto& binding : storage_buffers | std::views::keys) {
 				auto& write_descriptors = get_descriptor_set_vector(buffer_set_write_descriptor_cache, buffer_set, shader_hash);
 				write_descriptors.resize(frames_in_flight);
 				for (auto frame = FrameIndex { 0 }; frame < frames_in_flight; ++frame) {
-					const auto& stored_buffer = buffer_set->get(DescriptorBinding(binding), DescriptorSet(0), frame).template as<VulkanType>();
+					const auto& stored_buffer = buffer_set->get(DescriptorBinding(binding), frame).template as<VulkanType>();
 
 					VkWriteDescriptorSet wds = {};
 					wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -87,11 +86,11 @@ namespace {
 				}
 			}
 		} else {
-			for (const auto& binding : shader_descriptor_sets[0].uniform_buffers | std::views::keys) {
+			for (const auto& binding : uniform_buffers | std::views::keys) {
 				auto& write_descriptors = get_descriptor_set_vector(buffer_set_write_descriptor_cache, buffer_set, shader_hash);
 				write_descriptors.resize(frames_in_flight);
 				for (auto frame = FrameIndex { 0 }; frame < frames_in_flight; ++frame) {
-					const auto& stored_buffer = buffer_set->get(DescriptorBinding(binding), DescriptorSet(0), frame).template as<VulkanType>();
+					const auto& stored_buffer = buffer_set->get(DescriptorBinding(binding), frame).template as<VulkanType>();
 
 					VkWriteDescriptorSet wds = {};
 					wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -214,7 +213,7 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 
 	vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(mesh.get_indices()), 0, VK_INDEX_TYPE_UINT32);
 
-	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(mesh.get_indices().size()), 1, 0, 0, 0);
+	draw_indexed(executor, mesh.get_indices().size());
 }
 
 void Renderer::draw_mesh_instanced(Disarray::CommandExecutor& executor, std::size_t instance_count, const Disarray::VertexBuffer& vertex_buffer,
@@ -239,7 +238,7 @@ void Renderer::draw_mesh_instanced(Disarray::CommandExecutor& executor, std::siz
 
 	vkCmdBindIndexBuffer(command_buffer, supply_cast<Vulkan::IndexBuffer>(index_buffer), 0, VK_INDEX_TYPE_UINT32);
 
-	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(index_buffer.size()), static_cast<std::uint32_t>(instance_count), 0, 0, 0);
+	draw_indexed(executor, index_buffer.size(), instance_count);
 }
 
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Mesh& mesh, const Disarray::Pipeline& mesh_pipeline,
@@ -282,21 +281,21 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Me
 	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(indices.size()), 1, 0, 0, 0);
 }
 
-void Renderer::update_material_for_rendering(FrameIndex frame_index, Vulkan::MeshMaterial& material,
-	BufferSet<Disarray::UniformBuffer>* uniformBufferSet, BufferSet<Disarray::StorageBuffer>* storageBufferSet)
+void Renderer::update_material_for_rendering(
+	FrameIndex frame_index, Vulkan::MeshMaterial& material, BufferSet<Disarray::UniformBuffer>* ubo_set, BufferSet<Disarray::StorageBuffer>* sbo_set)
 {
 	const auto frames_in_flight = swapchain.image_count();
 
-	if (uniformBufferSet != nullptr) {
-		auto write_descriptors = create_or_get_write_descriptor_for<Vulkan::UniformBuffer>(frames_in_flight, uniformBufferSet, material);
-		if (storageBufferSet != nullptr) {
-			const auto& storageBufferWriteDescriptors
-				= create_or_get_write_descriptor_for<Vulkan::StorageBuffer>(frames_in_flight, storageBufferSet, material);
+	if (ubo_set != nullptr) {
+		auto write_descriptors = create_or_get_write_descriptor_for<Vulkan::UniformBuffer>(frames_in_flight, ubo_set, material);
+		if (sbo_set != nullptr) {
+			const auto& storage_buffer_write_sets = create_or_get_write_descriptor_for<Vulkan::StorageBuffer>(frames_in_flight, sbo_set, material);
 
 			for (uint32_t frame = 0; frame < frames_in_flight; frame++) {
-				write_descriptors[frame].reserve(write_descriptors[frame].size() + storageBufferWriteDescriptors[frame].size());
-				write_descriptors[frame].insert(
-					write_descriptors[frame].end(), storageBufferWriteDescriptors[frame].begin(), storageBufferWriteDescriptors[frame].end());
+				const auto& sbo_ws = storage_buffer_write_sets[frame];
+				const auto reserved_size = write_descriptors[frame].size() + sbo_ws.size();
+				write_descriptors[frame].reserve(reserved_size);
+				write_descriptors[frame].insert(write_descriptors[frame].end(), sbo_ws.begin(), sbo_ws.end());
 			}
 		}
 		material.update_for_rendering(frame_index, write_descriptors);
@@ -305,9 +304,15 @@ void Renderer::update_material_for_rendering(FrameIndex frame_index, Vulkan::Mes
 	}
 }
 
+void Renderer::draw_indexed(Disarray::CommandExecutor& executor, std::uint32_t index_count, std::uint32_t instance_count, std::uint32_t first_index,
+	std::int32_t vertex_offset, std::uint32_t first_instance)
+{
+	vkCmdDrawIndexed(supply_cast<Vulkan::CommandExecutor>(executor), index_count, instance_count, first_index, vertex_offset, first_instance);
+}
+
 void Renderer::draw_mesh(Disarray::CommandExecutor& executor, Ref<Disarray::StaticMesh>& static_mesh, const Disarray::Pipeline& pipeline,
-	BufferSet<Disarray::UniformBuffer>& uniform_buffer_set, Disarray::BufferSet<Disarray::StorageBuffer>& storage_buffer_set, const glm::vec4&,
-	const glm::mat4&)
+	BufferSet<Disarray::UniformBuffer>& uniform_buffer_set, Disarray::BufferSet<Disarray::StorageBuffer>& storage_buffer_set, const glm::vec4& colour,
+	const glm::mat4& transform)
 {
 	bind_pipeline(executor, pipeline);
 	const auto frame_index = get_graphics_resource().get_current_frame_index();
@@ -343,12 +348,16 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, Ref<Disarray::Stat
 			float emission;
 			bool use_normal_map;
 		} pc {};
+		pc.object_transform = transform;
+		pc.albedo_colour = colour;
+		pc.metalness = 0.0F;
+		pc.roughness = 0.2F;
+		pc.emission = 0.1F;
 		vkCmdPushConstants(supply_cast<Vulkan::CommandExecutor>(executor), cast_to<Vulkan::Pipeline>(pipeline).get_layout(),
 			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PC), &pc);
 
 		// TODO(EdwinC): Instancing!
-		vkCmdDrawIndexed(supply_cast<Vulkan::CommandExecutor>(executor), static_submesh.index_count, 1, static_submesh.base_index,
-			static_cast<std::int32_t>(static_submesh.base_vertex), 0);
+		draw_indexed(executor, static_submesh.index_count, 1, static_submesh.base_index, static_cast<std::int32_t>(static_submesh.base_vertex), 0);
 	}
 }
 
@@ -377,8 +386,12 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Ve
 
 	bind_descriptor_sets(executor, pipeline);
 
-	const std::array arr { supply_cast<Vulkan::VertexBuffer>(vertices) };
-	const std::array offsets = { VkDeviceSize { 0 } };
+	const std::array arr {
+		supply_cast<Vulkan::VertexBuffer>(vertices),
+	};
+	const std::array offsets = {
+		VkDeviceSize { 0 },
+	};
 	vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets.data());
 
 	if (pipeline.get_properties().polygon_mode == PolygonMode::Line) {
@@ -387,7 +400,7 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, const Disarray::Ve
 
 	const auto& vk_indices = cast_to<Vulkan::IndexBuffer>(indices);
 	vkCmdBindIndexBuffer(command_buffer, vk_indices.supply(), 0, VK_INDEX_TYPE_UINT32);
-	vkCmdDrawIndexed(command_buffer, static_cast<std::uint32_t>(indices.size()), 1, 0, 0, 0);
+	draw_indexed(executor, static_cast<std::uint32_t>(indices.size()), 1, 0, 0, 0);
 }
 
 void Renderer::text_rendering_pass(Disarray::CommandExecutor& executor) { text_renderer.render(*this, executor); }
@@ -398,15 +411,9 @@ void Renderer::fullscreen_quad_pass(Disarray::CommandExecutor& executor, const D
 {
 	const auto& framebuffer = fullscreen_pipeline.get_framebuffer();
 	begin_pass(executor, framebuffer, false, RenderAreaExtent { framebuffer });
-
-	auto* cmd = supply_cast<Vulkan::CommandExecutor>(executor);
 	bind_pipeline(executor, fullscreen_pipeline);
-	const auto desc_sets = std::array {
-		get_graphics_resource().get_descriptor_set(DescriptorSet(1)),
-	};
-	bind_descriptor_sets(executor, fullscreen_pipeline, desc_sets);
-	vkCmdDrawIndexed(cmd, 3, 1, 0, 0, 0);
-
+	bind_descriptor_sets(executor, fullscreen_pipeline);
+	draw_indexed(executor, 3, 1, 0, 0, 0);
 	end_pass(executor);
 }
 

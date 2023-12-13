@@ -553,6 +553,8 @@ auto SceneRenderer::begin_frame(const glm::mat4& view, const glm::mat4& projecti
 	default_ubo.proj = projection;
 	default_ubo.view_projection = view_projection;
 
+	uniform_buffer_set.get(DescriptorBinding(0), get_graphics_resource().get_current_frame_index())->set_data(&default_ubo);
+
 	camera.view = view;
 	renderer->begin_frame();
 }
@@ -659,7 +661,14 @@ auto SceneRenderer::draw_static_mesh(Ref<StaticMesh>& mesh, const Pipeline& pipe
 
 void SceneRenderer::clear_pass(RenderPasses render_pass) { renderer->clear_pass(*command_executor, render_pass); }
 
-auto SceneRenderer::get_final_image() -> const Disarray::Image& { return framebuffers.at(SceneFramebuffer::FullScreen)->get_image(); }
+auto SceneRenderer::get_final_image() -> const Disarray::Image&
+{
+#if !defined(DISARRAY_DEBUG)
+	return framebuffers.at(SceneFramebuffer::Geometry)->get_image();
+#else
+	return framebuffers.at(SceneFramebuffer::FullScreen)->get_image();
+#endif
+}
 
 void SceneRenderer::begin_execution() { command_executor->begin(); }
 

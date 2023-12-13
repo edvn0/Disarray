@@ -102,6 +102,27 @@ private:
 	void bind_descriptor_sets(Disarray::CommandExecutor& executor, const Disarray::Pipeline& pipeline, const std::span<const VkDescriptorSet>& span);
 	void update_material_for_rendering(FrameIndex frame_index, Vulkan::MeshMaterial& material, BufferSet<Disarray::UniformBuffer>* = nullptr,
 		BufferSet<Disarray::StorageBuffer>* = nullptr);
+
+	void draw_indexed(Disarray::CommandExecutor&, std::uint32_t index_count, std::uint32_t instance_count, std::uint32_t first_index,
+		std::int32_t vertex_offset, std::uint32_t first_instance);
+
+	void draw_indexed(Disarray::CommandExecutor& executor, std::integral auto index_count, std::integral auto instance_count,
+		std::integral auto first_index, std::integral auto vertex_offset, std::integral auto first_instance)
+	{
+		return draw_indexed(executor, static_cast<std::uint32_t>(index_count), static_cast<std::uint32_t>(instance_count),
+			static_cast<std::uint32_t>(first_index), static_cast<std::int32_t>(vertex_offset), static_cast<std::uint32_t>(first_instance));
+	}
+
+	void draw_indexed(Disarray::CommandExecutor& executor, std::integral auto index_count, std::integral auto instance_count)
+	{
+		return draw_indexed(executor, static_cast<std::uint32_t>(index_count), static_cast<std::uint32_t>(instance_count), 0, 0, 0);
+	}
+
+	void draw_indexed(Disarray::CommandExecutor& executor, std::integral auto index_count)
+	{
+		return draw_indexed(executor, static_cast<std::uint32_t>(index_count), 1, 0, 0, 0);
+	}
+
 	const Disarray::Device& device;
 	const Disarray::Swapchain& swapchain;
 

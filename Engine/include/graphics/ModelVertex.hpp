@@ -29,10 +29,13 @@ struct ModelVertex {
 
 namespace std {
 template <> struct hash<Disarray::ModelVertex> {
-	auto operator()(Disarray::ModelVertex const& vertex) const -> size_t
+	auto operator()(const Disarray::ModelVertex& vertex) const noexcept -> std::size_t
 	{
-		return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.uvs) << 1)
-			^ ((hash<glm::vec3>()(vertex.normals) << 1) >> 1);
+		const auto model_vertex_hash = hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1) ^ (hash<glm::vec2>()(vertex.uvs) << 1)
+			^ ((hash<glm::vec3>()(vertex.normals) << 1) >> 1) ^ ((hash<glm::vec3>()(vertex.tangents) << 1) >> 1)
+			^ ((hash<glm::vec3>()(vertex.bitangents) << 1) >> 1);
+
+		return model_vertex_hash;
 	}
 };
 } // namespace std
