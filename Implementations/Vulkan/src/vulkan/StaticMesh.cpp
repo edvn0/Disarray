@@ -1,27 +1,68 @@
 #include "DisarrayPCH.hpp"
 
+#include <glm/glm.hpp>
+
 #include <assimp/DefaultLogger.hpp>
 #include <assimp/Importer.hpp>
+#include <assimp/matrix4x4.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <stb_image.h>
 
+#include <concepts>
 #include <cstdint>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "core/Ensure.hpp"
 #include "core/Log.hpp"
+#include "core/PointerDefinition.hpp"
 #include "core/String.hpp"
+#include "core/Types.hpp"
 #include "core/filesystem/AssetLocations.hpp"
+#include "graphics/ImageLoader.hpp"
+#include "graphics/ImageProperties.hpp"
 #include "graphics/MeshMaterial.hpp"
 #include "graphics/ModelVertex.hpp"
 #include "graphics/Renderer.hpp"
 #include "graphics/StaticMesh.hpp"
+#include "graphics/Texture.hpp"
 #include "graphics/model_loaders/AssimpModelLoader.hpp"
+#include "util/BitCast.hpp"
 #include "vulkan/MeshMaterial.hpp"
 #include "vulkan/StaticMesh.hpp"
+#include "vulkan/Texture.hpp"
 #include "vulkan/exceptions/VulkanExceptions.hpp"
 
 namespace Disarray {
+
+struct InMemoryImageLoader {
+	explicit InMemoryImageLoader(const aiTexel* input_data, std::integral auto input_width, std::integral auto input_height, DataBuffer& input_buffer)
+		: data(input_data)
+		, buffer(input_buffer)
+	{
+		if (data == nullptr) {
+			Log::error("InMemoryImageLoader", "Could not load embedded texture.");
+			return;
+		}
+
+		const auto size = input_height > 0 ? input_width * input_height * 4 : input_width;
+
+		auto* loaded_image = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(data), size, &width, &height, &channels, STBI_rgb_alpha);
+		const auto loaded_size = width * height * channels;
+		DataBuffer data_buffer { loaded_image, loaded_size };
+		stbi_image_free(loaded_image);
+
+		input_buffer.copy_from(data_buffer);
+	}
+
+	const aiTexel* data;
+	std::int32_t width {};
+	std::int32_t height {};
+	std::int32_t channels {};
+	DataBuffer& buffer;
+};
 
 struct ImporterPimpl {
 	Scope<Assimp::Importer> importer { nullptr };
@@ -127,7 +168,7 @@ namespace Vulkan {
 
 			// Vertices
 			auto& submesh_aabb = submesh.bounding_box;
-			for (size_t i = 0; i < mesh->mNumVertices; i++) {
+			for (std::size_t i = 0; i < mesh->mNumVertices; i++) {
 				ModelVertex vertex {};
 				vertex.pos = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z };
 				vertex.normals = { mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z };
@@ -146,7 +187,7 @@ namespace Vulkan {
 			}
 
 			// Indices
-			for (size_t i = 0; i < mesh->mNumFaces; i++) {
+			for (std::size_t i = 0; i < mesh->mNumFaces; i++) {
 				ensure(mesh->mFaces[i].mNumIndices == 3, "Must have 3 indices.");
 				Index index = { mesh->mFaces[i].mIndices[0], mesh->mFaces[i].mIndices[1], mesh->mFaces[i].mIndices[2] };
 				indices.push_back(index);
@@ -216,7 +257,7 @@ namespace Vulkan {
 		for (const auto* ai_material : materials_span) {
 			auto ai_material_name = ai_material->GetName();
 			// convert to std::string
-			std::string material_name = ai_material_name.C_Str();
+			const std::string material_name = ai_material_name.C_Str();
 
 			auto submesh_material = MeshMaterial::construct(device,
 				MeshMaterialProperties {
@@ -260,11 +301,19 @@ namespace Vulkan {
 			if (has_albedo_map) {
 				Ref<Disarray::Texture> texture;
 				if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
-					DataBuffer buffer { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 4 };
+					DataBuffer buffer;
+					const InMemoryImageLoader loader {
+						ai_texture_embedded->pcData,
+						ai_texture_embedded->mWidth,
+						ai_texture_embedded->mHeight,
+						buffer,
+					};
+					auto width = loader.width;
+					auto height = loader.height;
 					texture = Texture::construct(device,
 						{
-							.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
-							.format = ImageFormat::RGB,
+							.extent = { width, height, },
+							.format = ImageFormat::SRGB,
 							.data_buffer = buffer,
 							.debug_name = std::filesystem::path { ai_tex_path.C_Str() }.filename().string(),
 						});
@@ -350,7 +399,7 @@ namespace Vulkan {
 					auto str_length = *bit_cast<std::uint32_t*>(prop->mData);
 					std::string str(prop->mData + 4, str_length);
 
-					if (std::string key = prop->mKey.data; key == "$raw.ReflectionFactor|file") {
+					if (const std::string key = prop->mKey.data; key == "$raw.ReflectionFactor|file") {
 						Ref<Disarray::Texture> texture;
 						if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(str.data())) {
 							texture = Texture::construct(device,

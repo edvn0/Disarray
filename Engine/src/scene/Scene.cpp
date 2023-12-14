@@ -62,6 +62,21 @@ void Scene::construct(Disarray::App& app)
 	dumb_entity.get_transform().scale *= 100.0F;
 	dumb_entity.get_components<Components::ID>().can_interact_with = false;
 	dumb_entity.add_component<Components::StaticMesh>(dumb_mesh);
+
+	auto viking_mesh = StaticMesh::construct(device,
+		{
+			.path = FS::model("planet.fbx"),
+		});
+
+	auto viking_room = create("Planet");
+	viking_room.get_components<Components::ID>().can_interact_with = false;
+	viking_room.add_component<Components::StaticMesh>(viking_mesh);
+
+	auto sun = create("Sun");
+	sun.get_transform().position = { 16, -16, 16 };
+	sun.get_transform().scale = { 0.1F, 0.1F, 0.1F };
+	sun.add_component<Components::DirectionalLight>();
+	sun.get_components<Components::ID>().can_interact_with = false;
 }
 
 Scene::~Scene() = default;
@@ -93,21 +108,13 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 
 	scene_renderer.begin_frame(view, proj, view_proj);
 
-	auto directional_transaction = scene_renderer.begin_uniform_transaction<DirectionalLightUBO>();
-	auto point_lights_transaction = scene_renderer.begin_uniform_transaction<PointLights>();
-	auto spot_lights_transaction = scene_renderer.begin_uniform_transaction<SpotLights>();
-	auto shadow_pass_transaction = scene_renderer.begin_uniform_transaction<ShadowPassUBO>();
-
-	auto& shadow_pass = shadow_pass_transaction.get_buffer();
-	auto& directional = directional_transaction.get_buffer();
-	auto& point_lights = point_lights_transaction.get_buffer();
-	auto& spot_lights = spot_lights_transaction.get_buffer();
-
-	auto& shadow_buffer_set = scene_renderer.get_uniform_buffer_set().get(DescriptorBinding { 2 }, current_frame_index);
-	auto& directional_buffer_set = scene_renderer.get_uniform_buffer_set().get(DescriptorBinding { 3 }, current_frame_index);
+	auto& shadow_buffer_set = scene_renderer.get_uniform_buffer_set().get(DescriptorBinding { 2 });
+	auto& directional_buffer_set = scene_renderer.get_uniform_buffer_set().get(DescriptorBinding { 3 });
 
 	auto& push_constant = scene_renderer.get_graphics_resource().get_editable_push_constant();
 
+	auto& directional = directional_buffer_set->get_data<DirectionalLightUBO>();
+	auto& shadow_pass = shadow_buffer_set->get_data<ShadowPassUBO>();
 	{
 		for (auto sun_component_view = registry.view<const Components::Transform, Components::DirectionalLight>();
 			 auto&& [entity, transform, sun] : sun_component_view.each()) {
@@ -146,10 +153,14 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 	directional_buffer_set->set_data(&directional);
 	shadow_buffer_set->set_data(&shadow_pass);
 
+	auto point_light_buffer = scene_renderer.get_uniform_buffer_set().get(DescriptorBinding { 4 });
+	auto spot_light_buffer = scene_renderer.get_uniform_buffer_set().get(DescriptorBinding { 5 });
+
+	auto& point_lights = point_light_buffer->get_data<PointLights>();
+	auto& spot_lights = spot_light_buffer->get_data<SpotLights>();
+
 	std::size_t point_light_index { 0 };
 	auto& lights = point_lights.lights;
-	auto point_light_ssbo = scene_renderer.get_point_light_transforms().get_mutable<glm::mat4>();
-	auto point_light_ssbo_colour = scene_renderer.get_point_light_colours().get_mutable<glm::vec4>();
 	for (auto&& [entity, point_light, pos, texture] :
 		registry.view<const Components::PointLight, const Components::Transform, Components::Texture>().each()) {
 		auto& light = lights.at(point_light_index);
@@ -159,9 +170,6 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 		light.specular = point_light.specular;
 		light.factors = point_light.factors;
 		texture.colour = light.ambient;
-
-		point_light_ssbo[point_light_index] = pos.compute();
-		point_light_ssbo_colour[point_light_index] = texture.colour;
 		point_light_index++;
 	}
 	point_lights.count = static_cast<std::uint32_t>(point_light_index);
@@ -169,8 +177,6 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 
 	std::size_t spot_light_index { 0 };
 	auto& spot_light_array = spot_lights.lights;
-	auto spot_light_ssbo = scene_renderer.get_spot_light_transforms().get_mutable<glm::mat4>();
-	auto spot_light_ssbo_colour = scene_renderer.get_spot_light_colours().get_mutable<glm::vec4>();
 	for (auto&& [entity, spot_light, pos, texture] :
 		registry.view<const Components::SpotLight, Components::Transform, Components::Texture>().each()) {
 		auto& light = spot_light_array.at(spot_light_index);
@@ -189,30 +195,13 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 		};
 		texture.colour = light.ambient;
 
-		spot_light_ssbo[spot_light_index] = pos.compute();
-		spot_light_ssbo_colour[spot_light_index] = texture.colour;
 		spot_light_index++;
 	}
 	spot_lights.count = static_cast<std::uint32_t>(spot_light_index);
 	push_constant.max_spot_lights = static_cast<std::uint32_t>(spot_light_index);
 
-	auto& point_light_buffer = scene_renderer.get_uniform_buffer_set().get(DescriptorBinding { 4 }, current_frame_index);
-	auto& spot_light_buffer = scene_renderer.get_uniform_buffer_set().get(DescriptorBinding { 5 }, current_frame_index);
-
 	point_light_buffer->set_data(&point_lights);
 	spot_light_buffer->set_data(&spot_lights);
-
-	std::size_t identifier_index { 0 };
-	auto ssbo_identifiers = scene_renderer.get_entity_identifiers().get_mutable<std::uint32_t>();
-	auto identifiers_transforms = scene_renderer.get_entity_transforms().get_mutable<glm::mat4>();
-	for (auto&& [entity, transform, id] : registry.view<const Components::Transform, const Components::ID>().each()) {
-		if (!id.can_interact_with) {
-			continue;
-		}
-		ssbo_identifiers[identifier_index] = static_cast<std::uint32_t>(entity);
-		identifiers_transforms[identifier_index] = transform.compute();
-		identifier_index++;
-	}
 }
 
 void Scene::end_frame(SceneRenderer& renderer) { renderer.end_frame(); }

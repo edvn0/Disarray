@@ -74,7 +74,7 @@ namespace {
 				auto& write_descriptors = get_descriptor_set_vector(buffer_set_write_descriptor_cache, buffer_set, shader_hash);
 				write_descriptors.resize(frames_in_flight);
 				for (auto frame = FrameIndex { 0 }; frame < frames_in_flight; ++frame) {
-					const auto& stored_buffer = buffer_set->get(DescriptorBinding(binding), frame).template as<VulkanType>();
+					const auto& stored_buffer = buffer_set->get(DescriptorBinding(binding), frame, DescriptorSet(0)).template as<VulkanType>();
 
 					VkWriteDescriptorSet wds = {};
 					wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -90,7 +90,7 @@ namespace {
 				auto& write_descriptors = get_descriptor_set_vector(buffer_set_write_descriptor_cache, buffer_set, shader_hash);
 				write_descriptors.resize(frames_in_flight);
 				for (auto frame = FrameIndex { 0 }; frame < frames_in_flight; ++frame) {
-					const auto& stored_buffer = buffer_set->get(DescriptorBinding(binding), frame).template as<VulkanType>();
+					const auto& stored_buffer = buffer_set->get(DescriptorBinding(binding), frame, DescriptorSet(0)).template as<VulkanType>();
 
 					VkWriteDescriptorSet wds = {};
 					wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -228,9 +228,13 @@ void Renderer::draw_mesh_instanced(Disarray::CommandExecutor& executor, std::siz
 	bind_pipeline(executor, pipeline);
 	bind_descriptor_sets(executor, pipeline);
 
-	std::array arr { supply_cast<Vulkan::VertexBuffer>(vertex_buffer) };
-	std::array offsets = { VkDeviceSize { 0 } };
-	vkCmdBindVertexBuffers(command_buffer, 0, 1, arr.data(), offsets.data());
+	const std::array vertex_buffers {
+		supply_cast<Vulkan::VertexBuffer>(vertex_buffer),
+	};
+	const std::array offsets = {
+		VkDeviceSize { 0 },
+	};
+	vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers.data(), offsets.data());
 
 	if (pipeline.get_properties().polygon_mode == PolygonMode::Line) {
 		vkCmdSetLineWidth(command_buffer, pipeline.get_properties().line_width);

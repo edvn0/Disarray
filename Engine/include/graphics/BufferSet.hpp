@@ -32,26 +32,33 @@ concept BufferLike = requires(T& t, const Device& device) {
 	} -> std::convertible_to<Ref<T>>;
 };
 
+namespace Detail {
+	auto get_current_frame(const Disarray::IGraphicsResource* graphics_resource) -> FrameIndex;
+}
+
 template <BufferLike B> class BufferSet {
 public:
-	explicit BufferSet(const Device& dev, std::uint32_t frames = 0)
+	explicit BufferSet(const Device* dev, const Disarray::IGraphicsResource* graphics_resource = nullptr, std::uint32_t frames = 0)
 		: device(dev)
+		, graphics_resource(graphics_resource)
 		, frame_count(frames)
 	{
 	}
 	~BufferSet() = default;
 
-	auto set_frame_count(std::uint32_t frames) -> void
+	auto set_frame_count(std::uint32_t frames, const Disarray::IGraphicsResource* resource) -> void
 	{
 		ensure(frame_set_binding_buffers.empty(), "BufferSet must be initialized before setting frame count");
 		ensure(frames > 0, "BufferSet must be initialized with a frame count greater than 0");
+		ensure(resource != nullptr, "BufferSet must be initialized with a valid IGraphicsResource");
 		frame_count = frames;
+		graphics_resource = resource;
 	}
 
 	auto create(std::integral auto size, DescriptorBinding binding, std::size_t count = 0U) -> void
 	{
 		for (auto frame = FrameIndex(0); frame < frame_count; ++frame) {
-			auto buffer = B::construct(device,
+			auto buffer = B::construct(*device,
 				BufferProperties {
 					.size = static_cast<std::size_t>(size),
 					.count = count,
@@ -62,18 +69,27 @@ public:
 		}
 	}
 
-	auto get(DescriptorBinding binding, FrameIndex frame = FrameIndex { 0 }, DescriptorSet set = DescriptorSet { 0 }) -> auto&
+	auto get(DescriptorBinding binding, DescriptorSet set = DescriptorSet { 0 }) -> auto&
 	{
-		return frame_set_binding_buffers.at(frame).at(set).at(binding);
+		return frame_set_binding_buffers.at(current_frame()).at(set).at(binding);
 	}
 
-	auto set(Ref<B>&& buffer, FrameIndex frame = FrameIndex { 0 }, DescriptorSet set = DescriptorSet { 0 }) -> void
+	auto get(DescriptorBinding binding, FrameIndex frame_index, DescriptorSet set) -> auto&
 	{
-		frame_set_binding_buffers[frame][set].try_emplace(buffer->get_binding(), std::move(buffer));
+		return frame_set_binding_buffers.at(frame_index).at(set).at(binding);
+	}
+
+	auto set(Ref<B>&& buffer, FrameIndex frame_index, DescriptorSet set = DescriptorSet { 0 }) -> void
+	{
+		frame_set_binding_buffers[frame_index][set].try_emplace(buffer->get_binding(), std::move(buffer));
 	}
 
 private:
-	const Device& device;
+	const Device* device;
+	const IGraphicsResource* graphics_resource;
+
+	auto current_frame() const -> FrameIndex { return Detail::get_current_frame(graphics_resource); }
+
 	std::uint32_t frame_count { 0 };
 	using BindingBuffers = std::unordered_map<DescriptorBinding, Ref<B>>;
 	using SetBindingBuffers = std::unordered_map<DescriptorSet, BindingBuffers>;

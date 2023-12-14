@@ -53,6 +53,7 @@ set(ENGINE_SOURCES
         include/Forward.hpp
         include/graphics/AABB.hpp
         include/graphics/BufferProperties.hpp
+        include/graphics/BufferSet.hpp
         include/graphics/CommandExecutor.hpp
         include/graphics/Device.hpp
         include/graphics/Extent.hpp
@@ -133,6 +134,7 @@ set(ENGINE_SOURCES
         src/glfw/GLFWClock.cpp
         src/glfw/GLFWInput.cpp
         src/graphics/AABB.cpp
+        src/graphics/BufferSet.cpp
         src/graphics/CommandExecutor.cpp
         src/graphics/Device.cpp
         src/graphics/Framebuffer.cpp
@@ -200,11 +202,12 @@ add_library(Disarray::Engine ALIAS ${PROJECT_NAME})
 target_include_directories(
         ${PROJECT_NAME}
         PRIVATE ${Vulkan_INCLUDE_DIRS}
-        PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/spdlog/include)
+        PUBLIC include . ${THIRD_PARTY}/glm ${THIRD_PARTY}/spdlog/include ${THIRD_PARTY}/stb_image/include)
 target_link_libraries(
         ${PROJECT_NAME}
         PRIVATE glfw GPUOpen::VulkanMemoryAllocator nlohmann_json::nlohmann_json
-        tinyobjloader stb_image
+        tinyobjloader
+        stb_image
         spdlog::spdlog
         Implementations::Vulkan
         thread-pool

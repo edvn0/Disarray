@@ -20,6 +20,7 @@
 #include "graphics/StorageBuffer.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/TextRenderer.hpp"
+#include "graphics/Texture.hpp"
 #include "graphics/UniformBuffer.hpp"
 #include "graphics/UniformBufferSet.hpp"
 #include "graphics/VertexBuffer.hpp"
@@ -152,8 +153,9 @@ public:
 	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&,
 		const glm::vec4& colour, const glm::mat4& transform = glm::identity<glm::mat4>(), const std::uint32_t identifier = 0)
 		= 0;
-	virtual void draw_mesh(Disarray::CommandExecutor&, Ref<Disarray::StaticMesh>&, const Disarray::Pipeline&, BufferSet<Disarray::UniformBuffer>&,
-		Disarray::BufferSet<Disarray::StorageBuffer>&, const glm::vec4& colour, const glm::mat4& transform = glm::identity<glm::mat4>())
+	virtual void draw_mesh(Disarray::CommandExecutor&, Ref<Disarray::StaticMesh>&, const Disarray::Pipeline&,
+		Disarray::BufferSet<Disarray::UniformBuffer>&, Disarray::BufferSet<Disarray::StorageBuffer>&, const glm::vec4& colour,
+		const glm::mat4& transform = glm::identity<glm::mat4>())
 		= 0;
 
 	virtual void draw_mesh_instanced(

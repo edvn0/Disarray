@@ -28,6 +28,8 @@ public:
 	virtual auto get_raw() -> void* = 0;
 	virtual auto get_raw() const -> void* = 0;
 
+	template <class T> auto get_data() -> T& { return *Disarray::bit_cast<T*>(get_raw()); };
+
 	template <class T>
 		requires(sizeof(T) > 0)
 	void set_data(T* data)

@@ -230,7 +230,7 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor*)
 	VkFormat vulkan_format = to_vulkan_format(get_properties().format);
 
 	auto width = props.extent.width;
-	auto height = props.extent.height;
+	auto height = props.extent.height > 0 ? props.extent.height : 1;
 
 	VkImageCreateInfo image_create_info {};
 	image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -276,8 +276,11 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor*)
 	staging_create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	staging_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	Allocator staging_allocator { "Image Recreator" };
-	VmaAllocation staging_allocation = staging_allocator.allocate_buffer(
-		staging, staging_create_info, { .usage = Usage::CPU_TO_GPU, .creation = Creation::HOST_ACCESS_RANDOM_BIT });
+	VmaAllocation staging_allocation = staging_allocator.allocate_buffer(staging, staging_create_info,
+		{
+			.usage = Usage::CPU_TO_GPU,
+			.creation = Creation::HOST_ACCESS_RANDOM_BIT,
+		});
 	{
 		AllocationMapper<std::byte> mapper { staging_allocator, staging_allocation, get_properties().data };
 	}
@@ -315,7 +318,7 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor*)
 			buffer_copy_region.imageSubresource.baseArrayLayer = 0;
 			buffer_copy_region.imageSubresource.layerCount = 1;
 			buffer_copy_region.imageExtent.width = get_properties().extent.width;
-			buffer_copy_region.imageExtent.height = get_properties().extent.height;
+			buffer_copy_region.imageExtent.height = get_properties().extent.height > 0 ? get_properties().extent.height : 1;
 			buffer_copy_region.imageExtent.depth = 1;
 			buffer_copy_region.bufferOffset = 0;
 			buffer_copy_regions.emplace_back(buffer_copy_region);

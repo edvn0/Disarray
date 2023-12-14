@@ -231,6 +231,7 @@
       "Glslang",
       "imageview",
       "Includer",
+      "lookat",
       "metalness",
       "MILLIS",
       "Multisample",

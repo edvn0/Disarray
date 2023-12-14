@@ -31,8 +31,8 @@ namespace Disarray {
 
 SceneRenderer::SceneRenderer(const Disarray::Device& dev)
 	: device(dev)
-	, uniform_buffer_set(dev)
-	, storage_buffer_set(dev)
+	, uniform_buffer_set(&dev)
+	, storage_buffer_set(&dev)
 {
 }
 
@@ -139,7 +139,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		Framebuffer::construct(device,
 			{
 				.extent = renderer_extent,
-				.attachments = { { ImageFormat::SBGR }, { ImageFormat::Depth } },
+				.attachments = { { ImageFormat::SRGB32 }, { ImageFormat::Depth } },
 				.clear_colour_on_load = false,
 				.clear_depth_on_load = false,
 				.should_blend = true,
@@ -253,88 +253,6 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.specialisation_constant = specialisation_constant_description,
 	});
 
-	point_light_transforms = StorageBuffer::construct_scoped(device,
-		{
-			.size = count_point_lights * sizeof(glm::mat4),
-			.count = count_point_lights,
-			.always_mapped = true,
-		});
-	point_light_colours = StorageBuffer::construct_scoped(device,
-		{
-			.size = count_point_lights * sizeof(glm::vec4),
-			.count = count_point_lights,
-			.always_mapped = true,
-		});
-	spot_light_transforms = StorageBuffer::construct_scoped(device,
-		{
-			.size = count_spot_lights * sizeof(glm::mat4),
-			.count = count_spot_lights,
-			.always_mapped = true,
-		});
-	spot_light_colours = StorageBuffer::construct_scoped(device,
-		{
-			.size = count_spot_lights * sizeof(glm::vec4),
-			.count = count_spot_lights,
-			.always_mapped = true,
-		});
-
-	static constexpr auto max_identifier_objects = 2000;
-	entity_identifiers = StorageBuffer::construct_scoped(device,
-		{
-			.size = max_identifier_objects * sizeof(std::uint32_t),
-			.count = max_identifier_objects,
-			.always_mapped = true,
-		});
-	entity_transforms = StorageBuffer::construct_scoped(device,
-		{
-			.size = max_identifier_objects * sizeof(glm::mat4),
-			.count = max_identifier_objects,
-			.always_mapped = true,
-		});
-	get_graphics_resource().expose_to_shaders(*point_light_transforms, DescriptorSet { 3 }, DescriptorBinding { 0 });
-	get_graphics_resource().expose_to_shaders(*point_light_colours, DescriptorSet { 3 }, DescriptorBinding { 1 });
-	get_graphics_resource().expose_to_shaders(*entity_identifiers, DescriptorSet { 3 }, DescriptorBinding { 2 });
-	get_graphics_resource().expose_to_shaders(*entity_transforms, DescriptorSet { 3 }, DescriptorBinding { 3 });
-	get_graphics_resource().expose_to_shaders(*spot_light_transforms, DescriptorSet { 3 }, DescriptorBinding { 4 });
-	get_graphics_resource().expose_to_shaders(*spot_light_colours, DescriptorSet { 3 }, DescriptorBinding { 5 });
-
-	uniform = make_scope<UniformBufferSet<UBO>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = sizeof(UBO),
-		});
-	camera_ubo = make_scope<UniformBufferSet<CameraUBO>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = sizeof(CameraUBO),
-		});
-	lights = make_scope<UniformBufferSet<PointLights>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = max_point_lights * sizeof(PointLight),
-		});
-	shadow_pass_ubo = make_scope<UniformBufferSet<ShadowPassUBO>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = sizeof(ShadowPassUBO),
-		});
-	directional_light_ubo = make_scope<UniformBufferSet<DirectionalLightUBO>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = sizeof(DirectionalLightUBO),
-		});
-	glyph_ubo = make_scope<UniformBufferSet<GlyphUBO>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = sizeof(GlyphUBO),
-		});
-	spot_light_data = make_scope<UniformBufferSet<SpotLights>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = max_spot_lights * sizeof(SpotLight),
-		});
-
-	get_graphics_resource().expose_to_shaders(*uniform, DescriptorSet(0), DescriptorBinding(0));
-	get_graphics_resource().expose_to_shaders(*camera_ubo, DescriptorSet(0), DescriptorBinding(1));
-	get_graphics_resource().expose_to_shaders(*lights, DescriptorSet(0), DescriptorBinding(2));
-	get_graphics_resource().expose_to_shaders(*shadow_pass_ubo, DescriptorSet(0), DescriptorBinding(3));
-	get_graphics_resource().expose_to_shaders(*directional_light_ubo, DescriptorSet(0), DescriptorBinding(4));
-	get_graphics_resource().expose_to_shaders(*glyph_ubo, DescriptorSet(0), DescriptorBinding(5));
-	get_graphics_resource().expose_to_shaders(*spot_light_data, DescriptorSet(0), DescriptorBinding(6));
-
 	auto texture_cube = Texture::construct(device,
 		{
 			.path = FS::texture("cubemap_default.ktx"),
@@ -444,9 +362,11 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.extent = renderer_extent,
 	});
 
+	static constexpr auto max_identifier_objects = 2000;
 	renderer->construct_sub_renderers(device, app);
 
-	uniform_buffer_set.set_frame_count(app.get_swapchain().image_count());
+	auto& graphics_resource = get_graphics_resource();
+	uniform_buffer_set.set_frame_count(app.get_swapchain().image_count(), &graphics_resource);
 	uniform_buffer_set.create(sizeof(UBO), DescriptorBinding(0));
 	uniform_buffer_set.create(sizeof(CameraUBO), DescriptorBinding(1));
 	uniform_buffer_set.create(sizeof(ShadowPassUBO), DescriptorBinding(2));
@@ -456,7 +376,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 
 	Log::info("SceneRenderer", "Created uniform buffer set");
 
-	storage_buffer_set.set_frame_count(app.get_swapchain().image_count());
+	storage_buffer_set.set_frame_count(app.get_swapchain().image_count(), &graphics_resource);
 	storage_buffer_set.create(max_identifier_objects * sizeof(std::uint32_t), DescriptorBinding(6), max_identifier_objects);
 	storage_buffer_set.create(max_identifier_objects * sizeof(glm::mat4), DescriptorBinding(7), max_identifier_objects);
 
@@ -505,11 +425,6 @@ auto SceneRenderer::recreate(bool should_clean, const Extent& extent) -> void
 	const auto& geometry_framebuffer = get_framebuffer<SceneFramebuffer::Geometry>();
 	get_graphics_resource().expose_to_shaders(geometry_framebuffer->get_image(), DescriptorSet { 1 }, DescriptorBinding { 0 });
 
-	get_graphics_resource().expose_to_shaders(*point_light_transforms, DescriptorSet { 3 }, DescriptorBinding { 0 });
-	get_graphics_resource().expose_to_shaders(*point_light_colours, DescriptorSet { 3 }, DescriptorBinding { 1 });
-	get_graphics_resource().expose_to_shaders(*entity_identifiers, DescriptorSet { 3 }, DescriptorBinding { 2 });
-	get_graphics_resource().expose_to_shaders(*entity_transforms, DescriptorSet { 3 }, DescriptorBinding { 3 });
-
 	command_executor->recreate(true, extent);
 }
 
@@ -536,11 +451,13 @@ auto SceneRenderer::fullscreen_quad_pass() -> void { renderer->fullscreen_quad_p
 auto SceneRenderer::text_rendering_pass() -> void
 {
 	{
-		auto transaction = glyph_ubo->transaction();
-		auto& buffer = transaction.get_buffer();
 		const auto float_extent = renderer_extent.as<float>();
+		GlyphUBO buffer;
 		buffer.projection = Maths::ortho(0.F, float_extent.width, 0.F, float_extent.height, -1.0F, 1.0F);
-		buffer.view = uniform->read().view;
+		auto uniform_buffer = uniform_buffer_set.get(DescriptorBinding(0));
+		auto& data = uniform_buffer->get_data<UBO>();
+		buffer.view = data.view;
+		// Write glyph ubo
 	}
 
 	renderer->text_rendering_pass(*command_executor);
@@ -550,11 +467,11 @@ auto SceneRenderer::planar_geometry_pass() -> void { renderer->planar_geometry_p
 
 auto SceneRenderer::begin_frame(const glm::mat4& view, const glm::mat4& projection, const glm::mat4& view_projection) -> void
 {
-	auto camera_ubo_transaction = begin_uniform_transaction<CameraUBO>();
-	auto& camera = camera_ubo_transaction.get_buffer();
+	auto uniform_buffer = uniform_buffer_set.get(DescriptorBinding(0));
+	auto camera_buffer = uniform_buffer_set.get(DescriptorBinding(1));
 
-	auto default_ubo_transaction = begin_uniform_transaction<UBO>();
-	auto& default_ubo = default_ubo_transaction.get_buffer();
+	auto& default_ubo = uniform_buffer->get_data<UBO>();
+	auto& camera = camera_buffer->get_data<CameraUBO>();
 
 	const auto view_matrix = glm::inverse(view);
 	camera.position = view_matrix[3];
@@ -564,8 +481,8 @@ auto SceneRenderer::begin_frame(const glm::mat4& view, const glm::mat4& projecti
 	default_ubo.view_projection = view_projection;
 	camera.view = view;
 
-	uniform_buffer_set.get(DescriptorBinding(0), get_graphics_resource().get_current_frame_index())->set_data(&default_ubo);
-	uniform_buffer_set.get(DescriptorBinding(1), get_graphics_resource().get_current_frame_index())->set_data(&camera);
+	uniform_buffer->set_data(&default_ubo);
+	camera_buffer->set_data(&camera);
 
 	renderer->begin_frame();
 }
