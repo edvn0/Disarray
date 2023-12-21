@@ -141,7 +141,7 @@ void MeshMaterial::set(const std::string& name, const Ref<Disarray::Texture>& te
 auto MeshMaterial::set(const std::string& name, float value) -> void { set<>(name, value); }
 auto MeshMaterial::set(const std::string& name, int value) -> void { set<>(name, value); }
 auto MeshMaterial::set(const std::string& name, std::uint32_t value) -> void { set<>(name, value); }
-auto MeshMaterial::set(const std::string& name, bool value) -> void { set<>(name, value); }
+auto MeshMaterial::set(const std::string& name, bool value) -> void { set<>(name, static_cast<std::uint32_t>(value)); }
 auto MeshMaterial::set(const std::string& name, const glm::ivec2& value) -> void { set<>(name, value); }
 auto MeshMaterial::set(const std::string& name, const glm::ivec3& value) -> void { set<>(name, value); }
 auto MeshMaterial::set(const std::string& name, const glm::ivec4& value) -> void { set<>(name, value); }
@@ -154,6 +154,13 @@ auto MeshMaterial::set(const std::string& name, const glm::vec4& value) -> void 
 auto MeshMaterial::set(const std::string& name, const glm::mat3& value) -> void { set<>(name, value); }
 auto MeshMaterial::set(const std::string& name, const glm::mat4& value) -> void { set<>(name, value); }
 auto MeshMaterial::set(const std::string& name, const Ref<Disarray::Image>& image) -> void { set_vulkan_descriptor(name, image.as<Vulkan::Image>()); }
+
+void MeshMaterial::zero_initialise_constant_buffers() { uniform_storage_buffer.zero_initialise(); }
+
+void MeshMaterial::memset_constant_buffers(std::byte value) const
+{
+	std::memset(uniform_storage_buffer.get_data(), static_cast<std::int32_t>(value), uniform_storage_buffer.get_size());
+}
 
 auto MeshMaterial::clean_material() -> void
 {

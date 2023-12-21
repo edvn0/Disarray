@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstring>
 #include <memory>
 #include <span>
 #include <vector>
@@ -26,7 +27,7 @@ public:
 
 	DataBuffer(const DataBuffer&);
 	DataBuffer(DataBuffer&&) noexcept;
-	auto operator=(DataBuffer) -> DataBuffer&;
+	auto operator=(const DataBuffer&) -> DataBuffer&;
 	auto operator=(DataBuffer&&) noexcept -> DataBuffer&;
 	~DataBuffer();
 

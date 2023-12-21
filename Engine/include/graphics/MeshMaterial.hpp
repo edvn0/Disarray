@@ -18,6 +18,7 @@ struct MeshMaterialProperties {
 	Ref<SingleShader> shader { nullptr };
 	std::uint32_t swapchain_image_count { 0 };
 	std::string name {};
+	bool has_normal_map { false };
 
 	MeshMaterialProperties() = default;
 	explicit MeshMaterialProperties(Ref<SingleShader> input_shader, std::string input_name = "Empty", std::uint32_t input_image_count = 3)
@@ -36,6 +37,8 @@ class MeshMaterial : public ReferenceCountable {
 
 public:
 	virtual auto get_uniform_storage_buffer() const -> const DataBuffer& = 0;
+
+	[[nodiscard]] auto has_normal_map() const -> bool { return get_properties().has_normal_map; }
 
 	virtual void set(const std::string&, float) = 0;
 	virtual void set(const std::string&, int) = 0;

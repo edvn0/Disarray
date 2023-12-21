@@ -17,8 +17,7 @@ public:
 	~MeshMaterial() override = default;
 
 	auto recreate(bool should_clean, const Extent& extent) -> void override { recreate_material(should_clean, extent); }
-
-	auto get_uniform_storage_buffer() const -> const DataBuffer& override { return uniform_storage_buffer; };
+	auto get_uniform_storage_buffer() const -> const DataBuffer& override { return uniform_storage_buffer; }
 
 	void set(const std::string&, float) override;
 	void set(const std::string&, int) override;
@@ -47,8 +46,8 @@ public:
 			return;
 		}
 
-		auto& buffer = uniform_storage_buffer;
-		buffer.write(Disarray::bit_cast<std::byte*>(&value), decl->get_size(), decl->get_offset());
+		const auto& buffer = uniform_storage_buffer;
+		std::memcpy(buffer.get_data() + decl->get_offset(), &value, decl->get_size());
 	}
 
 	template <std::int32_t L, typename T> void set(const std::string& name, const glm::vec<L, T>& value)
@@ -59,8 +58,23 @@ public:
 			return;
 		}
 
-		auto& buffer = uniform_storage_buffer;
-		buffer.write(Disarray::bit_cast<std::byte*>(glm::value_ptr(value)), decl->get_size(), decl->get_offset());
+		const auto& buffer = uniform_storage_buffer;
+		std::memcpy(buffer.get_data() + decl->get_offset(), glm::value_ptr(value), decl->get_size());
+	}
+
+	template <std::int32_t L, typename T> void set(const std::string& name, const glm::mat<L, L, T>& value)
+	{
+		const auto* decl = find_uniform_declaration(name);
+		ensure(decl != nullptr, "Could not find uniform!");
+		if (!decl) {
+			return;
+		}
+
+		constexpr auto matrix_size = sizeof(glm::mat<L, L, T>);
+		ensure(decl->get_size() == matrix_size, "Matrix size mismatch!");
+
+		const auto& buffer = uniform_storage_buffer;
+		std::memcpy(buffer.get_data() + decl->get_offset(), glm::value_ptr(value), matrix_size);
 	}
 
 	template <typename T> auto get(const std::string& name) -> T&
@@ -102,6 +116,9 @@ public:
 
 	auto update_for_rendering(FrameIndex frame_index, const std::vector<std::vector<VkWriteDescriptorSet>>&) -> void;
 	auto update_for_rendering(const FrameIndex frame_index) -> void { update_for_rendering(frame_index, {}); }
+
+	void zero_initialise_constant_buffers();
+	void memset_constant_buffers(std::byte value) const;
 
 private:
 	auto clean_material() -> void;

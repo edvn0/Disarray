@@ -449,7 +449,12 @@ Pipeline::~Pipeline()
 	} else {
 		name = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", props.single_shader->get_properties().path.filename(), props.hash());
 	}
-	FS::write_to_file(name, size, std::span { data });
+
+	if (FS::write_to_file(name, size, std::span { data })) {
+		Log::info("Pipeline", "Wrote cache with id {} to disk", name);
+	} else {
+		Log::info("Pipeline", "Could not write cache with id {} to disk", name);
+	}
 
 	vkDestroyPipelineCache(supply_cast<Vulkan::Device>(device), cache, nullptr);
 }

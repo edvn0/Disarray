@@ -27,7 +27,7 @@ struct StaticSubmesh {
 
 	std::string node_name {};
 	std::string mesh_name {};
-	bool is_rigged = false;
+	bool is_rigged { false };
 };
 
 struct StaticMeshProperties {

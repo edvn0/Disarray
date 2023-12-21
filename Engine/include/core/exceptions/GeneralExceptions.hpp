@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 #include "core/exceptions/BaseException.hpp"
 
 namespace Disarray {

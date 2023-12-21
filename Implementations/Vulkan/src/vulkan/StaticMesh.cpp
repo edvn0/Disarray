@@ -11,6 +11,7 @@
 
 #include <concepts>
 #include <cstdint>
+#include <span>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -21,6 +22,7 @@
 #include "core/String.hpp"
 #include "core/Types.hpp"
 #include "core/filesystem/AssetLocations.hpp"
+#include "core/filesystem/FileIO.hpp"
 #include "graphics/ImageLoader.hpp"
 #include "graphics/ImageProperties.hpp"
 #include "graphics/MeshMaterial.hpp"
@@ -31,6 +33,7 @@
 #include "graphics/model_loaders/AssimpModelLoader.hpp"
 #include "util/BitCast.hpp"
 #include "vulkan/MeshMaterial.hpp"
+#include "vulkan/SingleShader.hpp"
 #include "vulkan/StaticMesh.hpp"
 #include "vulkan/Texture.hpp"
 #include "vulkan/exceptions/VulkanExceptions.hpp"
@@ -38,30 +41,64 @@
 namespace Disarray {
 
 struct InMemoryImageLoader {
-	explicit InMemoryImageLoader(const aiTexel* input_data, std::integral auto input_width, std::integral auto input_height, DataBuffer& input_buffer)
-		: data(input_data)
-		, buffer(input_buffer)
+	explicit InMemoryImageLoader(const void* input_data, std::integral auto input_width, std::integral auto input_height, DataBuffer& input_buffer)
+		: buffer(input_buffer)
 	{
-		if (data == nullptr) {
+		if (input_data == nullptr) {
 			Log::error("InMemoryImageLoader", "Could not load embedded texture.");
 			return;
 		}
 
-		const auto size = input_height > 0 ? input_width * input_height * 4 : input_width;
+		constexpr std::int32_t requested_channels = STBI_rgb_alpha;
+		const auto size = input_height > 0 ? input_width * input_height * requested_channels : input_width;
 
-		auto* loaded_image = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(data), size, &width, &height, &channels, STBI_rgb_alpha);
-		const auto loaded_size = width * height * channels;
-		DataBuffer data_buffer { loaded_image, loaded_size };
+		stbi_set_flip_vertically_on_load(true);
+		auto* loaded_image
+			= stbi_load_from_memory(static_cast<const std::uint8_t*>(input_data), size, &width, &height, &channels, requested_channels);
+
+		const auto span = std::span {
+			loaded_image,
+			static_cast<std::size_t>(width * height * channels),
+		};
+		const auto padded_buffer = pad_with_alpha(span);
+		const auto loaded_size = width * height * requested_channels;
+
+		const DataBuffer data_buffer { padded_buffer.data(), loaded_size };
 		stbi_image_free(loaded_image);
 
 		input_buffer.copy_from(data_buffer);
 	}
 
-	const aiTexel* data;
 	std::int32_t width {};
 	std::int32_t height {};
 	std::int32_t channels {};
 	DataBuffer& buffer;
+
+private:
+	auto pad_with_alpha(const auto data) const -> std::vector<uint8_t>
+	{
+		if (channels == 4) {
+			// Already has an alpha channel
+			return { data.begin(), data.end() };
+		}
+
+		std::vector<uint8_t> new_data(width * height * 4); // 4 channels for RGBA
+
+		for (auto y = 0; y < height; ++y) {
+			for (auto x = 0; x < width; ++x) {
+				const int new_index = (y * width + x) * 4;
+				const int old_index = (y * width + x) * channels;
+
+				for (int j = 0; j < channels; ++j) {
+					new_data[new_index + j] = data[old_index + j];
+				}
+
+				new_data[new_index + 3] = 255;
+			}
+		}
+
+		return new_data;
+	}
 };
 
 struct ImporterPimpl {
@@ -122,8 +159,8 @@ namespace Vulkan {
 	}
 
 	static constexpr std::uint32_t mesh_import_flags = aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_SortByPType
-		| aiProcess_GenNormals | aiProcess_GenUVCoords | aiProcess_FlipWindingOrder | aiProcess_FlipUVs | aiProcess_OptimizeMeshes
-		| aiProcess_JoinIdenticalVertices | aiProcess_LimitBoneWeights | aiProcess_ValidateDataStructure | aiProcess_GlobalScale;
+		| aiProcess_GenNormals | aiProcess_FlipWindingOrder | aiProcess_OptimizeMeshes | aiProcess_JoinIdenticalVertices | aiProcess_LimitBoneWeights
+		| aiProcess_ValidateDataStructure | aiProcess_GlobalScale;
 
 	StaticMesh::StaticMesh(const Disarray::Device& dev, const std::filesystem::path& path)
 		: device(dev)
@@ -145,11 +182,13 @@ namespace Vulkan {
 			return;
 		}
 
-		uint32_t vertex_count = 0;
-		uint32_t index_count = 0;
+		std::uint32_t vertex_count = 0;
+		std::uint32_t index_count = 0;
 
-		submeshes.reserve(importer->scene->mNumMeshes);
-		for (std::uint32_t submesh_index = 0; submesh_index < importer->scene->mNumMeshes; submesh_index++) {
+		const auto num_meshes = importer->scene->mNumMeshes;
+
+		submeshes.reserve(num_meshes);
+		for (std::uint32_t submesh_index = 0; submesh_index < num_meshes; submesh_index++) {
 			aiMesh* mesh = importer->scene->mMeshes[submesh_index];
 
 			StaticSubmesh& submesh = submeshes.emplace_back();
@@ -189,7 +228,11 @@ namespace Vulkan {
 			// Indices
 			for (std::size_t i = 0; i < mesh->mNumFaces; i++) {
 				ensure(mesh->mFaces[i].mNumIndices == 3, "Must have 3 indices.");
-				Index index = { mesh->mFaces[i].mIndices[0], mesh->mFaces[i].mIndices[1], mesh->mFaces[i].mIndices[2] };
+				const Index index = {
+					mesh->mFaces[i].mIndices[0],
+					mesh->mFaces[i].mIndices[1],
+					mesh->mFaces[i].mIndices[2],
+				};
 				indices.push_back(index);
 			}
 		}
@@ -221,7 +264,7 @@ namespace Vulkan {
 		// Materials
 		const auto& white_texture = Renderer::get_white_texture();
 		const auto num_materials = importer->scene->mNumMaterials;
-		std::span materials_span { importer->scene->mMaterials, num_materials };
+		const std::span materials_span { importer->scene->mMaterials, num_materials };
 
 		if (materials_span.empty()) {
 			auto submesh_material = MeshMaterial::construct(device,
@@ -237,8 +280,8 @@ namespace Vulkan {
 			static constexpr auto default_roughness_and_albedo = 0.8F;
 
 			submesh_material->set("pc.albedo_colour", glm::vec3(default_roughness_and_albedo));
-			submesh_material->set("pc.emission", 0.0F);
-			submesh_material->set("pc.metalness", 0.0F);
+			submesh_material->set("pc.emission", 0.1F);
+			submesh_material->set("pc.metalness", 0.1F);
 			submesh_material->set("pc.roughness", default_roughness_and_albedo);
 			submesh_material->set("pc.use_normal_map", false);
 
@@ -295,141 +338,162 @@ namespace Vulkan {
 				metalness = 0.0F;
 			}
 
-			float roughness = 1.0F - glm::sqrt(shininess / 100.0f);
-			bool has_albedo_map = ai_material->GetTexture(aiTextureType_DIFFUSE, 0, &ai_tex_path) == AI_SUCCESS;
-			bool fallback = !has_albedo_map;
-			if (has_albedo_map) {
-				Ref<Disarray::Texture> texture;
-				if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
-					DataBuffer buffer;
-					const InMemoryImageLoader loader {
-						ai_texture_embedded->pcData,
-						ai_texture_embedded->mWidth,
-						ai_texture_embedded->mHeight,
-						buffer,
-					};
-					auto width = loader.width;
-					auto height = loader.height;
-					texture = Texture::construct(device,
+			handle_albedo_map(white_texture, ai_material, submesh_material, ai_tex_path);
+			handle_normal_map(white_texture, ai_material, submesh_material, ai_tex_path);
+
+			auto roughness = 1.0F - glm::sqrt(shininess / 100.0f);
+			handle_roughness_map(white_texture, ai_material, submesh_material, ai_tex_path, roughness);
+			handle_metalness_map(white_texture, ai_material, submesh_material, metalness);
+		}
+	}
+
+	void StaticMesh::handle_albedo_map(const Ref<Disarray::Texture>& white_texture, const aiMaterial* ai_material,
+		Ref<Disarray::MeshMaterial> submesh_material, aiString ai_tex_path) const
+	{
+		const bool has_albedo_map = ai_material->GetTexture(aiTextureType_DIFFUSE, 0, &ai_tex_path) == AI_SUCCESS;
+		auto fallback = !has_albedo_map;
+		if (has_albedo_map) {
+			Ref<Disarray::Texture> texture;
+			if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
+				DataBuffer buffer;
+				const InMemoryImageLoader loader {
+					ai_texture_embedded->pcData,
+					ai_texture_embedded->mWidth,
+					ai_texture_embedded->mHeight,
+					buffer,
+				};
+				auto width = loader.width;
+				auto height = loader.height;
+				texture = Texture::construct(device,
 						{
 							.extent = { width, height, },
 							.format = ImageFormat::SRGB,
 							.data_buffer = buffer,
 							.debug_name = std::filesystem::path { ai_tex_path.C_Str() }.filename().string(),
 						});
-				} else {
-					texture = read_texture_from_file_path(ai_tex_path.C_Str());
-				}
-
-				if (texture) {
-					submesh_material->set("albedo_map", texture);
-					submesh_material->set("pc.albedo_colour", glm::vec3(1.0F));
-				} else {
-					fallback = true;
-				}
+			} else {
+				texture = read_texture_from_file_path(ai_tex_path.C_Str());
 			}
 
-			if (fallback) {
-				submesh_material->set("albedo_map", white_texture);
+			if (texture) {
+				submesh_material->set("albedo_map", texture);
+				submesh_material->set("pc.albedo_colour", glm::vec3(1.0F));
+			} else {
+				fallback = true;
+			}
+		}
+
+		if (fallback) {
+			submesh_material->set("albedo_map", white_texture);
+		}
+	}
+
+	void StaticMesh::handle_normal_map(const Ref<Disarray::Texture>& white_texture, const aiMaterial* ai_material,
+		Ref<Disarray::MeshMaterial> submesh_material, aiString ai_tex_path) const
+	{
+		auto has_normal_map = ai_material->GetTexture(aiTextureType_NORMALS, 0, &ai_tex_path) == AI_SUCCESS;
+		auto fallback = !has_normal_map;
+		if (has_normal_map) {
+			Ref<Disarray::Texture> texture;
+			if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
+				texture = Texture::construct(device,
+					{
+						.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
+						.format = ImageFormat::RGB,
+						.data_buffer = { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 3 },
+						.debug_name = std::filesystem::path { ai_tex_path.C_Str() }.filename().string(),
+					});
+			} else {
+				texture = read_texture_from_file_path(ai_tex_path.C_Str());
 			}
 
-			// Normal maps
-			auto has_normal_map = ai_material->GetTexture(aiTextureType_NORMALS, 0, &ai_tex_path) == AI_SUCCESS;
-			fallback = !has_normal_map;
-			if (has_normal_map) {
-				Ref<Disarray::Texture> texture;
-				if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
-					texture = Texture::construct(device,
-						{
-							.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
-							.format = ImageFormat::RGB,
-							.data_buffer = { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 3 },
-							.debug_name = std::filesystem::path { ai_tex_path.C_Str() }.filename().string(),
-						});
-				} else {
-					texture = read_texture_from_file_path(ai_tex_path.C_Str());
-				}
+			if (texture) {
+				submesh_material->set("normal_map", texture);
+				submesh_material->set("pc.use_normal_map", true);
+				submesh_material->get_properties().has_normal_map = true;
+			} else {
+				fallback = true;
+			}
+		}
 
-				if (texture) {
-					submesh_material->set("normal_map", texture);
-					submesh_material->set("pc.use_normal_map", true);
-				} else {
-					fallback = true;
-				}
+		if (fallback) {
+			submesh_material->set("normal_map", white_texture);
+			submesh_material->set("pc.use_normal_map", false);
+		}
+	}
+
+	void StaticMesh::handle_roughness_map(const Ref<Disarray::Texture>& white_texture, const aiMaterial* ai_material,
+		Ref<Disarray::MeshMaterial> submesh_material, aiString ai_tex_path, float roughness) const
+	{
+		const auto has_roughness_map = ai_material->GetTexture(aiTextureType_SHININESS, 0, &ai_tex_path) == AI_SUCCESS;
+		auto fallback = !has_roughness_map;
+		if (has_roughness_map) {
+			Ref<Disarray::Texture> texture;
+			if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
+				texture = Texture::construct(device,
+					{
+						.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
+						.format = ImageFormat::RGB,
+						.data_buffer = { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 3 },
+						.debug_name = std::filesystem::path { ai_tex_path.C_Str() }.filename().string(),
+					});
+			} else {
+				texture = read_texture_from_file_path(ai_tex_path.C_Str());
 			}
 
-			if (fallback) {
-				submesh_material->set("normal_map", white_texture);
-				submesh_material->set("pc.use_normal_map", false);
+			if (texture) {
+				submesh_material->set("roughness_map", texture);
+				submesh_material->set("pc.roughness", 1.0F);
+			} else {
+				fallback = true;
 			}
+		}
 
-			// Roughness map
-			bool has_roughness_map = ai_material->GetTexture(aiTextureType_SHININESS, 0, &ai_tex_path) == AI_SUCCESS;
-			fallback = !has_roughness_map;
-			if (has_roughness_map) {
-				Ref<Disarray::Texture> texture;
-				if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(ai_tex_path.C_Str())) {
-					texture = Texture::construct(device,
-						{
-							.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
-							.format = ImageFormat::RGB,
-							.data_buffer = { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 3 },
-							.debug_name = std::filesystem::path { ai_tex_path.C_Str() }.filename().string(),
-						});
-				} else {
-					texture = read_texture_from_file_path(ai_tex_path.C_Str());
-				}
+		if (fallback) {
+			submesh_material->set("roughness_map", white_texture);
+			submesh_material->set("pc.roughness", roughness);
+		}
+	}
 
-				if (texture) {
-					submesh_material->set("roughness_map", texture);
-					submesh_material->set("pc.roughness", 1.0F);
-				} else {
-					fallback = true;
-				}
-			}
+	void StaticMesh::handle_metalness_map(const Ref<Disarray::Texture>& white_texture, const aiMaterial* ai_material,
+		Ref<Disarray::MeshMaterial> submesh_material, float metalness) const
+	{
+		bool has_metalness_texture = false;
+		for (std::uint32_t property_index = 0; property_index < ai_material->mNumProperties; property_index++) {
+			if (auto* prop = ai_material->mProperties[property_index]; prop->mType == aiPTI_String) {
+				auto str_length = *bit_cast<std::uint32_t*>(prop->mData);
+				std::string str(prop->mData + 4, str_length);
 
-			if (fallback) {
-				submesh_material->set("roughness_map", white_texture);
-				submesh_material->set("pc.roughness", roughness);
-			}
-
-			bool has_metalness_texture = false;
-			for (std::uint32_t property_index = 0; property_index < ai_material->mNumProperties; property_index++) {
-				if (auto* prop = ai_material->mProperties[property_index]; prop->mType == aiPTI_String) {
-					auto str_length = *bit_cast<std::uint32_t*>(prop->mData);
-					std::string str(prop->mData + 4, str_length);
-
-					if (const std::string key = prop->mKey.data; key == "$raw.ReflectionFactor|file") {
-						Ref<Disarray::Texture> texture;
-						if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(str.data())) {
-							texture = Texture::construct(device,
-								{
-									.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
-									.format = ImageFormat::RGB,
-									.data_buffer = { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 3 },
-									.debug_name = str,
-								});
-						} else {
-							texture = read_texture_from_file_path(str);
-						}
-
-						if (texture) {
-							has_metalness_texture = true;
-							submesh_material->set("metalness_map", texture);
-							submesh_material->set("pc.metalness", 1.0F);
-						} else {
-							Log::error("Mesh", "Could not load texture: {0}", str);
-						}
-						break;
+				if (const std::string key = prop->mKey.data; key == "$raw.ReflectionFactor|file") {
+					Ref<Disarray::Texture> texture;
+					if (const auto* ai_texture_embedded = importer->scene->GetEmbeddedTexture(str.data())) {
+						texture = Texture::construct(device,
+							{
+								.extent = { ai_texture_embedded->mWidth, ai_texture_embedded->mHeight },
+								.format = ImageFormat::RGB,
+								.data_buffer = { ai_texture_embedded->pcData, ai_texture_embedded->mWidth * ai_texture_embedded->mHeight * 3, },
+								.debug_name = str,
+							});
+					} else {
+						texture = read_texture_from_file_path(str);
 					}
+
+					if (texture) {
+						has_metalness_texture = true;
+						submesh_material->set("metalness_map", texture);
+						submesh_material->set("pc.metalness", 1.0F);
+					} else {
+						Log::error("Mesh", "Could not load texture: {0}", str);
+					}
+					break;
 				}
 			}
+		}
 
-			fallback = !has_metalness_texture;
-			if (fallback) {
-				submesh_material->set("metalness_map", white_texture);
-				submesh_material->set("pc.metalness", metalness);
-			}
+		auto fallback = !has_metalness_texture;
+		if (fallback) {
+			submesh_material->set("metalness_map", white_texture);
+			submesh_material->set("pc.metalness", metalness);
 		}
 	}
 
@@ -438,15 +502,27 @@ namespace Vulkan {
 		using namespace std::filesystem;
 		const auto path_to_texture = FS::texture(path { texture_path }.filename());
 
+		const auto parent = this->file_path.parent_path();
+
+		path constructed_path {};
+		const auto parent_directory_is_either_model_or_textures_directory = parent == FS::model_directory() || parent == FS::texture_directory();
+		if (FS::exists(parent) && !parent_directory_is_either_model_or_textures_directory) {
+			// Well we guess that the texture is in the same directory as the mesh
+			const auto requested_file_name = path_to_texture.filename();
+			constructed_path = parent / requested_file_name;
+		} else {
+			constructed_path = path { path_to_texture };
+		}
+
 		try {
 			return Texture::construct(device,
 				{
-					.path = path_to_texture,
-					.debug_name = path { path_to_texture }.filename().string(),
+					.path = constructed_path,
+					.debug_name = constructed_path.filename().string(),
 				});
 		} catch (const ResultException& e) {
 			Log::error("Mesh", "Could not load texture: {0}. Exception: {1}", path_to_texture, e.what());
-			return nullptr;
+			return Ref<Disarray::Texture>(nullptr);
 		}
 	}
 

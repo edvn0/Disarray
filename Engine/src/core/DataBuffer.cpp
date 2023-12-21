@@ -57,9 +57,13 @@ DataBuffer::DataBuffer(DataBuffer&& other) noexcept
 {
 }
 
-auto DataBuffer::operator=(DataBuffer other) -> DataBuffer&
+auto DataBuffer::operator=(const DataBuffer& other) -> DataBuffer&
 {
-	swap(*this, other); // (2)
+	const auto new_size = other.size;
+	if (new_size != size) {
+		allocate(new_size);
+	}
+	std::memcpy(data.get(), other.data.get(), new_size);
 
 	return *this;
 }

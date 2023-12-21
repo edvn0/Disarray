@@ -119,8 +119,12 @@ template <> inline constexpr UBOIdentifier identifier_for<SpotLight> = UBOIdenti
 
 namespace Detail {
 	template <class K, std::size_t N> struct LightArray : Resettable<LightArray<K, N>> {
-		std::array<K, N> lights {};
 		std::uint32_t count { 0 };
+		// Pad 12 bytes
+		std::array<std::uint32_t, 3> padding {};
+
+		std::array<K, N> lights {};
+
 		void reset_impl()
 		{
 			lights.fill(K {});

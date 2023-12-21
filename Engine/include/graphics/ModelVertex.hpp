@@ -6,12 +6,12 @@
 namespace Disarray {
 
 struct ModelVertex {
-	glm::vec3 pos;
-	glm::vec2 uvs;
-	glm::vec4 color;
-	glm::vec3 normals;
-	glm::vec3 tangents;
-	glm::vec3 bitangents;
+	glm::vec3 pos {};
+	glm::vec2 uvs {};
+	glm::vec4 color {};
+	glm::vec3 normals {};
+	glm::vec3 tangents {};
+	glm::vec3 bitangents {};
 
 	auto operator==(const ModelVertex& other) const -> bool
 	{

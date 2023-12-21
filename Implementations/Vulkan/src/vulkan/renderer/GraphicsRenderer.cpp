@@ -332,11 +332,14 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, Ref<Disarray::Stat
 	for (auto& material : static_mesh->get_materials()) {
 		auto& vk_material = cast_to<Vulkan::MeshMaterial>(*material);
 		update_material_for_rendering(frame_index, vk_material, &uniform_buffer_set, &storage_buffer_set);
+		vk_material.set("pc.object_transform", transform);
 	}
 
+	const auto& materials = static_mesh->get_materials();
 	for (const auto& static_submesh : static_mesh->get_submeshes()) {
-		const auto& material = static_mesh->get_materials().at(static_submesh.material_index);
-		const auto& descriptor_set = cast_to<Vulkan::MeshMaterial>(*material).get_descriptor_set(frame_index);
+		const auto& material = materials.at(static_submesh.material_index);
+		const auto& vk_material = cast_to<Vulkan::MeshMaterial>(*material);
+		const auto& descriptor_set = vk_material.get_descriptor_set(frame_index);
 
 		const std::array desc {
 			descriptor_set,
@@ -344,21 +347,9 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, Ref<Disarray::Stat
 		const auto span = std::span { desc.data(), desc.size() };
 		bind_descriptor_sets(executor, pipeline, span);
 
-		struct PC {
-			glm::mat4 object_transform;
-			glm::vec3 albedo_colour;
-			float metalness;
-			float roughness;
-			float emission;
-			bool use_normal_map;
-		} pc {};
-		pc.object_transform = transform;
-		pc.albedo_colour = colour;
-		pc.metalness = 0.0F;
-		pc.roughness = 0.2F;
-		pc.emission = 0.1F;
+		const auto& pc_buffer = vk_material.get_uniform_storage_buffer();
 		vkCmdPushConstants(supply_cast<Vulkan::CommandExecutor>(executor), cast_to<Vulkan::Pipeline>(pipeline).get_layout(),
-			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PC), &pc);
+			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, pc_buffer.get_size(), pc_buffer.get_data());
 
 		// TODO(EdwinC): Instancing!
 		draw_indexed(executor, static_submesh.index_count, 1, static_submesh.base_index, static_cast<std::int32_t>(static_submesh.base_vertex), 0);

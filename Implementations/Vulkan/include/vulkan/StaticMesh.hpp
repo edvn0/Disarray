@@ -9,6 +9,9 @@
 #include "graphics/StaticMesh.hpp"
 #include "graphics/VertexBuffer.hpp"
 
+struct aiMaterial;
+struct aiString;
+
 namespace Disarray {
 struct ImporterPimpl;
 }
@@ -37,6 +40,14 @@ public:
 
 private:
 	[[nodiscard]] auto read_texture_from_file_path(const std::string& texture_path) const -> Ref<Disarray::Texture>;
+	void handle_normal_map(const Ref<Disarray::Texture>& white_texture, const aiMaterial* ai_material, Ref<Disarray::MeshMaterial> submesh_material,
+		aiString ai_tex_path) const;
+	void handle_roughness_map(const Ref<Disarray::Texture>& white_texture, const aiMaterial* ai_material,
+		Ref<Disarray::MeshMaterial> submesh_material, aiString ai_tex_path, float roughness) const;
+	void handle_metalness_map(const Ref<Disarray::Texture>& white_texture, const aiMaterial* ai_material,
+		Ref<Disarray::MeshMaterial> submesh_material, float metalness) const;
+	void handle_albedo_map(const Ref<Disarray::Texture>& white_texture, const aiMaterial* ai_material, Ref<Disarray::MeshMaterial> submesh_material,
+		aiString ai_tex_path) const;
 
 	const Disarray::Device& device;
 	std::vector<StaticSubmesh> submeshes {};

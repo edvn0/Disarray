@@ -19,12 +19,14 @@
 #include "core/Formatters.hpp"
 #include "core/Input.hpp"
 #include "core/Instrumentation.hpp"
+#include "core/PointerDefinition.hpp"
 #include "core/Random.hpp"
 #include "core/ThreadPool.hpp"
 #include "core/events/Event.hpp"
 #include "core/events/KeyEvent.hpp"
 #include "core/events/MouseEvent.hpp"
 #include "core/filesystem/AssetLocations.hpp"
+#include "entt/entity/fwd.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "graphics/StaticMesh.hpp"
 #include "physics/PhysicsEngine.hpp"
@@ -60,17 +62,25 @@ void Scene::construct(Disarray::App& app)
 
 	auto dumb_entity = create("Dumb");
 	dumb_entity.get_transform().scale *= 100.0F;
-	dumb_entity.get_components<Components::ID>().can_interact_with = false;
 	dumb_entity.add_component<Components::StaticMesh>(dumb_mesh);
 
 	auto viking_mesh = StaticMesh::construct(device,
 		{
+			.path = FS::model("railgun/Railgun_Prototype-FBX 7.4.fbx"),
+		});
+
+	auto viking_room = create("Railgun");
+	viking_room.get_transform().scale = { 1000, 1000, 1000 };
+	viking_room.add_component<Components::StaticMesh>(viking_mesh);
+
+	auto planet_mesh = StaticMesh::construct(device,
+		{
 			.path = FS::model("planet.fbx"),
 		});
 
-	auto viking_room = create("Planet");
-	viking_room.get_components<Components::ID>().can_interact_with = false;
-	viking_room.add_component<Components::StaticMesh>(viking_mesh);
+	auto planet_room = create("PLanet");
+	planet_room.get_transform().scale = { 1, 1, 1 };
+	planet_room.add_component<Components::StaticMesh>(planet_mesh);
 
 	auto sun = create("Sun");
 	sun.get_transform().position = { 16, -16, 16 };
@@ -227,7 +237,7 @@ void Scene::render(SceneRenderer& renderer)
 	auto render_planar_geometry = [](auto& ren) { ren.planar_geometry_pass(); };
 
 	auto render_text = [](auto& scene_renderer, entt::registry& reg) {
-		for (auto&& [entity, text, transform] : reg.template view<const Components::Text, const Components::Transform>().each()) {
+		for (auto&& [entity, text, transform] : reg.view<const Components::Text, const Components::Transform>().each()) {
 			auto colour = text.colour;
 			if (reg.any_of<Components::Texture>(entity)) {
 				colour = reg.get<Components::Texture>(entity).colour;
@@ -276,7 +286,7 @@ void Scene::render(SceneRenderer& renderer)
 void Scene::draw_identifiers(SceneRenderer& scene_renderer)
 {
 	std::size_t count { 0 };
-	for (auto&& [entity, id] : registry.view<Components::ID>().each()) {
+	for (auto&& [entity, id] : registry.view<Components::ID>(entt::exclude<Components::StaticMesh>).each()) {
 		count += id.can_interact_with ? 1 : 0;
 	}
 	scene_renderer.draw_identifiers(count);
@@ -284,7 +294,7 @@ void Scene::draw_identifiers(SceneRenderer& scene_renderer)
 
 void Scene::draw_skybox(SceneRenderer& scene_renderer)
 {
-	auto skybox_view = registry.view<const Components::Skybox, const Components::Mesh>();
+	const auto skybox_view = registry.view<const Components::Skybox, const Components::Mesh>();
 	Ref<Disarray::Mesh> skybox_ptr = nullptr;
 	for (auto&& [entity, skybox, mesh] : skybox_view.each()) {
 		if (mesh.mesh == nullptr) {
@@ -412,6 +422,16 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 
 void Scene::draw_shadows(SceneRenderer& scene_renderer)
 {
+	for (auto&& [entity, mesh, transform] : registry.view<Components::StaticMesh, const Components::Transform>().each()) {
+		if (mesh.static_mesh == nullptr) {
+			continue;
+		}
+
+		const auto& actual_pipeline = *scene_renderer.get_pipeline("ShadowCombined");
+		const auto transform_computed = transform.compute();
+		scene_renderer.draw_static_mesh(mesh.static_mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
+	}
+
 	for (const auto shadow_view = registry.view<const Components::Mesh, Components::Texture, const Components::Transform>(
 			 entt::exclude<Components::PointLight, Components::SpotLight, Components::Skybox>);
 		 auto&& [entity, mesh, texture, transform] : shadow_view.each()) {
@@ -478,11 +498,7 @@ void Scene::destruct()
 	}
 }
 
-auto Scene::create(std::string_view name) -> Entity
-{
-	auto entity = Entity(this, name);
-	return entity;
-}
+auto Scene::create(std::string_view name) -> Entity { return Entity { this, name }; }
 
 void Scene::delete_entity(entt::entity entity) { registry.destroy(entity); }
 
@@ -491,14 +507,14 @@ void Scene::delete_entity(const Entity& entity) { delete_entity(entity.get_ident
 auto Scene::deserialise(const Device& device, std::string_view name, const std::filesystem::path& filename) -> Scope<Scene>
 {
 	Scope<Scene> created = make_scope<Scene>(device, name);
-	SceneDeserialiser deserialiser { *created, device, filename };
+	const SceneDeserialiser deserialiser { *created, device, filename };
 	created->sort();
 	return created;
 }
 
 auto Scene::deserialise_into(Scene& output_scene, const Device& device, const std::filesystem::path& filename) -> void
 {
-	SceneDeserialiser deserialiser { output_scene, device, filename };
+	const SceneDeserialiser deserialiser { output_scene, device, filename };
 	output_scene.sort();
 }
 
@@ -528,7 +544,7 @@ void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoTyp
 	auto& entity_transform = entity.get_components<Components::Transform>();
 	auto transform = entity_transform.compute();
 
-	bool snap = Input::key_pressed(KeyCode::LeftShift);
+	const bool snap = Input::key_pressed(KeyCode::LeftShift);
 	float snap_value = 0.5F;
 	if (gizmo_type == GizmoType::Rotate) {
 		snap_value = 20.0F;
@@ -676,10 +692,9 @@ auto Scene::on_simulation_stop() -> void { on_physics_stop(); }
 
 auto Scene::get_primary_camera() -> std::optional<ViewProjectionTuple>
 {
-	auto find_one = get_by_components<Components::Camera>();
-	if (find_one) {
-		auto&& [camera_component, transform] = find_one->get_components<Components::Camera, const Components::Transform>();
-		if (camera_component.is_primary) {
+	if (auto find_one = get_by_components<Components::Camera>()) {
+		if (auto&& [camera_component, transform] = find_one->get_components<Components::Camera, const Components::Transform>();
+			camera_component.is_primary) {
 			return camera_component.compute(transform, extent);
 		}
 		return {};
@@ -715,7 +730,7 @@ auto Scene::on_update_runtime(float time_step) -> void
 
 	Collections::parallel_for_each(deferred_scripts, [step = time_step](auto* script) { script->on_update(step); });
 
-	auto controller_view = registry.view<Components::Controller, Components::Transform>();
+	const auto controller_view = registry.view<Components::Controller, Components::Transform>();
 	controller_view.each([step = time_step](const auto, Components::Controller& controller, Components::Transform& transform) {
 		controller.on_update(step, transform);
 	});

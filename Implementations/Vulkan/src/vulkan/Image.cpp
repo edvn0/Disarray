@@ -102,7 +102,6 @@ void Image::destroy_resources()
 	const auto& vk_device = supply_cast<Vulkan::Device>(device);
 	vkDestroyImageView(vk_device, info.view, nullptr);
 	vkDestroySampler(vk_device, info.sampler, nullptr);
-	vkDestroyDescriptorSetLayout(vk_device, layout, nullptr);
 	allocator.deallocate_image(info.allocation, info.image);
 	info.view = nullptr;
 	info.sampler = nullptr;
@@ -364,19 +363,6 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor*)
 	if (!is_depth_format(get_properties().format) && props.dimension == ImageDimension::Two) {
 		create_mips();
 	}
-
-	std::array<VkDescriptorSetLayoutBinding, 1> bindings {};
-	auto& image = bindings[0];
-	image.binding = 0;
-	image.descriptorCount = 1;
-	image.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	image.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-	auto layout_create_info = vk_structures<VkDescriptorSetLayoutCreateInfo>()();
-	layout_create_info.bindingCount = 1;
-	layout_create_info.pBindings = bindings.data();
-
-	vkCreateDescriptorSetLayout(supply_cast<Vulkan::Device>(device), &layout_create_info, nullptr, &layout);
 } // namespace Disarray::Vulkan
 
 void Image::update_descriptor()

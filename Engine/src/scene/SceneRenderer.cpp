@@ -232,6 +232,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.descriptor_set_layouts = desc_layout,
 		.specialisation_constant = specialisation_constant_description,
 	});
+
 	point_light_data.calculate_point_lights = 1;
 	resources.get_pipeline_cache().put({
 		.pipeline_key = "StaticMeshNoPointLights",
@@ -351,6 +352,26 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.pipeline_key = "BasicCombined",
 		.single_shader = shader,
 		.framebuffer = get_framebuffer<SceneFramebuffer::Geometry>(),
+		.layout = {
+			{ ElementType::Float3, "position", },
+			{ ElementType::Float2, "uvs", },
+			{ ElementType::Float4, "colour", },
+			{ ElementType::Float3, "normals", },
+			{ ElementType::Float3, "tangents", },
+			{ ElementType::Float3, "bitangents", },
+		},
+		.extent = renderer_extent,
+	});
+
+	auto combined_shadow_shader = SingleShader::construct(device,
+		{
+			.path = FS::shader("shadow_combined.glsl"),
+			.optimize = false,
+		});
+	get_pipeline_cache().put({
+		.pipeline_key = "ShadowCombined",
+		.single_shader = combined_shadow_shader,
+		.framebuffer = get_framebuffer<SceneFramebuffer::Shadow>(),
 		.layout = {
 			{ ElementType::Float3, "position", },
 			{ ElementType::Float2, "uvs", },

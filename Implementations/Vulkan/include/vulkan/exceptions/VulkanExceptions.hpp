@@ -10,7 +10,6 @@ public:
 	explicit ResultException(std::string_view msg)
 		: BaseException("ResultException", msg)
 	{
-		Log::error("ResultException", "Vulkan error: {}", msg);
 	}
 };
 

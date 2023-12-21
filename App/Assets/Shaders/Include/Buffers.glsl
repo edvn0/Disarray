@@ -5,6 +5,7 @@ layout(push_constant) uniform PushConstantBlock
     float metalness;
     float roughness;
     float emission;
+    float diffuse_factor;
     bool use_normal_map;
 }
 pc;
@@ -57,14 +58,13 @@ PLBO;
 
 struct SpotLight {
     vec4 position;
-    vec4 direction;
-    vec4 factors;
+    vec4 direction_and_cutoff;
+    vec4 factors_and_outer_cutoff;
     vec4 ambient;
     vec4 diffuse;
     vec4 specular;
-    vec4 near_far;// Only using 2 components here
 };
-#define MAX_SPOT_LIGHTS 800
+#define MAX_SPOT_LIGHTS 650
 
 layout(std140, binding = 5) uniform SpotLightUBO {
     uint count;
