@@ -33,13 +33,13 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	auto width = program.get<std::uint32_t>("width");
-	auto height = program.get<std::uint32_t>("height");
-	auto name = program.get<std::string>("name");
-	auto working_directory = program.get<std::string>("wd");
-	auto log_level = program.get<std::string>("level");
-	auto is_fullscreen = program["--fullscreen"] == true;
-	auto disable_validation_layers = program["--disable_validation"] == true;
+	const auto width = program.get<std::uint32_t>("width");
+	const auto height = program.get<std::uint32_t>("height");
+	const auto name = program.get<std::string>("name");
+	const auto working_directory = program.get<std::string>("wd");
+	const auto log_level = program.get<std::string>("level");
+	const auto is_fullscreen = program["--fullscreen"] == true;
+	const auto disable_validation_layers = program["--disable_validation"] == true;
 	const Disarray::ApplicationProperties properties {
 		.width = static_cast<std::uint32_t>(width),
 		.height = static_cast<std::uint32_t>(height),

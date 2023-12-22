@@ -62,16 +62,17 @@ void Scene::construct(Disarray::App& app)
 
 	auto dumb_entity = create("Dumb");
 	dumb_entity.get_transform().scale *= 100.0F;
+
 	dumb_entity.add_component<Components::StaticMesh>(dumb_mesh);
 
-	auto viking_mesh = StaticMesh::construct(device,
+	auto static_mesh = StaticMesh::construct(device,
 		{
-			.path = FS::model("railgun/Railgun_Prototype-FBX 7.4.fbx"),
+			.path = FS::model("volcube_planet.fbx"),
 		});
 
-	auto viking_room = create("Railgun");
-	viking_room.get_transform().scale = { 1000, 1000, 1000 };
-	viking_room.add_component<Components::StaticMesh>(viking_mesh);
+	auto static_room = create(static_mesh->get_properties().path.filename().string());
+	static_room.get_transform().scale = { 1, 1, 1 };
+	static_room.add_component<Components::StaticMesh>(static_mesh);
 
 	auto planet_mesh = StaticMesh::construct(device,
 		{
@@ -118,8 +119,8 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 
 	scene_renderer.begin_frame(view, proj, view_proj);
 
-	auto& shadow_buffer_set = scene_renderer.get_uniform_buffer_set().get(DescriptorBinding { 2 });
-	auto& directional_buffer_set = scene_renderer.get_uniform_buffer_set().get(DescriptorBinding { 3 });
+	auto& shadow_buffer_set = scene_renderer.get_uniform_buffer_set().get(ResourceBindings::ShadowPassUBO);
+	auto& directional_buffer_set = scene_renderer.get_uniform_buffer_set().get(ResourceBindings::DirectionalLightUBO);
 
 	auto& push_constant = scene_renderer.get_graphics_resource().get_editable_push_constant();
 
@@ -163,8 +164,8 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 	directional_buffer_set->set_data(&directional);
 	shadow_buffer_set->set_data(&shadow_pass);
 
-	auto point_light_buffer = scene_renderer.get_uniform_buffer_set().get(DescriptorBinding { 4 });
-	auto spot_light_buffer = scene_renderer.get_uniform_buffer_set().get(DescriptorBinding { 5 });
+	auto point_light_buffer = scene_renderer.get_uniform_buffer_set().get(ResourceBindings::PointLightUBO);
+	auto spot_light_buffer = scene_renderer.get_uniform_buffer_set().get(ResourceBindings::SpotLightUBO);
 
 	auto& point_lights = point_light_buffer->get_data<PointLights>();
 	auto& spot_lights = spot_light_buffer->get_data<SpotLights>();
@@ -429,7 +430,7 @@ void Scene::draw_shadows(SceneRenderer& scene_renderer)
 
 		const auto& actual_pipeline = *scene_renderer.get_pipeline("ShadowCombined");
 		const auto transform_computed = transform.compute();
-		scene_renderer.draw_static_mesh(mesh.static_mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
+		scene_renderer.draw_static_mesh_shadows(mesh.static_mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
 	}
 
 	for (const auto shadow_view = registry.view<const Components::Mesh, Components::Texture, const Components::Transform>(

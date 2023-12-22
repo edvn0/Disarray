@@ -339,7 +339,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 	const auto shader = SingleShader::construct(device,
 		{
 			.path = FS::shader("basic_combined.glsl"),
-			.optimize = false,
+			.optimize = true,
 		});
 	const auto material = MeshMaterial::construct(device,
 		MeshMaterialProperties {
@@ -368,10 +368,16 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 			.path = FS::shader("shadow_combined.glsl"),
 			.optimize = false,
 		});
+	shadow_material = MeshMaterial::construct(device,
+		MeshMaterialProperties {
+			combined_shadow_shader,
+			"ShadowCombinedMaterial",
+			app.get_swapchain().image_count(),
+		});
 	get_pipeline_cache().put({
 		.pipeline_key = "ShadowCombined",
 		.single_shader = combined_shadow_shader,
-		.framebuffer = get_framebuffer<SceneFramebuffer::Shadow>(),
+		.framebuffer = shadow_framebuffer,
 		.layout = {
 			{ ElementType::Float3, "position", },
 			{ ElementType::Float2, "uvs", },
@@ -386,20 +392,20 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 	static constexpr auto max_identifier_objects = 2000;
 	renderer->construct_sub_renderers(device, app);
 
-	auto& graphics_resource = get_graphics_resource();
+	const auto& graphics_resource = get_graphics_resource();
 	uniform_buffer_set.set_frame_count(app.get_swapchain().image_count(), &graphics_resource);
-	uniform_buffer_set.create(sizeof(UBO), DescriptorBinding(0));
-	uniform_buffer_set.create(sizeof(CameraUBO), DescriptorBinding(1));
-	uniform_buffer_set.create(sizeof(ShadowPassUBO), DescriptorBinding(2));
-	uniform_buffer_set.create(sizeof(DirectionalLightUBO), DescriptorBinding(3));
-	uniform_buffer_set.create(sizeof(PointLights), DescriptorBinding(4));
-	uniform_buffer_set.create(sizeof(SpotLights), DescriptorBinding(5));
+	uniform_buffer_set.create(sizeof(UBO), ResourceBindings::UBO);
+	uniform_buffer_set.create(sizeof(CameraUBO), ResourceBindings::CameraUBO);
+	uniform_buffer_set.create(sizeof(PointLights), ResourceBindings::PointLightUBO);
+	uniform_buffer_set.create(sizeof(ShadowPassUBO), ResourceBindings::ShadowPassUBO);
+	uniform_buffer_set.create(sizeof(DirectionalLightUBO), ResourceBindings::DirectionalLightUBO);
+	uniform_buffer_set.create(sizeof(SpotLights), ResourceBindings::SpotLightUBO);
 
 	Log::info("SceneRenderer", "Created uniform buffer set");
 
 	storage_buffer_set.set_frame_count(app.get_swapchain().image_count(), &graphics_resource);
-	storage_buffer_set.create(max_identifier_objects * sizeof(std::uint32_t), DescriptorBinding(6), max_identifier_objects);
-	storage_buffer_set.create(max_identifier_objects * sizeof(glm::mat4), DescriptorBinding(7), max_identifier_objects);
+	storage_buffer_set.create(max_identifier_objects * sizeof(std::uint32_t), ResourceBindings::IdentifierSSBO, max_identifier_objects);
+	storage_buffer_set.create(max_identifier_objects * sizeof(glm::mat4), ResourceBindings::TransformSSBO, max_identifier_objects);
 
 	Log::info("SceneRenderer", "Created storage buffer set");
 }
@@ -475,8 +481,8 @@ auto SceneRenderer::text_rendering_pass() -> void
 		const auto float_extent = renderer_extent.as<float>();
 		GlyphUBO buffer;
 		buffer.projection = Maths::ortho(0.F, float_extent.width, 0.F, float_extent.height, -1.0F, 1.0F);
-		auto uniform_buffer = uniform_buffer_set.get(DescriptorBinding(0));
-		auto& data = uniform_buffer->get_data<UBO>();
+		auto uniform_buffer = uniform_buffer_set.get(ResourceBindings::UBO);
+		const auto& data = uniform_buffer->get_data<UBO>();
 		buffer.view = data.view;
 		// Write glyph ubo
 	}
@@ -488,8 +494,8 @@ auto SceneRenderer::planar_geometry_pass() -> void { renderer->planar_geometry_p
 
 auto SceneRenderer::begin_frame(const glm::mat4& view, const glm::mat4& projection, const glm::mat4& view_projection) -> void
 {
-	auto uniform_buffer = uniform_buffer_set.get(DescriptorBinding(0));
-	auto camera_buffer = uniform_buffer_set.get(DescriptorBinding(1));
+	auto uniform_buffer = uniform_buffer_set.get(ResourceBindings::UBO);
+	auto camera_buffer = uniform_buffer_set.get(ResourceBindings::CameraUBO);
 
 	auto& default_ubo = uniform_buffer->get_data<UBO>();
 	auto& camera = camera_buffer->get_data<CameraUBO>();
@@ -576,7 +582,7 @@ auto SceneRenderer::draw_static_submeshes(const Collections::ScopedStringMap<Mes
 
 	auto& push_constant = get_graphics_resource().get_editable_push_constant();
 
-	Collections::for_each_unwrapped(submeshes, [&](const auto&, const auto& mesh) {
+	for_each_unwrapped(submeshes, [&](const auto&, const auto& mesh) {
 		std::size_t index = 0;
 		for (const auto& texture_index : mesh->texture_indices) {
 			push_constant.image_indices.at(index++) = static_cast<int>(texture_index);
@@ -605,7 +611,13 @@ auto SceneRenderer::begin_pass(const Disarray::Framebuffer& framebuffer, bool ex
 
 auto SceneRenderer::draw_static_mesh(Ref<StaticMesh>& mesh, const Pipeline& pipeline, const glm::mat4& transform, const glm::vec4& colour) -> void
 {
-	renderer->draw_mesh(*command_executor, mesh, pipeline, uniform_buffer_set, storage_buffer_set, colour, transform);
+	renderer->draw_mesh(*command_executor, mesh, pipeline, uniform_buffer_set, storage_buffer_set, colour, transform, nullptr);
+}
+
+auto SceneRenderer::draw_static_mesh_shadows(Ref<StaticMesh>& mesh, const Pipeline& pipeline, const glm::mat4& transform, const glm::vec4& colour)
+	-> void
+{
+	renderer->draw_mesh(*command_executor, mesh, pipeline, uniform_buffer_set, storage_buffer_set, colour, transform, shadow_material);
 }
 
 void SceneRenderer::clear_pass(RenderPasses render_pass) { renderer->clear_pass(*command_executor, render_pass); }

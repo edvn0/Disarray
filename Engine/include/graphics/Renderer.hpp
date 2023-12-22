@@ -14,6 +14,7 @@
 #include "graphics/BufferSet.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/IndexBuffer.hpp"
+#include "graphics/MeshMaterial.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/RenderCommandQueue.hpp"
 #include "graphics/RendererProperties.hpp"
@@ -33,6 +34,18 @@ namespace Disarray {
 struct RendererProperties {
 	std::string debug_name { "Unknown" };
 };
+
+namespace ResourceBindings {
+	static constexpr auto UBO = DescriptorBinding(0);
+	static constexpr auto CameraUBO = DescriptorBinding(1);
+	static constexpr auto PointLightUBO = DescriptorBinding(2);
+	static constexpr auto ShadowPassUBO = DescriptorBinding(3);
+	static constexpr auto DirectionalLightUBO = DescriptorBinding(4);
+	static constexpr auto ColourSSBO = DescriptorBinding(5);
+	static constexpr auto SpotLightUBO = DescriptorBinding(6);
+	static constexpr auto IdentifierSSBO = DescriptorBinding(7);
+	static constexpr auto TransformSSBO = DescriptorBinding(8);
+}; // namespace ResourceBindings
 
 class IGraphicsResource {
 public:
@@ -156,6 +169,10 @@ public:
 	virtual void draw_mesh(Disarray::CommandExecutor&, Ref<Disarray::StaticMesh>&, const Disarray::Pipeline&,
 		Disarray::BufferSet<Disarray::UniformBuffer>&, Disarray::BufferSet<Disarray::StorageBuffer>&, const glm::vec4& colour,
 		const glm::mat4& transform = glm::identity<glm::mat4>())
+		= 0;
+	virtual void draw_mesh(Disarray::CommandExecutor&, Ref<Disarray::StaticMesh>&, const Disarray::Pipeline&,
+		Disarray::BufferSet<Disarray::UniformBuffer>&, Disarray::BufferSet<Disarray::StorageBuffer>&, const glm::vec4& colour,
+		const glm::mat4& transform = glm::identity<glm::mat4>(), Ref<Disarray::MeshMaterial> material = nullptr)
 		= 0;
 
 	virtual void draw_mesh_instanced(

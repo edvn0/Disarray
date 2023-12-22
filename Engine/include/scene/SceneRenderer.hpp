@@ -72,6 +72,9 @@ public:
 
 	auto draw_static_mesh(Ref<Disarray::StaticMesh>& mesh, const Disarray::Pipeline& pipeline, const glm::mat4& transform, const glm::vec4& colour)
 		-> void;
+	auto draw_static_mesh_shadows(
+		Ref<Disarray::StaticMesh>& mesh, const Disarray::Pipeline& pipeline, const glm::mat4& transform, const glm::vec4& colour) -> void;
+
 	/**
 	 * END ACTUAL DRAWING
 	 */
@@ -109,6 +112,8 @@ private:
 
 	Scope<Mesh> aabb_model;
 	Ref<Disarray::CommandExecutor> command_executor {};
+
+	Ref<Disarray::MeshMaterial> shadow_material;
 
 	std::unordered_map<SceneFramebuffer, Ref<Disarray::Framebuffer>> framebuffers {};
 

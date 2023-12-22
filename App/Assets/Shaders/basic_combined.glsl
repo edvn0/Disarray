@@ -118,5 +118,5 @@ void main() {
     }
 
     out_colour = vec4(out_vec, 1.0);
-    // out_colour = gamma_correct(out_colour);
+    out_colour = gamma_correct(out_colour);
 }

@@ -47,6 +47,8 @@ public:
 	[[nodiscard]] virtual auto get_materials() const -> const Collections::RefVector<Disarray::MeshMaterial>& = 0;
 	[[nodiscard]] virtual auto get_materials() -> Collections::RefVector<Disarray::MeshMaterial>& = 0;
 
+	[[nodiscard]] virtual auto get_material(std::size_t index) const -> const Ref<Disarray::MeshMaterial>& = 0;
+
 	virtual auto get_aabb() const -> const AABB& = 0;
 
 	static auto construct(const Disarray::Device& device, const std::filesystem::path& path) -> Ref<Disarray::StaticMesh>;

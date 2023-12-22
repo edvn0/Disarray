@@ -17,6 +17,10 @@ auto PipelineProperties::hash() const -> std::size_t
 	if (fragment_shader) {
 		hash_combine(seed, *fragment_shader);
 	}
+
+	if (single_shader) {
+		hash_combine(seed, *single_shader);
+	}
 	return seed;
 }
 

@@ -318,7 +318,13 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, Ref<Disarray::Stat
 	BufferSet<Disarray::UniformBuffer>& uniform_buffer_set, Disarray::BufferSet<Disarray::StorageBuffer>& storage_buffer_set, const glm::vec4& colour,
 	const glm::mat4& transform)
 {
-	bind_pipeline(executor, pipeline);
+	draw_mesh(executor, static_mesh, pipeline, uniform_buffer_set, storage_buffer_set, colour, transform, nullptr);
+}
+
+void Renderer::draw_mesh(Disarray::CommandExecutor& executor, Ref<Disarray::StaticMesh>& static_mesh, const Disarray::Pipeline& pipeline,
+	BufferSet<Disarray::UniformBuffer>& uniform_buffer_set, Disarray::BufferSet<Disarray::StorageBuffer>& storage_buffer_set, const glm::vec4& colour,
+	const glm::mat4& transform, Ref<Disarray::MeshMaterial> actual_material)
+{
 	const auto frame_index = get_graphics_resource().get_current_frame_index();
 
 	const auto& vertex_buffer = static_mesh->get_vertices();
@@ -335,10 +341,12 @@ void Renderer::draw_mesh(Disarray::CommandExecutor& executor, Ref<Disarray::Stat
 		vk_material.set("pc.object_transform", transform);
 	}
 
-	const auto& materials = static_mesh->get_materials();
 	for (const auto& static_submesh : static_mesh->get_submeshes()) {
-		const auto& material = materials.at(static_submesh.material_index);
-		const auto& vk_material = cast_to<Vulkan::MeshMaterial>(*material);
+		const auto& chosen_material
+			= actual_material == nullptr ? static_mesh->get_material(static_cast<std::size_t>(static_submesh.material_index)) : actual_material;
+		const auto& vk_material = cast_to<Vulkan::MeshMaterial>(*chosen_material);
+		bind_pipeline(executor, pipeline);
+
 		const auto& descriptor_set = vk_material.get_descriptor_set(frame_index);
 
 		const std::array desc {

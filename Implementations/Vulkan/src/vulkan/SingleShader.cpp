@@ -285,17 +285,21 @@ auto reflect_on_stages(const std::unordered_map<Disarray::ShaderType, std::vecto
 {
 	ReflectionData output {};
 
+#if 0
 	const auto hash = UnorderedMapHash<std::uint32_t> {}(spirv_codes);
 	static std::unordered_map<std::size_t, ReflectionData> cache {};
 	if (cache.contains(hash)) {
 		return cache.at(hash);
 	}
+#endif
 
 	for (auto&& [type, stage_info] : spirv_codes) {
 		reflect_code(to_stage(type), stage_info, output);
 	}
 
+#if 0
 	cache.emplace(hash, output);
+#endif
 
 	return output;
 }

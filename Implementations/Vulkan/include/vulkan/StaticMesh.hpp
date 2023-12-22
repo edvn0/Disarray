@@ -2,6 +2,7 @@
 
 #include "core/Collections.hpp"
 #include "core/DisarrayObject.hpp"
+#include "core/Ensure.hpp"
 #include "core/Types.hpp"
 #include "graphics/AABB.hpp"
 #include "graphics/IndexBuffer.hpp"
@@ -34,6 +35,11 @@ public:
 
 	auto get_materials() const -> const Collections::RefVector<Disarray::MeshMaterial>& override { return materials; }
 	auto get_materials() -> Collections::RefVector<Disarray::MeshMaterial>& override { return materials; }
+	auto get_material(std::size_t index) const -> const Ref<Disarray::MeshMaterial>& override
+	{
+		ensure(index < materials.size());
+		return materials.at(index);
+	}
 	auto get_path() const -> const auto& { return file_path; }
 
 	auto get_aabb() const -> const AABB& override { return bounding_box; }

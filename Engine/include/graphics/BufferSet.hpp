@@ -71,16 +71,23 @@ public:
 
 	auto get(DescriptorBinding binding, DescriptorSet set = DescriptorSet { 0 }) -> auto&
 	{
+		ensure(frame_set_binding_buffers.contains(current_frame()), "BufferSet does not contain current frame index");
+		ensure(frame_set_binding_buffers.at(current_frame()).contains(set), "BufferSet does not contain descriptor set");
+		ensure(frame_set_binding_buffers.at(current_frame()).at(set).contains(binding), "BufferSet does not contain descriptor binding");
 		return frame_set_binding_buffers.at(current_frame()).at(set).at(binding);
 	}
 
 	auto get(DescriptorBinding binding, FrameIndex frame_index, DescriptorSet set) -> auto&
 	{
+		ensure(frame_set_binding_buffers.contains(frame_index), "BufferSet does not contain frame index");
+		ensure(frame_set_binding_buffers.at(frame_index).contains(set), "BufferSet does not contain descriptor set");
+		ensure(frame_set_binding_buffers.at(frame_index).at(set).contains(binding), "BufferSet does not contain descriptor binding");
 		return frame_set_binding_buffers.at(frame_index).at(set).at(binding);
 	}
 
 	auto set(Ref<B>&& buffer, FrameIndex frame_index, DescriptorSet set = DescriptorSet { 0 }) -> void
 	{
+		ensure(frame_index < frame_count, "BufferSet frame index out of range");
 		frame_set_binding_buffers[frame_index][set].try_emplace(buffer->get_binding(), std::move(buffer));
 	}
 
