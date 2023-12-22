@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "ShaderReflectionData.hpp"
 #include "core/DisarrayObject.hpp"
 #include "graphics/PipelineCache.hpp"
 #include "graphics/Renderer.hpp"
@@ -17,6 +18,7 @@ namespace Disarray::Vulkan {
 
 class GraphicsResource : public IGraphicsResource {
 	DISARRAY_MAKE_NONCOPYABLE(GraphicsResource)
+
 public:
 	GraphicsResource(const Disarray::Device&, const Disarray::Swapchain&);
 	~GraphicsResource() override;
@@ -53,6 +55,14 @@ public:
 	[[nodiscard]] auto get_push_constant() const -> const PushConstant* override { return &pc; }
 	auto get_editable_push_constant() -> PushConstant& override { return pc; }
 
+	auto get_device() const -> const Disarray::Device& override { return device; }
+
+	[[nodiscard]] auto get_current_frame_index() const -> FrameIndex { return swapchain.get_current_frame_index(); }
+	auto begin_frame() -> void override;
+	auto end_frame() -> void override;
+
+	static auto allocate_descriptor_sets(VkDescriptorSetAllocateInfo& allocation_info, VkDescriptorSet& vk_descriptors) -> void;
+
 private:
 	void cleanup_graphics_resource();
 	auto descriptor_write_sets_per_frame(DescriptorSet descriptor_set) -> std::vector<VkWriteDescriptorSet>;
@@ -66,6 +76,16 @@ private:
 
 	VkDescriptorPool pool { nullptr };
 	PushConstant pc {};
+
+	struct Pool {
+		VkDescriptorPool pool { nullptr };
+		VkDevice device { nullptr };
+		std::size_t allocation_count { 0 };
+		std::size_t allocation_size { 0 };
+
+		~Pool();
+	};
+	static inline Scope<Pool> descriptor_pool { nullptr };
 
 	std::unordered_map<FrameIndex, std::vector<VkDescriptorSet>> descriptor_sets;
 	std::vector<VkDescriptorSetLayout> layouts;

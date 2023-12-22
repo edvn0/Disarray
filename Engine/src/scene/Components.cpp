@@ -12,6 +12,7 @@
 #include "core/Input.hpp"
 #include "core/Log.hpp"
 #include "graphics/Mesh.hpp"
+#include "graphics/StaticMesh.hpp"
 #include "scene/Camera.hpp"
 #include "scene/Components.hpp"
 #include "scene/CppScript.hpp"
@@ -32,6 +33,19 @@ Mesh::Mesh(Device& device, std::string_view path)
 
 Mesh::Mesh(Ref<Disarray::Mesh> input_mesh)
 	: mesh(std::move(input_mesh))
+{
+}
+
+StaticMesh::StaticMesh(Device& device, std::string_view path)
+	: static_mesh(Disarray::StaticMesh::construct(device,
+		StaticMeshProperties {
+			.path = std::string { path },
+		}))
+{
+}
+
+StaticMesh::StaticMesh(Ref<Disarray::StaticMesh> input_mesh)
+	: static_mesh(std::move(input_mesh))
 {
 }
 

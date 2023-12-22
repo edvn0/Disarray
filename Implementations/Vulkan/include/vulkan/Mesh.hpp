@@ -27,7 +27,7 @@ public:
 	[[nodiscard]] auto invalid() const -> bool override;
 
 	auto get_submeshes() const -> const Collections::ScopedStringMap<Disarray::MeshSubstructure>& override;
-	auto get_textures() const -> const RefVector<Disarray::Texture>& override;
+	auto get_textures() const -> const Collections::RefVector<Disarray::Texture>& override;
 	auto has_children() const -> bool override;
 
 	void force_recreation() override;

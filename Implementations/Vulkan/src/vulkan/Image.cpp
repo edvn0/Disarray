@@ -7,6 +7,7 @@
 #include "core/Collections.hpp"
 #include "core/Ensure.hpp"
 #include "core/Formatters.hpp"
+#include "core/String.hpp"
 #include "core/ThreadPool.hpp"
 #include "core/Types.hpp"
 #include "graphics/CommandExecutor.hpp"
@@ -101,7 +102,6 @@ void Image::destroy_resources()
 	const auto& vk_device = supply_cast<Vulkan::Device>(device);
 	vkDestroyImageView(vk_device, info.view, nullptr);
 	vkDestroySampler(vk_device, info.sampler, nullptr);
-	vkDestroyDescriptorSetLayout(vk_device, layout, nullptr);
 	allocator.deallocate_image(info.allocation, info.image);
 	info.view = nullptr;
 	info.sampler = nullptr;
@@ -229,7 +229,7 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor*)
 	VkFormat vulkan_format = to_vulkan_format(get_properties().format);
 
 	auto width = props.extent.width;
-	auto height = props.extent.height;
+	auto height = props.extent.height > 0 ? props.extent.height : 1;
 
 	VkImageCreateInfo image_create_info {};
 	image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -266,7 +266,7 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor*)
 		buffer.allocate(size);
 	}
 
-	Log::info("Image", "Creating image '{}' of extent: {} and size {}.", props.debug_name, props.extent, size);
+	Log::info("Image", "Creating image '{}' of extent: {} and size {}.", props.debug_name, props.extent, StringUtilities::human_readable_size(size));
 
 	VkBuffer staging {};
 	VkBufferCreateInfo staging_create_info {};
@@ -275,8 +275,11 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor*)
 	staging_create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	staging_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	Allocator staging_allocator { "Image Recreator" };
-	VmaAllocation staging_allocation = staging_allocator.allocate_buffer(
-		staging, staging_create_info, { .usage = Usage::CPU_TO_GPU, .creation = Creation::HOST_ACCESS_RANDOM_BIT });
+	VmaAllocation staging_allocation = staging_allocator.allocate_buffer(staging, staging_create_info,
+		{
+			.usage = Usage::CPU_TO_GPU,
+			.creation = Creation::HOST_ACCESS_RANDOM_BIT,
+		});
 	{
 		AllocationMapper<std::byte> mapper { staging_allocator, staging_allocation, get_properties().data };
 	}
@@ -314,7 +317,7 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor*)
 			buffer_copy_region.imageSubresource.baseArrayLayer = 0;
 			buffer_copy_region.imageSubresource.layerCount = 1;
 			buffer_copy_region.imageExtent.width = get_properties().extent.width;
-			buffer_copy_region.imageExtent.height = get_properties().extent.height;
+			buffer_copy_region.imageExtent.height = get_properties().extent.height > 0 ? get_properties().extent.height : 1;
 			buffer_copy_region.imageExtent.depth = 1;
 			buffer_copy_region.bufferOffset = 0;
 			buffer_copy_regions.emplace_back(buffer_copy_region);
@@ -360,19 +363,6 @@ void Image::recreate_image(bool should_clean, const Disarray::CommandExecutor*)
 	if (!is_depth_format(get_properties().format) && props.dimension == ImageDimension::Two) {
 		create_mips();
 	}
-
-	std::array<VkDescriptorSetLayoutBinding, 1> bindings {};
-	auto& image = bindings[0];
-	image.binding = 0;
-	image.descriptorCount = 1;
-	image.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	image.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-	auto layout_create_info = vk_structures<VkDescriptorSetLayoutCreateInfo>()();
-	layout_create_info.bindingCount = 1;
-	layout_create_info.pBindings = bindings.data();
-
-	vkCreateDescriptorSetLayout(supply_cast<Vulkan::Device>(device), &layout_create_info, nullptr, &layout);
 } // namespace Disarray::Vulkan
 
 void Image::update_descriptor()

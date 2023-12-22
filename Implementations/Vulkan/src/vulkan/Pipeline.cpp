@@ -17,6 +17,7 @@
 #include "vulkan/Pipeline.hpp"
 #include "vulkan/RenderPass.hpp"
 #include "vulkan/Shader.hpp"
+#include "vulkan/SingleShader.hpp"
 
 namespace Disarray::Vulkan {
 
@@ -153,7 +154,7 @@ auto Pipeline::initialise_blend_states() -> std::vector<VkPipelineColorBlendAtta
 {
 	const auto& fb_props = props.framebuffer->get_properties();
 	const auto should_present = fb_props.should_present;
-	std::size_t color_attachment_count = should_present ? 1 : props.framebuffer->get_colour_attachment_count();
+	const std::size_t color_attachment_count = should_present ? 1 : props.framebuffer->get_colour_attachment_count();
 	std::vector<VkPipelineColorBlendAttachmentState> blend_attachment_states(color_attachment_count);
 	static constexpr auto blend_all_factors
 		= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -216,7 +217,7 @@ void Pipeline::construct_layout(const Extent& extent)
 		try_find_or_recreate_cache();
 	}
 
-	std::vector<VkDynamicState> dynamic_states = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_LINE_WIDTH };
+	std::vector dynamic_states = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_LINE_WIDTH };
 
 	VkPipelineDynamicStateCreateInfo dynamic_state {};
 	dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
@@ -235,11 +236,11 @@ void Pipeline::construct_layout(const Extent& extent)
 	std::vector<VkVertexInputAttributeDescription> attribute_descriptions {};
 	std::uint32_t location = 0;
 	for (const auto& attribute : props.layout.elements) {
-		auto& new_attribute = attribute_descriptions.emplace_back();
-		new_attribute.binding = 0;
-		new_attribute.format = Detail::to_vulkan_format(attribute.type);
-		new_attribute.offset = attribute.offset;
-		new_attribute.location = location++;
+		auto& [attribute_location, binding, format, offset] = attribute_descriptions.emplace_back();
+		binding = 0;
+		format = Detail::to_vulkan_format(attribute.type);
+		offset = attribute.offset;
+		attribute_location = location++;
 	}
 
 	vertex_input_info.vertexBindingDescriptionCount = 1;
@@ -271,8 +272,8 @@ void Pipeline::construct_layout(const Extent& extent)
 	VkRect2D scissor {};
 	scissor.offset = { 0, 0 };
 	scissor.extent = {
-		.width = static_cast<std::uint32_t>(width),
-		.height = static_cast<std::uint32_t>(height),
+		.width = width,
+		.height = height,
 	};
 
 	VkPipelineViewportStateCreateInfo viewport_state {};
@@ -321,28 +322,43 @@ void Pipeline::construct_layout(const Extent& extent)
 
 	VkPipelineLayoutCreateInfo pipeline_layout_info {};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipeline_layout_info.setLayoutCount = static_cast<std::uint32_t>(props.descriptor_set_layouts.size()); // Optional
-	pipeline_layout_info.pSetLayouts = props.descriptor_set_layouts.data(); // Optional
-
 	std::vector<VkPushConstantRange> result;
-	for (const auto& pc_layout : props.push_constant_layout.get_input_ranges()) {
-		auto& out = result.emplace_back();
-		VkShaderStageFlags flags {};
-		if (pc_layout.flags == PushConstantKind::Fragment) {
-			flags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	if (props.single_shader != nullptr) {
+		const auto& vulkan_single_shader = cast_to<Vulkan::SingleShader>(*props.single_shader);
+		const auto& layouts = vulkan_single_shader.get_descriptor_set_layouts();
+		pipeline_layout_info.setLayoutCount = static_cast<std::uint32_t>(layouts.size());
+		pipeline_layout_info.pSetLayouts = layouts.data();
+		const auto& push_constant_layout = vulkan_single_shader.get_push_constant_ranges();
+		for (const auto& pc_layout : push_constant_layout) {
+			auto& out = result.emplace_back();
+			out.offset = pc_layout.offset;
+			out.size = pc_layout.size;
+			out.stageFlags = pc_layout.shader_stage;
 		}
-		if (pc_layout.flags == PushConstantKind::Vertex) {
-			flags = VK_SHADER_STAGE_VERTEX_BIT;
+	} else {
+		pipeline_layout_info.setLayoutCount = static_cast<std::uint32_t>(props.descriptor_set_layouts.size());
+		pipeline_layout_info.pSetLayouts = props.descriptor_set_layouts.data();
+		for (const auto& pc_layout : props.push_constant_layout.get_input_ranges()) {
+			auto& out = result.emplace_back();
+			VkShaderStageFlags flags {};
+			if (pc_layout.flags == PushConstantKind::Fragment) {
+				flags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			}
+			if (pc_layout.flags == PushConstantKind::Vertex) {
+				flags = VK_SHADER_STAGE_VERTEX_BIT;
+			}
+			if (pc_layout.flags == PushConstantKind::Both) {
+				flags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+			}
+			out = {
+				.stageFlags = flags,
+				.offset = pc_layout.offset,
+				.size = pc_layout.size,
+			};
 		}
-		if (pc_layout.flags == PushConstantKind::Both) {
-			flags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-		}
-		out = {
-			.stageFlags = flags,
-			.offset = pc_layout.offset,
-			.size = pc_layout.size,
-		};
 	}
+
 	pipeline_layout_info.pushConstantRangeCount = static_cast<std::uint32_t>(result.size()); // Optional
 	pipeline_layout_info.pPushConstantRanges = result.data(); // Optional
 
@@ -350,20 +366,25 @@ void Pipeline::construct_layout(const Extent& extent)
 
 	VkGraphicsPipelineCreateInfo pipeline_create_info {};
 	pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	auto&& stages = retrieve_shader_stages(props.vertex_shader, props.fragment_shader);
-	std::vector<VkPipelineShaderStageCreateInfo> stage_data { stages.first, stages.second };
+
+	std::vector<VkPipelineShaderStageCreateInfo> stage_data {};
+	if (props.single_shader != nullptr) {
+		const auto& vulkan_single_shader = cast_to<Vulkan::SingleShader>(*props.single_shader);
+		const auto& stages = vulkan_single_shader.get_stage_data();
+		const std::array stages_data { stages.at(ShaderType::Vertex), stages.at(ShaderType::Fragment) };
+		stage_data = { stages_data[0], stages_data[1] };
+	} else {
+		const auto&& [fst, snd] = retrieve_shader_stages(props.vertex_shader, props.fragment_shader);
+		stage_data = { fst, snd };
+	}
 
 	std::vector<VkSpecializationMapEntry> specialization_map_entries {};
 	if (props.specialisation_constants.valid()) {
-		// Each shader constant of a shader stage corresponds to one map entry
-		// Shader bindings based on specialization constants are marked by the new "constant_id" layout qualifier:
-		//	layout (constant_id = 0) const int LIGHTING_MODEL = 0;
-		//	layout (constant_id = 1) const float PARAM_TOON_DESATURATION = 0.0f;
 #ifdef IS_DEBUG
 		std::unordered_set<std::uint32_t> constant_ids {};
 #endif
 		for (const auto& constants : props.specialisation_constants.constants) {
-			VkSpecializationMapEntry& entry = specialization_map_entries.emplace_back();
+			auto& entry = specialization_map_entries.emplace_back();
 			entry.constantID = constants.id;
 #ifdef IS_DEBUG
 			ensure(!constant_ids.contains(entry.constantID));
@@ -396,12 +417,12 @@ void Pipeline::construct_layout(const Extent& extent)
 	pipeline_create_info.pColorBlendState = &color_blending;
 	pipeline_create_info.pDynamicState = &dynamic_state;
 	pipeline_create_info.layout = layout;
-	pipeline_create_info.renderPass = supply_cast<Vulkan::RenderPass>(props.framebuffer->get_render_pass());
+	pipeline_create_info.renderPass = supply_cast<RenderPass>(props.framebuffer->get_render_pass());
 	pipeline_create_info.subpass = 0;
 	pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipeline_create_info.basePipelineIndex = -1; // Optional
 
-	verify(vkCreateGraphicsPipelines(supply_cast<Vulkan::Device>(device), cache, 1, &pipeline_create_info, nullptr, &pipeline));
+	verify(vkCreateGraphicsPipelines(supply_cast<Device>(device), cache, 1, &pipeline_create_info, nullptr, &pipeline));
 }
 
 Pipeline::~Pipeline()
@@ -420,11 +441,20 @@ Pipeline::~Pipeline()
 	data.resize(size);
 	vkGetPipelineCacheData(supply_cast<Vulkan::Device>(device), cache, &size, data.data());
 
-	const auto pipeline_name = fmt::format(
-		"Pipeline-{}-{}", props.vertex_shader->get_properties().identifier.filename(), props.fragment_shader->get_properties().identifier.filename());
+	std::string name;
+	if (props.vertex_shader != nullptr && props.fragment_shader != nullptr) {
+		auto pipeline_name = fmt::format("Pipeline-{}-{}", props.vertex_shader->get_properties().identifier.filename(),
+			props.fragment_shader->get_properties().identifier.filename());
+		name = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", pipeline_name, props.hash());
+	} else {
+		name = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", props.single_shader->get_properties().path.filename(), props.hash());
+	}
 
-	const auto name = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", pipeline_name, props.hash());
-	FS::write_to_file(name, size, std::span { data });
+	if (FS::write_to_file(name, size, std::span { data })) {
+		Log::info("Pipeline", "Wrote cache with id {} to disk", name);
+	} else {
+		Log::info("Pipeline", "Could not write cache with id {} to disk", name);
+	}
 
 	vkDestroyPipelineCache(supply_cast<Vulkan::Device>(device), cache, nullptr);
 }
@@ -459,12 +489,16 @@ auto Pipeline::get_render_pass() const -> const Disarray::RenderPass& { return p
 
 void Pipeline::try_find_or_recreate_cache()
 {
-	const auto pipeline_name = fmt::format(
-		"Pipeline-{}-{}", props.vertex_shader->get_properties().identifier.filename(), props.fragment_shader->get_properties().identifier.filename());
+	std::string filename;
+	if (props.vertex_shader != nullptr && props.fragment_shader != nullptr) {
+		auto pipeline_name = fmt::format("Pipeline-{}-{}", props.vertex_shader->get_properties().identifier.filename(),
+			props.fragment_shader->get_properties().identifier.filename());
+		filename = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", pipeline_name, props.hash());
+	} else {
+		filename = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", props.single_shader->get_properties().path.filename(), props.hash());
+	}
 
-	const auto name = fmt::format("Assets/Pipelines/{}-Cache-{}.pipe-bin", pipeline_name, props.hash());
-
-	std::ifstream input_stream { name, std::fstream::ate | std::fstream::binary };
+	std::ifstream input_stream { filename, std::fstream::ate | std::fstream::binary };
 	if (!input_stream) {
 		VkPipelineCacheCreateInfo cache_create_info {};
 		cache_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
@@ -481,7 +515,7 @@ void Pipeline::try_find_or_recreate_cache()
 	cache_create_info.initialDataSize = buffer.size() * sizeof(unsigned char);
 	vkCreatePipelineCache(supply_cast<Vulkan::Device>(device), &cache_create_info, nullptr, &cache);
 
-	Log::info("Pipeline", "Loading cache with id {} took {}s", name, timer.elapsed());
+	Log::info("Pipeline", "Loading cache with id {} took {}s", filename, timer.elapsed());
 }
 
 } // namespace Disarray::Vulkan

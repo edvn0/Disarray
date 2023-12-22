@@ -92,12 +92,12 @@ constexpr auto to_vulkan_samples(SampleCount format) -> VkSampleCountFlagBits
 constexpr auto to_vulkan_tiling(Tiling tiling)
 {
 	switch (tiling) {
-	default:
-		unreachable();
 	case Tiling::Linear:
 		return VK_IMAGE_TILING_LINEAR;
 	case Tiling::DeviceOptimal:
 		return VK_IMAGE_TILING_OPTIMAL;
+	default:
+		unreachable();
 	}
 }
 
@@ -114,7 +114,6 @@ public:
 	auto read_pixel(const glm::vec2& /*unused*/) const -> PixelReadData override;
 
 	auto get_image() const -> VkImage { return info.image; }
-	auto get_layout() const -> const VkDescriptorSetLayout& { return layout; }
 
 	auto supply() const -> VkImage override { return get_image(); }
 	auto get_descriptor_info() const -> const VkDescriptorImageInfo& { return descriptor_info; }
@@ -131,7 +130,6 @@ private:
 
 	ImageInfo info {};
 	VkDescriptorImageInfo descriptor_info {};
-	VkDescriptorSetLayout layout {};
 
 	const Disarray::Device& device;
 	void create_image_view(VkFormat vulkan_format, VkImageAspectFlags aspect_mask);

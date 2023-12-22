@@ -1,10 +1,9 @@
 #include "DisarrayPCH.hpp"
 
-#include <magic_enum_switch.hpp>
-
 #include "core/App.hpp"
 #include "core/filesystem/AssetLocations.hpp"
 #include "graphics/BufferProperties.hpp"
+#include "graphics/BufferSet.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/GLM.hpp"
@@ -18,6 +17,7 @@
 #include "graphics/Renderer.hpp"
 #include "graphics/RendererProperties.hpp"
 #include "graphics/ShaderCompiler.hpp"
+#include "graphics/StaticMesh.hpp"
 #include "graphics/StorageBuffer.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/Texture.hpp"
@@ -31,6 +31,8 @@ namespace Disarray {
 
 SceneRenderer::SceneRenderer(const Disarray::Device& dev)
 	: device(dev)
+	, uniform_buffer_set(&dev)
+	, storage_buffer_set(&dev)
 {
 }
 
@@ -137,7 +139,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		Framebuffer::construct(device,
 			{
 				.extent = renderer_extent,
-				.attachments = { { ImageFormat::SBGR }, { ImageFormat::Depth } },
+				.attachments = { { ImageFormat::SRGB32 }, { ImageFormat::Depth } },
 				.clear_colour_on_load = false,
 				.clear_depth_on_load = false,
 				.should_blend = true,
@@ -230,6 +232,7 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.descriptor_set_layouts = desc_layout,
 		.specialisation_constant = specialisation_constant_description,
 	});
+
 	point_light_data.calculate_point_lights = 1;
 	resources.get_pipeline_cache().put({
 		.pipeline_key = "StaticMeshNoPointLights",
@@ -250,88 +253,6 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.descriptor_set_layouts = desc_layout,
 		.specialisation_constant = specialisation_constant_description,
 	});
-
-	point_light_transforms = StorageBuffer::construct_scoped(device,
-		{
-			.size = count_point_lights * sizeof(glm::mat4),
-			.count = count_point_lights,
-			.always_mapped = true,
-		});
-	point_light_colours = StorageBuffer::construct_scoped(device,
-		{
-			.size = count_point_lights * sizeof(glm::vec4),
-			.count = count_point_lights,
-			.always_mapped = true,
-		});
-	spot_light_transforms = StorageBuffer::construct_scoped(device,
-		{
-			.size = count_spot_lights * sizeof(glm::mat4),
-			.count = count_spot_lights,
-			.always_mapped = true,
-		});
-	spot_light_colours = StorageBuffer::construct_scoped(device,
-		{
-			.size = count_spot_lights * sizeof(glm::vec4),
-			.count = count_spot_lights,
-			.always_mapped = true,
-		});
-
-	static constexpr auto max_identifier_objects = 2000;
-	entity_identifiers = StorageBuffer::construct_scoped(device,
-		{
-			.size = max_identifier_objects * sizeof(std::uint32_t),
-			.count = max_identifier_objects,
-			.always_mapped = true,
-		});
-	entity_transforms = StorageBuffer::construct_scoped(device,
-		{
-			.size = max_identifier_objects * sizeof(glm::mat4),
-			.count = max_identifier_objects,
-			.always_mapped = true,
-		});
-	get_graphics_resource().expose_to_shaders(*point_light_transforms, DescriptorSet { 3 }, DescriptorBinding { 0 });
-	get_graphics_resource().expose_to_shaders(*point_light_colours, DescriptorSet { 3 }, DescriptorBinding { 1 });
-	get_graphics_resource().expose_to_shaders(*entity_identifiers, DescriptorSet { 3 }, DescriptorBinding { 2 });
-	get_graphics_resource().expose_to_shaders(*entity_transforms, DescriptorSet { 3 }, DescriptorBinding { 3 });
-	get_graphics_resource().expose_to_shaders(*spot_light_transforms, DescriptorSet { 3 }, DescriptorBinding { 4 });
-	get_graphics_resource().expose_to_shaders(*spot_light_colours, DescriptorSet { 3 }, DescriptorBinding { 5 });
-
-	uniform = make_scope<UniformBufferSet<UBO>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = sizeof(UBO),
-		});
-	camera_ubo = make_scope<UniformBufferSet<CameraUBO>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = sizeof(CameraUBO),
-		});
-	lights = make_scope<UniformBufferSet<PointLights>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = max_point_lights * sizeof(PointLight),
-		});
-	shadow_pass_ubo = make_scope<UniformBufferSet<ShadowPassUBO>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = sizeof(ShadowPassUBO),
-		});
-	directional_light_ubo = make_scope<UniformBufferSet<DirectionalLightUBO>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = sizeof(DirectionalLightUBO),
-		});
-	glyph_ubo = make_scope<UniformBufferSet<GlyphUBO>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = sizeof(GlyphUBO),
-		});
-	spot_light_data = make_scope<UniformBufferSet<SpotLights>>(device, FrameIndex(app.get_swapchain().image_count()),
-		BufferProperties {
-			.size = max_spot_lights * sizeof(SpotLight),
-		});
-
-	get_graphics_resource().expose_to_shaders(*uniform, DescriptorSet(0), DescriptorBinding(0));
-	get_graphics_resource().expose_to_shaders(*camera_ubo, DescriptorSet(0), DescriptorBinding(1));
-	get_graphics_resource().expose_to_shaders(*lights, DescriptorSet(0), DescriptorBinding(2));
-	get_graphics_resource().expose_to_shaders(*shadow_pass_ubo, DescriptorSet(0), DescriptorBinding(3));
-	get_graphics_resource().expose_to_shaders(*directional_light_ubo, DescriptorSet(0), DescriptorBinding(4));
-	get_graphics_resource().expose_to_shaders(*glyph_ubo, DescriptorSet(0), DescriptorBinding(5));
-	get_graphics_resource().expose_to_shaders(*spot_light_data, DescriptorSet(0), DescriptorBinding(6));
 
 	auto texture_cube = Texture::construct(device,
 		{
@@ -370,8 +291,14 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 		.vertex_shader_key = "static_mesh.vert",
 		.fragment_shader_key = "static_mesh.frag",
 		.framebuffer = geometry_framebuffer,
-		.layout = { { ElementType::Float3, "position" }, { ElementType::Float2, "uvs" }, { ElementType::Float4, "colour" },
-			{ ElementType::Float3, "normals" }, { ElementType::Float3, "tangents" }, { ElementType::Float3, "bitangents" } },
+		.layout = {
+			{ ElementType::Float3, "position", },
+			{ ElementType::Float2, "uvs", },
+			{ ElementType::Float4, "colour", },
+			{ ElementType::Float3, "normals", },
+			{ ElementType::Float3, "tangents", },
+			{ ElementType::Float3, "bitangents", },
+		},
 		.push_constant_layout = { { PushConstantKind::Both, sizeof(PushConstant) } },
 		.extent = renderer_extent,
 		.polygon_mode = PolygonMode::Line,
@@ -409,7 +336,78 @@ auto SceneRenderer::construct(Disarray::App& app) -> void
 	pipeline_properties.layout = { { ElementType::Float3, "pos" }, { ElementType::Float4, "colour" } };
 	get_pipeline_cache().put(pipeline_properties);
 
+	const auto shader = SingleShader::construct(device,
+		{
+			.path = FS::shader("basic_combined.glsl"),
+			.optimize = true,
+		});
+	const auto material = MeshMaterial::construct(device,
+		MeshMaterialProperties {
+			shader,
+			"BasicCombinedMaterial",
+			app.get_swapchain().image_count(),
+		});
+
+	get_pipeline_cache().put({
+		.pipeline_key = "BasicCombined",
+		.single_shader = shader,
+		.framebuffer = get_framebuffer<SceneFramebuffer::Geometry>(),
+		.layout = {
+			{ ElementType::Float3, "position", },
+			{ ElementType::Float2, "uvs", },
+			{ ElementType::Float4, "colour", },
+			{ ElementType::Float3, "normals", },
+			{ ElementType::Float3, "tangents", },
+			{ ElementType::Float3, "bitangents", },
+		},
+		.extent = renderer_extent,
+	});
+
+	auto combined_shadow_shader = SingleShader::construct(device,
+		{
+			.path = FS::shader("shadow_combined.glsl"),
+			.optimize = false,
+		});
+	shadow_material = MeshMaterial::construct(device,
+		MeshMaterialProperties {
+			combined_shadow_shader,
+			"ShadowCombinedMaterial",
+			app.get_swapchain().image_count(),
+		});
+	get_pipeline_cache().put({
+		.pipeline_key = "ShadowCombined",
+		.single_shader = combined_shadow_shader,
+		.framebuffer = shadow_framebuffer,
+		.layout = {
+			{ ElementType::Float3, "position", },
+			{ ElementType::Float2, "uvs", },
+			{ ElementType::Float4, "colour", },
+			{ ElementType::Float3, "normals", },
+			{ ElementType::Float3, "tangents", },
+			{ ElementType::Float3, "bitangents", },
+		},
+		.extent = renderer_extent,
+	});
+
+	static constexpr auto max_identifier_objects = 2000;
 	renderer->construct_sub_renderers(device, app);
+
+	const auto& graphics_resource = get_graphics_resource();
+	uniform_buffer_set.set_frame_count(app.get_swapchain().image_count(), &graphics_resource);
+	uniform_buffer_set.create(sizeof(UBO), ResourceBindings::UBO);
+	uniform_buffer_set.create(sizeof(CameraUBO), ResourceBindings::CameraUBO);
+	uniform_buffer_set.create(sizeof(PointLights), ResourceBindings::PointLightUBO);
+	uniform_buffer_set.create(sizeof(ShadowPassUBO), ResourceBindings::ShadowPassUBO);
+	uniform_buffer_set.create(sizeof(DirectionalLightUBO), ResourceBindings::DirectionalLightUBO);
+	uniform_buffer_set.create(sizeof(SpotLights), ResourceBindings::SpotLightUBO);
+
+	Log::info("SceneRenderer", "Created uniform buffer set");
+
+	storage_buffer_set.set_frame_count(app.get_swapchain().image_count(), &graphics_resource);
+	storage_buffer_set.create(max_identifier_objects * sizeof(std::uint32_t), ResourceBindings::IdentifierSSBO, max_identifier_objects);
+	storage_buffer_set.create(max_identifier_objects * sizeof(glm::mat4), ResourceBindings::TransformSSBO, max_identifier_objects);
+
+	Log::info("SceneRenderer", "Created storage buffer set");
 }
 
 auto SceneRenderer::interface() -> void
@@ -436,6 +434,7 @@ auto SceneRenderer::interface() -> void
 		}
 	});
 }
+
 auto SceneRenderer::recreate(bool should_clean, const Extent& extent) -> void
 {
 	renderer_extent = extent;
@@ -453,11 +452,6 @@ auto SceneRenderer::recreate(bool should_clean, const Extent& extent) -> void
 	const auto& geometry_framebuffer = get_framebuffer<SceneFramebuffer::Geometry>();
 	get_graphics_resource().expose_to_shaders(geometry_framebuffer->get_image(), DescriptorSet { 1 }, DescriptorBinding { 0 });
 
-	get_graphics_resource().expose_to_shaders(*point_light_transforms, DescriptorSet { 3 }, DescriptorBinding { 0 });
-	get_graphics_resource().expose_to_shaders(*point_light_colours, DescriptorSet { 3 }, DescriptorBinding { 1 });
-	get_graphics_resource().expose_to_shaders(*entity_identifiers, DescriptorSet { 3 }, DescriptorBinding { 2 });
-	get_graphics_resource().expose_to_shaders(*entity_transforms, DescriptorSet { 3 }, DescriptorBinding { 3 });
-
 	command_executor->recreate(true, extent);
 }
 
@@ -470,9 +464,13 @@ auto SceneRenderer::destruct() -> void
 }
 
 auto SceneRenderer::get_pipeline(const std::string& key) -> Ref<Disarray::Pipeline>& { return get_pipeline_cache().get(key); }
+
 auto SceneRenderer::get_graphics_resource() -> IGraphicsResource& { return renderer->get_graphics_resource(); }
+
 auto SceneRenderer::get_texture_cache() -> TextureCache& { return renderer->get_texture_cache(); }
+
 auto SceneRenderer::get_pipeline_cache() -> PipelineCache& { return renderer->get_pipeline_cache(); }
+
 auto SceneRenderer::get_command_executor() -> CommandExecutor& { return *command_executor; }
 
 auto SceneRenderer::fullscreen_quad_pass() -> void { renderer->fullscreen_quad_pass(*command_executor, *get_pipeline("FullScreen")); }
@@ -480,11 +478,13 @@ auto SceneRenderer::fullscreen_quad_pass() -> void { renderer->fullscreen_quad_p
 auto SceneRenderer::text_rendering_pass() -> void
 {
 	{
-		auto transaction = glyph_ubo->transaction();
-		auto& buffer = transaction.get_buffer();
 		const auto float_extent = renderer_extent.as<float>();
+		GlyphUBO buffer;
 		buffer.projection = Maths::ortho(0.F, float_extent.width, 0.F, float_extent.height, -1.0F, 1.0F);
-		buffer.view = uniform->read().view;
+		auto uniform_buffer = uniform_buffer_set.get(ResourceBindings::UBO);
+		const auto& data = uniform_buffer->get_data<UBO>();
+		buffer.view = data.view;
+		// Write glyph ubo
 	}
 
 	renderer->text_rendering_pass(*command_executor);
@@ -494,11 +494,11 @@ auto SceneRenderer::planar_geometry_pass() -> void { renderer->planar_geometry_p
 
 auto SceneRenderer::begin_frame(const glm::mat4& view, const glm::mat4& projection, const glm::mat4& view_projection) -> void
 {
-	auto camera_ubo_transaction = begin_uniform_transaction<CameraUBO>();
-	auto& camera = camera_ubo_transaction.get_buffer();
+	auto uniform_buffer = uniform_buffer_set.get(ResourceBindings::UBO);
+	auto camera_buffer = uniform_buffer_set.get(ResourceBindings::CameraUBO);
 
-	auto default_ubo_transaction = begin_uniform_transaction<UBO>();
-	auto& default_ubo = default_ubo_transaction.get_buffer();
+	auto& default_ubo = uniform_buffer->get_data<UBO>();
+	auto& camera = camera_buffer->get_data<CameraUBO>();
 
 	const auto view_matrix = glm::inverse(view);
 	camera.position = view_matrix[3];
@@ -506,8 +506,10 @@ auto SceneRenderer::begin_frame(const glm::mat4& view, const glm::mat4& projecti
 	default_ubo.view = view;
 	default_ubo.proj = projection;
 	default_ubo.view_projection = view_projection;
-
 	camera.view = view;
+
+	uniform_buffer->set_data(&default_ubo);
+	camera_buffer->set_data(&camera);
 
 	renderer->begin_frame();
 }
@@ -518,18 +520,16 @@ void SceneRenderer::end_pass() { renderer->end_pass(*command_executor); }
 
 auto SceneRenderer::draw_identifiers(std::size_t count) -> void
 {
+	if (count == 0) {
+		return;
+	}
 	const auto& vb = aabb_model->get_vertices();
 	const auto& ib = aabb_model->get_indices();
 	renderer->draw_mesh_instanced(*command_executor, count, vb, ib, *get_pipeline("Identity"));
 }
 
-auto SceneRenderer::draw_aabb(const Disarray::AABB& aabb, const glm::vec4& colour, const glm::mat4& transform) -> void
+auto SceneRenderer::draw_aabb(const Disarray::AABB&, const glm::vec4& colour, const glm::mat4& transform) -> void
 {
-	const auto scale_matrix = aabb.calculate_scale_matrix();
-	// Calculate the center of the AABB
-	glm::vec3 aabb_center = aabb.middle_point();
-	glm::vec3 translation = -aabb_center;
-
 	draw_single_static_mesh(*aabb_model, *get_pipeline("AABB"), transform, colour);
 }
 
@@ -582,7 +582,7 @@ auto SceneRenderer::draw_static_submeshes(const Collections::ScopedStringMap<Mes
 
 	auto& push_constant = get_graphics_resource().get_editable_push_constant();
 
-	Collections::for_each_unwrapped(submeshes, [&](const auto&, const auto& mesh) {
+	for_each_unwrapped(submeshes, [&](const auto&, const auto& mesh) {
 		std::size_t index = 0;
 		for (const auto& texture_index : mesh->texture_indices) {
 			push_constant.image_indices.at(index++) = static_cast<int>(texture_index);
@@ -609,9 +609,27 @@ auto SceneRenderer::begin_pass(const Disarray::Framebuffer& framebuffer, bool ex
 	renderer->begin_pass(*command_executor, const_cast<Disarray::Framebuffer&>(framebuffer), explicit_clear);
 }
 
+auto SceneRenderer::draw_static_mesh(Ref<StaticMesh>& mesh, const Pipeline& pipeline, const glm::mat4& transform, const glm::vec4& colour) -> void
+{
+	renderer->draw_mesh(*command_executor, mesh, pipeline, uniform_buffer_set, storage_buffer_set, colour, transform, nullptr);
+}
+
+auto SceneRenderer::draw_static_mesh_shadows(Ref<StaticMesh>& mesh, const Pipeline& pipeline, const glm::mat4& transform, const glm::vec4& colour)
+	-> void
+{
+	renderer->draw_mesh(*command_executor, mesh, pipeline, uniform_buffer_set, storage_buffer_set, colour, transform, shadow_material);
+}
+
 void SceneRenderer::clear_pass(RenderPasses render_pass) { renderer->clear_pass(*command_executor, render_pass); }
 
-auto SceneRenderer::get_final_image() -> const Disarray::Image& { return framebuffers.at(SceneFramebuffer::FullScreen)->get_image(); }
+auto SceneRenderer::get_final_image() -> const Disarray::Image&
+{
+#if !defined(DISARRAY_DEBUG)
+	return framebuffers.at(SceneFramebuffer::Geometry)->get_image();
+#else
+	return framebuffers.at(SceneFramebuffer::FullScreen)->get_image();
+#endif
+}
 
 void SceneRenderer::begin_execution() { command_executor->begin(); }
 

@@ -43,7 +43,7 @@ template <std::integral T> struct TypeSafeWrapper {
 	}
 	auto operator++() -> TypeSafeWrapper&
 	{
-		value++;
+		++value;
 		return *this;
 	}
 	auto operator++(std::integral auto) -> TypeSafeWrapper
@@ -54,7 +54,7 @@ template <std::integral T> struct TypeSafeWrapper {
 	}
 	auto operator--() -> TypeSafeWrapper&
 	{
-		value++;
+		++value;
 		return *this;
 	}
 	auto operator--(std::integral auto) -> TypeSafeWrapper
@@ -65,6 +65,13 @@ template <std::integral T> struct TypeSafeWrapper {
 	}
 
 	explicit operator T() const { return value; }
+
+	template <std::integral T2>
+		requires(std::is_convertible_v<T2, T>)
+	auto as() const
+	{
+		return static_cast<T2>(value);
+	}
 };
 
 using UnkownData = void*;
@@ -81,9 +88,6 @@ template <class T, class D = DefaultDelete<T>, class... Args> inline auto make_s
 {
 	return Scope<T, D> { new T { std::forward<Args>(args)... }, D {} };
 }
-
-template <class T> using RefVector = std::vector<Ref<T>>;
-template <class T> using ScopeVector = std::vector<Scope<T>>;
 
 template <class To, class From>
 	requires(std::is_base_of_v<From, To>)

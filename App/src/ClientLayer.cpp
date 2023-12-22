@@ -7,22 +7,13 @@
 #include <imgui_internal.h>
 
 #include <array>
-#include <filesystem>
-#include <initializer_list>
 #include <memory>
-#include <utility>
 
-#include "core/Random.hpp"
-#include "graphics/Pipeline.hpp"
-#include "graphics/PipelineCache.hpp"
-#include "graphics/RendererProperties.hpp"
+#include "core/filesystem/AssetLocations.hpp"
 #include "panels/DirectoryContentPanel.hpp"
 #include "panels/ExecutionStatisticsPanel.hpp"
 #include "panels/PipelineEditorPanel.hpp"
 #include "panels/StatisticsPanel.hpp"
-#include "scene/Components.hpp"
-#include "scene/Scene.hpp"
-#include "ui/UI.hpp"
 
 namespace {
 template <std::size_t Count>
@@ -53,7 +44,7 @@ ClientLayer::~ClientLayer() = default;
 void ClientLayer::construct(App& app)
 {
 	scene_renderer.construct(app);
-	setup_filewatcher_and_threadpool(app.get_thread_pool());
+	setup_filewatcher_and_threadpool(Disarray::App::get_thread_pool());
 
 	scene = make_ref<Scene>(device, "Default scene");
 	scene->construct(app);
@@ -62,6 +53,7 @@ void ClientLayer::construct(App& app)
 	icon_pause = scene_renderer.get_texture_cache().get("Pause");
 	icon_step = scene_renderer.get_texture_cache().get("Step");
 	icon_simulate = scene_renderer.get_texture_cache().get("Simulate");
+
 	// create_entities();
 
 	extent = app.get_swapchain().get_extent();

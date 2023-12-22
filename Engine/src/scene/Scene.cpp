@@ -19,13 +19,16 @@
 #include "core/Formatters.hpp"
 #include "core/Input.hpp"
 #include "core/Instrumentation.hpp"
+#include "core/PointerDefinition.hpp"
 #include "core/Random.hpp"
 #include "core/ThreadPool.hpp"
 #include "core/events/Event.hpp"
 #include "core/events/KeyEvent.hpp"
 #include "core/events/MouseEvent.hpp"
 #include "core/filesystem/AssetLocations.hpp"
+#include "entt/entity/fwd.hpp"
 #include "graphics/RendererProperties.hpp"
+#include "graphics/StaticMesh.hpp"
 #include "physics/PhysicsEngine.hpp"
 #include "scene/Camera.hpp"
 #include "scene/Components.hpp"
@@ -48,7 +51,44 @@ Scene::Scene(const Device& dev, std::string_view name)
 	selected_entity = make_scope<Entity>(this);
 }
 
-void Scene::construct(Disarray::App& app) { extent = app.get_swapchain().get_extent(); }
+void Scene::construct(Disarray::App& app)
+{
+	extent = app.get_swapchain().get_extent();
+
+	auto dumb_mesh = StaticMesh::construct(device,
+		{
+			.path = FS::model("textured_cube.fbx"),
+		});
+
+	auto dumb_entity = create("Dumb");
+	dumb_entity.get_transform().scale *= 100.0F;
+
+	dumb_entity.add_component<Components::StaticMesh>(dumb_mesh);
+
+	auto static_mesh = StaticMesh::construct(device,
+		{
+			.path = FS::model("volcube_planet.fbx"),
+		});
+
+	auto static_room = create(static_mesh->get_properties().path.filename().string());
+	static_room.get_transform().scale = { 1, 1, 1 };
+	static_room.add_component<Components::StaticMesh>(static_mesh);
+
+	auto planet_mesh = StaticMesh::construct(device,
+		{
+			.path = FS::model("planet.fbx"),
+		});
+
+	auto planet_room = create("PLanet");
+	planet_room.get_transform().scale = { 1, 1, 1 };
+	planet_room.add_component<Components::StaticMesh>(planet_mesh);
+
+	auto sun = create("Sun");
+	sun.get_transform().position = { 16, -16, 16 };
+	sun.get_transform().scale = { 0.1F, 0.1F, 0.1F };
+	sun.add_component<Components::DirectionalLight>();
+	sun.get_components<Components::ID>().can_interact_with = false;
+}
 
 Scene::~Scene() = default;
 
@@ -75,21 +115,17 @@ void Scene::begin_frame(const Camera& camera, SceneRenderer& scene_renderer)
 void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm::mat4& view_proj, SceneRenderer& scene_renderer)
 {
 	execute_callbacks(scene_renderer);
+	const auto current_frame_index = scene_renderer.get_graphics_resource().get_current_frame_index();
 
 	scene_renderer.begin_frame(view, proj, view_proj);
 
-	auto directional_transaction = scene_renderer.begin_uniform_transaction<DirectionalLightUBO>();
-	auto point_lights_transaction = scene_renderer.begin_uniform_transaction<PointLights>();
-	auto spot_lights_transaction = scene_renderer.begin_uniform_transaction<SpotLights>();
-	auto shadow_pass_transaction = scene_renderer.begin_uniform_transaction<ShadowPassUBO>();
-
-	auto& shadow_pass = shadow_pass_transaction.get_buffer();
-	auto& directional = directional_transaction.get_buffer();
-	auto& point_lights = point_lights_transaction.get_buffer();
-	auto& spot_lights = spot_lights_transaction.get_buffer();
+	auto& shadow_buffer_set = scene_renderer.get_uniform_buffer_set().get(ResourceBindings::ShadowPassUBO);
+	auto& directional_buffer_set = scene_renderer.get_uniform_buffer_set().get(ResourceBindings::DirectionalLightUBO);
 
 	auto& push_constant = scene_renderer.get_graphics_resource().get_editable_push_constant();
 
+	auto& directional = directional_buffer_set->get_data<DirectionalLightUBO>();
+	auto& shadow_pass = shadow_buffer_set->get_data<ShadowPassUBO>();
 	{
 		for (auto sun_component_view = registry.view<const Components::Transform, Components::DirectionalLight>();
 			 auto&& [entity, transform, sun] : sun_component_view.each()) {
@@ -125,10 +161,17 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 		shadow_pass.view_projection = view_projection;
 	}
 
+	directional_buffer_set->set_data(&directional);
+	shadow_buffer_set->set_data(&shadow_pass);
+
+	auto point_light_buffer = scene_renderer.get_uniform_buffer_set().get(ResourceBindings::PointLightUBO);
+	auto spot_light_buffer = scene_renderer.get_uniform_buffer_set().get(ResourceBindings::SpotLightUBO);
+
+	auto& point_lights = point_light_buffer->get_data<PointLights>();
+	auto& spot_lights = spot_light_buffer->get_data<SpotLights>();
+
 	std::size_t point_light_index { 0 };
 	auto& lights = point_lights.lights;
-	auto point_light_ssbo = scene_renderer.get_point_light_transforms().get_mutable<glm::mat4>();
-	auto point_light_ssbo_colour = scene_renderer.get_point_light_colours().get_mutable<glm::vec4>();
 	for (auto&& [entity, point_light, pos, texture] :
 		registry.view<const Components::PointLight, const Components::Transform, Components::Texture>().each()) {
 		auto& light = lights.at(point_light_index);
@@ -138,17 +181,13 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 		light.specular = point_light.specular;
 		light.factors = point_light.factors;
 		texture.colour = light.ambient;
-
-		point_light_ssbo[point_light_index] = pos.compute();
-		point_light_ssbo_colour[point_light_index] = texture.colour;
 		point_light_index++;
 	}
+	point_lights.count = static_cast<std::uint32_t>(point_light_index);
 	push_constant.max_point_lights = static_cast<std::uint32_t>(point_light_index);
 
 	std::size_t spot_light_index { 0 };
 	auto& spot_light_array = spot_lights.lights;
-	auto spot_light_ssbo = scene_renderer.get_spot_light_transforms().get_mutable<glm::mat4>();
-	auto spot_light_ssbo_colour = scene_renderer.get_spot_light_colours().get_mutable<glm::vec4>();
 	for (auto&& [entity, spot_light, pos, texture] :
 		registry.view<const Components::SpotLight, Components::Transform, Components::Texture>().each()) {
 		auto& light = spot_light_array.at(spot_light_index);
@@ -167,23 +206,13 @@ void Scene::begin_frame(const glm::mat4& view, const glm::mat4& proj, const glm:
 		};
 		texture.colour = light.ambient;
 
-		spot_light_ssbo[spot_light_index] = pos.compute();
-		spot_light_ssbo_colour[spot_light_index] = texture.colour;
 		spot_light_index++;
 	}
+	spot_lights.count = static_cast<std::uint32_t>(spot_light_index);
 	push_constant.max_spot_lights = static_cast<std::uint32_t>(spot_light_index);
 
-	std::size_t identifier_index { 0 };
-	auto ssbo_identifiers = scene_renderer.get_entity_identifiers().get_mutable<std::uint32_t>();
-	auto identifiers_transforms = scene_renderer.get_entity_transforms().get_mutable<glm::mat4>();
-	for (auto&& [entity, transform, id] : registry.view<const Components::Transform, const Components::ID>().each()) {
-		if (!id.can_interact_with) {
-			continue;
-		}
-		ssbo_identifiers[identifier_index] = static_cast<std::uint32_t>(entity);
-		identifiers_transforms[identifier_index] = transform.compute();
-		identifier_index++;
-	}
+	point_light_buffer->set_data(&point_lights);
+	spot_light_buffer->set_data(&spot_lights);
 }
 
 void Scene::end_frame(SceneRenderer& renderer) { renderer.end_frame(); }
@@ -209,7 +238,7 @@ void Scene::render(SceneRenderer& renderer)
 	auto render_planar_geometry = [](auto& ren) { ren.planar_geometry_pass(); };
 
 	auto render_text = [](auto& scene_renderer, entt::registry& reg) {
-		for (auto&& [entity, text, transform] : reg.template view<const Components::Text, const Components::Transform>().each()) {
+		for (auto&& [entity, text, transform] : reg.view<const Components::Text, const Components::Transform>().each()) {
 			auto colour = text.colour;
 			if (reg.any_of<Components::Texture>(entity)) {
 				colour = reg.get<Components::Texture>(entity).colour;
@@ -251,14 +280,14 @@ void Scene::render(SceneRenderer& renderer)
 	}
 	{
 		// This is the composite pass!
-		renderer.fullscreen_quad_pass();
+		// renderer.fullscreen_quad_pass();
 	}
 }
 
 void Scene::draw_identifiers(SceneRenderer& scene_renderer)
 {
 	std::size_t count { 0 };
-	for (auto&& [entity, id] : registry.view<Components::ID>().each()) {
+	for (auto&& [entity, id] : registry.view<Components::ID>(entt::exclude<Components::StaticMesh>).each()) {
 		count += id.can_interact_with ? 1 : 0;
 	}
 	scene_renderer.draw_identifiers(count);
@@ -266,7 +295,7 @@ void Scene::draw_identifiers(SceneRenderer& scene_renderer)
 
 void Scene::draw_skybox(SceneRenderer& scene_renderer)
 {
-	auto skybox_view = registry.view<const Components::Skybox, const Components::Mesh>();
+	const auto skybox_view = registry.view<const Components::Skybox, const Components::Mesh>();
 	Ref<Disarray::Mesh> skybox_ptr = nullptr;
 	for (auto&& [entity, skybox, mesh] : skybox_view.each()) {
 		if (mesh.mesh == nullptr) {
@@ -283,6 +312,18 @@ void Scene::draw_skybox(SceneRenderer& scene_renderer)
 
 void Scene::draw_geometry(SceneRenderer& scene_renderer)
 {
+	{
+		for (auto&& [entity, mesh, transform] : registry.view<Components::StaticMesh, const Components::Transform>().each()) {
+			if (mesh.static_mesh == nullptr) {
+				continue;
+			}
+
+			const auto& actual_pipeline = *scene_renderer.get_pipeline("BasicCombined");
+			const auto transform_computed = transform.compute();
+			scene_renderer.draw_static_mesh(mesh.static_mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
+		}
+	}
+
 	{
 		auto point_light_view = registry.view<const Components::PointLight, const Components::Mesh>();
 		Ref<Disarray::Mesh> point_light_mesh = nullptr;
@@ -382,7 +423,17 @@ void Scene::draw_geometry(SceneRenderer& scene_renderer)
 
 void Scene::draw_shadows(SceneRenderer& scene_renderer)
 {
-	for (auto shadow_view = registry.view<const Components::Mesh, Components::Texture, const Components::Transform>(
+	for (auto&& [entity, mesh, transform] : registry.view<Components::StaticMesh, const Components::Transform>().each()) {
+		if (mesh.static_mesh == nullptr) {
+			continue;
+		}
+
+		const auto& actual_pipeline = *scene_renderer.get_pipeline("ShadowCombined");
+		const auto transform_computed = transform.compute();
+		scene_renderer.draw_static_mesh_shadows(mesh.static_mesh, actual_pipeline, transform_computed, { 1, 1, 1, 1 });
+	}
+
+	for (const auto shadow_view = registry.view<const Components::Mesh, Components::Texture, const Components::Transform>(
 			 entt::exclude<Components::PointLight, Components::SpotLight, Components::Skybox>);
 		 auto&& [entity, mesh, texture, transform] : shadow_view.each()) {
 		if (mesh.mesh == nullptr) {
@@ -448,11 +499,7 @@ void Scene::destruct()
 	}
 }
 
-auto Scene::create(std::string_view name) -> Entity
-{
-	auto entity = Entity(this, name);
-	return entity;
-}
+auto Scene::create(std::string_view name) -> Entity { return Entity { this, name }; }
 
 void Scene::delete_entity(entt::entity entity) { registry.destroy(entity); }
 
@@ -461,14 +508,14 @@ void Scene::delete_entity(const Entity& entity) { delete_entity(entity.get_ident
 auto Scene::deserialise(const Device& device, std::string_view name, const std::filesystem::path& filename) -> Scope<Scene>
 {
 	Scope<Scene> created = make_scope<Scene>(device, name);
-	SceneDeserialiser deserialiser { *created, device, filename };
+	const SceneDeserialiser deserialiser { *created, device, filename };
 	created->sort();
 	return created;
 }
 
 auto Scene::deserialise_into(Scene& output_scene, const Device& device, const std::filesystem::path& filename) -> void
 {
-	SceneDeserialiser deserialiser { output_scene, device, filename };
+	const SceneDeserialiser deserialiser { output_scene, device, filename };
 	output_scene.sort();
 }
 
@@ -498,7 +545,7 @@ void Scene::manipulate_entity_transform(Entity& entity, Camera& camera, GizmoTyp
 	auto& entity_transform = entity.get_components<Components::Transform>();
 	auto transform = entity_transform.compute();
 
-	bool snap = Input::key_pressed(KeyCode::LeftShift);
+	const bool snap = Input::key_pressed(KeyCode::LeftShift);
 	float snap_value = 0.5F;
 	if (gizmo_type == GizmoType::Rotate) {
 		snap_value = 20.0F;
@@ -646,10 +693,9 @@ auto Scene::on_simulation_stop() -> void { on_physics_stop(); }
 
 auto Scene::get_primary_camera() -> std::optional<ViewProjectionTuple>
 {
-	auto find_one = get_by_components<Components::Camera>();
-	if (find_one) {
-		auto&& [camera_component, transform] = find_one->get_components<Components::Camera, const Components::Transform>();
-		if (camera_component.is_primary) {
+	if (auto find_one = get_by_components<Components::Camera>()) {
+		if (auto&& [camera_component, transform] = find_one->get_components<Components::Camera, const Components::Transform>();
+			camera_component.is_primary) {
 			return camera_component.compute(transform, extent);
 		}
 		return {};
@@ -685,7 +731,7 @@ auto Scene::on_update_runtime(float time_step) -> void
 
 	Collections::parallel_for_each(deferred_scripts, [step = time_step](auto* script) { script->on_update(step); });
 
-	auto controller_view = registry.view<Components::Controller, Components::Transform>();
+	const auto controller_view = registry.view<Components::Controller, Components::Transform>();
 	controller_view.each([step = time_step](const auto, Components::Controller& controller, Components::Transform& transform) {
 		controller.on_update(step, transform);
 	});
@@ -787,7 +833,7 @@ auto Scene::set_name(std::string_view name) -> void
 {
 	{
 		scene_name = name;
-		scene_name = scene_name.c_str();
+		scene_name = std::string { scene_name.c_str() };
 	}
 }
 

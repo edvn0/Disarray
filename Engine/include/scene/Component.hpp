@@ -14,16 +14,16 @@ namespace Detail {
 		Components::LineGeometry, Components::QuadGeometry, Components::Mesh, Components::Material, Components::Texture, Components::DirectionalLight,
 		Components::PointLight, Components::SpotLight, Components::Script, Components::Controller, Components::Camera, Components::BoxCollider,
 		Components::SphereCollider, Components::CapsuleCollider, Components::ColliderMaterial, Components::RigidBody, Components::Skybox,
-		Components::Text>;
+		Components::Text, Components::StaticMesh>;
 
 	template <typename... Component> struct ComponentGroup { };
 } // namespace Detail
 
-using AllComponents
-	= Detail::ComponentGroup<Components::Tag, Components::Transform, Components::ID, Components::Inheritance, Components::LineGeometry,
-		Components::QuadGeometry, Components::Mesh, Components::Material, Components::Texture, Components::DirectionalLight, Components::PointLight,
-		Components::SpotLight, Components::Script, Components::Controller, Components::Camera, Components::BoxCollider, Components::SphereCollider,
-		Components::CapsuleCollider, Components::ColliderMaterial, Components::RigidBody, Components::Skybox, Components::Text>;
+using AllComponents = Detail::ComponentGroup<Components::Tag, Components::Transform, Components::ID, Components::Inheritance,
+	Components::LineGeometry, Components::QuadGeometry, Components::Mesh, Components::Material, Components::Texture, Components::DirectionalLight,
+	Components::PointLight, Components::SpotLight, Components::Script, Components::Controller, Components::Camera, Components::BoxCollider,
+	Components::SphereCollider, Components::CapsuleCollider, Components::ColliderMaterial, Components::RigidBody, Components::Skybox,
+	Components::Text, Components::StaticMesh>;
 
 using NonDeletableComponents = Detail::ComponentGroup<Components::Tag, Components::Transform, Components::ID>;
 

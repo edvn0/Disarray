@@ -1,13 +1,12 @@
 #include "DisarrayPCH.hpp"
 
-#include "graphics/Shader.hpp"
-
 #include <spirv_reflect.hpp>
 
 #include <fstream>
 
 #include "core/Ensure.hpp"
 #include "core/Formatters.hpp"
+#include "graphics/Shader.hpp"
 #include "graphics/ShaderCompiler.hpp"
 #include "vulkan/Device.hpp"
 #include "vulkan/Shader.hpp"
@@ -58,20 +57,6 @@ namespace {
 		// Count the number of output attachments
 
 		const auto& model = reflection_compiler.get_execution_model();
-
-		for (const auto& resource : shader_resources.stage_outputs) {
-			// Check if the resource is an output attachment
-			if (reflection_compiler.get_decoration(resource.id, spv::Decoration::DecorationLocation) >= 0) {
-				output.attachment_count++;
-			}
-		}
-
-		// Technically, we only care about how many fragment outputs there are.
-		// FIXME: Will need to generalise if / when we care about vertex outputs.
-		if (model != spv::ExecutionModelFragment) {
-			output.attachment_count = 0;
-		}
-		Log::info("SPIRV Reflection", "Attachment count: {}", output.attachment_count);
 	}
 
 } // namespace
@@ -155,12 +140,6 @@ void Shader::destroy_module()
 	was_destroyed_explicitly = true;
 }
 
-auto Shader::attachment_count() const -> std::uint32_t
-{
-	if (props.type == ShaderType::Fragment) {
-		return reflection_data.attachment_count;
-	}
-	return 0;
-}
+auto Shader::attachment_count() const -> std::uint32_t { return 0; }
 
 } // namespace Disarray::Vulkan

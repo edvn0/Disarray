@@ -6,10 +6,9 @@
 #include "graphics/Device.hpp"
 #include "graphics/ImageProperties.hpp"
 #include "graphics/RenderPass.hpp"
+#include "graphics/RendererProperties.hpp"
 
 namespace Disarray {
-
-using FrameIndex = TypeSafeWrapper<std::uint32_t>;
 
 class Swapchain {
 public:

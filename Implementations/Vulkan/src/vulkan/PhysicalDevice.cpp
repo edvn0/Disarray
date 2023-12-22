@@ -19,41 +19,56 @@
 
 namespace Disarray::Vulkan {
 
-static constexpr auto to_disarray_samples(VkSampleCountFlagBits samples)
-{
-	switch (samples) {
-	case VK_SAMPLE_COUNT_1_BIT:
-		return SampleCount::One;
-	case VK_SAMPLE_COUNT_2_BIT:
-		return SampleCount::Two;
-	case VK_SAMPLE_COUNT_4_BIT:
-		return SampleCount::Four;
-	case VK_SAMPLE_COUNT_8_BIT:
-		return SampleCount::Eight;
-	case VK_SAMPLE_COUNT_16_BIT:
-		return SampleCount::Sixteen;
-	case VK_SAMPLE_COUNT_32_BIT:
-		return SampleCount::ThirtyTwo;
-	case VK_SAMPLE_COUNT_64_BIT:
-		return SampleCount::SixtyFour;
-	default:
-		unreachable();
+namespace {
+	constexpr auto to_disarray_samples(VkSampleCountFlagBits samples)
+	{
+		switch (samples) {
+		case VK_SAMPLE_COUNT_1_BIT:
+			return SampleCount::One;
+		case VK_SAMPLE_COUNT_2_BIT:
+			return SampleCount::Two;
+		case VK_SAMPLE_COUNT_4_BIT:
+			return SampleCount::Four;
+		case VK_SAMPLE_COUNT_8_BIT:
+			return SampleCount::Eight;
+		case VK_SAMPLE_COUNT_16_BIT:
+			return SampleCount::Sixteen;
+		case VK_SAMPLE_COUNT_32_BIT:
+			return SampleCount::ThirtyTwo;
+		case VK_SAMPLE_COUNT_64_BIT:
+			return SampleCount::SixtyFour;
+		default:
+			unreachable();
+		}
 	}
-}
+} // namespace
 
 PhysicalDevice::PhysicalDevice(Disarray::Instance& inst, Disarray::Surface& surf)
 {
 	static auto is_device_suitable = [](VkPhysicalDevice device, Disarray::Surface& s) {
-		Vulkan::QueueFamilyIndex indices(device, s);
-		ExtensionSupport extension_support(device);
+		const Vulkan::QueueFamilyIndex indices(device, s);
+		const ExtensionSupport extension_support(device);
 
 		bool swapchain_is_allowed = false;
 		const auto&& [capabilities, formats, modes, msaa] = resolve_swapchain_support(device, s);
+
 		if (extension_support) {
 			swapchain_is_allowed = !formats.empty() && !modes.empty();
 		} else {
+			return false;
 		}
-		return indices && extension_support && swapchain_is_allowed;
+
+		VkPhysicalDeviceProperties device_properties;
+		vkGetPhysicalDeviceProperties(device, &device_properties);
+
+		constexpr auto amd_vendor_id = 0x1002;
+		constexpr auto nvidia_vendor_id = 0x10DE;
+		const auto vendor_id = device_properties.vendorID;
+
+		if (vendor_id == amd_vendor_id || vendor_id == nvidia_vendor_id) {
+			return indices && extension_support && swapchain_is_allowed;
+		}
+		return false;
 	};
 
 	const auto& instance = cast_to<Vulkan::Instance>(inst);

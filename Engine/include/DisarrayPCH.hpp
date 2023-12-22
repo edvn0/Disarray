@@ -19,6 +19,7 @@
 #include <concepts>
 #include <cstdarg>
 #include <cstddef>
+#include <cstdint>
 #include <execution>
 #include <filesystem>
 #include <fstream>

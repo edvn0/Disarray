@@ -33,8 +33,8 @@ public:
 	template <class Other> DefaultAllocator(const DefaultAllocator<Other>& other) noexcept {};
 	template <class Other> using rebind = DefaultAllocator<Other>;
 
-	void deallocate(T* const ptr, const size_t count) { std::allocator<T>::deallocate(ptr, count); };
-	auto allocate(const size_t count) -> T* { return std::allocator<T>::allocate(count); };
+	void deallocate(T* const ptr, const std::size_t count) { std::allocator<T>::deallocate(ptr, count); };
+	auto allocate(const std::size_t count) -> T* { return std::allocator<T>::allocate(count); };
 };
 
 namespace Detail {
@@ -53,6 +53,9 @@ template <class Value> using ReferencedStringViewMap = Detail::StringlikeUnorder
 template <class Value> using ReferencedStringMap = Detail::StringlikeUnorderedMap<std::string, Ref<Value>>;
 using StringViewSet = std::unordered_set<std::string_view, StringHash, std::equal_to<>, DefaultAllocator<std::string_view>>;
 using StringSet = std::unordered_set<std::string, StringHash, std::equal_to<>, DefaultAllocator<std::string>>;
+
+template <class T> using RefVector = std::vector<Ref<T>>;
+template <class T> using ScopeVector = std::vector<Scope<T>>;
 
 template <class T>
 concept Iterable = requires(T collection) {
@@ -138,6 +141,13 @@ constexpr inline auto map(Iterable auto& collection, auto&& func)
 
 	return output;
 }
+
+template <class T> struct Less {
+	constexpr auto operator()(const T& lhs, const T& rhs) const { return lhs < rhs; }
+};
+
+constexpr auto sort(Iterable auto& collection) { std::sort(std::begin(collection), std::end(collection)); }
+constexpr auto sort(Iterable auto& collection, auto&& sorter) { std::sort(std::begin(collection), std::end(collection), sorter); }
 
 #ifdef DISARRAY_WINDOWS
 constexpr inline void parallel_for_each(Iterable auto& collection, auto&& func)

@@ -26,7 +26,7 @@ auto TinyObjModelLoader::import_model(const std::filesystem::path& path, ImportF
 		throw CouldNotLoadModelException(fmt::format("Error: {}, Warning: {}", err, warn));
 	}
 
-	std::unordered_map<ModelVertex, uint32_t> unique_vertices {};
+	std::unordered_map<ModelVertex, std::uint32_t> unique_vertices {};
 
 	std::vector<std::vector<ModelVertex>> tasks {};
 
@@ -55,7 +55,7 @@ auto TinyObjModelLoader::import_model(const std::filesystem::path& path, ImportF
 	for (auto& vec : tasks) {
 		for (const auto& vertex : vec) {
 			if (!unique_vertices.contains(vertex)) {
-				unique_vertices[vertex] = static_cast<uint32_t>(vertices.size());
+				unique_vertices[vertex] = static_cast<std::uint32_t>(vertices.size());
 				vertices.push_back(vertex);
 			}
 

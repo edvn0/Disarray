@@ -1,15 +1,16 @@
 namespace Detail {
 
 template <class T> struct GenericFileWriter : FileWrite<T, GenericFileWriter<T>> {
-	auto write_to_file_impl(std::string_view path_sv, std::size_t size, std::span<T> data) -> void
+	auto write_to_file_impl(std::string_view path_sv, std::size_t size, std::span<T> data) -> bool
 	{
 		std::filesystem::path path { path_sv };
 		std::ofstream stream { path };
 		if (!stream) {
-			return;
+			return false;
 		}
 
 		stream.write(Disarray::bit_cast<const char*>(data.data()), size);
+		return true;
 	}
 };
 

@@ -1,12 +1,13 @@
 #include "DisarrayPCH.hpp"
 
-#include "graphics/PipelineCache.hpp"
-
 #include <filesystem>
+#include <ranges>
+#include <vector>
 
 #include "core/Log.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Pipeline.hpp"
+#include "graphics/PipelineCache.hpp"
 #include "graphics/Shader.hpp"
 #include "graphics/ShaderCompiler.hpp"
 #include "graphics/Swapchain.hpp"
@@ -14,13 +15,13 @@
 namespace Disarray {
 
 PipelineCache::PipelineCache(const Disarray::Device& dev, const std::filesystem::path& base)
-	: ResourceCache(dev, base, { ".vert", ".frag", ".glsl" })
+	: ResourceCache(dev, base, { ".vert", ".frag" })
 {
 	const auto all_files = get_unique_files_recursively();
 
 	// create all pairs of shaders
-	std::vector<std::filesystem::path> as_vector { all_files.begin(), all_files.end() };
-	std::sort(as_vector.begin(), as_vector.end());
+	auto as_vector = std::vector<std::filesystem::path> { all_files.begin(), all_files.end() };
+	std::ranges::sort(as_vector);
 
 	Runtime::ShaderCompiler::initialize();
 

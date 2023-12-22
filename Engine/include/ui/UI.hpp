@@ -281,8 +281,10 @@ auto begin_menu_bar(const ImRect&) -> bool;
 auto end_menu_bar() -> void;
 
 auto shader_drop_button(Device&, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader) -> bool;
+auto shader_drop_button(Device&, const std::string& button_name, Ref<SingleShader>& out_shader) -> bool;
 auto texture_drop_button(Device&, const Texture& texture) -> Ref<Disarray::Texture>;
 auto shader_drop_button(const Device&, const std::string& button_name, ShaderType shader_type, Ref<Shader>& out_shader) -> bool;
+auto shader_drop_button(const Device&, const std::string& button_name, Ref<SingleShader>& out_shader) -> bool;
 auto texture_drop_button(const Device&, const Texture& texture) -> Ref<Disarray::Texture>;
 
 auto is_maximised(Window& window) -> bool;

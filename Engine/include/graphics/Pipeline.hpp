@@ -15,6 +15,7 @@
 #include "core/Types.hpp"
 #include "graphics/Framebuffer.hpp"
 #include "graphics/Shader.hpp"
+#include "graphics/SingleShader.hpp"
 
 using VkDescriptorSetLayout = struct VkDescriptorSetLayout_T*;
 
@@ -184,6 +185,7 @@ private:
 		}
 		return output;
 	}
+
 	constexpr void compute_total_size(const std::vector<std::uint32_t>& identifiers)
 	{
 		std::uint32_t offset = 0;
@@ -198,7 +200,7 @@ private:
 	constexpr void compute_total_size()
 	{
 		const auto count = constants.size();
-		auto identifiers = make_sequenced(count);
+		const auto identifiers = make_sequenced(count);
 		std::uint32_t offset = 0;
 		std::size_t identifier = 0;
 		for (auto& constant : constants) {
@@ -214,6 +216,7 @@ struct PipelineProperties {
 	Ref<Shader> vertex_shader { nullptr };
 	Ref<Shader> fragment_shader { nullptr };
 	Ref<Shader> compute_shader { nullptr };
+	Ref<SingleShader> single_shader { nullptr };
 	Ref<Framebuffer> framebuffer { nullptr };
 	VertexLayout layout {};
 	PushConstantLayout push_constant_layout {};
@@ -229,43 +232,10 @@ struct PipelineProperties {
 	std::vector<VkDescriptorSetLayout> descriptor_set_layouts {};
 	SpecialisationConstantDescription specialisation_constants {};
 
-	auto hash() const -> std::size_t
-	{
-		std::size_t seed { 0 };
-		hash_combine(
-			seed, extent.width, extent.height, cull_mode, face_mode, depth_comparison_operator, samples, write_depth, test_depth, line_width);
-
-		if (vertex_shader) {
-			hash_combine(seed, *vertex_shader);
-		}
-
-		if (fragment_shader) {
-			hash_combine(seed, *fragment_shader);
-		}
-		return seed;
-	}
-
-	void set_shader_with_type(ShaderType type, const Ref<Disarray::Shader>& shader)
-	{
-		switch (type) {
-		case ShaderType::Vertex: {
-			vertex_shader = shader;
-			break;
-		}
-		case ShaderType::Fragment: {
-			fragment_shader = shader;
-			break;
-		}
-		case ShaderType::Compute: {
-			compute_shader = shader;
-			break;
-		}
-		case ShaderType::Include:
-			break;
-		}
-	}
-
-	auto is_valid() const -> bool { return !descriptor_set_layouts.empty() && framebuffer != nullptr; }
+	auto hash() const -> std::size_t;
+	void set_shader_with_type(ShaderType type, const Ref<Disarray::Shader>& shader);
+	auto is_valid() const -> bool;
+	auto is_single_shader() const -> bool;
 };
 
 class Pipeline : public ReferenceCountable {

@@ -18,10 +18,10 @@ template <typename T, typename... Rest> inline void hash_combine(std::size_t& se
 
 struct StringHash {
 	using is_transparent = void;
-	[[nodiscard]] auto operator()(const char* txt) const -> size_t { return std::hash<std::string_view> {}(txt); }
-	[[nodiscard]] auto operator()(std::string_view txt) const -> size_t { return std::hash<std::string_view> {}(txt); }
-	[[nodiscard]] auto operator()(const std::filesystem::path& txt) const -> size_t { return std::hash<std::string_view> {}(txt.string()); }
-	[[nodiscard]] auto operator()(const std::string& txt) const -> size_t { return std::hash<std::string> {}(txt); }
+	[[nodiscard]] auto operator()(const char* txt) const -> std::size_t { return std::hash<std::string_view> {}(txt); }
+	[[nodiscard]] auto operator()(std::string_view txt) const -> std::size_t { return std::hash<std::string_view> {}(txt); }
+	[[nodiscard]] auto operator()(const std::filesystem::path& txt) const -> std::size_t { return std::hash<std::string_view> {}(txt.string()); }
+	[[nodiscard]] auto operator()(const std::string& txt) const -> std::size_t { return std::hash<std::string> {}(txt); }
 };
 
 struct FileSystemPathHasher {

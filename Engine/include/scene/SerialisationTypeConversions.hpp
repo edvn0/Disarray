@@ -33,7 +33,7 @@ void from_json(const json&, FloatExtent&);
 } // namespace Disarray
 
 NLOHMANN_JSON_NAMESPACE_BEGIN
-template <std::size_t T> struct adl_serializer<glm::vec<T, float>> {
+template <glm::length_t T> struct adl_serializer<glm::vec<T, float>> {
 	static_assert(T > 0 && T <= 4);
 	static void to_json(json& object, const glm::vec<T, float>& vec)
 	{
@@ -73,7 +73,7 @@ template <> struct adl_serializer<glm::quat> {
 	static void from_json(const json& object, glm::quat& opt) { opt = glm::quat(object[1], object[2], object[3], object[4]); }
 };
 
-template <std::size_t N> struct adl_serializer<glm::mat<N, N, float>> {
+template <glm::length_t N> struct adl_serializer<glm::mat<N, N, float>> {
 	static void to_json(json& object, const glm::mat<N, N, float>& path)
 	{
 		if constexpr (N == 2) {

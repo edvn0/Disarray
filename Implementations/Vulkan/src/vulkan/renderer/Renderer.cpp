@@ -59,13 +59,14 @@ void Renderer::on_resize()
 void Renderer::begin_frame()
 {
 	batch_renderer.reset();
+	get_graphics_resource().begin_frame();
 
 	if (swapchain.needs_recreation()) {
 		force_recreation();
 	}
 }
 
-void Renderer::end_frame() { }
+void Renderer::end_frame() { get_graphics_resource().end_frame(); }
 
 void Renderer::force_recreation() { on_resize(); }
 

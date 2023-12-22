@@ -18,6 +18,7 @@ namespace Disarray {
 
 using DescriptorSet = TypeSafeWrapper<std::uint32_t>;
 using DescriptorBinding = TypeSafeWrapper<std::uint16_t>;
+using FrameIndex = TypeSafeWrapper<std::uint32_t>;
 
 enum class UBOIdentifier : std::uint8_t {
 	Missing,
@@ -117,27 +118,31 @@ struct SpotLight {
 template <> inline constexpr UBOIdentifier identifier_for<SpotLight> = UBOIdentifier::SpotLight;
 
 namespace Detail {
-	template <std::size_t N> struct PointLights : Resettable<PointLights<N>> {
-		std::array<PointLight, N> lights {};
-		void reset_impl() { lights.fill(PointLight {}); }
-	};
+	template <class K, std::size_t N> struct LightArray : Resettable<LightArray<K, N>> {
+		std::uint32_t count { 0 };
+		// Pad 12 bytes
+		std::array<std::uint32_t, 3> padding {};
 
-	template <std::size_t N> struct SpotLights : Resettable<SpotLights<N>> {
-		std::array<SpotLight, N> lights {};
-		void reset_impl() { lights.fill(SpotLight {}); }
+		std::array<K, N> lights {};
+
+		void reset_impl()
+		{
+			lights.fill(K {});
+			count = 0;
+		}
 	};
 } // namespace Detail
 
 static constexpr auto max_point_lights = 800;
 static constexpr auto count_point_lights = 800;
 static_assert(count_point_lights <= max_point_lights);
-using PointLights = Detail::PointLights<max_point_lights>;
+using PointLights = Detail::LightArray<PointLight, max_point_lights>;
 template <> inline constexpr UBOIdentifier identifier_for<PointLights> = UBOIdentifier::PointLight;
 
 static constexpr auto max_spot_lights = 650;
 static constexpr auto count_spot_lights = 650;
 static_assert(count_spot_lights <= max_spot_lights);
-using SpotLights = Detail::SpotLights<max_spot_lights>;
+using SpotLights = Detail::LightArray<SpotLight, max_spot_lights>;
 template <> inline constexpr UBOIdentifier identifier_for<SpotLights> = UBOIdentifier::SpotLight;
 
 struct UBO : Resettable<UBO> {

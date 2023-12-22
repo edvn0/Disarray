@@ -17,7 +17,7 @@ concept SubmeshMember = AnyOf<T, ModelVertex, std::uint32_t, Disarray::TexturePr
 
 struct Submesh {
 	std::vector<ModelVertex> vertices {};
-	std::vector<uint32_t> indices {};
+	std::vector<std::uint32_t> indices {};
 	std::vector<Disarray::TextureProperties> texture_properties {};
 	std::vector<Ref<Disarray::Texture>> textures {};
 
@@ -132,12 +132,13 @@ public:
 	[[nodiscard]] auto construct_textures(const Device&) -> std::vector<Ref<Disarray::Texture>>;
 
 	[[nodiscard]] auto get_mesh_data() -> const ImportedMesh& { return mesh_data; }
-	[[nodiscard]] auto get_aabb() const -> AABB;
+	[[nodiscard]] auto get_aabb() const -> AABB { return aabb; }
 
 private:
 	Scope<IModelImporter> importer { nullptr };
 	std::filesystem::path mesh_path {};
 	ImportedMesh mesh_data {};
+	AABB aabb {};
 };
 
 } // namespace Disarray

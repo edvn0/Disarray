@@ -1,14 +1,15 @@
 #include "DisarrayPCH.hpp"
 
-#include "vulkan/Verify.hpp"
-
 #include <magic_enum.hpp>
 
+#include <string_view>
+
+#include "vulkan/Verify.hpp"
 #include "vulkan/exceptions/VulkanExceptions.hpp"
 
 namespace Disarray::Vulkan {
 
-std::string_view from_vulkan_result(VkResult result) { return magic_enum::enum_name(result); }
+auto from_vulkan_result(VkResult result) -> std::string_view { return magic_enum::enum_name(result); }
 
 void verify(VkResult result)
 {

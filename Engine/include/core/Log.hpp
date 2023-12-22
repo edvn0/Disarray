@@ -21,6 +21,8 @@ namespace Logging {
 	public:
 		void debug(const std::string&);
 		void info(const std::string&);
+		void trace(const std::string&);
+		void warn(const std::string&);
 		void error(const std::string&);
 		void to_file(const std::string&);
 
@@ -60,6 +62,20 @@ namespace Log {
 		Logging::Logger::the().info(formatted);
 	}
 
+	template <class... Args> inline void warn(std::string_view scope, fmt::format_string<Args...> fmt, Args&&... args)
+	{
+		const auto message = fmt::format(fmt, std::forward<Args>(args)...);
+		auto formatted = fmt::format("[{}] {}", scope, message);
+		Logging::Logger::the().warn(formatted);
+	}
+
+	template <class... Args> inline void trace(std::string_view scope, fmt::format_string<Args...> fmt, Args&&... args)
+	{
+		const auto message = fmt::format(fmt, std::forward<Args>(args)...);
+		auto formatted = fmt::format("[{}] {}", scope, message);
+		Logging::Logger::the().trace(formatted);
+	}
+
 	template <class... Args> inline void error(std::string_view scope, fmt::format_string<Args...> fmt, Args&&... args)
 	{
 		const auto message = fmt::format(fmt, std::forward<Args>(args)...);
@@ -79,10 +95,22 @@ namespace Log {
 		Logging::Logger::the().debug(formatted);
 	}
 
+	inline void trace(std::string_view scope, std::string_view message)
+	{
+		auto formatted = fmt::format("[{}] {}", scope, message);
+		Logging::Logger::the().trace(formatted);
+	}
+
 	inline void info(std::string_view scope, std::string_view message)
 	{
 		auto formatted = fmt::format("[{}] {}", scope, message);
 		Logging::Logger::the().info(formatted);
+	}
+
+	inline void warn(std::string_view scope, std::string_view message)
+	{
+		auto formatted = fmt::format("[{}] {}", scope, message);
+		Logging::Logger::the().warn(formatted);
 	}
 
 	inline void error(std::string_view scope, std::string_view message)

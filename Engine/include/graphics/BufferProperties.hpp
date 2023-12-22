@@ -24,6 +24,7 @@ struct BufferProperties {
 	const void* data {};
 	std::size_t size {};
 	std::size_t count { 1 };
+	std::uint32_t binding { 0 };
 	bool always_mapped { false };
 };
 

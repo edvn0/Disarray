@@ -11,16 +11,15 @@
 #include "core/Concepts.hpp"
 #include "core/Hashes.hpp"
 #include "core/Log.hpp"
-#include "core/filesystem/FileIO.hpp"
 #include "util/BitCast.hpp"
 
 namespace Disarray::FS {
 
 namespace Detail {
 	template <class T, class Child> struct FileWrite {
-		void write_to_file(std::string_view path, std::size_t size, std::span<T> data)
+		auto write_to_file(std::string_view path, std::size_t size, std::span<T> data) -> bool
 		{
-			static_cast<Child&>(*this).write_to_file_impl(path, size, data);
+			return static_cast<Child&>(*this).write_to_file_impl(path, size, data);
 		}
 	};
 
@@ -40,11 +39,11 @@ namespace Detail {
 
 #include "core/filesystem/FileReadWriters.inl"
 
-template <class T> void write_to_file(std::string_view path, std::size_t size, std::span<T> data)
+template <class T> [[nodiscard]] auto write_to_file(std::string_view path, std::size_t size, std::span<T> data) -> bool
 {
 	using FW = Detail::GenericFileWriter<T>;
 	FW writer {};
-	writer.write_to_file(path, size, data);
+	return writer.write_to_file(path, size, data);
 }
 
 template <class T>
@@ -122,5 +121,8 @@ auto for_each_in_directory(auto path, Func&& func, const Collections::StringView
 		std::forward<Func>(func)(entry);
 	}
 }
+
+auto exists(const std::filesystem::path&) -> bool;
+auto exists(Pathlike auto path) -> bool { return exists(std::filesystem::path { path }); }
 
 } // namespace Disarray::FS

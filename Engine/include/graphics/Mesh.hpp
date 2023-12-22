@@ -12,6 +12,7 @@
 #include "graphics/AABB.hpp"
 #include "graphics/Device.hpp"
 #include "graphics/IndexBuffer.hpp"
+#include "graphics/MeshMaterial.hpp"
 #include "graphics/ModelLoader.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/Swapchain.hpp"
@@ -39,7 +40,7 @@ public:
 	virtual auto get_indices() const -> IndexBuffer& = 0;
 
 	[[nodiscard]] virtual auto get_submeshes() const -> const Collections::ScopedStringMap<Disarray::MeshSubstructure>& = 0;
-	[[nodiscard]] virtual auto get_textures() const -> const RefVector<Disarray::Texture>& = 0;
+	[[nodiscard]] virtual auto get_textures() const -> const Collections::RefVector<Disarray::Texture>& = 0;
 
 	virtual auto get_aabb() const -> const AABB& = 0;
 	virtual auto has_children() const -> bool = 0;

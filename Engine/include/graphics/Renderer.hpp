@@ -11,13 +11,18 @@
 #include <tuple>
 
 #include "core/Types.hpp"
+#include "graphics/BufferSet.hpp"
 #include "graphics/CommandExecutor.hpp"
 #include "graphics/IndexBuffer.hpp"
+#include "graphics/MeshMaterial.hpp"
 #include "graphics/Pipeline.hpp"
 #include "graphics/RenderCommandQueue.hpp"
 #include "graphics/RendererProperties.hpp"
+#include "graphics/StorageBuffer.hpp"
 #include "graphics/Swapchain.hpp"
 #include "graphics/TextRenderer.hpp"
+#include "graphics/Texture.hpp"
+#include "graphics/UniformBuffer.hpp"
 #include "graphics/UniformBufferSet.hpp"
 #include "graphics/VertexBuffer.hpp"
 
@@ -29,6 +34,18 @@ namespace Disarray {
 struct RendererProperties {
 	std::string debug_name { "Unknown" };
 };
+
+namespace ResourceBindings {
+	static constexpr auto UBO = DescriptorBinding(0);
+	static constexpr auto CameraUBO = DescriptorBinding(1);
+	static constexpr auto PointLightUBO = DescriptorBinding(2);
+	static constexpr auto ShadowPassUBO = DescriptorBinding(3);
+	static constexpr auto DirectionalLightUBO = DescriptorBinding(4);
+	static constexpr auto ColourSSBO = DescriptorBinding(5);
+	static constexpr auto SpotLightUBO = DescriptorBinding(6);
+	static constexpr auto IdentifierSSBO = DescriptorBinding(7);
+	static constexpr auto TransformSSBO = DescriptorBinding(8);
+}; // namespace ResourceBindings
 
 class IGraphicsResource {
 public:
@@ -64,10 +81,19 @@ public:
 
 	[[nodiscard]] virtual auto get_push_constant() const -> const PushConstant* = 0;
 	virtual auto get_editable_push_constant() -> PushConstant& = 0;
+
+	[[nodiscard]] virtual auto get_device() const -> const Disarray::Device& = 0;
+
+	[[nodiscard]] virtual auto get_current_frame_index() const -> FrameIndex = 0;
+
+	virtual auto begin_frame() -> void = 0;
+	virtual auto end_frame() -> void = 0;
 };
 
 class Renderer : public ReferenceCountable {
 public:
+	~Renderer() override;
+
 	virtual void construct_sub_renderers(const Disarray::Device&, Disarray::App&) = 0;
 
 	virtual void begin_pass(Disarray::CommandExecutor&, Disarray::Framebuffer&, bool explicit_clear, const RenderAreaExtent&) = 0;
@@ -140,6 +166,14 @@ public:
 	virtual void draw_mesh(Disarray::CommandExecutor&, const Disarray::Mesh&, const Disarray::Pipeline&, const Disarray::Texture&,
 		const glm::vec4& colour, const glm::mat4& transform = glm::identity<glm::mat4>(), const std::uint32_t identifier = 0)
 		= 0;
+	virtual void draw_mesh(Disarray::CommandExecutor&, Ref<Disarray::StaticMesh>&, const Disarray::Pipeline&,
+		Disarray::BufferSet<Disarray::UniformBuffer>&, Disarray::BufferSet<Disarray::StorageBuffer>&, const glm::vec4& colour,
+		const glm::mat4& transform = glm::identity<glm::mat4>())
+		= 0;
+	virtual void draw_mesh(Disarray::CommandExecutor&, Ref<Disarray::StaticMesh>&, const Disarray::Pipeline&,
+		Disarray::BufferSet<Disarray::UniformBuffer>&, Disarray::BufferSet<Disarray::StorageBuffer>&, const glm::vec4& colour,
+		const glm::mat4& transform = glm::identity<glm::mat4>(), Ref<Disarray::MeshMaterial> material = nullptr)
+		= 0;
 
 	virtual void draw_mesh_instanced(
 		Disarray::CommandExecutor&, std::size_t count, const Disarray::VertexBuffer&, const Disarray::IndexBuffer&, const Disarray::Pipeline&)
@@ -201,15 +235,17 @@ public:
 
 	static auto get_render_command_queue() -> RenderCommandQueue& { return command_queue; }
 
+	static auto get_white_texture() -> const auto& { return white_texture; }
+	static auto get_black_texture() -> const auto& { return black_texture; }
+
 protected:
-	explicit Renderer(Scope<IGraphicsResource> resource)
-		: graphics_resource { std::move(resource) }
-	{
-	}
+	explicit Renderer(Scope<IGraphicsResource> resource);
 
 private:
 	Scope<IGraphicsResource> graphics_resource { nullptr };
 
+	static inline Ref<Disarray::Texture> white_texture { nullptr };
+	static inline Ref<Disarray::Texture> black_texture { nullptr };
 	static inline RenderCommandQueue command_queue { {} };
 };
 

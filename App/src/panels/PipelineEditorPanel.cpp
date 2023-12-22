@@ -3,8 +3,8 @@
 namespace Disarray::Client {
 
 PipelineEditorPanel::PipelineEditorPanel(Device& dev, Window&, Swapchain&, PipelineCache& cache)
-	:pipeline_cache(cache)
-	,device(dev)
+	: pipeline_cache(cache)
+	, device(dev)
 {
 }
 
@@ -38,8 +38,15 @@ void PipelineEditorPanel::interface()
 		any_changed |= UI::combo_choice<CullMode>("Cull mode", std::ref(props.cull_mode));
 		any_changed |= UI::combo_choice<FaceMode>("Face mode", std::ref(props.face_mode));
 		any_changed |= UI::combo_choice<PolygonMode>("Polygon mode", std::ref(props.polygon_mode));
-		any_changed |= UI::shader_drop_button(device, "Vertex Shader", ShaderType::Vertex, std::ref(props.vertex_shader));
-		any_changed |= UI::shader_drop_button(device, "Fragment Shader", ShaderType::Fragment, std::ref(props.fragment_shader));
+
+		if (props.is_single_shader()) {
+			any_changed |= UI::shader_drop_button(device, "Single Shader", std::ref(props.single_shader));
+		} else {
+
+			any_changed |= UI::shader_drop_button(device, "Vertex Shader", ShaderType::Vertex, std::ref(props.vertex_shader));
+			any_changed |= UI::shader_drop_button(device, "Fragment Shader", ShaderType::Fragment, std::ref(props.fragment_shader));
+		}
+
 		any_changed |= UI::checkbox("Depth test", props.test_depth);
 		any_changed |= UI::checkbox("Depth write", props.write_depth);
 
